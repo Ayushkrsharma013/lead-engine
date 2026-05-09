@@ -5,12 +5,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#080b10",
-        panel: "#0c1018",
-        border: "rgba(255,255,255,0.06)",
-        linkedin: "#818cf8",
-        gmaps: "#34d399",
-        amazon: "#fb923c",
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-2": "var(--surface2)",
+        border: "var(--border)",
+        text: "var(--text)",
+        muted: "var(--muted)",
+        "accent-blue": "var(--accent-blue)",
+        "accent-purple": "var(--accent-purple)",
+        "accent-orange": "var(--accent-orange)",
+        "accent-green": "var(--accent-green)",
+        linkedin: "var(--accent-blue)",
+        gmaps: "var(--accent-green)",
+        amazon: "var(--accent-orange)",
       },
       borderRadius: { lg: "0.5rem", md: "0.375rem", sm: "0.25rem" },
       keyframes: {

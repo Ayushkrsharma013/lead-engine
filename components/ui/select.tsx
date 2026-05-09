@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...props }, ref) => (
-    <select ref={ref} className={cn("w-full h-9 rounded-md bg-white/5 border border-white/10 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 transition-colors appearance-none cursor-pointer", className)} {...props}>
+    <select ref={ref} className={cn("w-full h-9 rounded-md bg-white/5 border border-border px-3 text-sm text-text focus:outline-none focus:border-accent-blue/50 transition-colors appearance-none cursor-pointer", className)} {...props}>
       {children}
     </select>
   )

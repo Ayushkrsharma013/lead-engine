@@ -12,7 +12,7 @@ interface PaginationProps {
   accent?: string;
 }
 
-export default function Pagination({ pagination, total, onChange, accent = "#818cf8" }: PaginationProps) {
+export default function Pagination({ pagination, total, onChange, accent = "#00d4ff" }: PaginationProps) {
   const { page, pageSize } = pagination;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -44,9 +44,9 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
   const btnBase = "h-7 min-w-[28px] px-1.5 rounded text-xs flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed";
 
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.06] bg-[#080b10] shrink-0">
+    <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-bg shrink-0">
       {/* Record count */}
-      <span className="text-[11px] text-slate-500 tabular-nums">
+      <span className="text-[11px] text-muted tabular-nums">
         {total === 0 ? "No results" : `${from}–${to} of ${total.toLocaleString()} leads`}
       </span>
 
@@ -56,7 +56,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
         <button
           onClick={() => setPage(1)}
           disabled={page <= 1}
-          className={cn(btnBase, "text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]")}
+          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
           title="First page"
         >
           <ChevronsLeft size={13} />
@@ -65,7 +65,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
         <button
           onClick={() => setPage(page - 1)}
           disabled={page <= 1}
-          className={cn(btnBase, "text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]")}
+          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
           title="Previous page"
         >
           <ChevronLeft size={13} />
@@ -74,7 +74,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
         {/* Page numbers */}
         {pageNumbers.map((n, i) =>
           n === "…" ? (
-            <span key={`ellipsis-${i}`} className="text-slate-600 text-xs px-1">…</span>
+            <span key={`ellipsis-${i}`} className="text-muted/60 text-xs px-1">…</span>
           ) : (
             <button
               key={n}
@@ -87,7 +87,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
               }
               data-inactive={n !== page || undefined}
             >
-              <span className={n !== page ? "text-slate-500 hover:text-slate-300" : ""}>{n}</span>
+              <span className={n !== page ? "text-muted hover:text-text" : ""}>{n}</span>
             </button>
           )
         )}
@@ -96,7 +96,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
         <button
           onClick={() => setPage(page + 1)}
           disabled={page >= totalPages}
-          className={cn(btnBase, "text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]")}
+          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
           title="Next page"
         >
           <ChevronRight size={13} />
@@ -105,7 +105,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
         <button
           onClick={() => setPage(totalPages)}
           disabled={page >= totalPages}
-          className={cn(btnBase, "text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]")}
+          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
           title="Last page"
         >
           <ChevronsRight size={13} />
@@ -114,7 +114,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
 
       {/* Page size selector */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-slate-600">Rows</span>
+        <span className="text-[11px] text-muted/70">Rows</span>
         <div className="flex gap-0.5">
           {PAGE_SIZES.map(size => (
             <button
@@ -123,8 +123,8 @@ export default function Pagination({ pagination, total, onChange, accent = "#818
               className={cn(
                 "h-6 px-2 rounded text-[11px] font-medium transition-all",
                 pageSize === size
-                  ? "text-white"
-                  : "text-slate-600 hover:text-slate-400 hover:bg-white/[0.04]"
+                  ? "text-text"
+                  : "text-muted/70 hover:text-muted hover:bg-white/[0.04]"
               )}
               style={pageSize === size ? { background: `${accent}20`, color: accent } : {}}
             >

@@ -7,8 +7,8 @@ import Pagination from "./Pagination";
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function ScorePill({ score }: { score: number }) {
   const cfg =
-    score >= 85 ? { bg: "rgba(16,185,129,0.12)", col: "#10b981", bd: "rgba(16,185,129,0.25)" }
-    : score >= 70 ? { bg: "rgba(245,158,11,0.12)", col: "#f59e0b", bd: "rgba(245,158,11,0.25)" }
+    score >= 85 ? { bg: "rgba(0,255,136,0.12)", col: "#00ff88", bd: "rgba(0,255,136,0.25)" }
+    : score >= 70 ? { bg: "rgba(255,107,53,0.12)", col: "#ff6b35", bd: "rgba(255,107,53,0.25)" }
     : { bg: "rgba(239,68,68,0.12)", col: "#ef4444", bd: "rgba(239,68,68,0.25)" };
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tabular-nums"
@@ -20,8 +20,8 @@ function ScorePill({ score }: { score: number }) {
 
 function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: string }) {
   const cfg = {
-    verified:  { col: "#10b981", label: "Verified",   icon: "●" },
-    risky:     { col: "#f59e0b", label: "Risky",      icon: "◐" },
+    verified:  { col: "#00ff88", label: "Verified",   icon: "●" },
+    risky:     { col: "#ff6b35", label: "Risky",      icon: "◐" },
     not_found: { col: "#475569", label: "Not found",  icon: "○" },
   }[status];
   return (
@@ -30,7 +30,7 @@ function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: st
         <span>{cfg.icon}</span>{cfg.label}
       </span>
       {email && (
-        <p className="text-[10px] text-slate-600 font-mono truncate max-w-[160px]" title={email}>{email}</p>
+        <p className="text-[10px] text-muted/70 font-mono truncate max-w-[160px]" title={email}>{email}</p>
       )}
     </div>
   );
@@ -38,9 +38,9 @@ function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: st
 
 function SourceBadge({ source }: { source: Lead["source"] }) {
   const cfg: Record<string, { label: string; color: string; bg: string }> = {
-    linkedin: { label: "in", color: "#818cf8", bg: "rgba(129,140,248,0.15)" },
-    gmaps:    { label: "G",  color: "#34d399", bg: "rgba(52,211,153,0.15)"  },
-    amazon:   { label: "a",  color: "#fb923c", bg: "rgba(251,146,60,0.15)"  },
+    linkedin: { label: "in", color: "#00d4ff", bg: "rgba(0,212,255,0.15)" },
+    gmaps:    { label: "G",  color: "#00ff88", bg: "rgba(0,255,136,0.15)"  },
+    amazon:   { label: "a",  color: "#ff6b35", bg: "rgba(255,107,53,0.15)"  },
   };
   const c = cfg[source] || cfg.linkedin;
   return (
@@ -56,7 +56,7 @@ function Avatar({ name }: { name: string }) {
   const colors = ["#818cf8", "#34d399", "#fb923c", "#f472b6", "#60a5fa", "#a78bfa"];
   const color = colors[(name.charCodeAt(0) || 0) % colors.length];
   return (
-    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 border border-white/10"
+    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 border border-border"
       style={{ background: `${color}20`, color }}>
       {initials}
     </div>
@@ -75,15 +75,15 @@ function SortHeader({
   const active = sort.field === field;
   return (
     <th
-      className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap cursor-pointer select-none hover:text-slate-300 transition-colors group"
+      className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider px-3 py-3 whitespace-nowrap cursor-pointer select-none hover:text-text transition-colors group"
       onClick={() => onSort(field)}
     >
       <span className="flex items-center gap-1">
         {label}
         {active ? (
           sort.dir === "asc"
-            ? <ChevronUp size={10} className="text-indigo-400" />
-            : <ChevronDown size={10} className="text-indigo-400" />
+            ? <ChevronUp size={10} className="text-accent-blue" />
+            : <ChevronDown size={10} className="text-accent-blue" />
         ) : (
           <ChevronsUpDown size={10} className="opacity-0 group-hover:opacity-40 transition-opacity" />
         )}
@@ -131,8 +131,8 @@ export default function LeadsTable({
               style={{ animationDuration: "0.6s", borderColor: `${accent}20`, borderTopColor: `${accent}80` }} />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-300">Agent is working…</p>
-            <p className="text-xs text-slate-600 mt-1">Fetching & enriching leads</p>
+            <p className="text-sm font-medium text-text">Agent is working…</p>
+            <p className="text-xs text-muted/70 mt-1">Fetching & enriching leads</p>
           </div>
         </div>
       </div>
@@ -148,8 +148,8 @@ export default function LeadsTable({
             <Users size={24} style={{ color: accent, opacity: 0.6 }} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-300">No leads match your filters</p>
-            <p className="text-xs text-slate-600 mt-1">Try adjusting filters or run the agent to fetch new leads</p>
+            <p className="text-sm font-semibold text-text">No leads match your filters</p>
+            <p className="text-xs text-muted/70 mt-1">Try adjusting filters or run the agent to fetch new leads</p>
           </div>
         </div>
       </div>
@@ -160,12 +160,12 @@ export default function LeadsTable({
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Bulk action bar */}
       {someSelected && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-[#0c1018] border-b border-white/[0.06] animate-fade-up shrink-0">
-          <span className="text-xs text-slate-400 font-medium">{selected.length} selected</span>
+        <div className="flex items-center gap-3 px-4 py-2 bg-surface border-b border-border animate-fade-up shrink-0">
+          <span className="text-xs text-muted font-medium">{selected.length} selected</span>
           <div className="flex-1" />
           <button
             onClick={() => onExport(selected)}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/[0.08] border border-white/10 transition-all">
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-text px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/[0.08] border border-border transition-all">
             <Download size={11} /> Export selected
           </button>
           <button
@@ -179,25 +179,25 @@ export default function LeadsTable({
       {/* Table */}
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10 bg-[#080b10]">
-            <tr className="border-b border-white/[0.06]">
+          <thead className="sticky top-0 z-10 bg-bg">
+            <tr className="border-b border-border">
               <th className="w-10 px-3 py-3">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={onSelectAll}
-                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-indigo-500 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-accent-blue cursor-pointer"
                 />
               </th>
               <SortHeader field="name"        label="Name & Title" sort={sort} onSort={onSort} />
               <SortHeader field="company"     label="Company"      sort={sort} onSort={onSort} />
               <SortHeader field="location"    label="Location"     sort={sort} onSort={onSort} />
               <SortHeader field="emailStatus" label="Email"        sort={sort} onSort={onSort} />
-              <th className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap">
+              <th className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider px-3 py-3 whitespace-nowrap">
                 LinkedIn
               </th>
               <SortHeader field="score"   label="Score"  sort={sort} onSort={onSort} />
-              <th className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap">
+              <th className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider px-3 py-3 whitespace-nowrap">
                 Src
               </th>
               <SortHeader field="savedAt" label="Saved"  sort={sort} onSort={onSort} />
@@ -211,8 +211,8 @@ export default function LeadsTable({
                 <tr
                   key={lead.id}
                   className={cn(
-                    "border-b border-white/[0.04] transition-colors group cursor-pointer animate-fade-up",
-                    isSelected ? "bg-indigo-500/[0.05]" : "hover:bg-white/[0.02]"
+                    "border-b border-border transition-colors group cursor-pointer animate-fade-up",
+                    isSelected ? "bg-accent-blue/[0.05]" : "hover:bg-white/[0.02]"
                   )}
                   style={{ animationDelay: `${Math.min(i * 15, 200)}ms` }}
                   onClick={() => onSelect(lead.id)}
@@ -220,33 +220,33 @@ export default function LeadsTable({
                   {/* Checkbox */}
                   <td className="w-10 px-3 py-3" onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={isSelected} onChange={() => onSelect(lead.id)}
-                      className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-indigo-500 cursor-pointer" />
+                      className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-accent-blue cursor-pointer" />
                   </td>
                   {/* Name */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={lead.name} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-slate-200 truncate max-w-[160px]">{lead.name || "—"}</p>
-                        <p className="text-[11px] text-slate-500 truncate max-w-[160px]">{lead.title || "—"}</p>
+                        <p className="text-[13px] font-semibold text-text truncate max-w-[160px]">{lead.name || "—"}</p>
+                        <p className="text-[11px] text-muted truncate max-w-[160px]">{lead.title || "—"}</p>
                       </div>
                     </div>
                   </td>
                   {/* Company */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <Building2 size={11} className="text-slate-600 shrink-0" />
+                      <Building2 size={11} className="text-muted/70 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[12px] text-slate-300 truncate max-w-[130px]">{lead.company || "—"}</p>
-                        <p className="text-[10px] text-slate-600 truncate max-w-[130px]">{lead.industry || ""}</p>
+                        <p className="text-[12px] text-text truncate max-w-[130px]">{lead.company || "—"}</p>
+                        <p className="text-[10px] text-muted/70 truncate max-w-[130px]">{lead.industry || ""}</p>
                       </div>
                     </div>
                   </td>
                   {/* Location */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <MapPin size={11} className="text-slate-600 shrink-0" />
-                      <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{lead.location || "—"}</span>
+                      <MapPin size={11} className="text-muted/70 shrink-0" />
+                      <span className="text-[11px] text-muted truncate max-w-[120px]">{lead.location || "—"}</span>
                     </div>
                   </td>
                   {/* Email */}
@@ -258,10 +258,10 @@ export default function LeadsTable({
                     {lead.linkedin
                       ? <a href={lead.linkedin} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-400 transition-colors">
+                          className="inline-flex items-center gap-1 text-xs text-muted hover:text-accent-blue transition-colors">
                           <ExternalLink size={10} /> View
                         </a>
-                      : <span className="text-slate-700 text-xs">—</span>
+                      : <span className="text-muted/50 text-xs">—</span>
                     }
                   </td>
                   {/* Score */}
@@ -271,12 +271,12 @@ export default function LeadsTable({
                   {/* Saved At */}
                   <td className="px-3 py-3">
                     {savedDate
-                      ? <span className="text-[10px] text-slate-600 tabular-nums whitespace-nowrap">
+                      ? <span className="text-[10px] text-muted/70 tabular-nums whitespace-nowrap">
                           {savedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                           <br />
-                          <span className="text-slate-700">{savedDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
+                          <span className="text-muted/50">{savedDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
                         </span>
-                      : <span className="text-slate-700 text-xs">—</span>
+                      : <span className="text-muted/50 text-xs">—</span>
                     }
                   </td>
                 </tr>
