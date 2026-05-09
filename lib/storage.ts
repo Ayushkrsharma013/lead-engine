@@ -126,7 +126,7 @@ export function mergeLeads(incoming: Lead[]): MergeResult {
 
   for (const rawLead of incoming) {
     if (!rawLead || typeof rawLead !== "object") { rejected++; continue; }
-    const lead = sanitizeLead(rawLead as Record<string, unknown>);
+    const lead = sanitizeLead(rawLead as unknown as Record<string, unknown>);
     const withTs: Lead = { ...lead, fetchedAt: now, savedAt: lead.savedAt || now };
 
     // Deduplicate by id, email (non-empty), or linkedin URL (non-empty)
