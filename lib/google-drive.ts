@@ -39,7 +39,7 @@ interface GISAPI {
 function gis(): GISAPI | undefined {
   if (typeof window === "undefined") return undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (window as Record<string, unknown>).google as GISAPI | undefined;
+  return (window as unknown as Record<string, unknown>).google as GISAPI | undefined;
 }
 
 let gisLoaded = false;
