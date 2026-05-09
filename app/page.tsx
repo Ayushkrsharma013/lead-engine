@@ -178,7 +178,7 @@ export default function Home() {
   };
   const handleSelectAll = () => {
     const ids = displayLeads.map(l => l.id);
-    setSelected(prev => ids.every(id => prev.includes(id)) ? prev.filter(id => !ids.includes(id)) : [...new Set([...prev, ...ids])]);
+    setSelected(prev => ids.every(id => prev.includes(id)) ? prev.filter(id => !ids.includes(id)) : Array.from(new Set([...prev, ...ids])));
   };
 
   // ── Delete ───────────────────────────────────────────────────

@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import type { FilterState } from "@/lib/types";
-import { DEFAULT_FILTERS, countActiveFilters } from "@/lib/filters";
+import { DEFAULT_FILTERS } from "@/lib/types";
+import { countActiveFilters } from "@/lib/filters";
 import { cn } from "@/lib/utils";
 
 // ─── Chip multi-select ────────────────────────────────────────
