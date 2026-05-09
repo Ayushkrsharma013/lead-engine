@@ -14,6 +14,8 @@ export interface Lead {
   companySize: string;
   score: number;
   source: Source;
+  savedAt?: string;
+  tags?: string[];
 }
 
 export interface LogEntry {
@@ -29,3 +31,27 @@ export interface Stats {
   avgScore: number;
   topIndustry: string;
 }
+
+export interface FilterState {
+  keyword: string;
+  seniority: string[];
+  jobFunction: string[];
+  industries: string[];
+  companySizes: string[];
+  countries: string[];
+  emailStatus: string[];
+  minScore: number;
+  sources: string[];
+}
+
+export const DEFAULT_FILTERS: FilterState = {
+  keyword: "",
+  seniority: [],
+  jobFunction: [],
+  industries: [],
+  companySizes: [],
+  countries: [],
+  emailStatus: [],
+  minScore: 0,
+  sources: [],
+};
