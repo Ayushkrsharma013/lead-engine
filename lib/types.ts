@@ -1,4 +1,6 @@
 export type Source = "linkedin" | "gmaps" | "amazon";
+export type SortDir = "asc" | "desc";
+export type SortField = "name" | "company" | "score" | "savedAt" | "location" | "emailStatus";
 
 export interface Lead {
   id: string;
@@ -15,6 +17,7 @@ export interface Lead {
   score: number;
   source: Source;
   savedAt?: string;
+  fetchedAt?: string;
   tags?: string[];
 }
 
@@ -42,6 +45,8 @@ export interface FilterState {
   emailStatus: string[];
   minScore: number;
   sources: string[];
+  dateFrom: string;
+  dateTo: string;
 }
 
 export const DEFAULT_FILTERS: FilterState = {
@@ -54,4 +59,26 @@ export const DEFAULT_FILTERS: FilterState = {
   emailStatus: [],
   minScore: 0,
   sources: [],
+  dateFrom: "",
+  dateTo: "",
+};
+
+export interface PaginationState {
+  page: number;
+  pageSize: number;
+}
+
+export const DEFAULT_PAGINATION: PaginationState = {
+  page: 1,
+  pageSize: 25,
+};
+
+export interface SortState {
+  field: SortField;
+  dir: SortDir;
+}
+
+export const DEFAULT_SORT: SortState = {
+  field: "savedAt",
+  dir: "desc",
 };

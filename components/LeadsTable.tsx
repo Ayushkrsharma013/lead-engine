@@ -1,8 +1,10 @@
 "use client";
-import { ExternalLink, Building2, MapPin, Users, Trash2, Download, Mail } from "lucide-react";
-import { Lead } from "@/lib/types";
+import { ExternalLink, Building2, MapPin, Trash2, Download, Users, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import type { Lead, SortState, SortField, PaginationState } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import Pagination from "./Pagination";
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
 function ScorePill({ score }: { score: number }) {
   const cfg =
     score >= 85 ? { bg: "rgba(16,185,129,0.12)", col: "#10b981", bd: "rgba(16,185,129,0.25)" }
@@ -18,9 +20,9 @@ function ScorePill({ score }: { score: number }) {
 
 function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: string }) {
   const cfg = {
-    verified: { col: "#10b981", label: "Verified", icon: "●" },
-    risky: { col: "#f59e0b", label: "Risky", icon: "◐" },
-    not_found: { col: "#475569", label: "Not found", icon: "○" },
+    verified:  { col: "#10b981", label: "Verified",   icon: "●" },
+    risky:     { col: "#f59e0b", label: "Risky",      icon: "◐" },
+    not_found: { col: "#475569", label: "Not found",  icon: "○" },
   }[status];
   return (
     <div className="space-y-0.5">
@@ -37,10 +39,10 @@ function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: st
 function SourceBadge({ source }: { source: Lead["source"] }) {
   const cfg: Record<string, { label: string; color: string; bg: string }> = {
     linkedin: { label: "in", color: "#818cf8", bg: "rgba(129,140,248,0.15)" },
-    gmaps:    { label: "G",  color: "#34d399", bg: "rgba(52,211,153,0.15)" },
-    amazon:   { label: "a",  color: "#fb923c", bg: "rgba(251,146,60,0.15)" },
+    gmaps:    { label: "G",  color: "#34d399", bg: "rgba(52,211,153,0.15)"  },
+    amazon:   { label: "a",  color: "#fb923c", bg: "rgba(251,146,60,0.15)"  },
   };
-  const c = cfg[source];
+  const c = cfg[source] || cfg.linkedin;
   return (
     <span className="w-5 h-5 rounded text-[9px] font-bold inline-flex items-center justify-center shrink-0"
       style={{ background: c.bg, color: c.color }}>
@@ -50,9 +52,9 @@ function SourceBadge({ source }: { source: Lead["source"] }) {
 }
 
 function Avatar({ name }: { name: string }) {
-  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const initials = name.split(" ").map(w => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase() || "?";
   const colors = ["#818cf8", "#34d399", "#fb923c", "#f472b6", "#60a5fa", "#a78bfa"];
-  const color = colors[name.charCodeAt(0) % colors.length];
+  const color = colors[(name.charCodeAt(0) || 0) % colors.length];
   return (
     <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 border border-white/10"
       style={{ background: `${color}20`, color }}>
@@ -61,21 +63,60 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
+// ─── Sortable column header ───────────────────────────────────────────────────
+function SortHeader({
+  field, label, sort, onSort,
+}: {
+  field: SortField;
+  label: string;
+  sort: SortState;
+  onSort: (f: SortField) => void;
+}) {
+  const active = sort.field === field;
+  return (
+    <th
+      className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap cursor-pointer select-none hover:text-slate-300 transition-colors group"
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active ? (
+          sort.dir === "asc"
+            ? <ChevronUp size={10} className="text-indigo-400" />
+            : <ChevronDown size={10} className="text-indigo-400" />
+        ) : (
+          <ChevronsUpDown size={10} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+        )}
+      </span>
+    </th>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 interface LeadsTableProps {
-  leads: Lead[];
+  leads: Lead[];          // already filtered & sorted — full list
   running: boolean;
   accent: string;
   selected: string[];
+  sort: SortState;
+  pagination: PaginationState;
+  totalFiltered: number;
   onSelect: (id: string) => void;
   onSelectAll: () => void;
   onDelete: (ids: string[]) => void;
   onExport: (ids: string[]) => void;
+  onSort: (field: SortField) => void;
+  onPaginationChange: (p: PaginationState) => void;
 }
 
 export default function LeadsTable({
-  leads, running, accent, selected, onSelect, onSelectAll, onDelete, onExport
+  leads, running, accent, selected, sort, pagination, totalFiltered,
+  onSelect, onSelectAll, onDelete, onExport, onSort, onPaginationChange,
 }: LeadsTableProps) {
-  const allSelected = leads.length > 0 && leads.every(l => selected.includes(l.id));
+  // Paginate the received leads slice
+  const { page, pageSize } = pagination;
+  const paginated = leads.slice((page - 1) * pageSize, page * pageSize);
+  const allSelected = paginated.length > 0 && paginated.every(l => selected.includes(l.id));
   const someSelected = selected.length > 0;
 
   if (running) {
@@ -119,16 +160,18 @@ export default function LeadsTable({
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Bulk action bar */}
       {someSelected && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0c1018] border-b border-white/[0.06] animate-fade-up">
+        <div className="flex items-center gap-3 px-4 py-2 bg-[#0c1018] border-b border-white/[0.06] animate-fade-up shrink-0">
           <span className="text-xs text-slate-400 font-medium">{selected.length} selected</span>
           <div className="flex-1" />
-          <button onClick={() => onExport(selected)}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/8 border border-white/10 transition-all">
-            <Download size={11} /> Export
+          <button
+            onClick={() => onExport(selected)}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/[0.08] border border-white/10 transition-all">
+            <Download size={11} /> Export selected
           </button>
-          <button onClick={() => onDelete(selected)}
+          <button
+            onClick={() => onDelete(selected)}
             className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-md bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 transition-all">
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} /> Delete selected
           </button>
         </div>
       )}
@@ -139,65 +182,79 @@ export default function LeadsTable({
           <thead className="sticky top-0 z-10 bg-[#080b10]">
             <tr className="border-b border-white/[0.06]">
               <th className="w-10 px-3 py-3">
-                <input type="checkbox" checked={allSelected} onChange={onSelectAll}
-                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-indigo-500 cursor-pointer" />
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onSelectAll}
+                  className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-indigo-500 cursor-pointer"
+                />
               </th>
-              {["Name & Title", "Company", "Location", "Email", "LinkedIn", "Score", "Source"].map(h => (
-                <th key={h} className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
+              <SortHeader field="name"        label="Name & Title" sort={sort} onSort={onSort} />
+              <SortHeader field="company"     label="Company"      sort={sort} onSort={onSort} />
+              <SortHeader field="location"    label="Location"     sort={sort} onSort={onSort} />
+              <SortHeader field="emailStatus" label="Email"        sort={sort} onSort={onSort} />
+              <th className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap">
+                LinkedIn
+              </th>
+              <SortHeader field="score"   label="Score"  sort={sort} onSort={onSort} />
+              <th className="text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 py-3 whitespace-nowrap">
+                Src
+              </th>
+              <SortHeader field="savedAt" label="Saved"  sort={sort} onSort={onSort} />
             </tr>
           </thead>
           <tbody>
-            {leads.map((lead, i) => {
+            {paginated.map((lead, i) => {
               const isSelected = selected.includes(lead.id);
+              const savedDate = lead.savedAt ? new Date(lead.savedAt) : null;
               return (
-                <tr key={lead.id}
+                <tr
+                  key={lead.id}
                   className={cn(
                     "border-b border-white/[0.04] transition-colors group cursor-pointer animate-fade-up",
                     isSelected ? "bg-indigo-500/[0.05]" : "hover:bg-white/[0.02]"
                   )}
-                  style={{ animationDelay: `${Math.min(i * 20, 300)}ms` }}
-                  onClick={() => onSelect(lead.id)}>
+                  style={{ animationDelay: `${Math.min(i * 15, 200)}ms` }}
+                  onClick={() => onSelect(lead.id)}
+                >
                   {/* Checkbox */}
-                  <td className="w-10 px-3 py-3.5" onClick={e => e.stopPropagation()}>
+                  <td className="w-10 px-3 py-3" onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={isSelected} onChange={() => onSelect(lead.id)}
                       className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-indigo-500 cursor-pointer" />
                   </td>
                   {/* Name */}
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={lead.name} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-slate-200 truncate">{lead.name}</p>
-                        <p className="text-[11px] text-slate-500 truncate max-w-[160px]">{lead.title}</p>
+                        <p className="text-[13px] font-semibold text-slate-200 truncate max-w-[160px]">{lead.name || "—"}</p>
+                        <p className="text-[11px] text-slate-500 truncate max-w-[160px]">{lead.title || "—"}</p>
                       </div>
                     </div>
                   </td>
                   {/* Company */}
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <Building2 size={11} className="text-slate-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[12px] text-slate-300 truncate max-w-[130px]">{lead.company}</p>
-                        <p className="text-[10px] text-slate-600 truncate max-w-[130px]">{lead.industry}</p>
+                        <p className="text-[12px] text-slate-300 truncate max-w-[130px]">{lead.company || "—"}</p>
+                        <p className="text-[10px] text-slate-600 truncate max-w-[130px]">{lead.industry || ""}</p>
                       </div>
                     </div>
                   </td>
                   {/* Location */}
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <MapPin size={11} className="text-slate-600 shrink-0" />
-                      <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{lead.location}</span>
+                      <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{lead.location || "—"}</span>
                     </div>
                   </td>
                   {/* Email */}
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3">
                     <EmailStatus status={lead.emailStatus} email={lead.email} />
                   </td>
                   {/* LinkedIn */}
-                  <td className="px-3 py-3.5">
+                  <td className="px-3 py-3">
                     {lead.linkedin
                       ? <a href={lead.linkedin} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
@@ -208,15 +265,34 @@ export default function LeadsTable({
                     }
                   </td>
                   {/* Score */}
-                  <td className="px-3 py-3.5"><ScorePill score={lead.score} /></td>
+                  <td className="px-3 py-3"><ScorePill score={lead.score} /></td>
                   {/* Source */}
-                  <td className="px-3 py-3.5"><SourceBadge source={lead.source} /></td>
+                  <td className="px-3 py-3"><SourceBadge source={lead.source} /></td>
+                  {/* Saved At */}
+                  <td className="px-3 py-3">
+                    {savedDate
+                      ? <span className="text-[10px] text-slate-600 tabular-nums whitespace-nowrap">
+                          {savedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          <br />
+                          <span className="text-slate-700">{savedDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
+                        </span>
+                      : <span className="text-slate-700 text-xs">—</span>
+                    }
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        pagination={pagination}
+        total={totalFiltered}
+        onChange={onPaginationChange}
+        accent={accent}
+      />
     </div>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
-import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronUp, RotateCcw, Calendar } from "lucide-react";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
 import { cn } from "@/lib/utils";
 
-// ─── Chip multi-select ────────────────────────────────────────
-function ChipGroup({ options, selected, onToggle, accent = "#818cf8" }: {
+// ─── Chip multi-select ────────────────────────────────────────────────────────
+function ChipGroup({
+  options, selected, onToggle, accent = "#818cf8",
+}: {
   options: string[];
   selected: string[];
   onToggle: (v: string) => void;
@@ -37,8 +39,10 @@ function ChipGroup({ options, selected, onToggle, accent = "#818cf8" }: {
   );
 }
 
-// ─── Collapsible section ──────────────────────────────────────
-function Section({ title, count, children, defaultOpen = true }: {
+// ─── Collapsible section ──────────────────────────────────────────────────────
+function Section({
+  title, count, children, defaultOpen = true,
+}: {
   title: string; count?: number; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -63,21 +67,19 @@ function Section({ title, count, children, defaultOpen = true }: {
   );
 }
 
-// ─── Score buttons ────────────────────────────────────────────
+// ─── Data constants ───────────────────────────────────────────────────────────
 const SCORE_OPTIONS = [0, 70, 75, 80, 85, 90];
-
-// ─── Filter data ──────────────────────────────────────────────
-const SENIORITY = ["Owner / Founder", "C-Suite", "VP", "Director", "Manager", "Senior / Head"];
-const FUNCTIONS = ["Sales", "Marketing", "Engineering", "Product", "Operations", "Finance", "HR / People", "Business Dev"];
-const INDUSTRIES = ["SaaS / Software", "Fintech", "MarTech", "HealthTech", "E-commerce", "Consulting", "Media", "EdTech"];
-const SIZES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
-const COUNTRIES = ["United States", "Canada", "United Kingdom", "Australia", "Remote"];
-const EMAIL_OPTS = ["verified", "risky", "not_found"];
+const SENIORITY   = ["Owner / Founder", "C-Suite", "VP", "Director", "Manager", "Senior / Head"];
+const FUNCTIONS   = ["Sales", "Marketing", "Engineering", "Product", "Operations", "Finance", "HR / People", "Business Dev"];
+const INDUSTRIES  = ["SaaS / Software", "Fintech", "MarTech", "HealthTech", "E-commerce", "Consulting", "Media", "EdTech"];
+const SIZES       = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
+const COUNTRIES   = ["United States", "Canada", "United Kingdom", "Australia", "Remote"];
+const EMAIL_OPTS  = ["verified", "risky", "not_found"];
 const EMAIL_LABELS: Record<string, string> = { verified: "✓ Verified", risky: "⚠ Risky", not_found: "✗ Not found" };
-const SOURCES = ["linkedin", "gmaps", "amazon"];
+const SOURCES     = ["linkedin", "gmaps", "amazon"];
 const SOURCE_LABELS: Record<string, string> = { linkedin: "LinkedIn", gmaps: "Google Maps", amazon: "Amazon" };
 
-// ─── Main component ───────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 interface FilterPanelProps {
   filters: FilterState;
   onChange: (f: FilterState) => void;
@@ -92,6 +94,7 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
   };
 
   const activeCount = countActiveFilters(filters);
+  const dateRangeCount = (filters.dateFrom ? 1 : 0) + (filters.dateTo ? 1 : 0);
 
   return (
     <aside className="w-[272px] shrink-0 h-full bg-[#080b10] border-r border-white/[0.06] flex flex-col overflow-hidden">
@@ -104,13 +107,13 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
             className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
           >
             <RotateCcw size={10} />
-            Reset all
+            Reset all ({activeCount})
           </button>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Role & Experience */}
+        {/* Role */}
         <Section title="Role" count={filters.seniority.length + filters.jobFunction.length} defaultOpen>
           <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-1">Seniority Level</p>
           <ChipGroup options={SENIORITY} selected={filters.seniority} onToggle={v => toggle("seniority", v)} accent={accent} />
@@ -174,6 +177,45 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                 </button>
               );
             })}
+          </div>
+        </Section>
+
+        {/* Date Saved */}
+        <Section title="Date Saved" count={dateRangeCount} defaultOpen={false}>
+          <div className="mt-2 space-y-2.5">
+            <div>
+              <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">From</label>
+              <div className="relative">
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
+                  className="w-full h-8 bg-white/[0.04] border border-white/[0.08] rounded-lg pl-7 pr-2 text-[11px] text-slate-300 focus:outline-none focus:border-white/20 transition-colors [color-scheme:dark]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">To</label>
+              <div className="relative">
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  min={filters.dateFrom || undefined}
+                  onChange={e => onChange({ ...filters, dateTo: e.target.value })}
+                  className="w-full h-8 bg-white/[0.04] border border-white/[0.08] rounded-lg pl-7 pr-2 text-[11px] text-slate-300 focus:outline-none focus:border-white/20 transition-colors [color-scheme:dark]"
+                />
+              </div>
+            </div>
+            {dateRangeCount > 0 && (
+              <button
+                onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
+                className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Clear dates
+              </button>
+            )}
           </div>
         </Section>
 
