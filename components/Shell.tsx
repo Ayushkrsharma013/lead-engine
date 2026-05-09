@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import ProSidebar from "./layout/Sidebar";
 import ToastContainer from "./Toast";
+import CommandPalette from "./layout/CommandPalette";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +12,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
       <ToastContainer />
+      <CommandPalette />
     </div>
   );
 }

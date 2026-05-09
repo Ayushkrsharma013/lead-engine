@@ -30,6 +30,10 @@ function leadFromDB(row: LeadRow): Lead {
     savedAt: row.saved_at ? String(row.saved_at) : undefined,
     fetchedAt: row.fetched_at ? String(row.fetched_at) : undefined,
     tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
+    kanbanColumn: row.kanban_column ? String(row.kanban_column) : "New",
+    status: (["new","contacted","replied","hot","meeting","won","lost"].includes(String(row.status || "")) ? String(row.status) : undefined) as Lead["status"],
+    notes: row.notes ? String(row.notes) : undefined,
+    lastTouched: row.last_touched ? String(row.last_touched) : undefined,
   };
 }
 
@@ -49,6 +53,10 @@ function leadToDB(lead: Lead): Record<string, unknown> {
     score: lead.score,
     source: lead.source,
     tags: lead.tags || [],
+    kanban_column: lead.kanbanColumn || "New",
+    status: lead.status || null,
+    notes: lead.notes || null,
+    last_touched: lead.lastTouched || new Date().toISOString(),
     saved_at: lead.savedAt || new Date().toISOString(),
     fetched_at: lead.fetchedAt || new Date().toISOString(),
     updated_at: new Date().toISOString(),

@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import { cn } from "@/lib/utils";
 
 interface TopBarProps {
@@ -21,7 +22,6 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Cmd+K trigger placeholder */}
         <kbd className="hidden md:inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-border bg-surface2 text-[10px] text-muted">
           <Search size={11} />
           <span>Cmd+K</span>
@@ -29,6 +29,7 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
 
         {actions}
 
+        <NotificationBell />
         <ThemeToggle />
       </div>
     </header>

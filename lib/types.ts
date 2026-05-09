@@ -19,6 +19,10 @@ export interface Lead {
   savedAt?: string;
   fetchedAt?: string;
   tags?: string[];
+  kanbanColumn?: string;
+  status?: "new" | "contacted" | "replied" | "hot" | "meeting" | "won" | "lost";
+  notes?: string;
+  lastTouched?: string;
 }
 
 export interface LogEntry {
