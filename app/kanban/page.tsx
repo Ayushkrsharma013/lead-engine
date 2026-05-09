@@ -142,14 +142,19 @@ export default function KanbanPage() {
     dispatch({ type: "DELETE_LEADS", payload: { stored, deletedIds: [selectedId] } });
     const stats = await computeStatsFromLeads(stored);
     dispatch({ type: "SET_STATS", payload: stats });
-    setSelectedId(null);
-    setDetailOpen(false);
+    closeDetail();
     showToast("Lead deleted");
   };
 
   const openDetail = (id: string) => {
+    if (selectedId === id) return;
     setSelectedId(id);
-    setDetailOpen(true);
+    requestAnimationFrame(() => setDetailOpen(true));
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setTimeout(() => setSelectedId(null), 220);
   };
 
   const currentCol = selected ? COLUMNS.find(c => c.id === (selected.kanbanColumn || "New"))?.label || "New" : "";
@@ -270,7 +275,7 @@ export default function KanbanPage() {
                   <p className="text-[11px] text-muted">{selected.title}</p>
                 </div>
               </div>
-              <button onClick={() => { setDetailOpen(false); setSelectedId(null); }} className="text-muted hover:text-text">
+              <button onClick={closeDetail} className="text-muted hover:text-text">
                 <X size={16} />
               </button>
             </div>

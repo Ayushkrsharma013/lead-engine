@@ -50,7 +50,7 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
 
 export default function DashboardPage() {
   const { state, dispatch } = useApp();
-  const { leads, messages, campaigns, loading } = state;
+  const { leads, messages } = state;
   const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
   const [campaignList, setCampaignList] = useState<Campaign[]>([]);
   const [newCampaign, setNewCampaign] = useState(false);
@@ -84,17 +84,6 @@ export default function DashboardPage() {
     setNewCampaign(false);
     dispatch({ type: "SAVE_CAMPAIGN", payload: c });
   };
-
-  if (loading) {
-    return (
-      <>
-        <TopBar title="Command Center" subtitle="Overview of your prospecting pipeline" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-accent-blue border-t-transparent animate-spin" />
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
