@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from "react";
-import { ChevronDown, ChevronUp, RotateCcw, Calendar } from "lucide-react";
+import { ChevronDown, ChevronUp, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
@@ -23,13 +24,32 @@ function ChipGroup({
           <button
             key={opt}
             onClick={() => onToggle(opt)}
-            className={cn(
-              "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
-              active
-                ? "text-white"
-                : "bg-white/[0.04] border-white/[0.08] text-muted hover:border-white/20 hover:text-text"
-            )}
-            style={active ? { background: `${accent}25`, borderColor: `${accent}60`, color: accent } : {}}
+            className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150"
+            style={active ? {
+              background: `${accent}18`,
+              borderColor: `${accent}50`,
+              color: accent,
+              border: `1px solid ${accent}50`,
+              boxShadow: `0 0 8px ${accent}12`,
+            } : {
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              color: "var(--muted)",
+            }}
+            onMouseEnter={e => {
+              if (!active) {
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
+                (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+              }
+            }}
+            onMouseLeave={e => {
+              if (!active) {
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+              }
+            }}
           >
             {opt}
           </button>
@@ -43,26 +63,45 @@ function ChipGroup({
 function Section({
   title, count, children, defaultOpen = true,
 }: {
-  title: string; count?: number; children: React.ReactNode; defaultOpen?: boolean;
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-border">
+    <div style={{ borderBottom: "1px solid var(--border-subtle)" }}>
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-muted uppercase tracking-widest hover:text-text transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 transition-colors group"
+        style={{ color: "var(--muted)" }}
+        onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em]">
           {title}
           {count ? (
-            <span className="text-[10px] bg-accent-blue/20 text-accent-blue border border-accent-blue/30 px-1.5 py-0.5 rounded-full font-bold">
+            <span
+              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+              style={{
+                background: "rgba(0,212,255,0.15)",
+                color: "var(--accent-blue)",
+                border: "1px solid rgba(0,212,255,0.25)",
+              }}
+            >
               {count}
             </span>
           ) : null}
         </span>
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        <span className="transition-transform duration-200" style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}>
+          {open ? <ChevronDown size={11} /> : <ChevronDown size={11} />}
+        </span>
       </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
+      {open && (
+        <div className="px-4 pb-4 animate-fade-in">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -75,9 +114,14 @@ const INDUSTRIES  = ["SaaS / Software", "Fintech", "MarTech", "HealthTech", "E-c
 const SIZES       = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 const COUNTRIES   = ["United States", "Canada", "United Kingdom", "Australia", "Remote"];
 const EMAIL_OPTS  = ["verified", "risky", "not_found"];
-const EMAIL_LABELS: Record<string, string> = { verified: "✓ Verified", risky: "⚠ Risky", not_found: "✗ Not found" };
-const SOURCES     = ["linkedin", "gmaps", "amazon"];
+const EMAIL_CONFIG: Record<string, { label: string; color: string }> = {
+  verified:  { label: "Verified",   color: "#10b981" },
+  risky:     { label: "Risky",      color: "#f59e0b" },
+  not_found: { label: "Not found",  color: "#475569" },
+};
+const SOURCES        = ["linkedin", "gmaps", "amazon"];
 const SOURCE_LABELS: Record<string, string> = { linkedin: "LinkedIn", gmaps: "Google Maps", amazon: "Amazon" };
+const SOURCE_COLORS: Record<string, string> = { linkedin: "#00d4ff", gmaps: "#00ff88", amazon: "#ff6b35" };
 
 // ─── Main component ───────────────────────────────────────────────────────────
 interface FilterPanelProps {
@@ -97,35 +141,65 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
   const dateRangeCount = (filters.dateFrom ? 1 : 0) + (filters.dateTo ? 1 : 0);
 
   return (
-    <aside className="w-[272px] shrink-0 h-full bg-bg border-r border-border flex flex-col overflow-hidden">
+    <aside
+      className="w-[272px] shrink-0 h-full flex flex-col overflow-hidden"
+      style={{
+        background: "var(--surface)",
+        borderRight: "1px solid var(--border)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-[11px] font-bold text-text uppercase tracking-widest">Filters</span>
+      <div
+        className="flex items-center justify-between px-4 py-3 shrink-0"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={12} style={{ color: "var(--accent-blue)" }} />
+          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text)" }}>
+            Filters
+          </span>
+          {activeCount > 0 && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+              style={{
+                background: "rgba(0,212,255,0.15)",
+                color: "var(--accent-blue)",
+                border: "1px solid rgba(0,212,255,0.25)",
+              }}
+            >
+              {activeCount}
+            </span>
+          )}
+        </div>
         {activeCount > 0 && (
           <button
             onClick={() => onChange(DEFAULT_FILTERS)}
-            className="flex items-center gap-1 text-[11px] text-muted hover:text-text transition-colors"
+            className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+            style={{ color: "var(--muted)" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
           >
             <RotateCcw size={10} />
-            Reset all ({activeCount})
+            Reset
           </button>
         )}
       </div>
 
+      {/* Sections */}
       <div className="flex-1 overflow-y-auto">
         {/* Role */}
         <Section title="Role" count={filters.seniority.length + filters.jobFunction.length} defaultOpen>
-          <p className="text-[10px] text-muted/70 uppercase tracking-wider mb-1">Seniority Level</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--muted)" }}>Seniority Level</p>
           <ChipGroup options={SENIORITY} selected={filters.seniority} onToggle={v => toggle("seniority", v)} accent={accent} />
-          <p className="text-[10px] text-muted/70 uppercase tracking-wider mt-3 mb-1">Job Function</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--muted)" }}>Job Function</p>
           <ChipGroup options={FUNCTIONS} selected={filters.jobFunction} onToggle={v => toggle("jobFunction", v)} accent={accent} />
         </Section>
 
         {/* Company */}
         <Section title="Company" count={filters.industries.length + filters.companySizes.length} defaultOpen>
-          <p className="text-[10px] text-muted/70 uppercase tracking-wider mb-1">Industry</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--muted)" }}>Industry</p>
           <ChipGroup options={INDUSTRIES} selected={filters.industries} onToggle={v => toggle("industries", v)} accent={accent} />
-          <p className="text-[10px] text-muted/70 uppercase tracking-wider mt-3 mb-1">Company Size</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--muted)" }}>Company Size</p>
           <ChipGroup options={SIZES} selected={filters.companySizes} onToggle={v => toggle("companySizes", v)} accent={accent} />
         </Section>
 
@@ -139,18 +213,42 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
           <div className="flex flex-wrap gap-1.5 mt-2">
             {EMAIL_OPTS.map(opt => {
               const active = filters.emailStatus.includes(opt);
-              const color = opt === "verified" ? "#10b981" : opt === "risky" ? "#f59e0b" : "#475569";
+              const { label, color } = EMAIL_CONFIG[opt];
               return (
                 <button
                   key={opt}
                   onClick={() => toggle("emailStatus", opt)}
-                  className={cn(
-                    "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
-                    active ? "text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:border-white/20"
-                  )}
-                  style={active ? { background: `${color}20`, borderColor: `${color}60`, color } : {}}
+                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150 flex items-center gap-1.5"
+                  style={active ? {
+                    background: `${color}18`,
+                    border: `1px solid ${color}50`,
+                    color,
+                    boxShadow: `0 0 8px ${color}12`,
+                  } : {
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "var(--muted)",
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    }
+                  }}
                 >
-                  {EMAIL_LABELS[opt]}
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: active ? color : "rgba(255,255,255,0.2)" }}
+                  />
+                  {label}
                 </button>
               );
             })}
@@ -159,7 +257,9 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
 
         {/* Lead Score */}
         <Section title="Lead Score" count={filters.minScore > 0 ? 1 : 0}>
-          <p className="text-[10px] text-muted/70 uppercase tracking-wider mb-2">Minimum Score</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2 mt-1" style={{ color: "var(--muted)" }}>
+            Minimum Score
+          </p>
           <div className="flex gap-1.5 flex-wrap">
             {SCORE_OPTIONS.map(score => {
               const active = filters.minScore === score;
@@ -167,11 +267,31 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                 <button
                   key={score}
                   onClick={() => onChange({ ...filters, minScore: score })}
-                  className={cn(
-                    "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
-                    active ? "text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:border-white/20"
-                  )}
-                  style={active ? { background: `${accent}25`, borderColor: `${accent}60`, color: accent } : {}}
+                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150 tabular-nums"
+                  style={active ? {
+                    background: `${accent}18`,
+                    border: `1px solid ${accent}50`,
+                    color: accent,
+                    boxShadow: `0 0 8px ${accent}12`,
+                  } : {
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "var(--muted)",
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    }
+                  }}
                 >
                   {score === 0 ? "Any" : `${score}+`}
                 </button>
@@ -184,34 +304,51 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
         <Section title="Date Saved" count={dateRangeCount} defaultOpen={false}>
           <div className="mt-2 space-y-2.5">
             <div>
-              <label className="text-[10px] text-muted/70 uppercase tracking-wider block mb-1">From</label>
+              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--muted)" }}>From</label>
               <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted/70 pointer-events-none" />
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--muted)" }} />
                 <input
                   type="date"
                   value={filters.dateFrom}
                   onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
-                  className="w-full h-8 bg-white/[0.04] border border-white/[0.08] rounded-lg pl-7 pr-2 text-[11px] text-text focus:outline-none focus:border-white/20 transition-colors [color-scheme:dark]"
+                  className="w-full h-8 rounded-lg pl-7 pr-2 text-[11px] focus:outline-none transition-all [color-scheme:dark]"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "var(--text)",
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(0,212,255,0.4)")}
+                  onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
                 />
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-muted/70 uppercase tracking-wider block mb-1">To</label>
+              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--muted)" }}>To</label>
               <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted/70 pointer-events-none" />
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--muted)" }} />
                 <input
                   type="date"
                   value={filters.dateTo}
                   min={filters.dateFrom || undefined}
                   onChange={e => onChange({ ...filters, dateTo: e.target.value })}
-                  className="w-full h-8 bg-white/[0.04] border border-white/[0.08] rounded-lg pl-7 pr-2 text-[11px] text-text focus:outline-none focus:border-white/20 transition-colors [color-scheme:dark]"
+                  className="w-full h-8 rounded-lg pl-7 pr-2 text-[11px] focus:outline-none transition-all [color-scheme:dark]"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "var(--text)",
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(0,212,255,0.4)")}
+                  onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
                 />
               </div>
             </div>
             {dateRangeCount > 0 && (
               <button
                 onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
-                className="text-[10px] text-muted hover:text-text transition-colors"
+                className="text-[11px] font-medium transition-colors"
+                style={{ color: "var(--muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
               >
                 Clear dates
               </button>
@@ -224,17 +361,36 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
           <div className="flex gap-1.5 flex-wrap mt-2">
             {SOURCES.map(src => {
               const active = filters.sources.includes(src);
-              const colors: Record<string, string> = { linkedin: "#00d4ff", gmaps: "#00ff88", amazon: "#ff6b35" };
-              const c = colors[src];
+              const c = SOURCE_COLORS[src];
               return (
                 <button
                   key={src}
                   onClick={() => toggle("sources", src)}
-                  className={cn(
-                    "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
-                    active ? "text-white" : "bg-white/[0.04] border-white/[0.08] text-slate-400 hover:border-white/20"
-                  )}
-                  style={active ? { background: `${c}20`, borderColor: `${c}50`, color: c } : {}}
+                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150"
+                  style={active ? {
+                    background: `${c}18`,
+                    border: `1px solid ${c}50`,
+                    color: c,
+                    boxShadow: `0 0 8px ${c}12`,
+                  } : {
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "var(--muted)",
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    }
+                  }}
                 >
                   {SOURCE_LABELS[src]}
                 </button>

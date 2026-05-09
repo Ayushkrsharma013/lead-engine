@@ -81,21 +81,44 @@ function AgentLog({ log, accent }: { log: LogEntry[]; accent: string }) {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
   return (
-    <div className="border-t border-border bg-bg shrink-0">
+    <div
+      className="shrink-0"
+      style={{
+        borderTop: "1px solid var(--border)",
+        background: "var(--surface)",
+      }}
+    >
       <div className="px-4 py-2 flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full animate-pulse-glow" style={{ background: accent }} />
-        <span className="text-[10px] font-semibold text-muted uppercase tracking-widest">Agent Log</span>
+        <div
+          className="w-1.5 h-1.5 rounded-full animate-pulse-glow"
+          style={{ background: accent, boxShadow: `0 0 6px ${accent}` }}
+        />
+        <span
+          className="text-[9px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: "var(--muted)" }}
+        >
+          Agent Log
+        </span>
       </div>
       <div className="px-4 pb-3 space-y-1 max-h-24 overflow-y-auto">
         {log.length === 0
-          ? <p className="text-[11px] text-muted/50">Run the agent to see activity…</p>
+          ? <p className="text-[11px]" style={{ color: "var(--muted)", opacity: 0.5 }}>Run the agent to see activity…</p>
           : log.map(e => (
             <div key={e.id} className="flex items-start gap-1.5 animate-fade-up">
-              <ChevronRight size={9} className="mt-0.5 shrink-0"
-                style={{ color: e.type === "success" ? "#00ff88" : e.type === "warn" ? "#ff6b35" : "#00d4ff" }} />
-              <span className="text-[10px] text-muted/70 font-mono shrink-0">{e.ts}</span>
-              <span className={cn("text-[11px]",
-                e.type === "success" ? "text-accent-green" : e.type === "warn" ? "text-accent-orange" : "text-muted")}>
+              <ChevronRight
+                size={9}
+                className="mt-0.5 shrink-0"
+                style={{ color: e.type === "success" ? "#00ff88" : e.type === "warn" ? "#ff6b35" : "#00d4ff" }}
+              />
+              <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--muted)", opacity: 0.6 }}>{e.ts}</span>
+              <span
+                className="text-[11px]"
+                style={{
+                  color: e.type === "success" ? "var(--accent-green)"
+                       : e.type === "warn"    ? "var(--accent-orange)"
+                       : "var(--muted)",
+                }}
+              >
                 {e.text}
               </span>
             </div>
@@ -114,22 +137,28 @@ function StatsBar({ total, withEmail, avgScore, topIndustry, accent }: {
   if (total === 0) return null;
   const emailPct = total > 0 ? Math.round((withEmail / total) * 100) : 0;
   return (
-    <div className="flex items-center gap-5 px-5 py-2 border-b border-border bg-bg shrink-0">
-      <Stat label="Total Leads" value={total.toLocaleString()} accent={accent} />
-      <div className="w-px h-4 bg-border" />
-      <Stat label="Verified Email" value={`${emailPct}%`} accent="#00ff88" />
-      <div className="w-px h-4 bg-border" />
-      <Stat label="Avg Score" value={avgScore} accent="#ff6b35" />
-      <div className="w-px h-4 bg-border" />
-      <Stat label="Top Industry" value={topIndustry} accent="#7c3aed" />
+    <div
+      className="flex items-center gap-2 px-4 py-2 shrink-0"
+      style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+    >
+      <StatCard label="Total Leads"    value={total.toLocaleString()} accent={accent} />
+      <StatCard label="Email Coverage" value={`${emailPct}%`}         accent="#00ff88" />
+      <StatCard label="Avg ICP Score"  value={String(avgScore)}        accent="#ff6b35" />
+      <StatCard label="Top Industry"   value={topIndustry}             accent="#7c3aed" />
     </div>
   );
 }
-function Stat({ label, value, accent }: { label: string; value: string | number; accent: string }) {
+function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <span className="text-sm font-bold tabular-nums" style={{ color: accent }}>{value}</span>
-      <span className="text-[10px] text-muted/70">{label}</span>
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+      style={{
+        background: `${accent}08`,
+        border: `1px solid ${accent}18`,
+      }}
+    >
+      <span className="text-[13px] font-bold tabular-nums leading-none" style={{ color: accent }}>{value}</span>
+      <span className="text-[10px] font-medium" style={{ color: "var(--muted)" }}>{label}</span>
     </div>
   );
 }
@@ -330,89 +359,193 @@ export default function Home() {
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Source tabs + mock toggle */}
-          <div className="flex items-center gap-0.5 px-4 py-2 border-b border-border bg-bg shrink-0">
-            <div className="flex items-center gap-0.5 bg-white/[0.04] rounded-lg p-0.5 border border-border">
-              {(["linkedin", "gmaps", "amazon"] as Source[]).map(tab => (
-                <button key={tab} onClick={() => handleSourceChange(tab)}
-                  className={cn(
-                    "flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-all",
-                    source === tab ? "shadow-sm" : "text-muted hover:text-text"
-                  )}
-                  style={source === tab ? { background: ACCENT[tab] + "20" as string, color: ACCENT[tab] } : {}}>
-                  <span className="w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center"
+          <div
+            className="flex items-center gap-2 px-4 py-2.5 shrink-0"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+          >
+            {/* Source tabs */}
+            <div
+              className="flex items-center gap-0.5 p-0.5 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}
+            >
+              {(["linkedin", "gmaps", "amazon"] as Source[]).map(s => (
+                <button
+                  key={s}
+                  onClick={() => handleSourceChange(s)}
+                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all duration-200"
+                  style={source === s ? {
+                    background: `${ACCENT[s]}20`,
+                    color: ACCENT[s],
+                    boxShadow: `0 0 12px ${ACCENT[s]}20, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                    border: `1px solid ${ACCENT[s]}30`,
+                  } : {
+                    color: "var(--muted)",
+                    border: "1px solid transparent",
+                  }}
+                >
+                  <span
+                    className="w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center"
                     style={{
-                      background: source === tab ? ACCENT[tab] + "30" as string : "rgba(255,255,255,0.06)",
-                      color: source === tab ? ACCENT[tab] : "inherit"
-                    }}>
-                    {tab === "linkedin" ? "in" : tab === "gmaps" ? "G" : "a"}
+                      background: source === s ? `${ACCENT[s]}35` : "rgba(255,255,255,0.06)",
+                      color: source === s ? ACCENT[s] : "var(--muted)",
+                    }}
+                  >
+                    {s === "linkedin" ? "in" : s === "gmaps" ? "G" : "a"}
                   </span>
-                  {tab === "linkedin" ? "LinkedIn" : tab === "gmaps" ? "Google Maps" : "Amazon"}
+                  {s === "linkedin" ? "LinkedIn" : s === "gmaps" ? "Google Maps" : "Amazon"}
                 </button>
               ))}
             </div>
 
-            {/* Mock toggle */}
-            <div className="flex items-center gap-2.5 ml-4">
-              <span className="text-xs text-muted">Mock</span>
-              <button role="switch" aria-checked={mock}
+            {/* Mock / Live toggle */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}
+            >
+              <span className="text-[11px] font-medium" style={{ color: "var(--muted)" }}>Mock</span>
+              <button
+                role="switch"
+                aria-checked={mock}
                 onClick={() => dispatch({ type: "SET_MOCK", payload: !mock })}
-                className={cn("relative w-9 h-5 rounded-full transition-colors focus:outline-none", mock ? "bg-accent-blue" : "bg-white/15")}>
-                <span className={cn("absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform", mock && "translate-x-4")} />
+                className="relative w-8 h-4 rounded-full transition-all duration-200 focus:outline-none"
+                style={{ background: mock ? "rgba(0,212,255,0.4)" : "rgba(255,255,255,0.12)" }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 shadow-sm"
+                  style={{ transform: mock ? "translateX(16px)" : "translateX(0)" }}
+                />
               </button>
-              <span className={cn("text-xs font-semibold w-7", mock ? "text-accent-orange" : "text-accent-green")}>
+              <span
+                className="text-[11px] font-bold w-7"
+                style={{ color: mock ? "var(--accent-orange)" : "var(--accent-green)" }}
+              >
                 {mock ? "ON" : "LIVE"}
               </span>
             </div>
 
             <div className="flex-1" />
-            <span className="text-xs text-muted">
-              <span className="font-semibold text-text">{leads.length}</span> saved leads
-            </span>
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px]"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--border)",
+                color: "var(--muted)",
+              }}
+            >
+              <span className="font-bold tabular-nums" style={{ color: "var(--text)" }}>{leads.length}</span>
+              <span>saved leads</span>
+            </div>
           </div>
 
           {/* Search + actions bar */}
-          <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border bg-bg shrink-0">
+          <div
+            className="flex items-center gap-2.5 px-4 py-2.5 shrink-0"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+          >
+            {/* Search field */}
             <div className="flex-1 relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--muted)" }}
+              />
               <input
                 type="text"
                 placeholder="Search name, title, company, email, location…"
                 value={filters.keyword}
                 onChange={e => handleFilterChange({ ...filters, keyword: e.target.value })}
-                className="w-full h-9 rounded-lg bg-white/[0.05] border border-border pl-9 pr-9 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:border-white/20 focus:bg-white/[0.07] transition-all"
+                className="w-full h-9 rounded-xl text-sm focus:outline-none transition-all"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  paddingLeft: "2.25rem",
+                  paddingRight: filters.keyword ? "2.25rem" : "0.75rem",
+                }}
+                onFocus={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 2px rgba(0,212,255,0.08)";
+                }}
+                onBlur={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
+                }}
               />
               {filters.keyword && (
                 <button
                   onClick={() => handleFilterChange({ ...filters, keyword: "" })}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full flex items-center justify-center transition-colors"
+                  style={{ color: "var(--muted)", background: "rgba(255,255,255,0.06)" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
                 >
-                  <X size={12} />
+                  <X size={10} />
                 </button>
               )}
             </div>
 
-            {/* Run Agent */}
+            {/* Run Agent — premium glow button */}
             <button
               onClick={handleRun}
               disabled={running}
-              className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              style={{ background: `${accent}25`, color: accent, border: `1px solid ${accent}40` }}
+              className="flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: running
+                  ? `${accent}20`
+                  : `linear-gradient(135deg, ${accent}30 0%, ${accent}15 100%)`,
+                color: accent,
+                border: `1px solid ${accent}40`,
+                boxShadow: running ? "none" : `0 0 16px ${accent}20`,
+              }}
+              onMouseEnter={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 24px ${accent}35`;
+                  (e.currentTarget as HTMLElement).style.borderColor = `${accent}60`;
+                }
+              }}
+              onMouseLeave={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 16px ${accent}20`;
+                  (e.currentTarget as HTMLElement).style.borderColor = `${accent}40`;
+                }
+              }}
             >
-              {running
-                ? <>
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-                      style={{ borderColor: `${accent}40`, borderTopColor: accent }} />
-                    Running…
-                  </>
-                : <><Play size={12} /> Run Agent</>
-              }
+              {running ? (
+                <>
+                  <div
+                    className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: `${accent}40`, borderTopColor: accent }}
+                  />
+                  Running…
+                </>
+              ) : (
+                <>
+                  <Play size={12} fill="currentColor" />
+                  Run Agent
+                </>
+              )}
             </button>
 
             {/* Export CSV */}
             {sorted.length > 0 && (
               <button
                 onClick={() => handleExportCSV(selected.length ? selected : undefined)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs text-muted hover:text-text bg-white/[0.04] hover:bg-white/[0.07] border border-border transition-all shrink-0"
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                }}
               >
                 <Download size={12} />
                 {selected.length ? `CSV (${selected.length})` : "CSV"}
@@ -423,8 +556,21 @@ export default function Home() {
             {sorted.length > 0 && (
               <button
                 onClick={() => setGdrive(true)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs text-accent-blue hover:text-accent-blue/80 bg-accent-blue/[0.08] hover:bg-accent-blue/[0.12] border border-accent-blue/20 transition-all shrink-0"
                 title="Export to Google Drive"
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
+                style={{
+                  background: "rgba(0,212,255,0.06)",
+                  border: "1px solid rgba(0,212,255,0.2)",
+                  color: "var(--accent-blue)",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.12)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)";
+                }}
               >
                 <HardDrive size={12} />
                 Drive
@@ -434,19 +580,42 @@ export default function Home() {
 
           {/* Active filter chips */}
           {chips.length > 0 && (
-            <div className="flex items-center gap-2 px-5 py-2 bg-bg border-b border-border flex-wrap shrink-0">
-              <span className="text-[10px] text-muted/70 uppercase tracking-wider shrink-0">Filters:</span>
+            <div
+              className="flex items-center gap-1.5 px-4 py-2 flex-wrap shrink-0"
+              style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+            >
+              <span
+                className="text-[9px] font-bold uppercase tracking-[0.1em] shrink-0"
+                style={{ color: "var(--muted)" }}
+              >
+                Active:
+              </span>
               {chips.map((chip, i) => (
-                <span key={i} className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] border border-border text-text">
+                <span
+                  key={i}
+                  className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium"
+                  style={{
+                    background: "rgba(0,212,255,0.08)",
+                    border: "1px solid rgba(0,212,255,0.2)",
+                    color: "var(--accent-blue)",
+                  }}
+                >
                   {chip.label}
-                  <button onClick={() => removeChip(chip.group, chip.value)} className="hover:text-white ml-0.5">
+                  <button
+                    onClick={() => removeChip(chip.group, chip.value)}
+                    className="transition-opacity hover:opacity-60 ml-0.5"
+                    style={{ color: "var(--accent-blue)" }}
+                  >
                     <X size={9} />
                   </button>
                 </span>
               ))}
               <button
                 onClick={() => handleFilterChange(DEFAULT_FILTERS)}
-                className="flex items-center gap-1 text-[11px] text-muted hover:text-text transition-colors"
+                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1"
+                style={{ color: "var(--muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
               >
                 <RotateCcw size={9} /> Clear all
               </button>
@@ -457,7 +626,10 @@ export default function Home() {
           <StatsBar {...stats} accent={accent} />
 
           {/* Tab bar */}
-          <div className="flex items-center gap-1 px-5 py-2 border-b border-border bg-bg shrink-0">
+          <div
+            className="flex items-center gap-1.5 px-4 py-2 shrink-0"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+          >
             {([
               { key: "all" as Tab, label: "All Saved Leads", count: applyFilters(leads, filters).length, total: leads.length, icon: Database },
               { key: "latest" as Tab, label: "Latest Run", count: applyFilters(latestLeads, filters).length, total: latestLeads.length, icon: Sparkles },
@@ -469,19 +641,35 @@ export default function Home() {
                   dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
                   dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
                 }}
-                className={cn(
-                  "flex items-center gap-2 h-8 px-3.5 rounded-lg text-xs font-medium transition-all",
-                  tab === key
-                    ? "bg-white/[0.08] text-text border border-border"
-                    : "text-muted hover:text-muted hover:bg-white/[0.04]"
-                )}
+                className="flex items-center gap-2 h-8 px-3 rounded-lg text-[12px] font-medium transition-all duration-150"
+                style={tab === key ? {
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "var(--text)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                } : {
+                  border: "1px solid transparent",
+                  color: "var(--muted)",
+                }}
+                onMouseEnter={e => {
+                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                }}
+                onMouseLeave={e => {
+                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                }}
               >
                 <Icon size={11} />
                 {label}
-                <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums",
-                  tab === key ? "bg-white/10 text-text" : "bg-white/5 text-muted/70"
-                )}>
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded-md font-bold tabular-nums"
+                  style={tab === key ? {
+                    background: "rgba(255,255,255,0.1)",
+                    color: "var(--text)",
+                  } : {
+                    background: "rgba(255,255,255,0.05)",
+                    color: "var(--muted)",
+                  }}
+                >
                   {count}{total > count ? `/${total}` : ""}
                 </span>
               </button>
@@ -490,8 +678,9 @@ export default function Home() {
             <div className="flex-1" />
 
             {filterCount > 0 && (
-              <span className="text-[10px] text-muted/70 shrink-0">
-                {filterCount} filter{filterCount > 1 ? "s" : ""} active · {sorted.length.toLocaleString()} results
+              <span className="text-[10px] font-medium shrink-0" style={{ color: "var(--muted)" }}>
+                {filterCount} filter{filterCount > 1 ? "s" : ""} active
+                <span style={{ color: "var(--text)" }}> · {sorted.length.toLocaleString()} results</span>
               </span>
             )}
           </div>

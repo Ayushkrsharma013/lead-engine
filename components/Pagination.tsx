@@ -41,92 +41,110 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
     pageNumbers.push(totalPages);
   }
 
-  const btnBase = "h-7 min-w-[28px] px-1.5 rounded text-xs flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed";
+  const navBtn = "h-7 min-w-[28px] px-1.5 rounded-lg text-xs flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed";
 
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-bg shrink-0">
+    <div
+      className="flex items-center justify-between px-4 py-2.5 shrink-0"
+      style={{ borderTop: "1px solid var(--border)", background: "var(--bg)" }}
+    >
       {/* Record count */}
-      <span className="text-[11px] text-muted tabular-nums">
-        {total === 0 ? "No results" : `${from}–${to} of ${total.toLocaleString()} leads`}
+      <span className="text-[11px] tabular-nums" style={{ color: "var(--muted)" }}>
+        {total === 0
+          ? "No results"
+          : <><span style={{ color: "var(--text)", fontWeight: 600 }}>{from}–{to}</span> of {total.toLocaleString()} leads</>
+        }
       </span>
 
       {/* Page navigation */}
-      <div className="flex items-center gap-1">
-        {/* First */}
+      <div className="flex items-center gap-0.5">
         <button
           onClick={() => setPage(1)}
           disabled={page <= 1}
-          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
+          className={navBtn}
+          style={{ color: "var(--muted)" }}
+          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="First page"
         >
           <ChevronsLeft size={13} />
         </button>
-        {/* Prev */}
         <button
           onClick={() => setPage(page - 1)}
           disabled={page <= 1}
-          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
+          className={navBtn}
+          style={{ color: "var(--muted)" }}
+          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Previous page"
         >
           <ChevronLeft size={13} />
         </button>
 
-        {/* Page numbers */}
         {pageNumbers.map((n, i) =>
           n === "…" ? (
-            <span key={`ellipsis-${i}`} className="text-muted/60 text-xs px-1">…</span>
+            <span key={`ellipsis-${i}`} className="text-xs px-1" style={{ color: "var(--muted)", opacity: 0.5 }}>…</span>
           ) : (
             <button
               key={n}
               onClick={() => setPage(n as number)}
-              className={cn(btnBase, "font-medium tabular-nums")}
-              style={
-                n === page
-                  ? { background: `${accent}20`, color: accent, border: `1px solid ${accent}40` }
-                  : undefined
-              }
-              data-inactive={n !== page || undefined}
+              className={cn(navBtn, "font-medium tabular-nums min-w-[28px]")}
+              style={n === page ? {
+                background: `${accent}20`,
+                color: accent,
+                border: `1px solid ${accent}35`,
+              } : {
+                color: "var(--muted)",
+              }}
+              onMouseEnter={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
+              onMouseLeave={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; } }}
             >
-              <span className={n !== page ? "text-muted hover:text-text" : ""}>{n}</span>
+              {n}
             </button>
           )
         )}
 
-        {/* Next */}
         <button
           onClick={() => setPage(page + 1)}
           disabled={page >= totalPages}
-          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
+          className={navBtn}
+          style={{ color: "var(--muted)" }}
+          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Next page"
         >
           <ChevronRight size={13} />
         </button>
-        {/* Last */}
         <button
           onClick={() => setPage(totalPages)}
           disabled={page >= totalPages}
-          className={cn(btnBase, "text-muted hover:text-text hover:bg-white/[0.05]")}
+          className={navBtn}
+          style={{ color: "var(--muted)" }}
+          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Last page"
         >
           <ChevronsRight size={13} />
         </button>
       </div>
 
-      {/* Page size selector */}
+      {/* Page size */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted/70">Rows</span>
-        <div className="flex gap-0.5">
+        <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>Rows</span>
+        <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
           {PAGE_SIZES.map(size => (
             <button
               key={size}
               onClick={() => setPageSize(size)}
-              className={cn(
-                "h-6 px-2 rounded text-[11px] font-medium transition-all",
-                pageSize === size
-                  ? "text-text"
-                  : "text-muted/70 hover:text-muted hover:bg-white/[0.04]"
-              )}
-              style={pageSize === size ? { background: `${accent}20`, color: accent } : {}}
+              className="h-5 px-2 rounded-md text-[11px] font-medium transition-all"
+              style={pageSize === size ? {
+                background: `${accent}20`,
+                color: accent,
+              } : {
+                color: "var(--muted)",
+              }}
+              onMouseEnter={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+              onMouseLeave={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
             >
               {size}
             </button>
