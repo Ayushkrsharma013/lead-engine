@@ -24,25 +24,25 @@ const API_HEADERS = {
 };
 
 const ACCENT: Record<Source, string> = {
-  linkedin: "#00d4ff",
-  gmaps:    "#00ff88",
-  amazon:   "#ff6b35",
+  linkedin: "var(--accent)",
+  gmaps:    "var(--positive)",
+  amazon:   "var(--negative)",
 };
 
 function getChipColor(group: keyof FilterState, value: string): string {
   switch (group) {
-    case "keyword":       return "#00d4ff";
-    case "seniority":     return "#00d4ff";
-    case "jobFunction":   return "#7c3aed";
-    case "industries":    return "#00ff88";
-    case "companySizes":  return "#00d4ff";
-    case "countries":     return "#7c3aed";
-    case "emailStatus":   return value === "verified" ? "#10b981" : value === "risky" ? "#f59e0b" : "#6b6b80";
-    case "minScore":      return "#ff6b35";
-    case "sources":       return value === "linkedin" ? "#00d4ff" : value === "gmaps" ? "#00ff88" : "#ff6b35";
+    case "keyword":       return "var(--accent)";
+    case "seniority":     return "var(--accent)";
+    case "jobFunction":   return "var(--info)";
+    case "industries":    return "var(--positive)";
+    case "companySizes":  return "var(--accent)";
+    case "countries":     return "var(--info)";
+    case "emailStatus":   return value === "verified" ? "var(--positive)" : value === "risky" ? "var(--info)" : "#6b6b80";
+    case "minScore":      return "var(--negative)";
+    case "sources":       return value === "linkedin" ? "var(--accent)" : value === "gmaps" ? "var(--positive)" : "var(--negative)";
     case "dateFrom":
-    case "dateTo":        return "#00d4ff";
-    default:              return "#00d4ff";
+    case "dateTo":        return "var(--accent)";
+    default:              return "var(--accent)";
   }
 }
 const MOCK_LEADS: Record<Source, Lead[]> = {
@@ -107,7 +107,7 @@ function AgentLog({ log, accent }: { log: LogEntry[]; accent: string }) {
     <div
       className="shrink-0"
       style={{
-        borderTop: "1px solid var(--border)",
+        borderTop: "1px solid var(--line)",
         background: "var(--surface)",
       }}
     >
@@ -118,28 +118,28 @@ function AgentLog({ log, accent }: { log: LogEntry[]; accent: string }) {
         />
         <span
           className="text-[9px] font-bold uppercase tracking-[0.12em]"
-          style={{ color: "var(--muted)" }}
+          style={{ color: "var(--ink-3)" }}
         >
           Agent Log
         </span>
       </div>
       <div className="px-4 pb-3 space-y-1 max-h-24 overflow-y-auto">
         {log.length === 0
-          ? <p className="text-[11px]" style={{ color: "var(--muted)", opacity: 0.5 }}>Run the agent to see activity…</p>
+          ? <p className="text-[11px]" style={{ color: "var(--ink-3)", opacity: 0.5 }}>Run the agent to see activity…</p>
           : log.map(e => (
             <div key={e.id} className="flex items-start gap-1.5 animate-fade-up">
               <ChevronRight
                 size={9}
                 className="mt-0.5 shrink-0"
-                style={{ color: e.type === "success" ? "#00ff88" : e.type === "warn" ? "#ff6b35" : "#00d4ff" }}
+                style={{ color: e.type === "success" ? "var(--positive)" : e.type === "warn" ? "var(--negative)" : "var(--accent)" }}
               />
-              <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--muted)", opacity: 0.6 }}>{e.ts}</span>
+              <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--ink-3)", opacity: 0.6 }}>{e.ts}</span>
               <span
                 className="text-[11px]"
                 style={{
-                  color: e.type === "success" ? "var(--accent-green)"
-                       : e.type === "warn"    ? "var(--accent-orange)"
-                       : "var(--muted)",
+                  color: e.type === "success" ? "var(--positive)"
+                       : e.type === "warn"    ? "var(--negative)"
+                       : "var(--ink-3)",
                 }}
               >
                 {e.text}
@@ -162,12 +162,12 @@ function StatsBar({ total, withEmail, avgScore, topIndustry, accent }: {
   return (
     <div
       className="flex items-center gap-2 px-4 py-2 shrink-0"
-      style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+      style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
     >
       <StatCard label="Total Leads"    value={total.toLocaleString()} accent={accent} />
-      <StatCard label="Email Coverage" value={`${emailPct}%`}         accent="#00ff88" />
-      <StatCard label="Avg ICP Score"  value={String(avgScore)}        accent="#ff6b35" />
-      <StatCard label="Top Industry"   value={topIndustry}             accent="#7c3aed" />
+      <StatCard label="Email Coverage" value={`${emailPct}%`}         accent="var(--positive)" />
+      <StatCard label="Avg ICP Score"  value={String(avgScore)}        accent="var(--negative)" />
+      <StatCard label="Top Industry"   value={topIndustry}             accent="var(--info)" />
     </div>
   );
 }
@@ -181,7 +181,7 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
       }}
     >
       <span className="text-[13px] font-bold tabular-nums leading-none" style={{ color: accent }}>{value}</span>
-      <span className="text-[10px] font-medium" style={{ color: "var(--muted)" }}>{label}</span>
+      <span className="text-[10px] font-medium" style={{ color: "var(--ink-3)" }}>{label}</span>
     </div>
   );
 }
@@ -385,6 +385,9 @@ export default function Home() {
     const { fetchLeadsFromDB, computeStatsFromLeads: computeStats } = await import("@/lib/db");
     const stored = await fetchLeadsFromDB();
     dispatch({ type: "SET_LEADS", payload: stored });
+    // Switch to All Saved Leads tab so the newly imported leads are immediately visible
+    dispatch({ type: "SET_TAB", payload: "all" });
+    dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
     const newStats = await computeStats(stored);
     dispatch({ type: "SET_STATS", payload: newStats });
     showToast(`${added} new · ${updated} updated leads imported`);
@@ -458,7 +461,7 @@ export default function Home() {
 
       {/* Progress bar */}
       <div className="fixed top-14 left-0 right-0 z-40">
-        <Progress value={running ? prog : 0} color={accent} />
+        <Progress value={running ? prog : 0} />
       </div>
 
       {/* Body */}
@@ -472,12 +475,12 @@ export default function Home() {
           {/* Source tabs + mock toggle */}
           <div
             className="flex items-center gap-2 px-4 py-2.5 shrink-0"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
           >
             {/* Source tabs */}
             <div
               className="flex items-center gap-0.5 p-0.5 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}
+              style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
             >
               {(["linkedin", "gmaps", "amazon"] as Source[]).filter(s => state.enabledSources[s]).map(s => (
                 <button
@@ -487,18 +490,18 @@ export default function Home() {
                   style={source === s ? {
                     background: `${ACCENT[s]}20`,
                     color: ACCENT[s],
-                    boxShadow: `0 0 12px ${ACCENT[s]}20, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                    boxShadow: `0 0 12px ${ACCENT[s]}20, inset 0 1px 0 var(--surface-2)`,
                     border: `1px solid ${ACCENT[s]}30`,
                   } : {
-                    color: "var(--muted)",
+                    color: "var(--ink-3)",
                     border: "1px solid transparent",
                   }}
                 >
                   <span
                     className="w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center"
                     style={{
-                      background: source === s ? `${ACCENT[s]}35` : "rgba(255,255,255,0.06)",
-                      color: source === s ? ACCENT[s] : "var(--muted)",
+                      background: source === s ? `${ACCENT[s]}35` : "var(--surface-2)",
+                      color: source === s ? ACCENT[s] : "var(--ink-3)",
                     }}
                   >
                     {s === "linkedin" ? "in" : s === "gmaps" ? "G" : "a"}
@@ -511,9 +514,9 @@ export default function Home() {
             {/* Mock / Live toggle */}
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}
+              style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
             >
-              <span className="text-[11px] font-medium" style={{ color: "var(--muted)" }}>Mock</span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--ink-3)" }}>Mock</span>
               <button
                 role="switch"
                 aria-checked={mock}
@@ -528,7 +531,7 @@ export default function Home() {
               </button>
               <span
                 className="text-[11px] font-bold w-7"
-                style={{ color: mock ? "var(--accent-orange)" : "var(--accent-green)" }}
+                style={{ color: mock ? "var(--negative)" : "var(--positive)" }}
               >
                 {mock ? "ON" : "LIVE"}
               </span>
@@ -538,12 +541,12 @@ export default function Home() {
             <div
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px]"
               style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid var(--border)",
-                color: "var(--muted)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--line)",
+                color: "var(--ink-3)",
               }}
             >
-              <span className="font-bold tabular-nums" style={{ color: "var(--text)" }}>{leads.length}</span>
+              <span className="font-bold tabular-nums" style={{ color: "var(--ink)" }}>{leads.length}</span>
               <span>saved leads</span>
             </div>
           </div>
@@ -551,14 +554,14 @@ export default function Home() {
           {/* Search + actions bar */}
           <div
             className="flex items-center gap-2.5 px-4 py-2.5 shrink-0"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
           >
             {/* Search field */}
             <div className="flex-1 relative">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--muted)" }}
+                style={{ color: "var(--ink-3)" }}
               />
               <input
                 type="text"
@@ -570,8 +573,8 @@ export default function Home() {
               {filters.keyword ? (
                 <button
                   onClick={() => handleFilterChange({ ...filters, keyword: "" })}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:text-text"
-                  style={{ color: "var(--muted)", background: "rgba(255,255,255,0.08)" }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:text-ink"
+                  style={{ color: "var(--ink-3)", background: "var(--line)" }}
                 >
                   <X size={11} />
                 </button>
@@ -629,8 +632,8 @@ export default function Home() {
               title="Browse and import leads from past Apify runs"
               className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: "rgba(124,58,237,0.12)",
-                color: "#7c3aed",
+                background: "var(--info-soft)",
+                color: "var(--info)",
                 border: "1px solid rgba(124,58,237,0.35)",
                 boxShadow: "0 0 14px rgba(124,58,237,0.18)",
               }}
@@ -642,7 +645,7 @@ export default function Home() {
               }}
               onMouseLeave={e => {
                 if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.12)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--info-soft)";
                   (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px rgba(124,58,237,0.18)";
                 }
               }}
@@ -657,17 +660,17 @@ export default function Home() {
                 onClick={() => handleExportCSV(selected.length ? selected : undefined)}
                 className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid var(--border)",
-                  color: "var(--muted)",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--line)",
+                  color: "var(--ink-3)",
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--line)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink)";
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
                 }}
               >
                 <Download size={12} />
@@ -682,16 +685,16 @@ export default function Home() {
                 title="Export to Google Drive"
                 className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
                 style={{
-                  background: "rgba(0,212,255,0.06)",
+                  background: "var(--accent-soft)",
                   border: "1px solid rgba(0,212,255,0.2)",
-                  color: "var(--accent-blue)",
+                  color: "var(--accent)",
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.12)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)/50";
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.06)";
+                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
                   (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)";
                 }}
               >
@@ -705,11 +708,11 @@ export default function Home() {
           {chips.length > 0 && (
             <div
               className="flex items-center gap-1.5 px-4 py-2 flex-wrap shrink-0 animate-fade-in"
-              style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+              style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
             >
               <span
                 className="text-[9px] font-bold uppercase tracking-[0.1em] shrink-0"
-                style={{ color: "var(--muted)" }}
+                style={{ color: "var(--ink-3)" }}
               >
                 Active:
               </span>
@@ -738,8 +741,8 @@ export default function Home() {
               })}
               <button
                 onClick={() => handleFilterChange(DEFAULT_FILTERS)}
-                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1 hover:text-text"
-                style={{ color: "var(--muted)" }}
+                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1 hover:text-ink"
+                style={{ color: "var(--ink-3)" }}
               >
                 <RotateCcw size={9} /> Clear all
               </button>
@@ -752,7 +755,7 @@ export default function Home() {
           {/* Tab bar */}
           <div
             className="flex items-center gap-1.5 px-4 py-2 shrink-0"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
+            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
           >
             {([
               { key: "all" as Tab, label: "All Saved Leads", count: applyFilters(leads, filters).length, total: leads.length, icon: Database },
@@ -767,19 +770,19 @@ export default function Home() {
                 }}
                 className="flex items-center gap-2 h-8 px-3 rounded-lg text-[12px] font-medium transition-all duration-150"
                 style={tab === key ? {
-                  background: "rgba(255,255,255,0.06)",
+                  background: "var(--surface-2)",
                   border: "1px solid rgba(255,255,255,0.1)",
-                  color: "var(--text)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                  color: "var(--ink)",
+                  boxShadow: "inset 0 1px 0 var(--surface-2)",
                 } : {
                   border: "1px solid transparent",
-                  color: "var(--muted)",
+                  color: "var(--ink-3)",
                 }}
                 onMouseEnter={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--text)";
+                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink)";
                 }}
                 onMouseLeave={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
                 }}
               >
                 <Icon size={11} />
@@ -788,10 +791,10 @@ export default function Home() {
                   className="text-[10px] px-1.5 py-0.5 rounded-md font-bold tabular-nums"
                   style={tab === key ? {
                     background: "rgba(255,255,255,0.1)",
-                    color: "var(--text)",
+                    color: "var(--ink)",
                   } : {
-                    background: "rgba(255,255,255,0.05)",
-                    color: "var(--muted)",
+                    background: "var(--surface-2)",
+                    color: "var(--ink-3)",
                   }}
                 >
                   {count}{total > count ? `/${total}` : ""}
@@ -802,12 +805,12 @@ export default function Home() {
             <div className="flex-1" />
 
             {filterCount > 0 ? (
-              <span className="flex items-center gap-1.5 text-[10px] font-medium shrink-0" style={{ color: "var(--muted)" }}>
+              <span className="flex items-center gap-1.5 text-[10px] font-medium shrink-0" style={{ color: "var(--ink-3)" }}>
                 <span
                   className="px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums"
                   style={{
                     background: "rgba(0,212,255,0.1)",
-                    color: "var(--accent-blue)",
+                    color: "var(--accent)",
                     border: "1px solid rgba(0,212,255,0.2)",
                   }}
                 >
@@ -815,11 +818,11 @@ export default function Home() {
                 </span>
                 filter{filterCount > 1 ? "s" : ""}
                 <span className="mx-0.5" style={{ opacity: 0.3 }}>·</span>
-                <span className="tabular-nums" style={{ color: "var(--text)" }}>{sorted.length.toLocaleString()}</span>
+                <span className="tabular-nums" style={{ color: "var(--ink)" }}>{sorted.length.toLocaleString()}</span>
                 result{sorted.length !== 1 ? "s" : ""}
               </span>
             ) : (
-              <span className="text-[10px] font-medium shrink-0 tabular-nums" style={{ color: "var(--muted)" }}>
+              <span className="text-[10px] font-medium shrink-0 tabular-nums" style={{ color: "var(--ink-3)" }}>
                 {sorted.length.toLocaleString()} result{sorted.length !== 1 ? "s" : ""}
               </span>
             )}

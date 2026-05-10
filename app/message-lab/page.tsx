@@ -189,35 +189,35 @@ Be direct, human, value-first. No buzzwords.`,
 
       <div className="flex-1 overflow-y-auto">
         {/* API Key Bar */}
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-border bg-surface2">
-          <Key size={14} className="text-muted shrink-0" />
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-line bg-surface2">
+          <Key size={14} className="text-ink-3 shrink-0" />
           <input
             type="password"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             placeholder="sk-ant-api03-..."
-            className="flex-1 h-8 rounded-md bg-white/5 border border-border px-3 text-xs text-text placeholder:text-muted focus:outline-none focus:border-accent-purple/40 font-mono"
+            className="flex-1 h-8 rounded-md bg-white/5 border border-line px-3 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-purple/40 font-mono"
           />
           <button
             onClick={handleConnect}
             disabled={!keyInput.trim()}
-            className="flex items-center gap-1.5 h-8 px-4 rounded-md bg-accent-purple/20 text-accent-purple text-xs font-medium hover:bg-accent-purple/30 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-4 rounded-md bg-info/20 text-info text-xs font-medium hover:bg-info/30 disabled:opacity-40 transition-colors"
           >
             {connected ? <><Check size={12} /> Connected</> : "Connect"}
           </button>
-          {connected && <span className="w-2 h-2 rounded-full bg-accent-green shrink-0" title="Connected" />}
+          {connected && <span className="w-2 h-2 rounded-full bg-positive shrink-0" title="Connected" />}
         </div>
 
         <div className="flex h-[calc(100vh-160px)]">
           {/* LEFT — Input (40%) */}
-          <div className="w-[40%] min-w-[320px] border-r border-border p-5 space-y-5 overflow-y-auto">
+          <div className="w-[40%] min-w-[320px] border-r border-line p-5 space-y-5 overflow-y-auto">
             {/* Lead Selector */}
             <div>
-              <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">Select Lead</label>
+              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Select Lead</label>
               <select
                 value={selectedLeadId}
                 onChange={e => setSelectedLeadId(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-border px-3 text-sm text-text mt-1.5 focus:outline-none focus:border-accent-purple/40 appearance-none cursor-pointer"
+                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink mt-1.5 focus:outline-none focus:border-accent-purple/40 appearance-none cursor-pointer"
               >
                 <option value="">Choose a lead…</option>
                 {leads.map(l => (
@@ -230,7 +230,7 @@ Be direct, human, value-first. No buzzwords.`,
 
             {/* Message Type */}
             <div>
-              <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">Message Type</label>
+              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Message Type</label>
               <div className="flex gap-1 mt-1.5">
                 {MESSAGE_TYPES.map(t => (
                   <button
@@ -238,8 +238,8 @@ Be direct, human, value-first. No buzzwords.`,
                     onClick={() => { setMessageType(t.key); setOutput(""); setSubject(""); }}
                     className={`flex-1 text-[11px] px-2 py-1.5 rounded-md font-medium transition-colors ${
                       messageType === t.key
-                        ? "bg-accent-purple/20 text-accent-purple"
-                        : "text-muted hover:text-text hover:bg-white/[0.04]"
+                        ? "bg-info/20 text-info"
+                        : "text-ink-3 hover:text-ink hover:bg-white/[0.04]"
                     }`}
                   >
                     {t.label}
@@ -250,7 +250,7 @@ Be direct, human, value-first. No buzzwords.`,
 
             {/* Tone */}
             <div>
-              <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">Tone</label>
+              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Tone</label>
               <div className="flex gap-1.5 mt-1.5">
                 {TONES.map(t => (
                   <button
@@ -258,8 +258,8 @@ Be direct, human, value-first. No buzzwords.`,
                     onClick={() => setTone(t)}
                     className={`text-[11px] px-3 py-1.5 rounded-full border font-medium transition-all ${
                       tone === t
-                        ? "bg-accent-purple border-accent-purple/40 text-white"
-                        : "border-border text-muted hover:text-text hover:border-white/20"
+                        ? "bg-info border-accent-purple/40 text-white"
+                        : "border-line text-ink-3 hover:text-ink hover:border-white/20"
                     }`}
                   >
                     {t}
@@ -270,13 +270,13 @@ Be direct, human, value-first. No buzzwords.`,
 
             {/* Offer */}
             <div>
-              <label className="text-[11px] font-semibold text-muted uppercase tracking-wider">Your Offer</label>
+              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Your Offer</label>
               <textarea
                 value={offer}
                 onChange={e => setOffer(e.target.value)}
                 placeholder="e.g. We help SaaS companies reduce churn by 40%..."
                 rows={4}
-                className="w-full rounded-md bg-white/5 border border-border px-3 py-2 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:border-accent-purple/40 resize-y mt-1.5"
+                className="w-full rounded-md bg-white/5 border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3/70 focus:outline-none focus:border-accent-purple/40 resize-y mt-1.5"
               />
             </div>
 
@@ -292,7 +292,7 @@ Be direct, human, value-first. No buzzwords.`,
             <button
               onClick={handleGenerate}
               disabled={generating || !apiKey || !selectedLead}
-              className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-accent-purple text-white text-sm font-semibold hover:bg-accent-purple/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-info text-white text-sm font-semibold hover:bg-info/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {generating ? (
                 <><Loader2 size={14} className="animate-spin" /> Generating…</>
@@ -300,34 +300,34 @@ Be direct, human, value-first. No buzzwords.`,
                 <><Sparkles size={14} /> Generate with Claude</>
               )}
             </button>
-            {!apiKey && <p className="text-[10px] text-muted text-center">Connect your Anthropic API key above to generate messages</p>}
+            {!apiKey && <p className="text-[10px] text-ink-3 text-center">Connect your Anthropic API key above to generate messages</p>}
           </div>
 
           {/* RIGHT — Output (60%) */}
           <div className="flex-1 p-5 space-y-4 overflow-y-auto">
             {/* Output Box */}
-            <div className="bg-surface2 border border-border rounded-lg p-4 min-h-[200px] relative">
+            <div className="bg-surface2 border border-line rounded-lg p-4 min-h-[200px] relative">
               {output ? (
                 <div className="space-y-2">
                   {subject && (
                     <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider">Subject</span>
-                      <p className="text-sm text-text font-medium mt-0.5">{subject}</p>
-                      <hr className="border-border my-3" />
+                      <span className="text-[10px] text-ink-3 uppercase tracking-wider">Subject</span>
+                      <p className="text-sm text-ink font-medium mt-0.5">{subject}</p>
+                      <hr className="border-line my-3" />
                     </div>
                   )}
-                  <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">{output}</p>
-                  {generating && <span className="inline-block w-1.5 h-4 bg-accent-blue animate-pulse ml-0.5 align-middle" />}
+                  <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{output}</p>
+                  {generating && <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-0.5 align-middle" />}
                   {output && (
                     <span className={`absolute bottom-3 right-3 text-[10px] font-medium tabular-nums px-2 py-0.5 rounded ${
-                      isOverLimit ? "bg-red-500/15 text-red-400" : "bg-white/5 text-muted"
+                      isOverLimit ? "bg-red-500/15 text-red-400" : "bg-white/5 text-ink-3"
                     }`}>
                       {output.length}{messageType === "linkedin_connection" ? "/300" : ""}
                     </span>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-muted/50 text-center pt-16">
+                <p className="text-sm text-ink-3/50 text-center pt-16">
                   {generating ? "Generating…" : "Generated message will appear here"}
                 </p>
               )}
@@ -336,49 +336,49 @@ Be direct, human, value-first. No buzzwords.`,
             {/* Action Buttons */}
             {output && (
               <div className="flex items-center gap-2">
-                <button onClick={handleCopy} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-muted hover:text-text hover:bg-white/[0.04] border border-border transition-colors">
+                <button onClick={handleCopy} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-ink-3 hover:text-ink hover:bg-white/[0.04] border border-line transition-colors">
                   <Copy size={12} /> Copy
                 </button>
-                <button onClick={handleSave} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-muted hover:text-text hover:bg-white/[0.04] border border-border transition-colors">
+                <button onClick={handleSave} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-ink-3 hover:text-ink hover:bg-white/[0.04] border border-line transition-colors">
                   <BookmarkPlus size={12} /> Save to Lead
                 </button>
-                <button onClick={handleGenerate} disabled={generating} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-muted hover:text-text hover:bg-white/[0.04] border border-border transition-colors">
+                <button onClick={handleGenerate} disabled={generating} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs text-ink-3 hover:text-ink hover:bg-white/[0.04] border border-line transition-colors">
                   <RefreshCw size={12} /> Regenerate
                 </button>
               </div>
             )}
 
             {/* Message History */}
-            <div className="border border-border rounded-lg overflow-hidden">
+            <div className="border border-line rounded-lg overflow-hidden">
               <button
                 onClick={() => setHistoryOpen(!historyOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-muted hover:text-text hover:bg-white/[0.02] transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-ink-3 hover:text-ink hover:bg-white/[0.02] transition-colors"
               >
                 <span>Message History ({history.length})</span>
                 <ChevronDown size={14} className={`transition-transform ${historyOpen ? "rotate-180" : ""}`} />
               </button>
               {historyOpen && (
-                <div className="border-t border-border">
+                <div className="border-t border-line">
                   {history.length === 0 ? (
-                    <p className="text-xs text-muted text-center py-6">No messages yet for this lead</p>
+                    <p className="text-xs text-ink-3 text-center py-6">No messages yet for this lead</p>
                   ) : (
                     history.map(m => (
-                      <div key={m.id} className="px-4 py-3 border-b border-border last:border-0 hover:bg-white/[0.01] transition-colors">
+                      <div key={m.id} className="px-4 py-3 border-b border-line last:border-0 hover:bg-white/[0.01] transition-colors">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            m.messageType === "cold_email" ? "bg-accent-blue/15 text-accent-blue"
-                              : m.messageType === "linkedin_dm" ? "bg-accent-purple/15 text-accent-purple"
-                              : "bg-accent-green/15 text-accent-green"
+                            m.messageType === "cold_email" ? "bg-accent/15 text-accent"
+                              : m.messageType === "linkedin_dm" ? "bg-info/15 text-info"
+                              : "bg-positive/15 text-positive"
                           }`}>
                             {m.messageType.replace(/_/g, " ")}
                           </span>
-                          <span className="text-[10px] text-muted">{m.tone}</span>
+                          <span className="text-[10px] text-ink-3">{m.tone}</span>
                           <span className="flex-1" />
-                          <button onClick={() => navigator.clipboard.writeText(m.body)} className="text-muted hover:text-text">
+                          <button onClick={() => navigator.clipboard.writeText(m.body)} className="text-ink-3 hover:text-ink">
                             <Copy size={10} />
                           </button>
                         </div>
-                        <p className="text-xs text-text line-clamp-2">{m.body.slice(0, 80)}</p>
+                        <p className="text-xs text-ink line-clamp-2">{m.body.slice(0, 80)}</p>
                       </div>
                     ))
                   )}

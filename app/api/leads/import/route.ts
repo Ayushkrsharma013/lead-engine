@@ -11,6 +11,20 @@ const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 type ApifyEmailObj = { address?: string; [k: string]: unknown };
 
+/** Generate a stable ID from the lead's best unique key so re-importing never duplicates */
+function stableLeadId(email: string, linkedin: string, name: string, company: string): string {
+  const key = email.toLowerCase().trim()
+    || linkedin.toLowerCase().trim()
+    || `${name.toLowerCase().trim()}|${company.toLowerCase().trim()}`;
+  // Simple but stable djb2-style hash → base36 string
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) {
+    h = ((h << 5) + h) ^ key.charCodeAt(i);
+    h = h >>> 0; // keep unsigned 32-bit
+  }
+  return `apify-${h.toString(36)}`;
+}
+
 function extractEmail(item: Record<string, unknown>): string {
   if (Array.isArray(item.emails) && item.emails.length > 0) {
     const first = item.emails[0];
@@ -26,23 +40,29 @@ function extractEmail(item: Record<string, unknown>): string {
   return "";
 }
 
-function apifyItemToLead(item: Record<string, unknown>): Partial<Lead> {
-  const email = extractEmail(item);
+function apifyItemToLead(item: Record<string, unknown>): Lead {
+  const email    = extractEmail(item).toLowerCase().trim();
+  const linkedin = String(item.linkedin_url || "").trim();
+  const name     = String(item.full_name || item.name || "").trim();
+  const company  = String(item.job_company_name || item.company || "").trim();
+
   const rawStatus = String(item.email_status || "");
   const emailStatus: Lead["emailStatus"] = (
     ["verified", "risky", "not_found"].includes(rawStatus) ? rawStatus : "not_found"
   ) as Lead["emailStatus"];
 
   return {
-    name:        String(item.full_name            || item.name     || "").trim(),
-    title:       String(item.job_title             || item.title    || "").trim(),
-    company:     String(item.job_company_name      || item.company  || "").trim(),
-    industry:    String(item.job_company_industry  || item.industry || "").trim(),
-    location:    String(item.location_name         || item.location || "").trim(),
-    email:       email.toLowerCase().trim(),
+    // Stable deterministic ID — prevents duplicates across repeated imports
+    id:          stableLeadId(email, linkedin, name, company),
+    name,
+    title:       String(item.job_title            || item.title    || "").trim(),
+    company,
+    industry:    String(item.job_company_industry || item.industry || "").trim(),
+    location:    String(item.location_name        || item.location || "").trim(),
+    email,
     emailStatus,
-    linkedin:    String(item.linkedin_url          || "").trim(),
-    website:     String(item.job_company_website   || "").trim(),
+    linkedin,
+    website:     String(item.job_company_website  || "").trim(),
     companySize: String(item.job_company_size      || "").trim(),
     score:       Math.floor(70 + Math.random() * 28),
     source:      "linkedin" as Lead["source"],
@@ -159,7 +179,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Fetch leads from selected runs
-    const allPartialLeads: Partial<Lead>[] = [];
+    const allLeads: Lead[] = [];
     const runSummary: Array<{ runId: string; count: number }> = [];
 
     for (const run of runs) {
@@ -174,12 +194,12 @@ export async function POST(req: NextRequest) {
         if (!Array.isArray(items) || items.length === 0) continue;
 
         const leads = items.map(apifyItemToLead);
-        allPartialLeads.push(...leads);
+        allLeads.push(...leads);
         runSummary.push({ runId: run.id, count: leads.length });
       } catch { /* skip single dataset failure */ }
     }
 
-    if (allPartialLeads.length === 0) {
+    if (allLeads.length === 0) {
       return NextResponse.json({
         message: `Found ${runs.length} run(s) but all datasets were empty`,
         added: 0, updated: 0, total: 0,
@@ -187,16 +207,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Deduplicate
-    const seen = new Map<string, Partial<Lead>>();
-    for (const lead of allPartialLeads) {
-      const key = lead.email || lead.linkedin || lead.name;
-      if (key && !seen.has(key)) seen.set(key, lead);
+    // 3. Pre-deduplicate across runs using stable ID (same person won't appear twice)
+    const seen = new Map<string, Lead>();
+    for (const lead of allLeads) {
+      if (!seen.has(lead.id)) seen.set(lead.id, lead);
     }
     const deduped = Array.from(seen.values());
 
-    // 4. Merge into DB
-    const { added, updated } = await mergeLeadsInDB(deduped as Lead[]);
+    // 4. Merge into DB (mergeLeadsInDB handles dedup against existing saved leads)
+    const { added, updated } = await mergeLeadsInDB(deduped);
 
     return NextResponse.json({
       message: `Imported ${added + updated} leads (${added} new, ${updated} updated) from ${runs.length} run(s)`,

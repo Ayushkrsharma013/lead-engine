@@ -8,10 +8,10 @@ import Pagination from "./Pagination";
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function ScorePill({ score }: { score: number }) {
   const [color, bg, glow] = score >= 85
-    ? ["#00ff88", "rgba(0,255,136,0.1)", "0 0 8px rgba(0,255,136,0.3)"]
+    ? ["var(--positive)", "rgba(0,255,136,0.1)", "0 0 8px rgba(0,255,136,0.3)"]
     : score >= 70
-    ? ["#ff6b35", "rgba(255,107,53,0.1)", "0 0 8px rgba(255,107,53,0.2)"]
-    : ["#ef4444", "rgba(239,68,68,0.1)", "0 0 8px rgba(239,68,68,0.2)"];
+    ? ["var(--negative)", "rgba(255,107,53,0.1)", "0 0 8px rgba(255,107,53,0.2)"]
+    : ["var(--negative)", "rgba(239,68,68,0.1)", "0 0 8px rgba(239,68,68,0.2)"];
 
   return (
     <span
@@ -25,9 +25,9 @@ function ScorePill({ score }: { score: number }) {
 
 function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: string }) {
   const cfg = {
-    verified:  { col: "#10b981", label: "Verified",   dot: "●" },
-    risky:     { col: "#f59e0b", label: "Risky",      dot: "◐" },
-    not_found: { col: "#64748b", label: "Not found",  dot: "○" },
+    verified:  { col: "var(--positive)", label: "Verified",   dot: "●" },
+    risky:     { col: "var(--info)", label: "Risky",      dot: "◐" },
+    not_found: { col: "var(--ink-4)", label: "Not found",  dot: "○" },
   }[status];
   return (
     <div className="space-y-0.5">
@@ -35,7 +35,7 @@ function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: st
         <span className="text-[8px]">{cfg.dot}</span>{cfg.label}
       </span>
       {email && (
-        <p className="text-[10px] font-mono truncate max-w-[160px]" style={{ color: "var(--muted)", opacity: 0.7 }} title={email}>
+        <p className="text-[10px] font-mono truncate max-w-[160px]" style={{ color: "var(--ink-3)", opacity: 0.7 }} title={email}>
           {email}
         </p>
       )}
@@ -45,9 +45,9 @@ function EmailStatus({ status, email }: { status: Lead["emailStatus"]; email: st
 
 function SourceBadge({ source }: { source: Lead["source"] }) {
   const cfg: Record<string, { label: string; color: string; bg: string }> = {
-    linkedin: { label: "in", color: "#00d4ff", bg: "rgba(0,212,255,0.12)"  },
-    gmaps:    { label: "G",  color: "#00ff88", bg: "rgba(0,255,136,0.12)"  },
-    amazon:   { label: "a",  color: "#ff6b35", bg: "rgba(255,107,53,0.12)" },
+    linkedin: { label: "in", color: "var(--accent)", bg: "var(--accent-soft)"  },
+    gmaps:    { label: "G",  color: "var(--positive)", bg: "var(--positive-soft)"  },
+    amazon:   { label: "a",  color: "var(--negative)", bg: "var(--negative-soft)" },
   };
   const c = cfg[source] || cfg.linkedin;
   return (
@@ -87,13 +87,13 @@ function SortHeader({ field, label, sort, onSort }: { field: SortField; label: s
       onClick={() => onSort(field)}
     >
       <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.08em] transition-colors"
-        style={{ color: active ? "var(--accent-blue)" : "var(--muted)" }}
+        style={{ color: active ? "var(--accent)" : "var(--ink-3)" }}
       >
         {label}
         {active
           ? sort.dir === "asc"
-            ? <ChevronUp size={10} style={{ color: "var(--accent-blue)" }} />
-            : <ChevronDown size={10} style={{ color: "var(--accent-blue)" }} />
+            ? <ChevronUp size={10} style={{ color: "var(--accent)" }} />
+            : <ChevronDown size={10} style={{ color: "var(--accent)" }} />
           : <ChevronsUpDown size={10} className="opacity-0 group-hover:opacity-40 transition-opacity" />
         }
       </span>
@@ -151,8 +151,8 @@ export default function LeadsTable({
             />
           </div>
           <div>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Agent is working…</p>
-            <p className="text-[12px] mt-1" style={{ color: "var(--muted)" }}>Fetching & enriching leads from {accent === "#00d4ff" ? "LinkedIn" : accent === "#00ff88" ? "Google Maps" : "Amazon"}</p>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Agent is working…</p>
+            <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>Fetching & enriching leads from {accent === "var(--accent)" ? "LinkedIn" : accent === "var(--positive)" ? "Google Maps" : "Amazon"}</p>
           </div>
         </div>
       </div>
@@ -171,8 +171,8 @@ export default function LeadsTable({
             <Users size={26} style={{ color: accent, opacity: 0.5 }} />
           </div>
           <div>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>No leads match your filters</p>
-            <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--muted)" }}>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>No leads match your filters</p>
+            <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>
               Try adjusting your filters or run the agent to fetch new leads
             </p>
           </div>
@@ -189,7 +189,7 @@ export default function LeadsTable({
           className="flex items-center gap-3 px-4 py-2 shrink-0 animate-fade-up"
           style={{
             background: "var(--surface)",
-            borderBottom: "1px solid var(--border)",
+            borderBottom: "1px solid var(--line)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
           }}
         >
@@ -197,7 +197,7 @@ export default function LeadsTable({
             className="text-[12px] font-semibold px-2.5 py-1 rounded-lg"
             style={{
               background: "rgba(0,212,255,0.1)",
-              color: "var(--accent-blue)",
+              color: "var(--accent)",
               border: "1px solid rgba(0,212,255,0.2)",
             }}
           >
@@ -208,12 +208,12 @@ export default function LeadsTable({
             onClick={() => onExport(selected)}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid var(--border)",
-              color: "var(--muted)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--line)",
+              color: "var(--ink-3)",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--line)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; }}
           >
             <Download size={11} /> Export CSV
           </button>
@@ -221,12 +221,12 @@ export default function LeadsTable({
             onClick={() => onDelete(selected)}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
             style={{
-              background: "rgba(239,68,68,0.08)",
+              background: "var(--negative-soft)",
               border: "1px solid rgba(239,68,68,0.2)",
-              color: "#ef4444",
+              color: "var(--negative)",
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.14)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--negative-soft)"; }}
           >
             <Trash2 size={11} /> Delete
           </button>
@@ -237,14 +237,14 @@ export default function LeadsTable({
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10" style={{ background: "var(--bg)" }}>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+            <tr style={{ borderBottom: "1px solid var(--line)" }}>
               <th className="w-10 px-3 py-3">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={onSelectAll}
                   className="w-3.5 h-3.5 rounded cursor-pointer"
-                  style={{ accentColor: "var(--accent-blue)" }}
+                  style={{ accentColor: "var(--accent)" }}
                 />
               </th>
               <SortHeader field="name"        label="Name & Title" sort={sort} onSort={onSort} />
@@ -252,13 +252,13 @@ export default function LeadsTable({
               <SortHeader field="location"    label="Location"     sort={sort} onSort={onSort} />
               <SortHeader field="emailStatus" label="Email"        sort={sort} onSort={onSort} />
               <th className="text-left px-3 py-3 whitespace-nowrap">
-                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>
                   LinkedIn
                 </span>
               </th>
               <SortHeader field="score"   label="Score"  sort={sort} onSort={onSort} />
               <th className="text-left px-3 py-3 whitespace-nowrap">
-                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>Src</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>Src</span>
               </th>
               <SortHeader field="savedAt" label="Saved"  sort={sort} onSort={onSort} />
             </tr>
@@ -272,7 +272,7 @@ export default function LeadsTable({
                   key={lead.id}
                   className="group cursor-pointer transition-all duration-100 animate-fade-up"
                   style={{
-                    borderBottom: "1px solid var(--border-subtle)",
+                    borderBottom: "1px solid var(--line)",
                     animationDelay: `${Math.min(i * 15, 180)}ms`,
                     background: isSelected ? "rgba(0,212,255,0.04)" : undefined,
                   }}
@@ -291,7 +291,7 @@ export default function LeadsTable({
                       checked={isSelected}
                       onChange={() => onSelect(lead.id)}
                       className="w-3.5 h-3.5 rounded cursor-pointer"
-                      style={{ accentColor: "var(--accent-blue)" }}
+                      style={{ accentColor: "var(--accent)" }}
                     />
                   </td>
 
@@ -300,10 +300,10 @@ export default function LeadsTable({
                     <div className="flex items-center gap-2.5">
                       <Avatar name={lead.name} />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold truncate max-w-[160px]" style={{ color: "var(--text)" }}>
+                        <p className="text-[13px] font-semibold truncate max-w-[160px]" style={{ color: "var(--ink)" }}>
                           {lead.name || "—"}
                         </p>
-                        <p className="text-[11px] truncate max-w-[160px]" style={{ color: "var(--muted)" }}>
+                        <p className="text-[11px] truncate max-w-[160px]" style={{ color: "var(--ink-3)" }}>
                           {lead.title || "—"}
                         </p>
                       </div>
@@ -313,12 +313,12 @@ export default function LeadsTable({
                   {/* Company */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <Building2 size={11} className="shrink-0" style={{ color: "var(--muted)", opacity: 0.6 }} />
+                      <Building2 size={11} className="shrink-0" style={{ color: "var(--ink-3)", opacity: 0.6 }} />
                       <div className="min-w-0">
-                        <p className="text-[12px] font-medium truncate max-w-[130px]" style={{ color: "var(--text)" }}>
+                        <p className="text-[12px] font-medium truncate max-w-[130px]" style={{ color: "var(--ink)" }}>
                           {lead.company || "—"}
                         </p>
-                        <p className="text-[10px] truncate max-w-[130px]" style={{ color: "var(--muted)", opacity: 0.7 }}>
+                        <p className="text-[10px] truncate max-w-[130px]" style={{ color: "var(--ink-3)", opacity: 0.7 }}>
                           {lead.industry || ""}
                         </p>
                       </div>
@@ -328,8 +328,8 @@ export default function LeadsTable({
                   {/* Location */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <MapPin size={11} className="shrink-0" style={{ color: "var(--muted)", opacity: 0.6 }} />
-                      <span className="text-[11px] truncate max-w-[120px]" style={{ color: "var(--muted)" }}>
+                      <MapPin size={11} className="shrink-0" style={{ color: "var(--ink-3)", opacity: 0.6 }} />
+                      <span className="text-[11px] truncate max-w-[120px]" style={{ color: "var(--ink-3)" }}>
                         {lead.location || "—"}
                       </span>
                     </div>
@@ -351,17 +351,17 @@ export default function LeadsTable({
                           onClick={e => e.stopPropagation()}
                           className="inline-flex items-center gap-1 text-[11px] font-medium transition-all px-2 py-0.5 rounded-md"
                           style={{
-                            color: "var(--muted)",
+                            color: "var(--ink-3)",
                             background: "rgba(0,212,255,0.05)",
                             border: "1px solid rgba(0,212,255,0.1)",
                           }}
                           onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.color = "var(--accent-blue)";
+                            (e.currentTarget as HTMLElement).style.color = "var(--accent)";
                             (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.3)";
                             (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.1)";
                           }}
                           onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                            (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
                             (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.1)";
                             (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.05)";
                           }}
@@ -369,7 +369,7 @@ export default function LeadsTable({
                           <ExternalLink size={9} /> View
                         </a>
                       )
-                      : <span className="text-xs" style={{ color: "var(--muted)", opacity: 0.4 }}>—</span>
+                      : <span className="text-xs" style={{ color: "var(--ink-3)", opacity: 0.4 }}>—</span>
                     }
                   </td>
 
@@ -383,7 +383,7 @@ export default function LeadsTable({
                   <td className="px-3 py-3">
                     {savedDate
                       ? (
-                        <div className="text-[10px] tabular-nums whitespace-nowrap" style={{ color: "var(--muted)" }}>
+                        <div className="text-[10px] tabular-nums whitespace-nowrap" style={{ color: "var(--ink-3)" }}>
                           <span>{savedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                           <br />
                           <span style={{ opacity: 0.6 }}>
@@ -391,7 +391,7 @@ export default function LeadsTable({
                           </span>
                         </div>
                       )
-                      : <span className="text-xs" style={{ color: "var(--muted)", opacity: 0.4 }}>—</span>
+                      : <span className="text-xs" style={{ color: "var(--ink-3)", opacity: 0.4 }}>—</span>
                     }
                   </td>
                 </tr>

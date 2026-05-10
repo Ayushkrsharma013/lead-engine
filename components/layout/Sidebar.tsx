@@ -13,7 +13,7 @@ import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
 import type { ModuleName } from "@/lib/types";
 
-const NAV_ITEMS: { module: ModuleName; label: string; icon: LucideIcon; href: string; badge?: string }[] = [
+const NAV_ITEMS: { module: ModuleName; label: string; icon: LucideIcon; href: string }[] = [
   { module: "dashboard",    label: "Command Center",    icon: LayoutDashboard, href: "/dashboard" },
   { module: "leads",        label: "Lead Intelligence", icon: Users,           href: "/" },
   { module: "message-lab",  label: "AI Message Lab",    icon: MessageSquare,   href: "/message-lab" },
@@ -23,8 +23,6 @@ const NAV_ITEMS: { module: ModuleName; label: string; icon: LucideIcon; href: st
   { module: "analytics",    label: "Analytics",          icon: BarChart2,       href: "/analytics" },
   { module: "clients",      label: "Client Manager",    icon: Briefcase,       href: "/clients" },
 ];
-
-const GROUP_LABELS = ["Overview", "", "AI Tools", "", "Pipeline", "", "", ""];
 
 export default function ProSidebar() {
   const { state, dispatch } = useApp();
@@ -41,51 +39,46 @@ export default function ProSidebar() {
 
   return (
     <aside
-      className="h-screen shrink-0 flex flex-col border-r border-border overflow-hidden relative z-20"
+      className="h-screen shrink-0 flex flex-col border-r relative z-20"
       style={{
-        width: collapsed ? 56 : 220,
-        background: "var(--surface)",
-        transition: "width 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+        width: collapsed ? 56 : 232,
+        background: "linear-gradient(180deg, var(--bg) 0%, var(--bg-grain) 100%)",
+        borderColor: "var(--line)",
+        transition: "width 150ms ease, background-color 150ms ease, border-color 150ms ease",
       }}
     >
-      {/* Top ambient glow */}
-      <div
-        className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at 50% -20%, rgba(0,212,255,0.06) 0%, transparent 70%)",
-        }}
-      />
-
       {/* Logo */}
-      <div className="flex items-center h-14 px-3.5 border-b border-border shrink-0 relative">
+      <div
+        className="flex items-center h-14 px-3.5 shrink-0 relative"
+        style={{ borderBottom: "1px solid var(--line)" }}
+      >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 relative"
           style={{
-            background: "linear-gradient(135deg, rgba(0,212,255,0.2) 0%, rgba(124,58,237,0.15) 100%)",
-            border: "1px solid rgba(0,212,255,0.3)",
-            boxShadow: "0 0 12px rgba(0,212,255,0.15), inset 0 1px 0 rgba(255,255,255,0.1)",
+            background: "var(--accent-soft)",
+            border: "1px solid var(--accent)",
           }}
         >
-          <Zap size={14} style={{ color: "var(--accent-blue)" }} />
+          <Zap size={14} style={{ color: "var(--accent)" }} />
         </div>
         <div
           className="ml-2.5 overflow-hidden whitespace-nowrap"
           style={{
             opacity: collapsed ? 0 : 1,
             width: collapsed ? 0 : "auto",
-            transition: "opacity 200ms ease, width 250ms ease",
+            transition: "opacity 150ms ease, width 150ms ease",
           }}
         >
           <div className="flex items-baseline gap-1.5">
-            <span className="font-bold text-[13px] tracking-tight" style={{ color: "var(--text)" }}>
+            <span className="font-bold text-[13px] tracking-tight" style={{ color: "var(--ink)" }}>
               LinkedIn
             </span>
             <span
               className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md"
               style={{
-                background: "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.15))",
-                color: "var(--accent-blue)",
-                border: "1px solid rgba(0,212,255,0.2)",
+                background: "var(--accent-soft)",
+                color: "var(--accent)",
+                border: "1px solid var(--line)",
               }}
             >
               ProOS
@@ -96,66 +89,60 @@ export default function ProSidebar() {
 
       {/* Nav items */}
       <div className="flex-1 py-2 overflow-y-auto overflow-x-hidden">
-        {/* Group 1: Command Center + Leads */}
         {!collapsed && (
-          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-muted/50">Overview</p>
+          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>Overview</p>
         )}
         {NAV_ITEMS.slice(0, 2).map(item => (
-          <NavItem
+          <div
             key={item.module}
-            item={item}
-            active={isActive(item.href)}
-            collapsed={collapsed}
-            onHover={(label, y) => { setHoveredItem(label); setTooltipY(y); }}
-          />
+            onMouseEnter={e => { setHoveredItem(item.label); setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top); }}
+            onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
+          >
+            <NavItem item={item} active={isActive(item.href)} collapsed={collapsed} />
+          </div>
         ))}
 
-        <div className="mx-3 my-2" style={{ height: "1px", background: "var(--border)" }} />
+        <div className="mx-3 my-2" style={{ height: "1px", background: "var(--line)" }} />
 
-        {/* Group 2: Message Lab + Scorer */}
         {!collapsed && (
-          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-muted/50">AI Tools</p>
+          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>AI Tools</p>
         )}
         {NAV_ITEMS.slice(2, 4).map(item => (
-          <NavItem
+          <div
             key={item.module}
-            item={item}
-            active={isActive(item.href)}
-            collapsed={collapsed}
-            onHover={(label, y) => { setHoveredItem(label); setTooltipY(y); }}
-          />
+            onMouseEnter={e => { setHoveredItem(item.label); setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top); }}
+            onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
+          >
+            <NavItem item={item} active={isActive(item.href)} collapsed={collapsed} />
+          </div>
         ))}
 
-        <div className="mx-3 my-2" style={{ height: "1px", background: "var(--border)" }} />
+        <div className="mx-3 my-2" style={{ height: "1px", background: "var(--line)" }} />
 
-        {/* Group 3: Pipeline modules */}
         {!collapsed && (
-          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em] text-muted/50">Pipeline</p>
+          <p className="px-4 pt-1 pb-1 text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>Pipeline</p>
         )}
         {NAV_ITEMS.slice(4).map(item => (
-          <NavItem
+          <div
             key={item.module}
-            item={item}
-            active={isActive(item.href)}
-            collapsed={collapsed}
-            onHover={(label, y) => { setHoveredItem(label); setTooltipY(y); }}
-          />
+            onMouseEnter={e => { setHoveredItem(item.label); setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top); }}
+            onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
+          >
+            <NavItem item={item} active={isActive(item.href)} collapsed={collapsed} />
+          </div>
         ))}
       </div>
 
       {/* Bottom section */}
-      <div className="shrink-0 border-t border-border py-1.5">
-        {/* Collapse toggle */}
+      <div className="shrink-0 py-1.5" style={{ borderTop: "1px solid var(--line)" }}>
         <button
           onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
-          className="w-full h-9 flex items-center gap-2 transition-colors"
+          className="w-full h-9 flex items-center gap-2 transition-colors hover:bg-[var(--surface-2)]"
           style={{
             justifyContent: collapsed ? "center" : "flex-start",
             paddingLeft: collapsed ? 0 : 14,
-            color: "var(--muted)",
+            color: "var(--ink-3)",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           {collapsed
             ? <ChevronRight size={15} />
@@ -163,43 +150,38 @@ export default function ProSidebar() {
           }
         </button>
 
-        {/* Settings button */}
         <button
           onClick={() => router.push("/settings")}
-          className="w-full h-9 flex items-center gap-2 transition-colors"
+          className="w-full h-9 flex items-center gap-2 transition-colors hover:bg-[var(--surface-2)]"
           style={{
             justifyContent: collapsed ? "center" : "flex-start",
             paddingLeft: collapsed ? 0 : 14,
-            color: pathname === "/settings" ? "var(--accent-blue)" : "var(--muted)",
+            color: pathname === "/settings" ? "var(--accent)" : "var(--ink-3)",
           }}
-          onMouseEnter={e => { if (pathname !== "/settings") (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
-          onMouseLeave={e => { if (pathname !== "/settings") (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Settings"
         >
           <Settings2 size={15} />
           {!collapsed && <span className="text-[12px] font-medium">Settings</span>}
         </button>
 
-        {/* Theme toggle */}
         <div
           className="flex items-center py-0.5"
           style={{ paddingLeft: collapsed ? 0 : 14, justifyContent: collapsed ? "center" : "flex-start" }}
         >
           <ThemeToggle />
           {!collapsed && (
-            <span className="ml-1.5 text-[11px] text-muted/60">Toggle theme</span>
+            <span className="ml-1.5 text-[11px]" style={{ color: "var(--ink-4)" }}>Toggle theme</span>
           )}
         </div>
 
-        {/* Version badge */}
         {!collapsed && (
           <div className="px-3.5 py-1">
             <span
               className="text-[10px] px-2 py-0.5 rounded-full font-medium"
               style={{
-                background: "rgba(0,212,255,0.06)",
-                color: "var(--muted)",
-                border: "1px solid rgba(0,212,255,0.1)",
+                background: "var(--accent-soft)",
+                color: "var(--ink-4)",
+                border: "1px solid var(--line)",
               }}
             >
               ProOS v1.0
@@ -215,11 +197,12 @@ export default function ProSidebar() {
           style={{ left: 64, top: tooltipY - 14 }}
         >
           <div
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-text whitespace-nowrap"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap"
             style={{
-              background: "var(--surface2)",
-              border: "1px solid var(--border-bright)",
+              background: "var(--surface-elev)",
+              border: "1px solid var(--line)",
               boxShadow: "var(--shadow-md)",
+              color: "var(--ink)",
             }}
           >
             {hoveredItem}
@@ -231,62 +214,33 @@ export default function ProSidebar() {
 }
 
 function NavItem({
-  item, active, collapsed, onHover,
+  item, active, collapsed,
 }: {
   item: { module: ModuleName; label: string; icon: LucideIcon; href: string };
   active: boolean;
   collapsed: boolean;
-  onHover: (label: string | null, y: number) => void;
 }) {
   const Icon = item.icon;
 
   return (
     <Link
       href={item.href}
-      onMouseEnter={e => onHover(item.label, (e.currentTarget as HTMLElement).getBoundingClientRect().top)}
-      onMouseLeave={() => onHover(null, 0)}
-      className="flex items-center gap-2.5 h-9 mx-1.5 rounded-lg transition-all duration-150 relative group"
+      className="flex items-center gap-2.5 h-9 mx-1.5 rounded-lg transition-all duration-150 relative group hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
       style={{
         justifyContent: collapsed ? "center" : "flex-start",
         paddingLeft: collapsed ? 0 : 12,
         paddingRight: collapsed ? 0 : 12,
-        background: active
-          ? "linear-gradient(90deg, rgba(0,212,255,0.1) 0%, rgba(0,212,255,0.03) 100%)"
-          : undefined,
-        color: active ? "var(--text)" : "var(--muted)",
-        boxShadow: active ? "inset 0 0 0 1px rgba(0,212,255,0.15)" : undefined,
-      }}
-      onMouseOver={e => {
-        if (!active) {
-          (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-          (e.currentTarget as HTMLElement).style.color = "var(--text)";
-        }
-      }}
-      onMouseOut={e => {
-        if (!active) {
-          (e.currentTarget as HTMLElement).style.background = "transparent";
-          (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-        }
+        paddingTop: 8,
+        paddingBottom: 8,
+        background: active ? "var(--surface-elev)" : undefined,
+        color: active ? "var(--ink)" : "var(--ink-3)",
+        border: active ? "1px solid var(--line)" : "1px solid transparent",
+        boxShadow: active ? "var(--shadow-sm)" : undefined,
       }}
     >
-      {/* Active left accent */}
-      {active && (
-        <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-full"
-          style={{
-            height: "60%",
-            background: "linear-gradient(180deg, var(--accent-blue) 0%, rgba(0,212,255,0.4) 100%)",
-            boxShadow: "0 0 8px var(--accent-blue)",
-          }}
-        />
-      )}
-
       <Icon
         size={16}
-        style={{
-          color: active ? "var(--accent-blue)" : undefined,
-          filter: active ? "drop-shadow(0 0 4px rgba(0,212,255,0.5))" : undefined,
-        }}
+        style={{ color: active ? "var(--accent)" : undefined }}
       />
 
       <span
@@ -295,7 +249,7 @@ function NavItem({
           opacity: collapsed ? 0 : 1,
           width: collapsed ? 0 : "auto",
           overflow: "hidden",
-          transition: "opacity 200ms ease",
+          transition: "opacity 150ms ease",
         }}
       >
         {item.label}

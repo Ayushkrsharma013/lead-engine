@@ -15,33 +15,24 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
     <header
       className="h-14 shrink-0 flex items-center justify-between px-5 gap-4 relative"
       style={{
-        background: "rgba(var(--surface-raw, 13,13,18), 0.92)",
-        backdropFilter: "blur(16px) saturate(1.8)",
-        WebkitBackdropFilter: "blur(16px) saturate(1.8)",
-        borderBottom: "1px solid var(--border)",
-        boxShadow: "0 1px 0 var(--border-subtle)",
+        background: "var(--bg)",
+        borderBottom: "1px solid var(--line)",
       }}
     >
-      {/* Subtle top shimmer line */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[1px] pointer-events-none"
-        style={{
-          background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent)",
-          opacity: 0.6,
-        }}
-      />
-
       {/* Title area */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">
           <h1
             className="text-[13px] font-semibold tracking-tight leading-tight truncate"
-            style={{ color: "var(--text)" }}
+            style={{ color: "var(--ink)" }}
           >
             {title}
           </h1>
           {subtitle && (
-            <p className="text-[11px] leading-tight mt-0.5 truncate" style={{ color: "var(--muted)" }}>
+            <p
+              className="text-[11px] leading-tight mt-0.5 truncate"
+              style={{ color: "var(--ink-3)" }}
+            >
               {subtitle}
             </p>
           )}
@@ -52,21 +43,11 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
       <div className="flex items-center gap-2 shrink-0">
         {/* Cmd+K hint */}
         <button
-          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer"
+          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer max-w-[280px] hover:border-[var(--line-strong)]"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid var(--border)",
-            color: "var(--muted)",
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)";
-            (e.currentTarget as HTMLElement).style.borderColor = "var(--border-bright)";
-            (e.currentTarget as HTMLElement).style.color = "var(--text)";
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-            (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
-            (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            color: "var(--ink-3)",
           }}
           onClick={() => {
             const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
@@ -77,7 +58,7 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
           <span>Search</span>
           <span
             className="px-1 py-0.5 rounded text-[9px] font-mono"
-            style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted)" }}
+            style={{ background: "var(--surface-2)", color: "var(--ink-3)", border: "1px solid var(--line)" }}
           >
             ⌘K
           </span>
@@ -85,7 +66,7 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
 
         {actions}
 
-        <div className="w-px h-5 bg-border mx-0.5" />
+        <div className="w-px h-5" style={{ background: "var(--line)" }} />
         <NotificationBell />
         <ThemeToggle />
       </div>

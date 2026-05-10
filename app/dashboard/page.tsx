@@ -23,12 +23,12 @@ function relativeTime(iso: string): string {
 
 function activityIcon(type: string) {
   switch (type) {
-    case "lead_added":    return <UserPlus size={14} className="text-accent-green" />;
-    case "message_sent":  return <Mail size={14} className="text-accent-blue" />;
-    case "scored_hot":    return <Zap size={14} className="text-accent-orange" />;
-    case "meeting_booked":return <CalendarCheck size={14} className="text-accent-green" />;
-    case "lead_moved":    return <ArrowRight size={14} className="text-muted" />;
-    default:              return <ArrowRight size={14} className="text-muted" />;
+    case "lead_added":    return <UserPlus size={14} className="text-positive" />;
+    case "message_sent":  return <Mail size={14} className="text-accent" />;
+    case "scored_hot":    return <Zap size={14} className="text-negative" />;
+    case "meeting_booked":return <CalendarCheck size={14} className="text-positive" />;
+    case "lead_moved":    return <ArrowRight size={14} className="text-ink-3" />;
+    default:              return <ArrowRight size={14} className="text-ink-3" />;
   }
 }
 
@@ -37,12 +37,12 @@ interface StatCardProps {
 }
 function StatCard({ label, value, icon, accent }: StatCardProps) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-5 hover:-translate-y-0.5 transition-transform duration-200">
+    <div className="bg-surface border border-line rounded-lg p-5 hover:-translate-y-0.5 transition-transform duration-200">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-muted font-medium">{label}</span>
+        <span className="text-xs text-ink-3 font-medium">{label}</span>
         <span style={{ color: accent }}>{icon}</span>
       </div>
-      <div className="text-[32px] font-bold text-text tabular-nums">{value}</div>
+      <div className="text-[32px] font-bold text-ink tabular-nums">{value}</div>
     </div>
   );
 }
@@ -91,27 +91,27 @@ export default function DashboardPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Stat Cards */}
         <div className="grid grid-cols-5 gap-4">
-          <StatCard label="Total Leads" value={leads.length.toLocaleString()} icon={<Users size={16} />} accent="#00d4ff" />
-          <StatCard label="Hot Leads" value={hotLeads} icon={<Zap size={16} />} accent="#ff6b35" />
-          <StatCard label="Messages Sent" value={totalMessages} icon={<Send size={16} />} accent="#00d4ff" />
-          <StatCard label="Contact Rate" value={`${contactRate}%`} icon={<TrendingUp size={16} />} accent="#00ff88" />
-          <StatCard label="Meetings Won" value={meetingsBooked} icon={<CalendarCheck size={16} />} accent="#00ff88" />
+          <StatCard label="Total Leads" value={leads.length.toLocaleString()} icon={<Users size={16} />} accent="var(--accent)" />
+          <StatCard label="Hot Leads" value={hotLeads} icon={<Zap size={16} />} accent="var(--negative)" />
+          <StatCard label="Messages Sent" value={totalMessages} icon={<Send size={16} />} accent="var(--accent)" />
+          <StatCard label="Contact Rate" value={`${contactRate}%`} icon={<TrendingUp size={16} />} accent="var(--positive)" />
+          <StatCard label="Meetings Won" value={meetingsBooked} icon={<CalendarCheck size={16} />} accent="var(--positive)" />
         </div>
 
         {/* Middle Row */}
         <div className="grid grid-cols-[1fr_400px] gap-4">
           {/* Activity Feed */}
-          <div className="bg-surface border border-border rounded-lg p-5">
-            <h3 className="text-sm font-semibold text-text mb-4">Recent Activity</h3>
+          <div className="bg-surface border border-line rounded-lg p-5">
+            <h3 className="text-sm font-semibold text-ink mb-4">Recent Activity</h3>
             {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted text-center py-8">No activity yet. Run the agent or score leads to see activity here.</p>
+              <p className="text-sm text-ink-3 text-center py-8">No activity yet. Run the agent or score leads to see activity here.</p>
             ) : (
               <div className="space-y-1 max-h-[300px] overflow-y-auto">
                 {recentActivity.map(a => (
                   <div key={a.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-white/[0.02] transition-colors">
                     {activityIcon(a.type)}
-                    <span className="text-sm text-text flex-1">{a.text}</span>
-                    <span className="text-[11px] text-muted shrink-0">{a.createdAt ? relativeTime(a.createdAt) : ""}</span>
+                    <span className="text-sm text-ink flex-1">{a.text}</span>
+                    <span className="text-[11px] text-ink-3 shrink-0">{a.createdAt ? relativeTime(a.createdAt) : ""}</span>
                   </div>
                 ))}
               </div>
@@ -119,47 +119,47 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Campaigns */}
-          <div className="bg-surface border border-border rounded-lg p-5">
+          <div className="bg-surface border border-line rounded-lg p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text">Active Campaigns</h3>
-              <button onClick={() => setNewCampaign(true)} className="flex items-center gap-1 text-xs text-accent-blue hover:text-accent-blue/80 transition-colors">
+              <h3 className="text-sm font-semibold text-ink">Active Campaigns</h3>
+              <button onClick={() => setNewCampaign(true)} className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors">
                 <Plus size={12} /> New
               </button>
             </div>
 
             {newCampaign && (
-              <div className="mb-4 p-3 rounded-lg bg-surface2 border border-border space-y-2">
+              <div className="mb-4 p-3 rounded-lg bg-surface2 border border-line space-y-2">
                 <input
                   type="text" placeholder="Campaign name"
                   value={campaignName}
                   onChange={e => setCampaignName(e.target.value)}
-                  className="w-full h-8 rounded-md bg-white/5 border border-border px-3 text-xs text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40"
+                  className="w-full h-8 rounded-md bg-white/5 border border-line px-3 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40"
                 />
                 <input
                   type="text" placeholder="Target industry (optional)"
                   value={campaignIndustry}
                   onChange={e => setCampaignIndustry(e.target.value)}
-                  className="w-full h-8 rounded-md bg-white/5 border border-border px-3 text-xs text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40"
+                  className="w-full h-8 rounded-md bg-white/5 border border-line px-3 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40"
                 />
                 <div className="flex gap-2">
-                  <button onClick={handleCreateCampaign} className="flex-1 h-7 rounded-md bg-accent-blue/20 text-accent-blue text-xs font-medium hover:bg-accent-blue/30 transition-colors">Create</button>
-                  <button onClick={() => setNewCampaign(false)} className="flex-1 h-7 rounded-md bg-white/5 text-muted text-xs hover:bg-white/[0.08] transition-colors">Cancel</button>
+                  <button onClick={handleCreateCampaign} className="flex-1 h-7 rounded-md bg-accent/20 text-accent text-xs font-medium hover:bg-accent/30 transition-colors">Create</button>
+                  <button onClick={() => setNewCampaign(false)} className="flex-1 h-7 rounded-md bg-white/5 text-ink-3 text-xs hover:bg-white/[0.08] transition-colors">Cancel</button>
                 </div>
               </div>
             )}
 
             {activeCampaigns.length === 0 ? (
-              <p className="text-sm text-muted text-center py-8">No active campaigns. Create one to start tracking outreach.</p>
+              <p className="text-sm text-ink-3 text-center py-8">No active campaigns. Create one to start tracking outreach.</p>
             ) : (
               <div className="space-y-2">
                 {activeCampaigns.map(c => (
                   <div key={c.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-white/[0.02] transition-colors">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text truncate">{c.name}</p>
-                      {c.targetIndustry && <p className="text-[11px] text-muted">{c.targetIndustry}</p>}
+                      <p className="text-sm text-ink truncate">{c.name}</p>
+                      {c.targetIndustry && <p className="text-[11px] text-ink-3">{c.targetIndustry}</p>}
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                      c.status === "active" ? "bg-accent-green/15 text-accent-green" : "bg-accent-orange/15 text-accent-orange"
+                      c.status === "active" ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"
                     }`}>
                       {c.status}
                     </span>
@@ -172,16 +172,16 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-transparent hover:bg-surface2 transition-colors text-sm text-text">
+          <Link href="/" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-line bg-transparent hover:bg-surface2 transition-colors text-sm text-ink">
             <UserPlus size={14} /> Add Lead
           </Link>
-          <Link href="/message-lab" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-transparent hover:bg-surface2 transition-colors text-sm text-text">
+          <Link href="/message-lab" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-line bg-transparent hover:bg-surface2 transition-colors text-sm text-ink">
             <Sparkles size={14} /> Generate Message
           </Link>
-          <Link href="/scorer" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-transparent hover:bg-surface2 transition-colors text-sm text-text">
+          <Link href="/scorer" className="flex items-center gap-2 h-10 px-4 rounded-lg border border-line bg-transparent hover:bg-surface2 transition-colors text-sm text-ink">
             <Target size={14} /> Score Lead
           </Link>
-          <button onClick={handleExport} className="flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-transparent hover:bg-surface2 transition-colors text-sm text-text">
+          <button onClick={handleExport} className="flex items-center gap-2 h-10 px-4 rounded-lg border border-line bg-transparent hover:bg-surface2 transition-colors text-sm text-ink">
             <Download size={14} /> Export CSV
           </button>
         </div>

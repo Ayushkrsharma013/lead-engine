@@ -8,7 +8,7 @@ import { countActiveFilters } from "@/lib/filters";
 
 // ─── Chip multi-select ────────────────────────────────────────────────────────
 function ChipGroup({
-  options, selected, onToggle, accent = "#00d4ff",
+  options, selected, onToggle, accent = "var(--accent)",
 }: {
   options: string[];
   selected: string[];
@@ -87,13 +87,13 @@ const SIZES       = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 const COUNTRIES   = ["United States", "Canada", "United Kingdom", "Australia", "Remote"];
 const EMAIL_OPTS  = ["verified", "risky", "not_found"];
 const EMAIL_CONFIG: Record<string, { label: string; color: string }> = {
-  verified:  { label: "Verified",   color: "#10b981" },
-  risky:     { label: "Risky",      color: "#f59e0b" },
-  not_found: { label: "Not found",  color: "#475569" },
+  verified:  { label: "Verified",   color: "var(--positive)" },
+  risky:     { label: "Risky",      color: "var(--info)" },
+  not_found: { label: "Not found",  color: "var(--ink-4)" },
 };
 const SOURCES        = ["linkedin", "gmaps", "amazon"];
 const SOURCE_LABELS: Record<string, string> = { linkedin: "LinkedIn", gmaps: "Google Maps", amazon: "Amazon" };
-const SOURCE_COLORS: Record<string, string> = { linkedin: "#00d4ff", gmaps: "#00ff88", amazon: "#ff6b35" };
+const SOURCE_COLORS: Record<string, string> = { linkedin: "var(--accent)", gmaps: "var(--positive)", amazon: "var(--negative)" };
 
 // ─── Main component ───────────────────────────────────────────────────────────
 interface FilterPanelProps {
@@ -117,26 +117,26 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
       className="w-[272px] shrink-0 h-full flex flex-col overflow-hidden"
       style={{
         background: "var(--surface)",
-        borderRight: "1px solid var(--border)",
+        borderRight: "1px solid var(--line)",
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3 shrink-0"
-        style={{ borderBottom: "1px solid var(--border)" }}
+        style={{ borderBottom: "1px solid var(--line)" }}
       >
         <div className="flex items-center gap-2">
-          <SlidersHorizontal size={12} style={{ color: "var(--accent-blue)" }} />
-          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text)" }}>
+          <SlidersHorizontal size={12} style={{ color: "var(--accent)" }} />
+          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
             Filters
           </span>
           {activeCount > 0 && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
               style={{
-                background: "rgba(0,212,255,0.15)",
-                color: "var(--accent-blue)",
-                border: "1px solid rgba(0,212,255,0.25)",
+                background: "var(--accent-soft)",
+                color: "var(--accent)",
+                border: "1px solid var(--accent)/35",
               }}
             >
               {activeCount}
@@ -146,8 +146,8 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
         {activeCount > 0 && (
           <button
             onClick={() => onChange(DEFAULT_FILTERS)}
-            className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-text"
-            style={{ color: "var(--muted)" }}
+            className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-ink"
+            style={{ color: "var(--ink-3)" }}
           >
             <RotateCcw size={10} />
             Reset
@@ -159,17 +159,17 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
       <div className="flex-1 overflow-y-auto">
         {/* Role */}
         <Section title="Role" count={filters.seniority.length + filters.jobFunction.length} defaultOpen>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--muted)" }}>Seniority Level</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--ink-3)" }}>Seniority Level</p>
           <ChipGroup options={SENIORITY} selected={filters.seniority} onToggle={v => toggle("seniority", v)} accent={accent} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--muted)" }}>Job Function</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--ink-3)" }}>Job Function</p>
           <ChipGroup options={FUNCTIONS} selected={filters.jobFunction} onToggle={v => toggle("jobFunction", v)} accent={accent} />
         </Section>
 
         {/* Company */}
         <Section title="Company" count={filters.industries.length + filters.companySizes.length} defaultOpen>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--muted)" }}>Industry</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--ink-3)" }}>Industry</p>
           <ChipGroup options={INDUSTRIES} selected={filters.industries} onToggle={v => toggle("industries", v)} accent={accent} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--muted)" }}>Company Size</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--ink-3)" }}>Company Size</p>
           <ChipGroup options={SIZES} selected={filters.companySizes} onToggle={v => toggle("companySizes", v)} accent={accent} />
         </Section>
 
@@ -209,7 +209,7 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
 
         {/* Lead Score */}
         <Section title="Lead Score" count={filters.minScore > 0 ? 1 : 0}>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2 mt-1" style={{ color: "var(--muted)" }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2 mt-1" style={{ color: "var(--ink-3)" }}>
             Minimum Score
           </p>
           <div className="flex gap-1.5 flex-wrap">
@@ -238,9 +238,9 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
         <Section title="Date Saved" count={dateRangeCount} defaultOpen={false}>
           <div className="mt-2 space-y-2.5">
             <div>
-              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--muted)" }}>From</label>
+              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--ink-3)" }}>From</label>
               <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--muted)" }} />
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-3)" }} />
                 <input
                   type="date"
                   value={filters.dateFrom}
@@ -250,9 +250,9 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
               </div>
             </div>
             <div>
-              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--muted)" }}>To</label>
+              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--ink-3)" }}>To</label>
               <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--muted)" }} />
+                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-3)" }} />
                 <input
                   type="date"
                   value={filters.dateTo}
@@ -265,8 +265,8 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
             {dateRangeCount > 0 && (
               <button
                 onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
-                className="text-[11px] font-medium transition-colors hover:text-text"
-                style={{ color: "var(--muted)" }}
+                className="text-[11px] font-medium transition-colors hover:text-ink"
+                style={{ color: "var(--ink-3)" }}
               >
                 Clear dates
               </button>

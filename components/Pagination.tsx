@@ -12,7 +12,7 @@ interface PaginationProps {
   accent?: string;
 }
 
-export default function Pagination({ pagination, total, onChange, accent = "#00d4ff" }: PaginationProps) {
+export default function Pagination({ pagination, total, onChange, accent = "var(--accent)" }: PaginationProps) {
   const { page, pageSize } = pagination;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -46,13 +46,13 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
   return (
     <div
       className="flex items-center justify-between px-4 py-2.5 shrink-0"
-      style={{ borderTop: "1px solid var(--border)", background: "var(--bg)" }}
+      style={{ borderTop: "1px solid var(--line)", background: "var(--bg)" }}
     >
       {/* Record count */}
-      <span className="text-[11px] tabular-nums" style={{ color: "var(--muted)" }}>
+      <span className="text-[11px] tabular-nums" style={{ color: "var(--ink-3)" }}>
         {total === 0
           ? "No results"
-          : <><span style={{ color: "var(--text)", fontWeight: 600 }}>{from}–{to}</span> of {total.toLocaleString()} leads</>
+          : <><span style={{ color: "var(--ink)", fontWeight: 600 }}>{from}–{to}</span> of {total.toLocaleString()} leads</>
         }
       </span>
 
@@ -62,9 +62,9 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
           onClick={() => setPage(1)}
           disabled={page <= 1}
           className={navBtn}
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          style={{ color: "var(--ink-3)" }}
+          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="First page"
         >
           <ChevronsLeft size={13} />
@@ -73,9 +73,9 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
           onClick={() => setPage(page - 1)}
           disabled={page <= 1}
           className={navBtn}
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          style={{ color: "var(--ink-3)" }}
+          onMouseEnter={e => { if (page > 1) { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Previous page"
         >
           <ChevronLeft size={13} />
@@ -83,7 +83,7 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
 
         {pageNumbers.map((n, i) =>
           n === "…" ? (
-            <span key={`ellipsis-${i}`} className="text-xs px-1" style={{ color: "var(--muted)", opacity: 0.5 }}>…</span>
+            <span key={`ellipsis-${i}`} className="text-xs px-1" style={{ color: "var(--ink-3)", opacity: 0.5 }}>…</span>
           ) : (
             <button
               key={n}
@@ -94,10 +94,10 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
                 color: accent,
                 border: `1px solid ${accent}35`,
               } : {
-                color: "var(--muted)",
+                color: "var(--ink-3)",
               }}
-              onMouseEnter={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
-              onMouseLeave={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; } }}
+              onMouseEnter={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; } }}
+              onMouseLeave={e => { if (n !== page) { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; } }}
             >
               {n}
             </button>
@@ -108,9 +108,9 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
           onClick={() => setPage(page + 1)}
           disabled={page >= totalPages}
           className={navBtn}
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          style={{ color: "var(--ink-3)" }}
+          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Next page"
         >
           <ChevronRight size={13} />
@@ -119,9 +119,9 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
           onClick={() => setPage(totalPages)}
           disabled={page >= totalPages}
           className={navBtn}
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; } }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          style={{ color: "var(--ink-3)" }}
+          onMouseEnter={e => { if (page < totalPages) { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"; } }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Last page"
         >
           <ChevronsRight size={13} />
@@ -130,8 +130,8 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
 
       {/* Page size */}
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--muted)" }}>Rows</span>
-        <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+        <span className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>Rows</span>
+        <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
           {PAGE_SIZES.map(size => (
             <button
               key={size}
@@ -141,10 +141,10 @@ export default function Pagination({ pagination, total, onChange, accent = "#00d
                 background: `${accent}20`,
                 color: accent,
               } : {
-                color: "var(--muted)",
+                color: "var(--ink-3)",
               }}
-              onMouseEnter={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-              onMouseLeave={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+              onMouseEnter={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--ink)"; }}
+              onMouseLeave={e => { if (pageSize !== size) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; }}
             >
               {size}
             </button>

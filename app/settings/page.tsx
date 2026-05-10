@@ -60,8 +60,8 @@ const SOURCES_CONFIG: {
     key: "linkedin",
     label: "LinkedIn",
     icon: Linkedin,
-    color: "#00d4ff",
-    bg: "rgba(0,212,255,0.08)",
+    color: "var(--accent)",
+    bg: "var(--accent-soft)",
     description: "Scrape decision-makers from LinkedIn via Apollo/ZoomInfo data. Best for B2B outreach — verified job titles, company data, and email enrichment.",
     status: "Fully operational",
   },
@@ -69,7 +69,7 @@ const SOURCES_CONFIG: {
     key: "gmaps",
     label: "Google Maps",
     icon: Map,
-    color: "#00ff88",
+    color: "var(--positive)",
     bg: "rgba(0,255,136,0.08)",
     description: "Find local business owners from Google Maps listings. Great for agency outreach, local services, and SMB targeting.",
     status: "Coming soon",
@@ -79,7 +79,7 @@ const SOURCES_CONFIG: {
     key: "amazon",
     label: "Amazon",
     icon: ShoppingBag,
-    color: "#ff6b35",
+    color: "var(--negative)",
     bg: "rgba(255,107,53,0.08)",
     description: "Identify Amazon Seller Central operators by category and revenue signals. Useful for e-commerce tools and supplier outreach.",
     status: "Coming soon",
@@ -103,7 +103,7 @@ function Stars({ count }: { count: number }) {
           key={i}
           size={10}
           style={{
-            color: i <= count ? "#fbbf24" : "var(--border-bright)",
+            color: i <= count ? "#fbbf24" : "var(--line-strong)",
             fill: i <= count ? "#fbbf24" : "none",
           }}
         />
@@ -126,7 +126,7 @@ function SourceCard({
       className="rounded-xl p-4 transition-all"
       style={{
         background: enabled ? cfg.bg : "rgba(255,255,255,0.02)",
-        border: `1px solid ${enabled ? cfg.color + "30" : "var(--border)"}`,
+        border: `1px solid ${enabled ? cfg.color + "30" : "var(--line)"}`,
         boxShadow: enabled ? `0 0 20px ${cfg.color}08` : "none",
       }}
     >
@@ -134,19 +134,19 @@ function SourceCard({
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: enabled ? cfg.bg : "rgba(255,255,255,0.04)", border: `1px solid ${enabled ? cfg.color + "30" : "var(--border)"}` }}
+            style={{ background: enabled ? cfg.bg : "var(--surface-2)", border: `1px solid ${enabled ? cfg.color + "30" : "var(--line)"}` }}
           >
-            <Icon size={16} style={{ color: enabled ? cfg.color : "var(--muted)" }} />
+            <Icon size={16} style={{ color: enabled ? cfg.color : "var(--ink-3)" }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+              <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
                 {cfg.label}
               </span>
               {cfg.comingSoon && (
                 <span
                   className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
-                  style={{ background: "rgba(255,107,53,0.12)", color: "var(--accent-orange)", border: "1px solid rgba(255,107,53,0.2)" }}
+                  style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid rgba(255,107,53,0.2)" }}
                 >
                   Soon
                 </span>
@@ -154,13 +154,13 @@ function SourceCard({
               {!cfg.comingSoon && enabled && (
                 <span
                   className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1"
-                  style={{ background: "rgba(0,255,136,0.1)", color: "var(--accent-green)", border: "1px solid rgba(0,255,136,0.2)" }}
+                  style={{ background: "rgba(0,255,136,0.1)", color: "var(--positive)", border: "1px solid rgba(0,255,136,0.2)" }}
                 >
                   <Check size={8} /> Active
                 </span>
               )}
             </div>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>{cfg.status}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{cfg.status}</p>
           </div>
         </div>
 
@@ -180,14 +180,14 @@ function SourceCard({
         </button>
       </div>
 
-      <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--muted)" }}>
+      <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--ink-3)" }}>
         {cfg.description}
       </p>
 
       {cfg.comingSoon && (
         <div
           className="mt-3 flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg"
-          style={{ background: "rgba(255,107,53,0.08)", color: "var(--accent-orange)", border: "1px solid rgba(255,107,53,0.15)" }}
+          style={{ background: "rgba(255,107,53,0.08)", color: "var(--negative)", border: "1px solid rgba(255,107,53,0.15)" }}
         >
           <AlertTriangle size={11} />
           Integration in development — toggle will unlock automatically on release.
@@ -202,18 +202,18 @@ function ModelCard({ data }: { data: typeof AI_MODELS[number] }) {
   return (
     <div
       className="rounded-xl p-4"
-      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)" }}
+      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)" }}
     >
       <div className="mb-3">
-        <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>{data.useCase}</p>
-        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>{data.desc}</p>
+        <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{data.useCase}</p>
+        <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{data.desc}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         {[
-          { tier: "Best", ...data.recommended, accent: "#00d4ff" },
-          { tier: "Alt", ...data.alternative, accent: "#7c3aed" },
-          { tier: "Budget", ...data.budget, accent: "#00ff88" },
+          { tier: "Best", ...data.recommended, accent: "var(--accent)" },
+          { tier: "Alt", ...data.alternative, accent: "var(--info)" },
+          { tier: "Budget", ...data.budget, accent: "var(--positive)" },
         ].map(m => (
           <div
             key={m.tier}
@@ -224,8 +224,8 @@ function ModelCard({ data }: { data: typeof AI_MODELS[number] }) {
               <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: m.accent }}>{m.tier}</span>
               <Stars count={m.quality} />
             </div>
-            <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--text)" }}>{m.name}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>{m.provider}</p>
+            <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--ink)" }}>{m.name}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-3)" }}>{m.provider}</p>
             <div className="flex items-center gap-1 mt-2">
               <DollarSign size={9} style={{ color: m.accent }} />
               <span className="text-[10px] font-medium" style={{ color: m.accent }}>{m.cost}</span>
@@ -238,8 +238,8 @@ function ModelCard({ data }: { data: typeof AI_MODELS[number] }) {
         className="mt-2.5 flex items-start gap-2 text-[11px] px-3 py-2 rounded-lg"
         style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)" }}
       >
-        <Zap size={11} className="shrink-0 mt-0.5" style={{ color: "var(--accent-blue)" }} />
-        <span style={{ color: "var(--muted)" }}>{data.note}</span>
+        <Zap size={11} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+        <span style={{ color: "var(--ink-3)" }}>{data.note}</span>
       </div>
     </div>
   );
@@ -280,14 +280,14 @@ export default function SettingsPage() {
                   className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
                   style={active ? {
                     background: "rgba(0,212,255,0.1)",
-                    color: "var(--accent-blue)",
+                    color: "var(--accent)",
                     border: "1px solid rgba(0,212,255,0.2)",
                   } : {
-                    color: "var(--muted)",
+                    color: "var(--ink-3)",
                     border: "1px solid transparent",
                   }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--ink)"; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; }}
                 >
                   <TabIcon size={12} />
                   {tab.label}
@@ -300,7 +300,7 @@ export default function SettingsPage() {
           {activeTab === "sources" && (
             <>
               <div className="mb-1">
-                <p className="text-[12px]" style={{ color: "var(--muted)" }}>
+                <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
                   Enable or disable data sources. Disabled sources are hidden from the Lead Intelligence toolbar.
                   At least one source must remain active.
                 </p>
@@ -320,7 +320,7 @@ export default function SettingsPage() {
           {activeTab === "ai" && (
             <>
               <div className="mb-1">
-                <p className="text-[12px] leading-relaxed" style={{ color: "var(--muted)" }}>
+                <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
                   Claude (Anthropic) is the current AI engine powering Message Lab and Lead Scorer.
                   Below is a cost-vs-quality guide for swapping to cheaper models on each task type.
                   All pricing is approximate output token cost.
@@ -333,11 +333,11 @@ export default function SettingsPage() {
                 style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(0,255,136,0.1)" }}>
-                  <DollarSign size={15} style={{ color: "var(--accent-green)" }} />
+                  <DollarSign size={15} style={{ color: "var(--positive)" }} />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold" style={{ color: "var(--accent-green)" }}>Quick cost comparison</p>
-                  <p className="text-[11px]" style={{ color: "var(--muted)" }}>
+                  <p className="text-[12px] font-semibold" style={{ color: "var(--positive)" }}>Quick cost comparison</p>
+                  <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
                     Claude Sonnet 4 = $3/M tokens · GPT-4o mini = $0.15/M · Gemini Flash = $0.075/M · Groq Llama = Free
                   </p>
                 </div>
@@ -347,13 +347,13 @@ export default function SettingsPage() {
 
               <div
                 className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]"
-                style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", color: "var(--muted)" }}
+                style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", color: "var(--ink-3)" }}
               >
-                <Zap size={12} className="shrink-0 mt-0.5" style={{ color: "var(--accent-purple)" }} />
+                <Zap size={12} className="shrink-0 mt-0.5" style={{ color: "var(--info)" }} />
                 <span>
-                  <span className="font-semibold" style={{ color: "var(--accent-purple)" }}>Recommended stack:</span>{" "}
-                  Use <strong style={{ color: "var(--text)" }}>GPT-4o mini</strong> for message generation and scoring (80% of your usage),
-                  and <strong style={{ color: "var(--text)" }}>DeepSeek V3</strong> for any complex reasoning tasks.
+                  <span className="font-semibold" style={{ color: "var(--info)" }}>Recommended stack:</span>{" "}
+                  Use <strong style={{ color: "var(--ink)" }}>GPT-4o mini</strong> for message generation and scoring (80% of your usage),
+                  and <strong style={{ color: "var(--ink)" }}>DeepSeek V3</strong> for any complex reasoning tasks.
                   This cuts AI cost by ~90% vs Claude Sonnet with minimal quality drop.
                 </span>
               </div>
@@ -365,16 +365,16 @@ export default function SettingsPage() {
             <div className="space-y-3">
               <div
                 className="rounded-xl p-5 text-center"
-                style={{ background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)" }}
+                style={{ background: "rgba(0,212,255,0.04)", border: "1px solid var(--accent-soft)" }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-3"
                   style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(124,58,237,0.15))", border: "1px solid rgba(0,212,255,0.3)", boxShadow: "0 0 20px rgba(0,212,255,0.1)" }}
                 >
-                  <Zap size={20} style={{ color: "var(--accent-blue)" }} />
+                  <Zap size={20} style={{ color: "var(--accent)" }} />
                 </div>
-                <p className="text-[16px] font-bold" style={{ color: "var(--text)" }}>LinkedIn ProOS</p>
-                <p className="text-[12px] mt-1" style={{ color: "var(--muted)" }}>Version 1.0.0 · AI-powered B2B prospecting</p>
+                <p className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>LinkedIn ProOS</p>
+                <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>Version 1.0.0 · AI-powered B2B prospecting</p>
               </div>
 
               {[
@@ -388,18 +388,18 @@ export default function SettingsPage() {
                 <div
                   key={row.label}
                   className="flex items-center justify-between px-4 py-2.5 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)" }}
+                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)" }}
                 >
-                  <span className="text-[12px]" style={{ color: "var(--muted)" }}>{row.label}</span>
-                  <span className="text-[12px] font-medium" style={{ color: "var(--text)" }}>{row.value}</span>
+                  <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>{row.label}</span>
+                  <span className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>{row.value}</span>
                 </div>
               ))}
 
               <div
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px]"
-                style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)", color: "var(--muted)" }}
+                style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)", color: "var(--ink-3)" }}
               >
-                <Info size={11} style={{ color: "var(--accent-blue)" }} />
+                <Info size={11} style={{ color: "var(--accent)" }} />
                 Your Anthropic API key is stored in React memory only — never written to disk or database.
               </div>
             </div>

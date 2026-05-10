@@ -38,10 +38,7 @@ export default function CommandPalette() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen(prev => !prev);
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(prev => !prev); }
       if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", down);
@@ -49,11 +46,7 @@ export default function CommandPalette() {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setQuery("");
-      setHighlight(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (open) { setQuery(""); setHighlight(0); setTimeout(() => inputRef.current?.focus(), 50); }
   }, [open]);
 
   const leads = state.leads;
@@ -77,28 +70,9 @@ export default function CommandPalette() {
     | { type: "action"; label: string; sub: string; path: string; icon: LucideIcon };
 
   const allResults: ResultItem[] = [
-    ...matchedLeads.map(l => ({
-      type: "lead" as const,
-      label: l.name,
-      sub: `${l.title} · ${l.company}`,
-      path: "/",
-      lead: l,
-    })),
-    ...matchedModules.map(m => ({
-      type: "module" as const,
-      label: m.name,
-      sub: m.desc,
-      path: m.path,
-      module: m.module,
-      icon: m.icon,
-    })),
-    ...matchedActions.map(a => ({
-      type: "action" as const,
-      label: a.name,
-      sub: a.desc,
-      path: a.path,
-      icon: a.icon,
-    })),
+    ...matchedLeads.map(l => ({ type: "lead" as const, label: l.name, sub: `${l.title} · ${l.company}`, path: "/", lead: l })),
+    ...matchedModules.map(m => ({ type: "module" as const, label: m.name, sub: m.desc, path: m.path, module: m.module, icon: m.icon })),
+    ...matchedActions.map(a => ({ type: "action" as const, label: a.name, sub: a.desc, path: a.path, icon: a.icon })),
   ];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -110,9 +84,7 @@ export default function CommandPalette() {
 
   const execute = (item: ResultItem) => {
     setOpen(false);
-    if (item.type === "module") {
-      dispatch({ type: "SET_MODULE", payload: item.module });
-    }
+    if (item.type === "module") dispatch({ type: "SET_MODULE", payload: item.module });
     router.push(item.path);
   };
 
@@ -125,63 +97,34 @@ export default function CommandPalette() {
 
   if (!open) return null;
 
-  // Group labels
-  const hasLeads   = matchedLeads.length > 0;
+  const hasLeads = matchedLeads.length > 0;
   const hasModules = matchedModules.length > 0;
   const hasActions = !q && matchedActions.length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center"
-      style={{ paddingTop: "14vh" }}
-      onClick={() => setOpen(false)}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 animate-fade-in"
-        style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-      />
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center" style={{ paddingTop: "14vh" }} onClick={() => setOpen(false)}>
+      <div className="absolute inset-0 animate-fade-in" style={{ background: "rgba(0,0,0,0.7)" }} />
 
-      {/* Panel */}
       <div
         className="relative w-[560px] max-w-[95vw] overflow-hidden animate-scale-in"
-        style={{
-          background: "rgba(13,13,18,0.96)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(0,212,255,0.15)",
-          borderRadius: "16px",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), 0 0 40px rgba(0,212,255,0.08)",
-        }}
+        style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", boxShadow: "var(--shadow-lg)" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Search input */}
-        <div
-          className="flex items-center gap-3 px-4 py-3.5"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}
-          >
-            <Search size={14} style={{ color: "var(--accent-blue)" }} />
+        <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/30" }}>
+            <Search size={14} style={{ color: "var(--accent)" }} />
           </div>
           <input
-            ref={inputRef}
-            type="text"
-            value={query}
+            ref={inputRef} type="text" value={query}
             onChange={e => { setQuery(e.target.value); setHighlight(0); }}
             onKeyDown={handleKeyDown}
             placeholder="Search leads, modules, actions…"
             className="flex-1 bg-transparent text-sm focus:outline-none"
-            style={{ color: "var(--text)" }}
+            style={{ color: "var(--ink)" }}
           />
           <div className="flex items-center gap-1.5 shrink-0">
-            <kbd
-              className="text-[10px] px-1.5 py-0.5 rounded font-mono"
-              style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted)", border: "1px solid rgba(255,255,255,0.08)" }}
-            >
-              esc
-            </kbd>
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ background: "var(--surface-2)", color: "var(--ink-3)", border: "1px solid var(--line)" }}>esc</kbd>
           </div>
         </div>
 
@@ -189,105 +132,70 @@ export default function CommandPalette() {
         <div className="max-h-[380px] overflow-y-auto py-2" ref={listRef}>
           {allResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.04)" }}
-              >
-                <Search size={16} style={{ color: "var(--muted)" }} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--surface-2)" }}>
+                <Search size={16} style={{ color: "var(--ink-3)" }} />
               </div>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>No results for "{query}"</p>
+              <p className="text-sm" style={{ color: "var(--ink-3)" }}>No results for "{query}"</p>
             </div>
           ) : (
             <>
-              {/* Lead results */}
               {hasLeads && (
                 <>
                   <GroupLabel label="Leads" />
                   {matchedLeads.map((lead, i) => {
-                    const idx = i;
-                    const active = idx === highlight;
+                    const idx = i; const active = idx === highlight;
                     return (
-                      <ResultRow
-                        key={`lead-${lead.id}`}
-                        active={active}
-                        onClick={() => execute(allResults[idx])}
-                        onMouseEnter={() => setHighlight(idx)}
-                      >
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{ background: "rgba(124,58,237,0.2)", color: "var(--accent-purple)" }}
-                        >
+                      <ResultRow key={`lead-${lead.id}`} active={active} onClick={() => execute(allResults[idx])} onMouseEnter={() => setHighlight(idx)}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: "var(--positive-soft)", color: "var(--positive)" }}>
                           {lead.name?.[0] || "?"}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{lead.name}</p>
-                          <p className="text-[11px] truncate" style={{ color: "var(--muted)" }}>{lead.title} · {lead.company}</p>
+                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--ink)" }}>{lead.name}</p>
+                          <p className="text-[11px] truncate" style={{ color: "var(--ink-3)" }}>{lead.title} · {lead.company}</p>
                         </div>
-                        <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(124,58,237,0.12)", color: "var(--accent-purple)", border: "1px solid rgba(124,58,237,0.2)" }}>Lead</span>
+                        <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: "var(--positive-soft)", color: "var(--positive)", border: "1px solid var(--positive)/25" }}>Lead</span>
                       </ResultRow>
                     );
                   })}
                 </>
               )}
 
-              {/* Module results */}
               {hasModules && (
                 <>
                   <GroupLabel label={q ? "Modules" : "Navigate to"} />
                   {matchedModules.map((mod, i) => {
-                    const idx = matchedLeads.length + i;
-                    const active = idx === highlight;
-                    const Icon = mod.icon;
+                    const idx = matchedLeads.length + i; const active = idx === highlight; const Icon = mod.icon;
                     return (
-                      <ResultRow
-                        key={`module-${mod.module}`}
-                        active={active}
-                        onClick={() => execute(allResults[idx])}
-                        onMouseEnter={() => setHighlight(idx)}
-                      >
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.12)" }}
-                        >
-                          <Icon size={13} style={{ color: "var(--accent-blue)" }} />
+                      <ResultRow key={`module-${mod.module}`} active={active} onClick={() => execute(allResults[idx])} onMouseEnter={() => setHighlight(idx)}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-soft)", border: "1px solid var(--line)" }}>
+                          <Icon size={13} style={{ color: "var(--accent)" }} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{mod.name}</p>
-                          <p className="text-[11px] truncate" style={{ color: "var(--muted)" }}>{mod.desc}</p>
+                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--ink)" }}>{mod.name}</p>
+                          <p className="text-[11px] truncate" style={{ color: "var(--ink-3)" }}>{mod.desc}</p>
                         </div>
-                        <ArrowRight size={12} style={{ color: "var(--muted)", opacity: 0.5 }} className="shrink-0" />
+                        <ArrowRight size={12} style={{ color: "var(--ink-3)", opacity: 0.5 }} className="shrink-0" />
                       </ResultRow>
                     );
                   })}
                 </>
               )}
 
-              {/* Quick actions */}
               {hasActions && (
                 <>
                   <GroupLabel label="Quick Actions" />
                   {matchedActions.map((action, i) => {
-                    const idx = matchedLeads.length + matchedModules.length + i;
-                    const active = idx === highlight;
-                    const Icon = action.icon;
+                    const idx = matchedLeads.length + matchedModules.length + i; const active = idx === highlight; const Icon = action.icon;
                     return (
-                      <ResultRow
-                        key={`action-${action.name}`}
-                        active={active}
-                        onClick={() => execute(allResults[idx])}
-                        onMouseEnter={() => setHighlight(idx)}
-                      >
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ background: "rgba(0,212,255,0.06)" }}
-                        >
-                          <Icon size={13} style={{ color: "var(--accent-blue)" }} />
+                      <ResultRow key={`action-${action.name}`} active={active} onClick={() => execute(allResults[idx])} onMouseEnter={() => setHighlight(idx)}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--info-soft)" }}>
+                          <Icon size={13} style={{ color: "var(--info)" }} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{action.name}</p>
-                          <p className="text-[11px] truncate" style={{ color: "var(--muted)" }}>{action.desc}</p>
+                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--ink)" }}>{action.name}</p>
+                          <p className="text-[11px] truncate" style={{ color: "var(--ink-3)" }}>{action.desc}</p>
                         </div>
-                        <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,212,255,0.08)", color: "var(--accent-blue)", border: "1px solid rgba(0,212,255,0.15)" }}>Action</span>
+                        <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full" style={{ background: "var(--info-soft)", color: "var(--info)", border: "1px solid var(--info)/25" }}>Action</span>
                       </ResultRow>
                     );
                   })}
@@ -298,17 +206,12 @@ export default function CommandPalette() {
         </div>
 
         {/* Footer */}
-        <div
-          className="flex items-center justify-between px-4 py-2.5"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
-        >
+        <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
           <div className="flex items-center gap-3">
             <KbdHint keys={["↑", "↓"]} label="navigate" />
             <KbdHint keys={["↵"]} label="open" />
           </div>
-          <span className="text-[10px]" style={{ color: "var(--muted)" }}>
-            {allResults.length} result{allResults.length !== 1 ? "s" : ""}
-          </span>
+          <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>{allResults.length} result{allResults.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
     </div>
@@ -316,33 +219,15 @@ export default function CommandPalette() {
 }
 
 function GroupLabel({ label }: { label: string }) {
-  return (
-    <p
-      className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em]"
-      style={{ color: "var(--muted)", opacity: 0.7 }}
-    >
-      {label}
-    </p>
-  );
+  return <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink-4)" }}>{label}</p>;
 }
 
-function ResultRow({
-  children, active, onClick, onMouseEnter,
-}: {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-  onMouseEnter: () => void;
-}) {
+function ResultRow({ children, active, onClick, onMouseEnter }: { children: React.ReactNode; active: boolean; onClick: () => void; onMouseEnter: () => void }) {
   return (
     <button
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
+      onClick={onClick} onMouseEnter={onMouseEnter}
       className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-      style={{
-        background: active ? "rgba(0,212,255,0.06)" : "transparent",
-        borderLeft: active ? "2px solid rgba(0,212,255,0.5)" : "2px solid transparent",
-      }}
+      style={{ background: active ? "var(--surface-2)" : "transparent", borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent" }}
     >
       {children}
     </button>
@@ -353,15 +238,9 @@ function KbdHint({ keys, label }: { keys: string[]; label: string }) {
   return (
     <div className="flex items-center gap-1">
       {keys.map(k => (
-        <kbd
-          key={k}
-          className="text-[10px] px-1.5 py-0.5 rounded font-mono"
-          style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted)", border: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          {k}
-        </kbd>
+        <kbd key={k} className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ background: "var(--surface-2)", color: "var(--ink-3)", border: "1px solid var(--line)" }}>{k}</kbd>
       ))}
-      <span className="text-[10px] ml-0.5" style={{ color: "var(--muted)" }}>{label}</span>
+      <span className="text-[10px] ml-0.5" style={{ color: "var(--ink-3)" }}>{label}</span>
     </div>
   );
 }

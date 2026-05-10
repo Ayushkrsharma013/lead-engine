@@ -11,8 +11,8 @@ import { useApp } from "@/lib/AppContext";
 
 type DateRange = "7d" | "30d" | "90d" | "all";
 
-const BUCKET_COLORS = ["#ef4444", "#f97316", "#f59e0b", "#84cc16", "#00ff88"];
-const PIE_COLORS = ["#00d4ff", "#7c3aed", "#ff6b35", "#00ff88", "#f59e0b"];
+const BUCKET_COLORS = ["var(--negative)", "#f97316", "var(--info)", "#84cc16", "var(--positive)"];
+const PIE_COLORS = ["var(--accent)", "var(--info)", "var(--negative)", "var(--positive)", "var(--info)"];
 
 function filterByDate<T extends { savedAt?: string; createdAt?: string; fetchedAt?: string }>(items: T[], range: DateRange): T[] {
   if (range === "all") return items;
@@ -100,7 +100,7 @@ export default function AnalyticsPage() {
               key={r}
               onClick={() => setRange(r)}
               className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
-                range === r ? "bg-accent-blue text-black" : "text-muted hover:text-text bg-white/[0.04]"
+                range === r ? "bg-accent text-black" : "text-ink-3 hover:text-ink bg-white/[0.04]"
               }`}
             >
               {r === "all" ? "All" : r.toUpperCase()}
@@ -110,10 +110,10 @@ export default function AnalyticsPage() {
 
         {/* Stat row */}
         <div className="grid grid-cols-4 gap-4">
-          <MiniStat label="Leads Added" value={filteredLeads.length} icon={<Users size={14} />} color="#00d4ff" />
-          <MiniStat label="Messages Sent" value={filteredMessages.length} icon={<TrendingUp size={14} />} color="#7c3aed" />
-          <MiniStat label="Hot Leads" value={hotLeads} icon={<Zap size={14} />} color="#ff6b35" />
-          <MiniStat label="Won Deals" value={wonDeals} icon={<CheckCircle2 size={14} />} color="#00ff88" />
+          <MiniStat label="Leads Added" value={filteredLeads.length} icon={<Users size={14} />} color="var(--accent)" />
+          <MiniStat label="Messages Sent" value={filteredMessages.length} icon={<TrendingUp size={14} />} color="var(--info)" />
+          <MiniStat label="Hot Leads" value={hotLeads} icon={<Zap size={14} />} color="var(--negative)" />
+          <MiniStat label="Won Deals" value={wonDeals} icon={<CheckCircle2 size={14} />} color="var(--positive)" />
         </div>
 
         {/* 2×2 Chart Grid */}
@@ -122,11 +122,11 @@ export default function AnalyticsPage() {
           <ChartCard title="Weekly Leads Added">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={weeklyData}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fill: "var(--muted)", fontSize: 10 }} />
-                <YAxis tick={{ fill: "var(--muted)", fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text)" }} />
-                <Bar dataKey="count" fill="var(--accent-blue)" radius={[4, 4, 0, 0]} />
+                <CartesianGrid stroke="var(--line)" strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fill: "var(--ink-3)", fontSize: 10 }} />
+                <YAxis tick={{ fill: "var(--ink-3)", fontSize: 10 }} />
+                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12, color: "var(--ink)" }} />
+                <Bar dataKey="count" fill="var(--accent)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -143,8 +143,8 @@ export default function AnalyticsPage() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text)" }} />
-                  <Legend formatter={(v) => <span className="text-[11px] text-muted">{v}</span>} />
+                  <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12, color: "var(--ink)" }} />
+                  <Legend formatter={(v) => <span className="text-[11px] text-ink-3">{v}</span>} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -154,10 +154,10 @@ export default function AnalyticsPage() {
           <ChartCard title="ICP Score Distribution">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={scoreData}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fill: "var(--muted)", fontSize: 10 }} />
-                <YAxis tick={{ fill: "var(--muted)", fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text)" }} />
+                <CartesianGrid stroke="var(--line)" strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fill: "var(--ink-3)", fontSize: 10 }} />
+                <YAxis tick={{ fill: "var(--ink-3)", fontSize: 10 }} />
+                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12, color: "var(--ink)" }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {scoreData.map((_, i) => (
                     <Cell key={i} fill={BUCKET_COLORS[i]} />
@@ -171,11 +171,11 @@ export default function AnalyticsPage() {
           <ChartCard title="Pipeline Funnel">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={funnelData} layout="vertical">
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fill: "var(--muted)", fontSize: 10 }} />
-                <YAxis type="category" dataKey="name" tick={{ fill: "var(--muted)", fontSize: 10 }} width={70} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text)" }} />
-                <Bar dataKey="count" fill="var(--accent-blue)" radius={[0, 4, 4, 0]} />
+                <CartesianGrid stroke="var(--line)" strokeDasharray="3 3" />
+                <XAxis type="number" tick={{ fill: "var(--ink-3)", fontSize: 10 }} />
+                <YAxis type="category" dataKey="name" tick={{ fill: "var(--ink-3)", fontSize: 10 }} width={70} />
+                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 12, color: "var(--ink)" }} />
+                <Bar dataKey="count" fill="var(--accent)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -187,8 +187,8 @@ export default function AnalyticsPage() {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-4">
-      <h3 className="text-xs font-semibold text-text mb-3">{title}</h3>
+    <div className="bg-surface border border-line rounded-lg p-4">
+      <h3 className="text-xs font-semibold text-ink mb-3">{title}</h3>
       {children}
     </div>
   );
@@ -196,16 +196,16 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 function MiniStat({ label, value, icon, color }: { label: string; value: number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-4 flex items-center gap-3">
+    <div className="bg-surface border border-line rounded-lg p-4 flex items-center gap-3">
       <span style={{ color }}>{icon}</span>
       <div>
-        <div className="text-lg font-bold text-text tabular-nums">{value.toLocaleString()}</div>
-        <div className="text-[10px] text-muted">{label}</div>
+        <div className="text-lg font-bold text-ink tabular-nums">{value.toLocaleString()}</div>
+        <div className="text-[10px] text-ink-3">{label}</div>
       </div>
     </div>
   );
 }
 
 function EmptyChart() {
-  return <div className="flex items-center justify-center h-[200px] text-xs text-muted">No data for this period</div>;
+  return <div className="flex items-center justify-center h-[200px] text-xs text-ink-3">No data for this period</div>;
 }

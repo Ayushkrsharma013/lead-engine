@@ -115,13 +115,13 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Mode toggle + Add */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-0.5 bg-white/[0.04] rounded-lg p-0.5 border border-border">
+          <div className="flex items-center gap-0.5 bg-white/[0.04] rounded-lg p-0.5 border border-line">
             {(["personal", "agency"] as const).map(m => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={`text-xs px-4 py-1.5 rounded-md font-medium transition-all ${
-                  mode === m ? "bg-accent-blue/20 text-accent-blue" : "text-muted hover:text-text"
+                  mode === m ? "bg-accent/20 text-accent" : "text-ink-3 hover:text-ink"
                 }`}
               >
                 {m === "personal" ? "Personal Mode" : "Agency Mode"}
@@ -130,7 +130,7 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
           </div>
           <button
             onClick={() => { setShowAdd(true); resetForm(); }}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-accent-blue/20 text-accent-blue text-sm font-medium hover:bg-accent-blue/30 transition-colors"
+            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-accent/20 text-accent text-sm font-medium hover:bg-accent/30 transition-colors"
           >
             <Plus size={14} /> Add Client
           </button>
@@ -143,15 +143,15 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
           </div>
         ) : clients.length === 0 ? (
           <div className="text-center py-20">
-            <Briefcase size={32} className="mx-auto text-muted/50 mb-3" />
-            <p className="text-sm text-text font-medium">No clients yet</p>
-            <p className="text-xs text-muted mt-1">Add your first client to start managing leads</p>
+            <Briefcase size={32} className="mx-auto text-ink-3/50 mb-3" />
+            <p className="text-sm text-ink font-medium">No clients yet</p>
+            <p className="text-xs text-ink-3 mt-1">Add your first client to start managing leads</p>
           </div>
         ) : (
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="border border-line rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-surface2">
-                <tr className="text-left text-[10px] text-muted uppercase tracking-wider">
+                <tr className="text-left text-[10px] text-ink-3 uppercase tracking-wider">
                   <th className="px-4 py-2.5 font-medium">Client</th>
                   <th className="px-4 py-2.5 font-medium">Company</th>
                   <th className="px-4 py-2.5 font-medium">Industry</th>
@@ -162,24 +162,24 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
               </thead>
               <tbody>
                 {clients.map(c => (
-                  <tr key={c.id} className="border-t border-border hover:bg-white/[0.01] transition-colors">
+                  <tr key={c.id} className="border-t border-line hover:bg-white/[0.01] transition-colors">
                     <td className="px-4 py-2.5">
                       <button onClick={() => setSelectedId(selectedId === c.id ? null : c.id)} className="flex items-center gap-2.5 text-left">
-                        <div className="w-7 h-7 rounded-full bg-accent-purple/20 text-accent-purple flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-7 h-7 rounded-full bg-info/20 text-info flex items-center justify-center text-[10px] font-bold">
                           {getInitials(c.name)}
                         </div>
-                        <span className="text-xs font-medium text-text hover:text-accent-blue transition-colors">{c.name}</span>
+                        <span className="text-xs font-medium text-ink hover:text-accent transition-colors">{c.name}</span>
                       </button>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-muted">{c.company || "—"}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted">{c.industry || "—"}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted">{clientLeads.length}</td>
-                    <td className="px-4 py-2.5 text-xs text-text font-medium">${c.monthlyRetainer.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink-3">{c.company || "—"}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink-3">{c.industry || "—"}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink-3">{clientLeads.length}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink font-medium">${c.monthlyRetainer.toLocaleString()}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setSelectedId(selectedId === c.id ? null : c.id)} className="text-[10px] text-accent-blue hover:text-accent-blue/80 px-1.5 py-0.5 rounded hover:bg-white/[0.04]">View</button>
-                        <button onClick={() => generateReport(c)} className="text-[10px] text-muted hover:text-text px-1.5 py-0.5 rounded hover:bg-white/[0.04]"><FileText size={10} /></button>
-                        <button onClick={() => handleArchive(c)} className="text-[10px] text-muted hover:text-text px-1.5 py-0.5 rounded hover:bg-white/[0.04]"><Archive size={10} /></button>
+                        <button onClick={() => setSelectedId(selectedId === c.id ? null : c.id)} className="text-[10px] text-accent hover:text-accent/80 px-1.5 py-0.5 rounded hover:bg-white/[0.04]">View</button>
+                        <button onClick={() => generateReport(c)} className="text-[10px] text-ink-3 hover:text-ink px-1.5 py-0.5 rounded hover:bg-white/[0.04]"><FileText size={10} /></button>
+                        <button onClick={() => handleArchive(c)} className="text-[10px] text-ink-3 hover:text-ink px-1.5 py-0.5 rounded hover:bg-white/[0.04]"><Archive size={10} /></button>
                       </div>
                     </td>
                   </tr>
@@ -191,52 +191,52 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
 
         {/* Client Detail */}
         {selected && (
-          <div className="border border-border rounded-lg p-5 bg-surface space-y-4 animate-fade-up">
+          <div className="border border-line rounded-lg p-5 bg-surface space-y-4 animate-fade-up">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-text">{selected.name}</h3>
-                <p className="text-xs text-muted">{selected.company} · {selected.industry}</p>
+                <h3 className="text-sm font-semibold text-ink">{selected.name}</h3>
+                <p className="text-xs text-ink-3">{selected.company} · {selected.industry}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => generateReport(selected)} className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-accent-purple/10 text-accent-purple text-xs font-medium hover:bg-accent-purple/20 transition-colors">
+                <button onClick={() => generateReport(selected)} className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-info/10 text-info text-xs font-medium hover:bg-info/20 transition-colors">
                   <FileText size={12} /> Generate Report
                 </button>
-                <button onClick={() => setSelectedId(null)} className="text-muted hover:text-text"><X size={14} /></button>
+                <button onClick={() => setSelectedId(null)} className="text-ink-3 hover:text-ink"><X size={14} /></button>
               </div>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-4 gap-3">
               <div className="bg-surface2 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-text">{clientLeads.length}</div>
-                <div className="text-[10px] text-muted">Total Leads</div>
+                <div className="text-lg font-bold text-ink">{clientLeads.length}</div>
+                <div className="text-[10px] text-ink-3">Total Leads</div>
               </div>
               <div className="bg-surface2 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-accent-orange">{clientHotLeads}</div>
-                <div className="text-[10px] text-muted">Hot Leads</div>
+                <div className="text-lg font-bold text-negative">{clientHotLeads}</div>
+                <div className="text-[10px] text-ink-3">Hot Leads</div>
               </div>
               <div className="bg-surface2 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-text">{clientSequences.length}</div>
-                <div className="text-[10px] text-muted">Sequences</div>
+                <div className="text-lg font-bold text-ink">{clientSequences.length}</div>
+                <div className="text-[10px] text-ink-3">Sequences</div>
               </div>
               <div className="bg-surface2 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-accent-green">${selected.monthlyRetainer.toLocaleString()}</div>
-                <div className="text-[10px] text-muted">Retainer</div>
+                <div className="text-lg font-bold text-positive">${selected.monthlyRetainer.toLocaleString()}</div>
+                <div className="text-[10px] text-ink-3">Retainer</div>
               </div>
             </div>
 
             {/* Lead list for client */}
             {clientLeads.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-text mb-2">Assigned Leads</h4>
+                <h4 className="text-xs font-semibold text-ink mb-2">Assigned Leads</h4>
                 <div className="space-y-1">
                   {clientLeads.slice(0, 5).map(l => (
-                    <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded bg-surface2 border border-border text-xs">
+                    <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded bg-surface2 border border-line text-xs">
                       <div>
-                        <span className="text-text font-medium">{l.name}</span>
-                        <span className="text-muted ml-2">{l.title} @ {l.company}</span>
+                        <span className="text-ink font-medium">{l.name}</span>
+                        <span className="text-ink-3 ml-2">{l.title} @ {l.company}</span>
                       </div>
-                      <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${l.score >= 80 ? "bg-accent-green/15 text-accent-green" : l.score >= 60 ? "bg-accent-orange/15 text-accent-orange" : "bg-red-500/15 text-red-400"}`}>
+                      <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${l.score >= 80 ? "bg-positive/15 text-positive" : l.score >= 60 ? "bg-negative/15 text-negative" : "bg-red-500/15 text-red-400"}`}>
                         {l.score}
                       </span>
                     </div>
@@ -251,31 +251,31 @@ Monthly Retainer : $${client.monthlyRetainer.toLocaleString()}
       {/* Add Client Modal */}
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
-          <div className="w-[420px] max-w-[95vw] bg-surface border border-border rounded-xl shadow-2xl p-6 space-y-4 animate-fade-up" onClick={e => e.stopPropagation()}>
+          <div className="w-[420px] max-w-[95vw] bg-surface border border-line rounded-xl shadow-2xl p-6 space-y-4 animate-fade-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-text">Add Client</h3>
-              <button onClick={() => setShowAdd(false)} className="text-muted hover:text-text"><X size={14} /></button>
+              <h3 className="text-sm font-semibold text-ink">Add Client</h3>
+              <button onClick={() => setShowAdd(false)} className="text-ink-3 hover:text-ink"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <input type="text" placeholder="Client name *" value={formName}
                 onChange={e => setFormName(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-border px-3 text-sm text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40" />
+                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40" />
               <input type="text" placeholder="Company" value={formCompany}
                 onChange={e => setFormCompany(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-border px-3 text-sm text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40" />
+                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40" />
               <input type="text" placeholder="Industry" value={formIndustry}
                 onChange={e => setFormIndustry(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-border px-3 text-sm text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40" />
+                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40" />
               <div className="relative">
-                <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
                 <input type="number" placeholder="Monthly Retainer" value={formRetainer}
                   onChange={e => setFormRetainer(e.target.value)}
-                  className="w-full h-9 rounded-md bg-white/5 border border-border pl-8 pr-3 text-sm text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40" />
+                  className="w-full h-9 rounded-md bg-white/5 border border-line pl-8 pr-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40" />
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <button onClick={handleSave} disabled={!formName.trim()} className="flex-1 h-9 rounded-md bg-accent-blue/20 text-accent-blue text-sm font-medium hover:bg-accent-blue/30 disabled:opacity-40 transition-colors">Save Client</button>
-              <button onClick={() => setShowAdd(false)} className="flex-1 h-9 rounded-md bg-white/5 text-muted text-sm hover:bg-white/[0.08] transition-colors">Cancel</button>
+              <button onClick={handleSave} disabled={!formName.trim()} className="flex-1 h-9 rounded-md bg-accent/20 text-accent text-sm font-medium hover:bg-accent/30 disabled:opacity-40 transition-colors">Save Client</button>
+              <button onClick={() => setShowAdd(false)} className="flex-1 h-9 rounded-md bg-white/5 text-ink-3 text-sm hover:bg-white/[0.08] transition-colors">Cancel</button>
             </div>
           </div>
         </div>

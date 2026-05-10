@@ -25,7 +25,7 @@ const COLUMNS = [
   { id: "Closed Lost", label: "Closed Lost" },
 ];
 
-const ICON_COLORS = ["#00d4ff", "#7c3aed", "#ff6b35", "#00ff88", "#f59e0b", "#a78bfa"];
+const ICON_COLORS = ["var(--accent)", "var(--info)", "var(--negative)", "var(--positive)", "var(--info)", "#a78bfa"];
 
 function getAvatarColor(name: string): string {
   const idx = (name.charCodeAt(0) || 0) % ICON_COLORS.length;
@@ -46,9 +46,9 @@ function relativeTime(iso?: string): string {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 85) return "#00ff88";
-  if (score >= 70) return "#ff6b35";
-  return "#ef4444";
+  if (score >= 85) return "var(--positive)";
+  if (score >= 70) return "var(--negative)";
+  return "var(--negative)";
 }
 
 export default function KanbanPage() {
@@ -174,9 +174,9 @@ export default function KanbanPage() {
                   <div
                     className="h-10 flex items-center gap-2 px-3 rounded-t-lg shrink-0"
                     style={{
-                      borderTop: col.id === "Hot Lead" ? "3px solid var(--accent-orange)"
-                        : col.id === "Closed Won" ? "3px solid var(--accent-green)"
-                        : col.id === "Closed Lost" ? "3px solid var(--muted)"
+                      borderTop: col.id === "Hot Lead" ? "3px solid var(--negative)"
+                        : col.id === "Closed Won" ? "3px solid var(--positive)"
+                        : col.id === "Closed Lost" ? "3px solid var(--ink-3)"
                         : "3px solid transparent",
                       background: col.id === "Hot Lead" ? "var(--surface)"
                         : col.id === "Closed Won" ? "var(--surface)"
@@ -184,8 +184,8 @@ export default function KanbanPage() {
                         : "var(--surface)",
                     }}
                   >
-                    <span className="text-xs font-semibold text-text">{col.label}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-muted font-bold tabular-nums">
+                    <span className="text-xs font-semibold text-ink">{col.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-ink-3 font-bold tabular-nums">
                       {col.leads.length}
                     </span>
                   </div>
@@ -196,7 +196,7 @@ export default function KanbanPage() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="flex-1 bg-surface border border-border rounded-b-lg p-2 space-y-2 overflow-y-auto"
+                        className="flex-1 bg-surface border border-line rounded-b-lg p-2 space-y-2 overflow-y-auto"
                         style={{
                           minHeight: 500,
                           boxShadow: col.id === "Hot Lead" ? "inset 0 2px 20px rgba(255,107,53,0.06)" : undefined,
@@ -210,7 +210,7 @@ export default function KanbanPage() {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 onClick={() => openDetail(lead.id)}
-                                className="bg-surface2 border border-border rounded-lg p-3 cursor-pointer hover:border-white/20 transition-colors"
+                                className="bg-surface2 border border-line rounded-lg p-3 cursor-pointer hover:border-white/20 transition-colors"
                                 style={{
                                   ...provided.draggableProps.style,
                                   transform: snapshot.isDragging
@@ -227,11 +227,11 @@ export default function KanbanPage() {
                                     {getInitials(lead.name)}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-[13px] font-semibold text-text truncate">{lead.name}</p>
-                                    <p className="text-[11px] text-muted truncate">{lead.title}</p>
+                                    <p className="text-[13px] font-semibold text-ink truncate">{lead.name}</p>
+                                    <p className="text-[11px] text-ink-3 truncate">{lead.title}</p>
                                   </div>
                                 </div>
-                                <p className="text-[11px] text-muted truncate mb-2">{lead.company}</p>
+                                <p className="text-[11px] text-ink-3 truncate mb-2">{lead.company}</p>
                                 <div className="flex items-center gap-2">
                                   <span
                                     className="text-[10px] px-1.5 py-0.5 rounded font-bold tabular-nums"
@@ -239,7 +239,7 @@ export default function KanbanPage() {
                                   >
                                     {lead.score}
                                   </span>
-                                  <span className="text-[10px] text-muted/50">· {relativeTime(lead.savedAt)}</span>
+                                  <span className="text-[10px] text-ink-3/50">· {relativeTime(lead.savedAt)}</span>
                                 </div>
                               </div>
                             )}
@@ -258,11 +258,11 @@ export default function KanbanPage() {
         {/* Detail Panel */}
         {selected && (
           <div
-            className="w-[360px] shrink-0 border-l border-border bg-surface overflow-y-auto transition-transform duration-200"
+            className="w-[360px] shrink-0 border-l border-line bg-surface overflow-y-auto transition-transform duration-200"
             style={{ transform: detailOpen ? "translateX(0)" : "translateX(360px)" }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-surface z-10">
+            <div className="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-surface z-10">
               <div className="flex items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
@@ -271,11 +271,11 @@ export default function KanbanPage() {
                   {getInitials(selected.name)}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-text">{selected.name}</p>
-                  <p className="text-[11px] text-muted">{selected.title}</p>
+                  <p className="text-sm font-semibold text-ink">{selected.name}</p>
+                  <p className="text-[11px] text-ink-3">{selected.title}</p>
                 </div>
               </div>
-              <button onClick={closeDetail} className="text-muted hover:text-text">
+              <button onClick={closeDetail} className="text-ink-3 hover:text-ink">
                 <X size={16} />
               </button>
             </div>
@@ -294,14 +294,14 @@ export default function KanbanPage() {
 
               {selected.linkedin && (
                 <a href={selected.linkedin} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-accent-blue hover:text-accent-blue/80 transition-colors">
+                  className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors">
                   <LinkIcon size={10} /> LinkedIn Profile
                 </a>
               )}
 
               {/* Notes */}
               <div>
-                <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Notes</label>
+                <label className="text-[10px] font-semibold text-ink-3 uppercase tracking-wider">Notes</label>
                 <textarea
                   value={notes}
                   onChange={e => {
@@ -310,21 +310,21 @@ export default function KanbanPage() {
                   }}
                   placeholder="Add notes about this lead…"
                   rows={3}
-                  className="w-full rounded-md bg-white/5 border border-border px-3 py-2 text-xs text-text placeholder:text-muted focus:outline-none focus:border-accent-blue/40 resize-y mt-1"
+                  className="w-full rounded-md bg-white/5 border border-line px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-blue/40 resize-y mt-1"
                 />
               </div>
 
               {/* Message History */}
               {messages.length > 0 && (
                 <div>
-                  <label className="text-[10px] font-semibold text-muted uppercase tracking-wider">Message History</label>
+                  <label className="text-[10px] font-semibold text-ink-3 uppercase tracking-wider">Message History</label>
                   <div className="space-y-2 mt-1">
                     {messages.slice(0, 3).map(m => (
-                      <div key={m.id} className="p-2 rounded bg-surface2 border border-border">
-                        <span className={`text-[9px] px-1 py-0.5 rounded font-medium ${m.messageType === "cold_email" ? "bg-accent-blue/15 text-accent-blue" : "bg-accent-purple/15 text-accent-purple"}`}>
+                      <div key={m.id} className="p-2 rounded bg-surface2 border border-line">
+                        <span className={`text-[9px] px-1 py-0.5 rounded font-medium ${m.messageType === "cold_email" ? "bg-accent/15 text-accent" : "bg-info/15 text-info"}`}>
                           {m.messageType.replace(/_/g, " ")}
                         </span>
-                        <p className="text-[11px] text-muted mt-1 line-clamp-2">{m.body.slice(0, 100)}</p>
+                        <p className="text-[11px] text-ink-3 mt-1 line-clamp-2">{m.body.slice(0, 100)}</p>
                       </div>
                     ))}
                   </div>
@@ -332,20 +332,20 @@ export default function KanbanPage() {
               )}
 
               {/* Actions */}
-              <div className="space-y-2 pt-2 border-t border-border">
+              <div className="space-y-2 pt-2 border-t border-line">
                 <Link
                   href={`/message-lab`}
-                  className="flex items-center gap-2 w-full h-9 rounded-md bg-accent-purple/10 text-accent-purple text-xs font-medium hover:bg-accent-purple/20 transition-colors justify-center"
+                  className="flex items-center gap-2 w-full h-9 rounded-md bg-info/10 text-info text-xs font-medium hover:bg-info/20 transition-colors justify-center"
                 >
                   <MessageSquare size={12} /> Generate Message
                 </Link>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted">Move to:</span>
+                  <span className="text-[10px] text-ink-3">Move to:</span>
                   <select
                     value={currentCol}
                     onChange={e => handleMoveToColumn(selected.id, e.target.value)}
-                    className="flex-1 h-7 rounded-md bg-white/5 border border-border px-2 text-xs text-text focus:outline-none appearance-none cursor-pointer"
+                    className="flex-1 h-7 rounded-md bg-white/5 border border-line px-2 text-xs text-ink focus:outline-none appearance-none cursor-pointer"
                   >
                     {COLUMNS.map(c => (
                       <option key={c.id} value={c.id}>{c.label}</option>
@@ -368,12 +368,12 @@ export default function KanbanPage() {
       {/* Delete Confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(false)}>
-          <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl animate-fade-up" onClick={e => e.stopPropagation()}>
-            <p className="text-sm text-text mb-1">Delete {selected?.name}?</p>
-            <p className="text-xs text-muted mb-4">This cannot be undone.</p>
+          <div className="bg-surface border border-line rounded-xl p-6 shadow-2xl animate-fade-up" onClick={e => e.stopPropagation()}>
+            <p className="text-sm text-ink mb-1">Delete {selected?.name}?</p>
+            <p className="text-xs text-ink-3 mb-4">This cannot be undone.</p>
             <div className="flex gap-2">
               <button onClick={handleDelete} className="px-4 py-2 rounded-md bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30">Delete</button>
-              <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 rounded-md bg-white/5 text-muted text-xs hover:bg-white/[0.08]">Cancel</button>
+              <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 rounded-md bg-white/5 text-ink-3 text-xs hover:bg-white/[0.08]">Cancel</button>
             </div>
           </div>
         </div>
@@ -385,8 +385,8 @@ export default function KanbanPage() {
 function Field({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div>
-      <span className="text-[9px] text-muted uppercase tracking-wider block">{label}</span>
-      <span className="text-xs text-text flex items-center gap-1 mt-0.5">
+      <span className="text-[9px] text-ink-3 uppercase tracking-wider block">{label}</span>
+      <span className="text-xs text-ink flex items-center gap-1 mt-0.5">
         {icon} {value || "—"}
       </span>
     </div>
