@@ -11,6 +11,7 @@ import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } fro
 import { generateCSV } from "@/lib/storage";
 import { mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "@/lib/db";
 import { useApp } from "@/lib/AppContext";
+import TopBar from "@/components/layout/TopBar";
 import FilterPanel from "@/components/FilterPanel";
 import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
@@ -361,6 +362,9 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg">
+      {/* Top bar */}
+      <TopBar />
+
       {/* Progress bar */}
       <div className="fixed top-14 left-0 right-0 z-40">
         <Progress value={running ? prog : 0} color={accent} />
@@ -368,7 +372,7 @@ export default function Home() {
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Filter Panel */}
+        {/* Filter Panel — vertical sidebar */}
         <FilterPanel filters={filters} onChange={handleFilterChange} accent={accent} />
 
         {/* Main content */}
