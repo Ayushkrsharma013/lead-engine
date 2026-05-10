@@ -241,54 +241,100 @@ export default function Home() {
       }
     } else {
       try {
-        dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Connecting to Apify API…", type: "info" } });
-        dispatch({ type: "SET_PROGRESS", payload: 15 });
+        // Step 1: Start the actor
+        dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Starting Apify actor…", type: "info" } });
+        dispatch({ type: "SET_PROGRESS", payload: 10 });
 
-        const res = await fetch("/api/leads", {
+        const startRes = await fetch("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ source, fields: {} }),
         });
-        dispatch({ type: "SET_PROGRESS", payload: 50 });
-        dispatch({ type: "APPEND_LOG", payload: { id: 1, ts: ts(), text: "Actor running — awaiting results…", type: "info" } });
 
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error((e as { error?: string }).error || `HTTP ${res.status}`);
+        if (!startRes.ok) {
+          const e = await startRes.json().catch(() => ({}));
+          throw new Error((e as { error?: string }).error || `HTTP ${startRes.status}`);
         }
 
-        const data = await res.json() as { leads?: Record<string, unknown>[] };
-        dispatch({ type: "SET_PROGRESS", payload: 80 });
-        dispatch({ type: "APPEND_LOG", payload: { id: 2, ts: ts(), text: `Processing ${data.leads?.length ?? 0} leads…`, type: "info" } });
+        const startData = await startRes.json() as { runId?: string; error?: string };
+        if (!startData.runId) throw new Error(startData.error || "Failed to start actor");
 
-        const liveLeads: Lead[] = (data.leads ?? []).map((item, idx) => ({
-          id: `live-${Date.now()}-${idx}`,
-          name:        String(item.full_name       || item.name     || ""),
-          title:       String(item.job_title        || item.title    || ""),
-          company:     String(item.job_company_name || item.company  || ""),
-          industry:    String(item.job_company_industry || item.industry || ""),
-          location:    String(item.location_name   || item.location || ""),
-          email: Array.isArray(item.emails) && item.emails.length > 0
-            ? String((item.emails[0] as Record<string, unknown>).address ?? item.emails[0] ?? "")
-            : String(item.email || ""),
-          emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
-            ? item.email_status : "not_found") as Lead["emailStatus"],
-          linkedin:    String(item.linkedin_url    || ""),
-          website:     String(item.job_company_website || ""),
-          companySize: String(item.job_company_size || ""),
-          score:       Math.floor(70 + Math.random() * 28),
-          source,
-        }));
+        const runId = startData.runId;
+        dispatch({ type: "APPEND_LOG", payload: { id: 1, ts: ts(), text: `Actor started — run ${runId}`, type: "info" } });
+        dispatch({ type: "SET_PROGRESS", payload: 20 });
 
-        const { stored, added, updated, rejected } = await mergeLeadsInDB(liveLeads);
-        dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: liveLeads, added, updated } });
-        const newStats = await computeStatsFromLeads(stored);
-        dispatch({ type: "SET_STATS", payload: newStats });
-        dispatch({ type: "SET_PROGRESS", payload: 100 });
+        // Step 2: Poll for results
+        let pollCount = 0;
+        const maxPolls = 120; // 10 minutes at 5s intervals
+        let completed = false;
 
-        const logMsg = `${added} new · ${updated} updated${rejected ? ` · ${rejected} rejected` : ""}`;
-        dispatch({ type: "APPEND_LOG", payload: { id: 3, ts: ts(), text: logMsg, type: "success" } });
-        showToast(logMsg);
+        while (pollCount < maxPolls && !abortRef.current) {
+          await new Promise(r => setTimeout(r, 5000));
+          pollCount++;
+
+          const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`);
+          if (!pollRes.ok) {
+            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: HTTP ${pollRes.status}`, type: "warn" } });
+            continue;
+          }
+
+          const pollData = await pollRes.json() as {
+            status?: string; leads?: Record<string, unknown>[]; error?: string;
+          };
+
+          if (pollData.status === "SUCCEEDED") {
+            dispatch({ type: "SET_PROGRESS", payload: 80 });
+            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Processing ${pollData.leads?.length ?? 0} leads…`, type: "info" } });
+
+            const liveLeads: Lead[] = (pollData.leads ?? []).map((item, idx) => ({
+              id: `live-${Date.now()}-${idx}`,
+              name:        String(item.full_name       || item.name     || ""),
+              title:       String(item.job_title        || item.title    || ""),
+              company:     String(item.job_company_name || item.company  || ""),
+              industry:    String(item.job_company_industry || item.industry || ""),
+              location:    String(item.location_name   || item.location || ""),
+              email: Array.isArray(item.emails) && item.emails.length > 0
+                ? String((item.emails[0] as Record<string, unknown>).address ?? item.emails[0] ?? "")
+                : String(item.email || ""),
+              emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
+                ? String(item.email_status) : "not_found") as Lead["emailStatus"],
+              linkedin:    String(item.linkedin_url    || ""),
+              website:     String(item.job_company_website || ""),
+              companySize: String(item.job_company_size || ""),
+              score:       Math.floor(70 + Math.random() * 28),
+              source,
+            }));
+
+            const { stored, added, updated, rejected } = await mergeLeadsInDB(liveLeads);
+            dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: liveLeads, added, updated } });
+            const newStats = await computeStatsFromLeads(stored);
+            dispatch({ type: "SET_STATS", payload: newStats });
+            dispatch({ type: "SET_PROGRESS", payload: 100 });
+
+            const logMsg = `${added} new · ${updated} updated${rejected ? ` · ${rejected} rejected` : ""}`;
+            dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: logMsg, type: "success" } });
+            showToast(logMsg);
+            completed = true;
+            break;
+          }
+
+          if (pollData.status === "FAILED" || pollData.status === "ABORTED" || pollData.status === "TIMED-OUT") {
+            throw new Error(`Actor run ${pollData.status}`);
+          }
+
+          if (pollData.error) {
+            throw new Error(pollData.error);
+          }
+
+          // Still running — update progress
+          const pct = Math.min(20 + Math.floor(pollCount / maxPolls * 50), 70);
+          dispatch({ type: "SET_PROGRESS", payload: pct });
+          dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: still running…`, type: "info" } });
+        }
+
+        if (!completed && !abortRef.current) {
+          throw new Error("Timed out waiting for actor — it may still complete on Apify");
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         dispatch({ type: "APPEND_LOG", payload: { id: 99, ts: ts(), text: `✗ ${msg}`, type: "warn" } });

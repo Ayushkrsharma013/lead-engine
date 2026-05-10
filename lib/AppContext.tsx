@@ -338,7 +338,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: "SET_LEADS", payload: leads });
         const stats = await computeStatsFromLeads(leads);
         dispatch({ type: "SET_STATS", payload: stats });
-      } catch { /* ignore */ }
+      } catch (e) {
+        console.error("Failed to load leads from Supabase:", e);
+      }
       dispatch({ type: "SET_LOADING", payload: false });
     }
     init();
