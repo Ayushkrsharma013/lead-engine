@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
-import { cn } from "@/lib/utils";
 
 // ─── Chip multi-select ────────────────────────────────────────────────────────
 function ChipGroup({
@@ -24,32 +23,13 @@ function ChipGroup({
           <button
             key={opt}
             onClick={() => onToggle(opt)}
-            className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150"
+            className={active ? "filter-chip-active" : "filter-chip"}
             style={active ? {
               background: `${accent}18`,
               borderColor: `${accent}50`,
               color: accent,
-              border: `1px solid ${accent}50`,
               boxShadow: `0 0 8px ${accent}12`,
-            } : {
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              color: "var(--muted)",
-            }}
-            onMouseEnter={e => {
-              if (!active) {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
-                (e.currentTarget as HTMLElement).style.color = "var(--text)";
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-              }
-            }}
-            onMouseLeave={e => {
-              if (!active) {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-                (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-              }
-            }}
+            } : undefined}
           >
             {opt}
           </button>
@@ -70,32 +50,24 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+    <div className="section-group">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-2.5 transition-colors group"
-        style={{ color: "var(--muted)" }}
-        onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-        onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
+        className="section-header"
       >
         <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em]">
           {title}
           {count ? (
-            <span
-              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
-              style={{
-                background: "rgba(0,212,255,0.15)",
-                color: "var(--accent-blue)",
-                border: "1px solid rgba(0,212,255,0.25)",
-              }}
-            >
+            <span className="section-count">
               {count}
             </span>
           ) : null}
         </span>
-        <span className="transition-transform duration-200" style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}>
-          {open ? <ChevronDown size={11} /> : <ChevronDown size={11} />}
-        </span>
+        <ChevronDown
+          size={11}
+          className="transition-transform duration-200"
+          style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}
+        />
       </button>
       {open && (
         <div className="px-4 pb-4 animate-fade-in">
@@ -174,10 +146,8 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
         {activeCount > 0 && (
           <button
             onClick={() => onChange(DEFAULT_FILTERS)}
-            className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+            className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-text"
             style={{ color: "var(--muted)" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
           >
             <RotateCcw size={10} />
             Reset
@@ -204,7 +174,7 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
         </Section>
 
         {/* Geography */}
-        <Section title="Geography" count={filters.countries.length}>
+        <Section title="Geography" count={filters.countries.length} defaultOpen={false}>
           <ChipGroup options={COUNTRIES} selected={filters.countries} onToggle={v => toggle("countries", v)} accent={accent} />
         </Section>
 
@@ -218,34 +188,16 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                 <button
                   key={opt}
                   onClick={() => toggle("emailStatus", opt)}
-                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150 flex items-center gap-1.5"
+                  className={active ? "filter-chip-active" : "filter-chip"}
                   style={active ? {
                     background: `${color}18`,
-                    border: `1px solid ${color}50`,
+                    borderColor: `${color}50`,
                     color,
                     boxShadow: `0 0 8px ${color}12`,
-                  } : {
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: "var(--muted)",
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-                    }
-                  }}
+                  } : undefined}
                 >
                   <span
-                    className="w-1.5 h-1.5 rounded-full"
+                    className="filter-chip-dot"
                     style={{ background: active ? color : "rgba(255,255,255,0.2)" }}
                   />
                   {label}
@@ -267,31 +219,13 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                 <button
                   key={score}
                   onClick={() => onChange({ ...filters, minScore: score })}
-                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150 tabular-nums"
+                  className={(active ? "filter-chip-active" : "filter-chip") + " tabular-nums"}
                   style={active ? {
                     background: `${accent}18`,
-                    border: `1px solid ${accent}50`,
+                    borderColor: `${accent}50`,
                     color: accent,
                     boxShadow: `0 0 8px ${accent}12`,
-                  } : {
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: "var(--muted)",
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-                    }
-                  }}
+                  } : undefined}
                 >
                   {score === 0 ? "Any" : `${score}+`}
                 </button>
@@ -311,14 +245,7 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                   type="date"
                   value={filters.dateFrom}
                   onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
-                  className="w-full h-8 rounded-lg pl-7 pr-2 text-[11px] focus:outline-none transition-all [color-scheme:dark]"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "var(--text)",
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(0,212,255,0.4)")}
-                  onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  className="filter-date-input"
                 />
               </div>
             </div>
@@ -331,24 +258,15 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                   value={filters.dateTo}
                   min={filters.dateFrom || undefined}
                   onChange={e => onChange({ ...filters, dateTo: e.target.value })}
-                  className="w-full h-8 rounded-lg pl-7 pr-2 text-[11px] focus:outline-none transition-all [color-scheme:dark]"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "var(--text)",
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = "rgba(0,212,255,0.4)")}
-                  onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  className="filter-date-input"
                 />
               </div>
             </div>
             {dateRangeCount > 0 && (
               <button
                 onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
-                className="text-[11px] font-medium transition-colors"
+                className="text-[11px] font-medium transition-colors hover:text-text"
                 style={{ color: "var(--muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
               >
                 Clear dates
               </button>
@@ -366,31 +284,13 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
                 <button
                   key={src}
                   onClick={() => toggle("sources", src)}
-                  className="text-[11px] px-2.5 py-1 rounded-md font-medium transition-all duration-150"
+                  className={active ? "filter-chip-active" : "filter-chip"}
                   style={active ? {
                     background: `${c}18`,
-                    border: `1px solid ${c}50`,
+                    borderColor: `${c}50`,
                     color: c,
                     boxShadow: `0 0 8px ${c}12`,
-                  } : {
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: "var(--muted)",
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.18)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--text)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-                    }
-                  }}
+                  } : undefined}
                 >
                   {SOURCE_LABELS[src]}
                 </button>

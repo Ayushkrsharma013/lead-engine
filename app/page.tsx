@@ -15,13 +15,29 @@ import FilterPanel from "@/components/FilterPanel";
 import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
 
 const ACCENT: Record<Source, string> = {
   linkedin: "#00d4ff",
   gmaps:    "#00ff88",
   amazon:   "#ff6b35",
 };
+
+function getChipColor(group: keyof FilterState, value: string): string {
+  switch (group) {
+    case "keyword":       return "#00d4ff";
+    case "seniority":     return "#00d4ff";
+    case "jobFunction":   return "#7c3aed";
+    case "industries":    return "#00ff88";
+    case "companySizes":  return "#00d4ff";
+    case "countries":     return "#7c3aed";
+    case "emailStatus":   return value === "verified" ? "#10b981" : value === "risky" ? "#f59e0b" : "#6b6b80";
+    case "minScore":      return "#ff6b35";
+    case "sources":       return value === "linkedin" ? "#00d4ff" : value === "gmaps" ? "#00ff88" : "#ff6b35";
+    case "dateFrom":
+    case "dateTo":        return "#00d4ff";
+    default:              return "#00d4ff";
+  }
+}
 const MOCK_LEADS: Record<Source, Lead[]> = {
   linkedin: [
     { id:"l1",name:"Emily Zhang",title:"Head of Sales",company:"Figma",industry:"Computer Software",location:"San Francisco, CA",email:"emily@figma.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/emilyzhang",website:"figma.com",companySize:"501-1000",score:93,source:"linkedin"},
@@ -451,38 +467,21 @@ export default function Home() {
               />
               <input
                 type="text"
-                placeholder="Search name, title, company, email, location…"
+                placeholder="Search leads by name, title, company, email…"
                 value={filters.keyword}
                 onChange={e => handleFilterChange({ ...filters, keyword: e.target.value })}
-                className="w-full h-9 rounded-xl text-sm focus:outline-none transition-all"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text)",
-                  paddingLeft: "2.25rem",
-                  paddingRight: filters.keyword ? "2.25rem" : "0.75rem",
-                }}
-                onFocus={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 2px rgba(0,212,255,0.08)";
-                }}
-                onBlur={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                }}
+                className={`search-input ${filters.keyword ? "has-value" : ""}`}
               />
-              {filters.keyword && (
+              {filters.keyword ? (
                 <button
                   onClick={() => handleFilterChange({ ...filters, keyword: "" })}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full flex items-center justify-center transition-colors"
-                  style={{ color: "var(--muted)", background: "rgba(255,255,255,0.06)" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:text-text"
+                  style={{ color: "var(--muted)", background: "rgba(255,255,255,0.08)" }}
                 >
-                  <X size={10} />
+                  <X size={11} />
                 </button>
+              ) : (
+                <span className="search-shortcut">⌘K</span>
               )}
             </div>
 
@@ -581,7 +580,7 @@ export default function Home() {
           {/* Active filter chips */}
           {chips.length > 0 && (
             <div
-              className="flex items-center gap-1.5 px-4 py-2 flex-wrap shrink-0"
+              className="flex items-center gap-1.5 px-4 py-2 flex-wrap shrink-0 animate-fade-in"
               style={{ borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
             >
               <span
@@ -590,32 +589,33 @@ export default function Home() {
               >
                 Active:
               </span>
-              {chips.map((chip, i) => (
-                <span
-                  key={i}
-                  className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium"
-                  style={{
-                    background: "rgba(0,212,255,0.08)",
-                    border: "1px solid rgba(0,212,255,0.2)",
-                    color: "var(--accent-blue)",
-                  }}
-                >
-                  {chip.label}
-                  <button
-                    onClick={() => removeChip(chip.group, chip.value)}
-                    className="transition-opacity hover:opacity-60 ml-0.5"
-                    style={{ color: "var(--accent-blue)" }}
+              {chips.map((chip, i) => {
+                const chipColor = getChipColor(chip.group, chip.value);
+                return (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium animate-fade-in"
+                    style={{
+                      background: `${chipColor}12`,
+                      border: `1px solid ${chipColor}30`,
+                      color: chipColor,
+                    }}
                   >
-                    <X size={9} />
-                  </button>
-                </span>
-              ))}
+                    {chip.label}
+                    <button
+                      onClick={() => removeChip(chip.group, chip.value)}
+                      className="transition-opacity hover:opacity-60 ml-0.5"
+                      style={{ color: chipColor }}
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                );
+              })}
               <button
                 onClick={() => handleFilterChange(DEFAULT_FILTERS)}
-                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1"
+                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1 hover:text-text"
                 style={{ color: "var(--muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
               >
                 <RotateCcw size={9} /> Clear all
               </button>
@@ -677,10 +677,26 @@ export default function Home() {
 
             <div className="flex-1" />
 
-            {filterCount > 0 && (
-              <span className="text-[10px] font-medium shrink-0" style={{ color: "var(--muted)" }}>
-                {filterCount} filter{filterCount > 1 ? "s" : ""} active
-                <span style={{ color: "var(--text)" }}> · {sorted.length.toLocaleString()} results</span>
+            {filterCount > 0 ? (
+              <span className="flex items-center gap-1.5 text-[10px] font-medium shrink-0" style={{ color: "var(--muted)" }}>
+                <span
+                  className="px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums"
+                  style={{
+                    background: "rgba(0,212,255,0.1)",
+                    color: "var(--accent-blue)",
+                    border: "1px solid rgba(0,212,255,0.2)",
+                  }}
+                >
+                  {filterCount}
+                </span>
+                filter{filterCount > 1 ? "s" : ""}
+                <span className="mx-0.5" style={{ opacity: 0.3 }}>·</span>
+                <span className="tabular-nums" style={{ color: "var(--text)" }}>{sorted.length.toLocaleString()}</span>
+                result{sorted.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium shrink-0 tabular-nums" style={{ color: "var(--muted)" }}>
+                {sorted.length.toLocaleString()} result{sorted.length !== 1 ? "s" : ""}
               </span>
             )}
           </div>
