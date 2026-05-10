@@ -121,7 +121,8 @@ export async function POST() {
       runs: runSummary,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const detail = err instanceof Error ? err.message : String(err ?? "");
+    console.error("import route error:", detail);
+    return NextResponse.json({ error: detail || "Unknown error" }, { status: 500 });
   }
 }
