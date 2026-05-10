@@ -8,6 +8,7 @@ interface ApifyRun {
   finishedAt: string;
   leadCount: number;
   datasetId: string;
+  hasMore?: boolean;
 }
 
 interface ImportModalProps {
@@ -202,7 +203,7 @@ export default function ImportModal({ open, onClose, onImported }: ImportModalPr
                           ? "bg-accent-blue/10 text-accent-blue"
                           : "bg-white/[0.04] text-muted"
                       )}>
-                        {run.leadCount} leads
+                        {run.leadCount}{run.hasMore ? "+" : ""} lead{run.leadCount !== 1 ? "s" : ""}
                       </span>
                     </button>
                   );

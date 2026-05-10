@@ -78,21 +78,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ runs: [] });
     }
 
-    // Fetch item count for each run (just count, not full data)
+    // Fetch approximate lead count for each run
     const runList = await Promise.all(
       runs.map(async (run) => {
         try {
           const countRes = await fetch(
-            `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=1`,
+            `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=100`,
             { headers: APIFY_HEADERS },
           );
           if (!countRes.ok) return null;
           const items = await countRes.json() as Record<string, unknown>[];
+          const count = Array.isArray(items) ? items.length : 0;
           return {
             runId: run.id,
             finishedAt: run.finishedAt || "",
-            leadCount: Array.isArray(items) ? items.length : 0,
+            leadCount: count,
             datasetId: run.defaultDatasetId,
+            hasMore: count >= 100,
           };
         } catch {
           return null;
