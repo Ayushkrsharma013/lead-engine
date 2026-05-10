@@ -3,7 +3,6 @@
 import ProSidebar from "./layout/Sidebar";
 import ToastContainer from "./Toast";
 import CommandPalette from "./layout/CommandPalette";
-import SettingsModal from "./SettingsModal";
 import { useApp } from "@/lib/AppContext";
 import { Zap } from "lucide-react";
 
@@ -73,7 +72,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </div>
       <ToastContainer />
       <CommandPalette />
-      <SettingsModal />
     </div>
   );
 }

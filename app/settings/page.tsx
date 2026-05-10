@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import {
-  X, Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign,
-  Star, Settings2, Info, Check, AlertTriangle, Globe,
+  Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign,
+  Star, Info, Check, AlertTriangle, Globe,
 } from "lucide-react";
+import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
 import type { EnabledSources } from "@/lib/AppContext";
 import type { Source } from "@/lib/types";
@@ -244,21 +245,15 @@ function ModelCard({ data }: { data: typeof AI_MODELS[number] }) {
   );
 }
 
-// ─── Main modal ───────────────────────────────────────────────────────────────
-export default function SettingsModal() {
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function SettingsPage() {
   const { state, dispatch } = useApp();
   const [activeTab, setActiveTab] = useState<TabId>("sources");
 
-  if (!state.settingsOpen) return null;
-
-  const close = () => dispatch({ type: "SET_SETTINGS_OPEN", payload: false });
-
   const toggleSource = (key: Source) => {
     const next: EnabledSources = { ...state.enabledSources, [key]: !state.enabledSources[key] };
-    // Always keep at least one source enabled
     if (!Object.values(next).some(Boolean)) return;
     dispatch({ type: "SET_ENABLED_SOURCES", payload: next });
-    // If user disables the currently active source, switch to the first enabled one
     if (key === state.source && !next[key]) {
       const fallback = (Object.keys(next) as Source[]).find(k => next[k]);
       if (fallback) dispatch({ type: "SET_SOURCE", payload: fallback });
@@ -266,86 +261,40 @@ export default function SettingsModal() {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center animate-fade-in"
-      onClick={close}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }} />
+    <div className="flex-1 flex flex-col overflow-hidden bg-bg">
+      <TopBar title="Settings" subtitle="Configure your ProOS workspace" />
 
-      {/* Panel */}
-      <div
-        className="relative w-[640px] max-w-[96vw] max-h-[85vh] flex flex-col overflow-hidden animate-scale-in"
-        style={{
-          background: "rgba(10,10,16,0.97)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid var(--border-bright)",
-          borderRadius: "16px",
-          boxShadow: "var(--shadow-xl), 0 0 0 1px rgba(255,255,255,0.04)",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: "1px solid var(--border)" }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)" }}
-            >
-              <Settings2 size={15} style={{ color: "var(--accent-blue)" }} />
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Settings</p>
-              <p className="text-[11px]" style={{ color: "var(--muted)" }}>Configure your ProOS workspace</p>
-            </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[720px] mx-auto px-5 py-6 space-y-4">
+
+          {/* Tabs */}
+          <div className="flex items-center gap-0.5">
+            {TABS.map(tab => {
+              const TabIcon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
+                  style={active ? {
+                    background: "rgba(0,212,255,0.1)",
+                    color: "var(--accent-blue)",
+                    border: "1px solid rgba(0,212,255,0.2)",
+                  } : {
+                    color: "var(--muted)",
+                    border: "1px solid transparent",
+                  }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+                >
+                  <TabIcon size={12} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-          <button
-            onClick={close}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-            style={{ color: "var(--muted)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div
-          className="flex items-center gap-0.5 px-5 py-2 shrink-0"
-          style={{ borderBottom: "1px solid var(--border)" }}
-        >
-          {TABS.map(tab => {
-            const TabIcon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
-                style={active ? {
-                  background: "rgba(0,212,255,0.1)",
-                  color: "var(--accent-blue)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                } : {
-                  color: "var(--muted)",
-                  border: "1px solid transparent",
-                }}
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
-              >
-                <TabIcon size={12} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
 
           {/* ── Sources tab ── */}
           {activeTab === "sources" && (
@@ -455,26 +404,9 @@ export default function SettingsModal() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* Footer */}
-        <div
-          className="flex items-center justify-end px-5 py-3 shrink-0"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <button
-            onClick={close}
-            className="h-9 px-5 rounded-xl text-[13px] font-semibold transition-all"
-            style={{
-              background: "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.1))",
-              color: "var(--accent-blue)",
-              border: "1px solid rgba(0,212,255,0.3)",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(0,212,255,0.2)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
-          >
-            Done
-          </button>
+          {/* Bottom spacer */}
+          <div className="h-8" />
         </div>
       </div>
     </div>

@@ -39,7 +39,6 @@ export interface AppState {
   theme: "dark" | "light";
   sidebarCollapsed: boolean;
   activeModule: ModuleName;
-  settingsOpen: boolean;
 
   // Source gating
   enabledSources: EnabledSources;
@@ -83,7 +82,6 @@ const initialState: AppState = {
   theme: "dark",
   sidebarCollapsed: false,
   activeModule: "leads",
-  settingsOpen: false,
   enabledSources: DEFAULT_ENABLED_SOURCES,
   selected: [],
   filters: DEFAULT_FILTERS,
@@ -166,8 +164,6 @@ export type AppAction =
   | { type: "SET_ACTIVITY_LOG"; payload: ActivityLogEntry[] }
   | { type: "ADD_NOTIFICATION"; payload: Notification }
   | { type: "MARK_ALL_READ" }
-  | { type: "TOGGLE_SETTINGS" }
-  | { type: "SET_SETTINGS_OPEN"; payload: boolean }
   | { type: "SET_ENABLED_SOURCES"; payload: EnabledSources };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -182,10 +178,6 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, activeModule: action.payload };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
-    case "TOGGLE_SETTINGS":
-      return { ...state, settingsOpen: !state.settingsOpen };
-    case "SET_SETTINGS_OPEN":
-      return { ...state, settingsOpen: action.payload };
     case "SET_ENABLED_SOURCES":
       return { ...state, enabledSources: action.payload };
 

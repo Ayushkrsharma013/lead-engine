@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -29,6 +29,7 @@ const GROUP_LABELS = ["Overview", "", "AI Tools", "", "Pipeline", "", "", ""];
 export default function ProSidebar() {
   const { state, dispatch } = useApp();
   const pathname = usePathname();
+  const router = useRouter();
   const collapsed = state.sidebarCollapsed;
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipY, setTooltipY] = useState(0);
@@ -164,15 +165,15 @@ export default function ProSidebar() {
 
         {/* Settings button */}
         <button
-          onClick={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+          onClick={() => router.push("/settings")}
           className="w-full h-9 flex items-center gap-2 transition-colors"
           style={{
             justifyContent: collapsed ? "center" : "flex-start",
             paddingLeft: collapsed ? 0 : 14,
-            color: "var(--muted)",
+            color: pathname === "/settings" ? "var(--accent-blue)" : "var(--muted)",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          onMouseEnter={e => { if (pathname !== "/settings") (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
+          onMouseLeave={e => { if (pathname !== "/settings") (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           title="Settings"
         >
           <Settings2 size={15} />
