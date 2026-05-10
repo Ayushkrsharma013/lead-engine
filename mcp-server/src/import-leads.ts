@@ -3,6 +3,7 @@ import { mergeLeadsInDB } from "./db.js";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
 const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
+const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 interface ImportResult {
   message: string;
@@ -57,7 +58,8 @@ export async function importFromAllApifyRuns(): Promise<ImportResult> {
   if (!APIFY_TOKEN) throw new Error("APIFY_API_KEY not configured");
 
   const runsRes = await fetch(
-    `https://api.apify.com/v2/acts/${ACTOR}/runs?token=${APIFY_TOKEN}&status=SUCCEEDED&limit=50`,
+    `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
+    { headers: APIFY_HEADERS },
   );
   if (!runsRes.ok) throw new Error(`Apify list-runs failed: HTTP ${runsRes.status}`);
 
@@ -77,7 +79,8 @@ export async function importFromAllApifyRuns(): Promise<ImportResult> {
     if (!run.defaultDatasetId) continue;
     try {
       const dataRes = await fetch(
-        `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=200`,
+        `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=200`,
+        { headers: APIFY_HEADERS },
       );
       if (!dataRes.ok) continue;
       const items = await dataRes.json() as Record<string, unknown>[];
@@ -120,7 +123,8 @@ export async function importFromSingleApifyRun(runId: string): Promise<{ added: 
   if (!APIFY_TOKEN) throw new Error("APIFY_API_KEY not configured");
 
   const statusRes = await fetch(
-    `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`,
+    `https://api.apify.com/v2/actor-runs/${runId}`,
+    { headers: APIFY_HEADERS },
   );
   if (!statusRes.ok) throw new Error(`Apify run lookup failed: HTTP ${statusRes.status}`);
 
@@ -137,7 +141,8 @@ export async function importFromSingleApifyRun(runId: string): Promise<{ added: 
   if (!datasetId) throw new Error("No dataset ID found for this run");
 
   const dataRes = await fetch(
-    `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=2000`,
+    `https://api.apify.com/v2/datasets/${datasetId}/items?limit=2000`,
+    { headers: APIFY_HEADERS },
   );
   if (!dataRes.ok) throw new Error(`Dataset fetch failed: HTTP ${dataRes.status}`);
 

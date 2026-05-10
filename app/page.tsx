@@ -17,6 +17,11 @@ import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
 import { Progress } from "@/components/ui/progress";
 
+const API_HEADERS = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
+};
+
 const ACCENT: Record<Source, string> = {
   linkedin: "#00d4ff",
   gmaps:    "#00ff88",
@@ -247,7 +252,7 @@ export default function Home() {
 
         const startRes = await fetch("/api/leads", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: API_HEADERS,
           body: JSON.stringify({ source, fields: {} }),
         });
 
@@ -272,7 +277,7 @@ export default function Home() {
           await new Promise(r => setTimeout(r, 5000));
           pollCount++;
 
-          const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`);
+          const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`, { headers: API_HEADERS });
 
           const pollData = await pollRes.json() as {
             status?: string; leads?: Record<string, unknown>[]; error?: string;
@@ -387,7 +392,7 @@ export default function Home() {
       dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Fetching past Apify runs…", type: "info" } });
       dispatch({ type: "SET_PROGRESS", payload: 30 });
 
-      const res = await fetch("/api/leads/import", { method: "POST" });
+      const res = await fetch("/api/leads/import", { method: "POST", headers: API_HEADERS });
       const data = await res.json() as {
         error?: string;
         message?: string;

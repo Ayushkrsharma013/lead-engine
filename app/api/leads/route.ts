@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateApiAuth } from "@/lib/api-auth";
 
 export const maxDuration = 300;
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
 const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
+const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}`, "Content-Type": "application/json" };
 
 function apifyError(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
@@ -16,14 +18,66 @@ function apifyError(data: unknown): string | null {
   return null;
 }
 
-// POST — start actor and return runId immediately
+// ─── Input validation ──────────────────────────────────────────────────────────
+
+const VALID_COUNTRIES = new Set([
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "India", "Brazil", "Netherlands", "Singapore", "Ireland",
+  "Spain", "Italy", "Sweden", "Denmark", "Norway", "Finland",
+  "Switzerland", "Belgium", "Austria", "New Zealand", "Israel",
+  "United Arab Emirates", "Japan", "South Korea", "Mexico",
+]);
+
+const VALID_SIZES = new Set([
+  "1-10", "11-50", "51-200", "201-500", "501-1000",
+  "1001-5000", "5001-10000", "10001+",
+]);
+
+const VALID_SOURCES = new Set(["linkedin", "gmaps", "amazon"]);
+
+function validateFields(body: Record<string, unknown>): string | null {
+  const { source, fields } = body as { source?: string; fields?: Record<string, unknown> };
+
+  if (source && !VALID_SOURCES.has(source)) return `Invalid source: ${source}`;
+
+  if (fields) {
+    if (fields.limit !== undefined) {
+      const n = Number(fields.limit);
+      if (!Number.isFinite(n) || n < 1 || n > 500) return "fields.limit must be 1–500";
+    }
+    if (fields.country && typeof fields.country === "string" && fields.country !== "Any") {
+      if (!VALID_COUNTRIES.has(fields.country)) return `Invalid country: ${fields.country}`;
+    }
+    if (fields.size && typeof fields.size === "string" && fields.size !== "Any") {
+      if (!VALID_SIZES.has(fields.size)) return `Invalid size: ${fields.size}`;
+    }
+    if (fields.titles && typeof fields.titles === "string") {
+      if (fields.titles.length > 500) return "fields.titles too long (max 500 chars)";
+    }
+  }
+
+  return null;
+}
+
+// ─── POST — start actor and return runId immediately ───────────────────────────
+
 export async function POST(req: NextRequest) {
+  const authError = validateApiAuth(req);
+  if (authError) return authError;
+
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
 
   try {
-    const { source, fields } = await req.json();
+    const body = await req.json();
+
+    const validationError = validateFields(body);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+
+    const { source, fields } = body as { source: string; fields?: Record<string, string> };
 
     let input: Record<string, unknown> = {};
 
@@ -47,8 +101,8 @@ export async function POST(req: NextRequest) {
     }
 
     const startRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?token=${APIFY_TOKEN}&waitForFinish=0`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }
+      `https://api.apify.com/v2/acts/${ACTOR}/runs?waitForFinish=0`,
+      { method: "POST", headers: APIFY_HEADERS, body: JSON.stringify(input) }
     );
     const startData = await startRes.json();
 
@@ -70,8 +124,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — poll actor run status and return results when complete
+// ─── GET — poll actor run status and return results when complete ──────────────
+
 export async function GET(req: NextRequest) {
+  const authError = validateApiAuth(req);
+  if (authError) return authError;
+
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
@@ -83,7 +141,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const statusRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+      `https://api.apify.com/v2/actor-runs/${runId}`,
+      { headers: APIFY_HEADERS }
     );
     const statusData = await statusRes.json();
 
@@ -101,7 +160,8 @@ export async function GET(req: NextRequest) {
       }
 
       const dataRes = await fetch(
-        `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=200`
+        `https://api.apify.com/v2/datasets/${datasetId}/items?limit=200`,
+        { headers: APIFY_HEADERS }
       );
       const leads = await dataRes.json();
 

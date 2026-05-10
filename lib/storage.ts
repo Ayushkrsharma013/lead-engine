@@ -189,7 +189,12 @@ export function generateCSV(leads: Lead[]): string {
     "Email", "Email Status", "LinkedIn", "Website",
     "Company Size", "Score", "Source", "Saved At", "Fetched At",
   ];
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const esc = (v: unknown) => {
+    const s = String(v ?? "").replace(/"/g, '""');
+    // Prevent CSV formula injection in Excel/Sheets
+    const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+    return `"${safe}"`;
+  };
   const rows = leads.map(l =>
     [
       l.name, l.title, l.company, l.industry, l.location,

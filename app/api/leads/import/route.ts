@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { validateApiAuth } from "@/lib/api-auth";
 import { mergeLeadsInDB } from "@/lib/db";
 import type { Lead } from "@/lib/types";
 
@@ -6,6 +7,7 @@ export const maxDuration = 300;
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
 const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
+const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 type ApifyEmailObj = { address?: string; [k: string]: unknown };
 
@@ -54,7 +56,10 @@ function apifyItemToLead(item: Record<string, unknown>): Partial<Lead> {
   };
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const authError = validateApiAuth(req);
+  if (authError) return authError;
+
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
@@ -62,7 +67,8 @@ export async function POST() {
   try {
     // 1. List all SUCCEEDED runs for this actor (up to 50)
     const runsRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?token=${APIFY_TOKEN}&status=SUCCEEDED&limit=50`,
+      `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
+      { headers: APIFY_HEADERS },
     );
     if (!runsRes.ok) {
       throw new Error(`Apify list-runs failed: HTTP ${runsRes.status}`);
@@ -88,7 +94,8 @@ export async function POST() {
       if (!run.defaultDatasetId) continue;
       try {
         const dataRes = await fetch(
-          `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=200`,
+          `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=200`,
+          { headers: APIFY_HEADERS },
         );
         if (!dataRes.ok) continue;
         const items = await dataRes.json() as Record<string, unknown>[];
