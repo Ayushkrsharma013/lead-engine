@@ -109,11 +109,16 @@ function initFromStorage(): AppState {
     if (sourcesRaw) {
       try { enabledSources = { ...DEFAULT_ENABLED_SOURCES, ...JSON.parse(sourcesRaw) }; } catch { /* ignore */ }
     }
+    const anthropicKey = localStorage.getItem("proos_anthropic_key") || "";
+    const geminiKey = localStorage.getItem("proos_gemini_key") || "";
+    const openaiKey = localStorage.getItem("proos_openai_key") || "";
+    const apiKey = anthropicKey || geminiKey || openaiKey || ""; // use first available as default
     return {
       ...initialState,
       theme: theme === "light" ? "light" : "dark",
       sidebarCollapsed: sidebar === "closed",
       enabledSources,
+      apiKey,
     };
   } catch {
     return initialState;

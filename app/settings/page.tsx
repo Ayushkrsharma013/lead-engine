@@ -1,50 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign,
-  Star, Info, Check, AlertTriangle, Globe,
+  Star, Info, Check, AlertTriangle, Globe, Key, Eye, EyeOff, Sparkles,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
 import type { EnabledSources } from "@/lib/AppContext";
 import type { Source } from "@/lib/types";
 
-// ─── AI Models data ───────────────────────────────────────────────────────────
-const AI_MODELS = [
+// ─── Providers ────────────────────────────────────────────────────────────────
+const AI_PROVIDERS = [
   {
-    useCase: "Message Generation",
-    desc: "Cold emails, LinkedIn DMs, connection requests",
-    recommended: { name: "GPT-4o mini", provider: "OpenAI", cost: "~$0.15 / 1M tokens", quality: 4, speed: 5 },
-    alternative: { name: "Claude Haiku 3.5", provider: "Anthropic", cost: "~$0.80 / 1M tokens", quality: 5, speed: 5 },
-    budget: { name: "Llama 3.3 70B", provider: "Groq (free tier)", cost: "Free / very cheap", quality: 4, speed: 5 },
-    note: "GPT-4o mini writes natural, conversion-optimised copy at 10× cheaper than Sonnet.",
+    id: "anthropic",
+    label: "Anthropic (Claude)",
+    icon: Cpu,
+    color: "var(--accent)",
+    bg: "var(--accent-soft)",
+    description: "Powers Message Lab and Lead Scorer. Claude Sonnet 4 for complex reasoning, Haiku for fast generation.",
+    storageKey: "proos_anthropic_key",
+    docsUrl: "https://console.anthropic.com/keys",
   },
   {
-    useCase: "Lead Scoring / ICP",
-    desc: "Analyse profiles, score fit, extract signals",
-    recommended: { name: "GPT-4o mini", provider: "OpenAI", cost: "~$0.15 / 1M tokens", quality: 4, speed: 5 },
-    alternative: { name: "Gemini 1.5 Flash", provider: "Google", cost: "~$0.075 / 1M tokens", quality: 4, speed: 5 },
-    budget: { name: "Mistral Small", provider: "Mistral AI", cost: "~$0.20 / 1M tokens", quality: 3, speed: 5 },
-    note: "Gemini Flash is the cheapest option with solid reasoning for structured scoring.",
+    id: "gemini",
+    label: "Google Gemini",
+    icon: Zap,
+    color: "var(--info)",
+    bg: "var(--info-soft)",
+    description: "Gemini Flash for cost-effective scoring and data extraction. 20x cheaper than Claude for structured tasks.",
+    storageKey: "proos_gemini_key",
+    docsUrl: "https://aistudio.google.com/apikey",
   },
   {
-    useCase: "Complex Reasoning / Strategy",
-    desc: "Campaign strategy, reply handling, tone analysis",
-    recommended: { name: "Claude Sonnet 4", provider: "Anthropic", cost: "~$3 / 1M tokens", quality: 5, speed: 4 },
-    alternative: { name: "GPT-4o", provider: "OpenAI", cost: "~$5 / 1M tokens", quality: 5, speed: 4 },
-    budget: { name: "DeepSeek V3", provider: "DeepSeek", cost: "~$0.27 / 1M tokens", quality: 5, speed: 3 },
-    note: "DeepSeek V3 matches GPT-4o quality at 20× lower cost — best hidden gem for heavy reasoning.",
+    id: "openai",
+    label: "OpenAI (GPT-4o)",
+    icon: Sparkles,
+    color: "var(--positive)",
+    bg: "var(--positive-soft)",
+    description: "GPT-4o mini for message generation at $0.15/M tokens. Natural, conversion-optimised copy.",
+    storageKey: "proos_openai_key",
+    docsUrl: "https://platform.openai.com/api-keys",
   },
-  {
-    useCase: "Data Extraction / Parsing",
-    desc: "Parse scraped profiles, clean company data",
-    recommended: { name: "Gemini 1.5 Flash", provider: "Google", cost: "~$0.075 / 1M tokens", quality: 4, speed: 5 },
-    alternative: { name: "GPT-4o mini", provider: "OpenAI", cost: "~$0.15 / 1M tokens", quality: 4, speed: 5 },
-    budget: { name: "Llama 3.1 8B", provider: "Groq", cost: "Free", quality: 3, speed: 5 },
-    note: "Structured output (JSON mode) works best with Gemini Flash and GPT-4o mini.",
-  },
-];
+] as const;
 
 const SOURCES_CONFIG: {
   key: Source;
@@ -57,65 +55,34 @@ const SOURCES_CONFIG: {
   comingSoon?: boolean;
 }[] = [
   {
-    key: "linkedin",
-    label: "LinkedIn",
-    icon: Linkedin,
-    color: "var(--accent)",
-    bg: "var(--accent-soft)",
-    description: "Scrape decision-makers from LinkedIn via Apollo/ZoomInfo data. Best for B2B outreach — verified job titles, company data, and email enrichment.",
+    key: "linkedin", label: "LinkedIn", icon: Linkedin,
+    color: "var(--accent)", bg: "var(--accent-soft)",
+    description: "Scrape decision-makers from LinkedIn via Apollo/ZoomInfo data. Best for B2B outreach.",
     status: "Fully operational",
   },
   {
-    key: "gmaps",
-    label: "Google Maps",
-    icon: Map,
-    color: "var(--positive)",
-    bg: "rgba(0,255,136,0.08)",
-    description: "Find local business owners from Google Maps listings. Great for agency outreach, local services, and SMB targeting.",
-    status: "Coming soon",
-    comingSoon: true,
+    key: "gmaps", label: "Google Maps", icon: Map,
+    color: "var(--positive)", bg: "var(--positive-soft)",
+    description: "Find local business owners from Google Maps listings. Great for agency and SMB targeting.",
+    status: "Coming soon", comingSoon: true,
   },
   {
-    key: "amazon",
-    label: "Amazon",
-    icon: ShoppingBag,
-    color: "var(--negative)",
-    bg: "rgba(255,107,53,0.08)",
-    description: "Identify Amazon Seller Central operators by category and revenue signals. Useful for e-commerce tools and supplier outreach.",
-    status: "Coming soon",
-    comingSoon: true,
+    key: "amazon", label: "Amazon", icon: ShoppingBag,
+    color: "var(--negative)", bg: "var(--negative-soft)",
+    description: "Identify Amazon Seller Central operators by category. E-commerce tools and supplier outreach.",
+    status: "Coming soon", comingSoon: true,
   },
 ];
 
 const TABS = [
   { id: "sources", label: "Data Sources", icon: Globe },
-  { id: "ai",      label: "AI Models",    icon: Cpu },
+  { id: "keys",    label: "API Keys",     icon: Key },
   { id: "about",   label: "About",        icon: Info },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
-// ─── Stars component ──────────────────────────────────────────────────────────
-function Stars({ count }: { count: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map(i => (
-        <Star
-          key={i}
-          size={10}
-          style={{
-            color: i <= count ? "#fbbf24" : "var(--line-strong)",
-            fill: i <= count ? "#fbbf24" : "none",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Source card ──────────────────────────────────────────────────────────────
-function SourceCard({
-  cfg, enabled, onToggle,
-}: {
+// ─── Source Card ───────────────────────────────────────────────────────────────
+function SourceCard({ cfg, enabled, onToggle }: {
   cfg: typeof SOURCES_CONFIG[number];
   enabled: boolean;
   onToggle: () => void;
@@ -125,9 +92,8 @@ function SourceCard({
     <div
       className="rounded-xl p-4 transition-all"
       style={{
-        background: enabled ? cfg.bg : "rgba(255,255,255,0.02)",
-        border: `1px solid ${enabled ? cfg.color + "30" : "var(--line)"}`,
-        boxShadow: enabled ? `0 0 20px ${cfg.color}08` : "none",
+        background: enabled ? cfg.bg : "var(--surface-2)",
+        border: `1px solid ${enabled ? cfg.color + "40" : "var(--line)"}`,
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -140,22 +106,14 @@ function SourceCard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
-                {cfg.label}
-              </span>
+              <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{cfg.label}</span>
               {cfg.comingSoon && (
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
-                  style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid rgba(255,107,53,0.2)" }}
-                >
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide" style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid var(--negative)/25" }}>
                   Soon
                 </span>
               )}
               {!cfg.comingSoon && enabled && (
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1"
-                  style={{ background: "rgba(0,255,136,0.1)", color: "var(--positive)", border: "1px solid rgba(0,255,136,0.2)" }}
-                >
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1" style={{ background: "var(--positive-soft)", color: "var(--positive)", border: "1px solid var(--positive)/25" }}>
                   <Check size={8} /> Active
                 </span>
               )}
@@ -163,89 +121,134 @@ function SourceCard({
             <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{cfg.status}</p>
           </div>
         </div>
-
-        {/* Toggle */}
         <button
           onClick={onToggle}
           disabled={cfg.comingSoon}
           className="relative w-10 h-5 rounded-full transition-all duration-200 focus:outline-none shrink-0 disabled:opacity-40 disabled:cursor-not-allowed mt-0.5"
-          style={{ background: enabled ? cfg.color + "80" : "rgba(255,255,255,0.1)" }}
+          style={{ background: enabled ? cfg.color : "var(--line)" }}
           aria-checked={enabled}
           role="switch"
         >
-          <span
-            className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
-            style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }}
-          />
+          <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+            style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
         </button>
       </div>
-
-      <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--ink-3)" }}>
-        {cfg.description}
-      </p>
-
+      <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--ink-3)" }}>{cfg.description}</p>
       {cfg.comingSoon && (
-        <div
-          className="mt-3 flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg"
-          style={{ background: "rgba(255,107,53,0.08)", color: "var(--negative)", border: "1px solid rgba(255,107,53,0.15)" }}
-        >
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid var(--negative)/25" }}>
           <AlertTriangle size={11} />
-          Integration in development — toggle will unlock automatically on release.
+          Integration in development -- toggle will unlock automatically on release.
         </div>
       )}
     </div>
   );
 }
 
-// ─── AI model row ─────────────────────────────────────────────────────────────
-function ModelCard({ data }: { data: typeof AI_MODELS[number] }) {
+// ─── API Key Card ──────────────────────────────────────────────────────────────
+function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
+  const [key, setKey] = useState("");
+  const [show, setShow] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const Icon = provider.icon;
+
+  useEffect(() => {
+    const stored = localStorage.getItem(provider.storageKey);
+    if (stored) { setKey(stored); setSaved(true); }
+  }, [provider.storageKey]);
+
+  const handleSave = () => {
+    if (!key.trim()) return;
+    localStorage.setItem(provider.storageKey, key.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleClear = () => {
+    localStorage.removeItem(provider.storageKey);
+    setKey("");
+    setSaved(false);
+  };
+
+  const masked = key ? `${key.slice(0, 8)}${"*".repeat(Math.min(24, key.length - 8))}` : "";
+
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)" }}
-    >
-      <div className="mb-3">
-        <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{data.useCase}</p>
-        <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{data.desc}</p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { tier: "Best", ...data.recommended, accent: "var(--accent)" },
-          { tier: "Alt", ...data.alternative, accent: "var(--info)" },
-          { tier: "Budget", ...data.budget, accent: "var(--positive)" },
-        ].map(m => (
-          <div
-            key={m.tier}
-            className="rounded-lg p-2.5"
-            style={{ background: `${m.accent}06`, border: `1px solid ${m.accent}15` }}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: m.accent }}>{m.tier}</span>
-              <Stars count={m.quality} />
-            </div>
-            <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--ink)" }}>{m.name}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--ink-3)" }}>{m.provider}</p>
-            <div className="flex items-center gap-1 mt-2">
-              <DollarSign size={9} style={{ color: m.accent }} />
-              <span className="text-[10px] font-medium" style={{ color: m.accent }}>{m.cost}</span>
-            </div>
+    <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: provider.bg }}>
+          <Icon size={16} style={{ color: provider.color }} />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{provider.label}</span>
+            {key && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1" style={{ background: "var(--positive-soft)", color: "var(--positive)", border: "1px solid var(--positive)/25" }}>
+                <Check size={8} /> Configured
+              </span>
+            )}
           </div>
-        ))}
+          <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: "var(--ink-3)" }}>{provider.description}</p>
+        </div>
       </div>
 
-      <div
-        className="mt-2.5 flex items-start gap-2 text-[11px] px-3 py-2 rounded-lg"
-        style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)" }}
-      >
-        <Zap size={11} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
-        <span style={{ color: "var(--ink-3)" }}>{data.note}</span>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 relative">
+          <input
+            type={show ? "text" : "password"}
+            value={show ? key : (key ? masked : "")}
+            onChange={e => { setKey(e.target.value); setSaved(false); }}
+            placeholder={`Enter your ${provider.label} API key...`}
+            className="w-full h-9 rounded-lg px-3 pr-8 text-[12px] font-mono outline-none transition-colors"
+            style={{
+              background: "var(--surface-2)",
+              border: `1px solid ${key ? provider.color + "40" : "var(--line)"}`,
+              color: key ? provider.color : "var(--ink-3)",
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = provider.color)}
+            onBlur={e => (e.currentTarget.style.borderColor = key ? provider.color + "40" : "var(--line)")}
+          />
+          <button
+            onClick={() => setShow(!show)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center transition-colors hover:bg-[var(--surface-2)]"
+            style={{ color: "var(--ink-3)" }}
+          >
+            {show ? <EyeOff size={12} /> : <Eye size={12} />}
+          </button>
+        </div>
+        {key && !saved && (
+          <button
+            onClick={handleSave}
+            className="h-9 px-4 rounded-lg text-[12px] font-semibold transition-all active:translate-y-[0.5px]"
+            style={{ background: provider.color, color: "var(--bg)" }}
+          >
+            Save
+          </button>
+        )}
+        {key && (
+          <button
+            onClick={handleClear}
+            className="h-9 px-3 rounded-lg text-[12px] font-medium transition-all border"
+            style={{ color: "var(--ink-3)", borderColor: "var(--line)" }}
+          >
+            Clear
+          </button>
+        )}
+        {!key && (
+          <a
+            href={provider.docsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-3 rounded-lg text-[11px] font-medium transition-all border inline-flex items-center"
+            style={{ color: "var(--ink-3)", borderColor: "var(--line)" }}
+          >
+            Get key
+          </a>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page ──────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { state, dispatch } = useApp();
   const [activeTab, setActiveTab] = useState<TabId>("sources");
@@ -264,7 +267,6 @@ export default function SettingsPage() {
     <div className="flex-1 flex flex-col overflow-hidden bg-bg">
       <TopBar title="Settings" subtitle="Configure your ProOS workspace" />
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[720px] mx-auto px-5 py-6 space-y-4">
 
@@ -279,9 +281,9 @@ export default function SettingsPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
                   style={active ? {
-                    background: "rgba(0,212,255,0.1)",
+                    background: "var(--accent-soft)",
                     color: "var(--accent)",
-                    border: "1px solid rgba(0,212,255,0.2)",
+                    border: "1px solid var(--accent)/30",
                   } : {
                     color: "var(--ink-3)",
                     border: "1px solid transparent",
@@ -296,116 +298,95 @@ export default function SettingsPage() {
             })}
           </div>
 
-          {/* ── Sources tab ── */}
+          {/* Data Sources tab */}
           {activeTab === "sources" && (
             <>
-              <div className="mb-1">
-                <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
-                  Enable or disable data sources. Disabled sources are hidden from the Lead Intelligence toolbar.
-                  At least one source must remain active.
-                </p>
-              </div>
+              <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+                Enable or disable data sources. Disabled sources are hidden from the Lead Intelligence toolbar. At least one source must remain active.
+              </p>
               {SOURCES_CONFIG.map(cfg => (
-                <SourceCard
-                  key={cfg.key}
-                  cfg={cfg}
-                  enabled={state.enabledSources[cfg.key]}
-                  onToggle={() => toggleSource(cfg.key)}
-                />
+                <SourceCard key={cfg.key} cfg={cfg} enabled={state.enabledSources[cfg.key]} onToggle={() => toggleSource(cfg.key)} />
               ))}
             </>
           )}
 
-          {/* ── AI Models tab ── */}
-          {activeTab === "ai" && (
+          {/* API Keys tab */}
+          {activeTab === "keys" && (
             <>
-              <div className="mb-1">
-                <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-                  Claude (Anthropic) is the current AI engine powering Message Lab and Lead Scorer.
-                  Below is a cost-vs-quality guide for swapping to cheaper models on each task type.
-                  All pricing is approximate output token cost.
-                </p>
-              </div>
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+                Add your API keys for the AI providers you want to use. Keys are stored in your browser's local storage and never sent to our servers.
+              </p>
 
-              {/* Cost summary banner */}
-              <div
-                className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
-              >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(0,255,136,0.1)" }}>
-                  <DollarSign size={15} style={{ color: "var(--positive)" }} />
-                </div>
-                <div>
-                  <p className="text-[12px] font-semibold" style={{ color: "var(--positive)" }}>Quick cost comparison</p>
-                  <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
-                    Claude Sonnet 4 = $3/M tokens · GPT-4o mini = $0.15/M · Gemini Flash = $0.075/M · Groq Llama = Free
-                  </p>
-                </div>
-              </div>
-
-              {AI_MODELS.map(m => <ModelCard key={m.useCase} data={m} />)}
-
-              <div
-                className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]"
-                style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", color: "var(--ink-3)" }}
-              >
-                <Zap size={12} className="shrink-0 mt-0.5" style={{ color: "var(--info)" }} />
+              {/* Security note */}
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20", color: "var(--ink-3)" }}>
+                <Info size={12} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
                 <span>
-                  <span className="font-semibold" style={{ color: "var(--info)" }}>Recommended stack:</span>{" "}
-                  Use <strong style={{ color: "var(--ink)" }}>GPT-4o mini</strong> for message generation and scoring (80% of your usage),
-                  and <strong style={{ color: "var(--ink)" }}>DeepSeek V3</strong> for any complex reasoning tasks.
-                  This cuts AI cost by ~90% vs Claude Sonnet with minimal quality drop.
+                  <span className="font-semibold" style={{ color: "var(--accent)" }}>Your keys stay local.</span>{" "}
+                  API keys are stored in localStorage and used directly from your browser. They are never uploaded, logged, or accessible by anyone else.
                 </span>
+              </div>
+
+              {AI_PROVIDERS.map(p => (
+                <ApiKeyCard key={p.id} provider={p} />
+              ))}
+
+              {/* Model recommendations */}
+              <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign size={14} style={{ color: "var(--positive)" }} />
+                  <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>Model recommendations by task</span>
+                </div>
+                {[
+                  { task: "Message Generation", best: "GPT-4o mini", alt: "Claude Haiku 3.5", budget: "Llama 3.3 70B (Groq)" },
+                  { task: "Lead Scoring / ICP", best: "Gemini 1.5 Flash", alt: "GPT-4o mini", budget: "Mistral Small" },
+                  { task: "Complex Reasoning", best: "Claude Sonnet 4", alt: "GPT-4o", budget: "DeepSeek V3" },
+                  { task: "Data Extraction", best: "Gemini 1.5 Flash", alt: "GPT-4o mini", budget: "Llama 3.1 8B (Groq)" },
+                ].map(row => (
+                  <div key={row.task} className="flex items-center gap-3 text-[11px] py-1.5 px-3 rounded-lg" style={{ background: "var(--surface-2)" }}>
+                    <span className="font-medium w-[160px] shrink-0" style={{ color: "var(--ink)" }}>{row.task}</span>
+                    <span className="flex-1" style={{ color: "var(--ink-3)" }}>
+                      <span style={{ color: "var(--accent)" }}>Best:</span> {row.best}
+                      {" · "}
+                      <span style={{ color: "var(--info)" }}>Alt:</span> {row.alt}
+                      {" · "}
+                      <span style={{ color: "var(--positive)" }}>Budget:</span> {row.budget}
+                    </span>
+                  </div>
+                ))}
               </div>
             </>
           )}
 
-          {/* ── About tab ── */}
+          {/* About tab */}
           {activeTab === "about" && (
             <div className="space-y-3">
-              <div
-                className="rounded-xl p-5 text-center"
-                style={{ background: "rgba(0,212,255,0.04)", border: "1px solid var(--accent-soft)" }}
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-3"
-                  style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(124,58,237,0.15))", border: "1px solid rgba(0,212,255,0.3)", boxShadow: "0 0 20px rgba(0,212,255,0.1)" }}
-                >
+              <div className="rounded-xl p-5 text-center" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20" }}>
+                <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/40" }}>
                   <Zap size={20} style={{ color: "var(--accent)" }} />
                 </div>
                 <p className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>LinkedIn ProOS</p>
                 <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>Version 1.0.0 · AI-powered B2B prospecting</p>
               </div>
-
               {[
                 { label: "Framework", value: "Next.js 14 (App Router)" },
                 { label: "Database", value: "Supabase (Postgres + Realtime)" },
-                { label: "Current AI", value: "Anthropic Claude (Sonnet)" },
+                { label: "AI Engine", value: "Anthropic Claude + Gemini + GPT-4o" },
                 { label: "Lead scraping", value: "Apify — Apollo/ZoomInfo" },
                 { label: "Deployment", value: "Vercel (auto-deploy from main)" },
                 { label: "Repository", value: "github.com/Ayushkrsharma013/lead-engine" },
               ].map(row => (
-                <div
-                  key={row.label}
-                  className="flex items-center justify-between px-4 py-2.5 rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)" }}
-                >
+                <div key={row.label} className="flex items-center justify-between px-4 py-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
                   <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>{row.label}</span>
                   <span className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>{row.value}</span>
                 </div>
               ))}
-
-              <div
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px]"
-                style={{ background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.1)", color: "var(--ink-3)" }}
-              >
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px]" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20", color: "var(--ink-3)" }}>
                 <Info size={11} style={{ color: "var(--accent)" }} />
-                Your Anthropic API key is stored in React memory only — never written to disk or database.
+                API keys are stored in your browser's localStorage only — never written to our database or servers.
               </div>
             </div>
           )}
 
-          {/* Bottom spacer */}
           <div className="h-8" />
         </div>
       </div>
