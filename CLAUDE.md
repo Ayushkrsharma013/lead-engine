@@ -41,7 +41,7 @@ Live: deployed via Vercel from the `main` branch
 lead-engine/
 ├── app/
 │   ├── layout.tsx              # Root layout — AppProvider + Shell wrapper
-│   ├── page.tsx                # Lead Intelligence (leads table + filters + agent)
+│   ├── page.tsx                # Lead Intelligence (TopBar + filter sidebar + leads table + agent)
 │   ├── globals.css             # CSS variables (dark/light), scrollbar, fonts
 │   ├── api/leads/route.ts      # POST /api/leads — Apify scraping proxy
 │   ├── dashboard/page.tsx      # Command Center (stats, activity, campaigns)
@@ -59,7 +59,7 @@ lead-engine/
 │   │   ├── CommandPalette.tsx  # Cmd+K global search (leads, modules, actions)
 │   │   └── NotificationBell.tsx# Bell icon + dropdown with unread count
 │   ├── Shell.tsx               # App shell: Sidebar + content + Toast + CommandPalette
-│   ├── FilterPanel.tsx         # Left sidebar filter UI (272px, collapsible sections)
+│   ├── FilterPanel.tsx         # Vertical filter sidebar (272px) below TopBar — collapsible sections
 │   ├── GDriveModal.tsx         # Google Drive export modal
 │   ├── LeadsTable.tsx          # Data table with sort headers + row selection
 │   ├── Pagination.tsx          # Page nav (first/prev/pages/next/last + size)
@@ -251,15 +251,41 @@ bg-accent-blue → var(--accent-blue) (same for purple, orange, green)
 text-accent-blue → var(--accent-blue)
 ```
 
+### CSS component classes (in `app/globals.css`)
+
+| Class | Purpose |
+|---|---|
+| `.filter-chip` | Inactive filter chip — hover/active transitions, light/dark support |
+| `.filter-chip-active` | Active filter chip — inherits color/border/shadow from inline style |
+| `.filter-chip-dot` | 6px colored dot inside email quality chips |
+| `.section-group` | Collapsible filter section wrapper — bottom border |
+| `.section-header` | Section toggle button — hover transitions, no JS handlers |
+| `.section-count` | Blue count badge inside section headers |
+| `.filter-date-input` | Date picker input — focus glow, theme-aware calendar icon |
+| `.search-input` | Search bar — gradient focus ring, ⌘K shortcut hint |
+| `.search-shortcut` | ⌘K badge inside search bar |
+| `.transition-premium` | Universal `150ms cubic-bezier(0.4, 0, 0.2, 1)` transition |
+
+### Filter chip colors
+
+Active filter chips in the chip bar are color-coded by group:
+- keyword/seniority/companySizes/dates → `--accent-blue` (#00d4ff)
+- jobFunction/countries → `--accent-purple` (#7c3aed)
+- industries → `--accent-green` (#00ff88)
+- emailStatus → per-status color (verified=#10b981, risky=#f59e0b, not_found=#6b6b80)
+- minScore → `--accent-orange` (#ff6b35)
+- sources → per-source color (linkedin=blue, gmaps=green, amazon=orange)
+
 ### Design rules
 
 - Use CSS variable-based Tailwind classes everywhere — no hardcoded hex colors except the 4 accent constants in inline styles
 - Lucide icons: outline variants only, `size={16}` or `size={18}`, color inherits from parent or CSS variable
-- Transitions: 150-200ms ease on interactive elements
+- Transitions: 150-200ms ease on interactive elements (use `.transition-premium` or `transition-all duration-150`)
 - Border radius: 6-8px cards/buttons, 12px modals
 - Modals: `bg-black/60 backdrop-blur-sm` overlay, `bg-surface border border-border rounded-xl` panel
 - Loading states: subtle spinner (border accent + transparent), not heavy animations
 - Scrollbar: 4px wide, transparent track, white/10 thumb
+- Filter interactions: use CSS classes instead of JS `onMouseEnter`/`onMouseLeave` for hover states — smoother and no DOM thrashing
 
 ---
 
@@ -267,7 +293,7 @@ text-accent-blue → var(--accent-blue)
 
 | Route | Module | Key features |
 |---|---|---|
-| `/` | Lead Intelligence | Leads table, filters, search, agent run, CSV/Drive export |
+| `/` | Lead Intelligence | TopBar + filter sidebar (272px, 7 collapsible sections) + search + leads table, agent run, CSV/Drive export |
 | `/dashboard` | Command Center | 5 stat cards, activity feed, campaigns, quick actions |
 | `/message-lab` | AI Message Lab | Claude API, typewriter, 3 message types, 4 tones, history |
 | `/scorer` | Lead Scorer | ICP criteria, SVG score ring, reasoning, add-to-pipeline |
