@@ -35,6 +35,10 @@ yarn-error.log*
 # claude code
 .claude/
 
+# mcp server
+mcp-server/node_modules/
+mcp-server/dist/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
