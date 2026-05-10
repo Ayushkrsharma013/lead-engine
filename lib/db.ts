@@ -148,6 +148,12 @@ export async function mergeLeadsInDB(incoming: Lead[]): Promise<MergeResult> {
       if (e.id === withTs.id) return true;
       if (withTs.email && e.email && e.email === withTs.email) return true;
       if (withTs.linkedin && e.linkedin && e.linkedin === withTs.linkedin) return true;
+      // Fallback: match by name + company when both email and linkedin are empty
+      if (!withTs.email && !withTs.linkedin && !e.email && !e.linkedin) {
+        const sameName = withTs.name && e.name && e.name.toLowerCase() === withTs.name.toLowerCase();
+        const sameCompany = withTs.company && e.company && e.company.toLowerCase() === withTs.company.toLowerCase();
+        if (sameName && sameCompany) return true;
+      }
       return false;
     });
 
