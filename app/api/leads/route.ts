@@ -5,6 +5,17 @@ export const maxDuration = 300;
 const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
 const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
 
+function apifyError(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  if (d.error && typeof d.error === "object") {
+    const e = d.error as Record<string, unknown>;
+    return String(e.message || e.type || "Unknown Apify error");
+  }
+  if (typeof d.error === "string") return d.error;
+  return null;
+}
+
 // POST — start actor and return runId immediately
 export async function POST(req: NextRequest) {
   if (!APIFY_TOKEN) {
@@ -36,12 +47,21 @@ export async function POST(req: NextRequest) {
     }
 
     const startRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/${ACTOR}/runs?token=${APIFY_TOKEN}&waitForFinish=0`,
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }
     );
     const startData = await startRes.json();
+
+    if (!startRes.ok) {
+      const ae = apifyError(startData);
+      throw new Error(ae || `Apify HTTP ${startRes.status}`);
+    }
+
     const runId = startData?.data?.id;
-    if (!runId) throw new Error("Failed to start actor run");
+    if (!runId) {
+      const ae = apifyError(startData);
+      throw new Error(ae || "Failed to start actor — no runId returned");
+    }
 
     return NextResponse.json({ runId });
   } catch (err: unknown) {
@@ -66,14 +86,25 @@ export async function GET(req: NextRequest) {
       `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
     );
     const statusData = await statusRes.json();
+
+    if (!statusRes.ok) {
+      const ae = apifyError(statusData);
+      throw new Error(ae || `Apify HTTP ${statusRes.status}`);
+    }
+
     const status = statusData?.data?.status;
 
     if (status === "SUCCEEDED") {
       const datasetId = statusData.data.defaultDatasetId;
+      if (!datasetId) {
+        return NextResponse.json({ status: "SUCCEEDED", leads: [], runId });
+      }
+
       const dataRes = await fetch(
         `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=200`
       );
       const leads = await dataRes.json();
+
       return NextResponse.json({
         status: "SUCCEEDED",
         leads: Array.isArray(leads) ? leads : [],
@@ -83,7 +114,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (status === "FAILED" || status === "ABORTED" || status === "TIMED-OUT") {
-      return NextResponse.json({ status, runId });
+      const exitCode = statusData?.data?.exitCode;
+      const statusMsg = statusData?.data?.statusMessage || "";
+      return NextResponse.json({
+        status,
+        runId,
+        error: statusMsg ? `Actor ${status}: ${statusMsg}` : `Actor run ${status}`,
+      });
     }
 
     return NextResponse.json({ status: status || "RUNNING", runId });

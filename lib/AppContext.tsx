@@ -354,7 +354,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return computeStatsFromLeads(leads);
           })
           .then(stats => dispatch({ type: "SET_STATS", payload: stats }))
-          .catch(() => {});
+          .catch((e) => { console.error("Realtime leads fetch failed:", e); });
       })
       .subscribe();
 

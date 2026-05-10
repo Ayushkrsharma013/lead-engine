@@ -273,14 +273,26 @@ export default function Home() {
           pollCount++;
 
           const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`);
-          if (!pollRes.ok) {
-            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: HTTP ${pollRes.status}`, type: "warn" } });
-            continue;
-          }
 
           const pollData = await pollRes.json() as {
             status?: string; leads?: Record<string, unknown>[]; error?: string;
           };
+
+          // Permanent errors — fail fast, don't keep polling
+          if (!pollRes.ok && pollRes.status >= 400 && pollRes.status < 500) {
+            throw new Error(pollData.error || `Poll failed with HTTP ${pollRes.status}`);
+          }
+
+          // Transient errors — log and keep polling
+          if (!pollRes.ok) {
+            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: HTTP ${pollRes.status} — retrying…`, type: "warn" } });
+            continue;
+          }
+
+          // Error embedded in 200 response (e.g. FAILED status from Apify)
+          if (pollData.error) {
+            throw new Error(pollData.error);
+          }
 
           if (pollData.status === "SUCCEEDED") {
             dispatch({ type: "SET_PROGRESS", payload: 80 });
@@ -320,10 +332,6 @@ export default function Home() {
 
           if (pollData.status === "FAILED" || pollData.status === "ABORTED" || pollData.status === "TIMED-OUT") {
             throw new Error(`Actor run ${pollData.status}`);
-          }
-
-          if (pollData.error) {
-            throw new Error(pollData.error);
           }
 
           // Still running — update progress

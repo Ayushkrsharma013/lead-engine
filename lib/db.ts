@@ -134,16 +134,17 @@ export async function fetchLeadsFromDB(): Promise<Lead[]> {
 
 export async function mergeLeadsInDB(incoming: Lead[]): Promise<MergeResult> {
   const existing = await fetchLeadsFromDB();
-  const result = [...existing];
   let added = 0, updated = 0, rejected = 0;
   const now = new Date().toISOString();
+  const toUpsert: Lead[] = [];
+  const all = [...existing];
 
   for (const rawLead of incoming) {
     if (!rawLead || typeof rawLead !== "object") { rejected++; continue; }
     const lead = sanitizeLead(rawLead as unknown as Record<string, unknown>);
     const withTs: Lead = { ...lead, fetchedAt: now, savedAt: lead.savedAt || now };
 
-    const dupIdx = result.findIndex(e => {
+    const dupIdx = all.findIndex(e => {
       if (e.id === withTs.id) return true;
       if (withTs.email && e.email && e.email === withTs.email) return true;
       if (withTs.linkedin && e.linkedin && e.linkedin === withTs.linkedin) return true;
@@ -151,18 +152,23 @@ export async function mergeLeadsInDB(incoming: Lead[]): Promise<MergeResult> {
     });
 
     if (dupIdx >= 0) {
-      result[dupIdx] = { ...result[dupIdx], ...withTs, id: result[dupIdx].id, savedAt: result[dupIdx].savedAt };
+      all[dupIdx] = { ...all[dupIdx], ...withTs, id: all[dupIdx].id, savedAt: all[dupIdx].savedAt };
+      toUpsert.push(all[dupIdx]);
       updated++;
     } else {
-      result.push(withTs);
+      all.push(withTs);
+      toUpsert.push(withTs);
       added++;
     }
   }
 
-  const { error } = await supabase
-    .from("leads")
-    .upsert(result.map(leadToDB), { onConflict: "id" });
-  if (error) throw error;
+  // Only upsert leads that changed, not the entire table
+  if (toUpsert.length > 0) {
+    const { error } = await supabase
+      .from("leads")
+      .upsert(toUpsert.map(leadToDB), { onConflict: "id" });
+    if (error) throw error;
+  }
 
   const stored = await fetchLeadsFromDB();
   return { stored, added, updated, rejected };
