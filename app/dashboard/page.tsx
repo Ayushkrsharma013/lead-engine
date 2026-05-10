@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard, Users, Zap, Send, TrendingUp, CalendarCheck,
   UserPlus, Mail, ArrowRight, Plus, Download, Target, Sparkles,
@@ -8,9 +8,8 @@ import {
 import Link from "next/link";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
-import { getActivityLog, getCampaigns } from "@/lib/db";
 import { generateCSV } from "@/lib/storage";
-import type { ActivityLogEntry, Campaign } from "@/lib/types";
+import type { ActivityLogEntry } from "@/lib/types";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -50,21 +49,18 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
 
 export default function DashboardPage() {
   const { state, dispatch } = useApp();
-  const { leads, messages } = state;
-  const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
-  const [campaignList, setCampaignList] = useState<Campaign[]>([]);
+  const { leads, messages, campaigns, activityLog } = state;
+
   const [newCampaign, setNewCampaign] = useState(false);
   const [campaignName, setCampaignName] = useState("");
   const [campaignIndustry, setCampaignIndustry] = useState("");
 
-  useEffect(() => {
-    getActivityLog(10).then(setActivity).catch(() => {});
-    getCampaigns().then(setCampaignList).catch(() => {});
-  }, [leads.length]);
-
+  // ─── Real computed stats ─────────────────────────────────────────────────
   const hotLeads = leads.filter(l => l.score > 80).length;
-  const meetingsBooked = leads.filter(l => l.emailStatus === "verified").length; // proxy for now
   const totalMessages = messages.length;
+  const contactedLeads = leads.filter(l => l.status && l.status !== "new").length;
+  const contactRate = leads.length > 0 ? Math.round((contactedLeads / leads.length) * 100) : 0;
+  const meetingsBooked = leads.filter(l => l.status === "meeting" || l.status === "won").length;
 
   const handleExport = () => {
     const csv = generateCSV(leads);
@@ -78,12 +74,15 @@ export default function DashboardPage() {
     if (!campaignName.trim()) return;
     const { saveCampaign } = await import("@/lib/db");
     const c = await saveCampaign({ name: campaignName, targetIndustry: campaignIndustry, status: "active", leadIds: [] });
-    setCampaignList(prev => [c, ...prev]);
+    dispatch({ type: "SAVE_CAMPAIGN", payload: c });
     setCampaignName("");
     setCampaignIndustry("");
     setNewCampaign(false);
-    dispatch({ type: "SAVE_CAMPAIGN", payload: c });
   };
+
+  // Get active campaigns (not complete)
+  const activeCampaigns = campaigns.filter(c => c.status !== "complete");
+  const recentActivity = (activityLog as ActivityLogEntry[]).slice(0, 10);
 
   return (
     <>
@@ -95,8 +94,8 @@ export default function DashboardPage() {
           <StatCard label="Total Leads" value={leads.length.toLocaleString()} icon={<Users size={16} />} accent="#00d4ff" />
           <StatCard label="Hot Leads" value={hotLeads} icon={<Zap size={16} />} accent="#ff6b35" />
           <StatCard label="Messages Sent" value={totalMessages} icon={<Send size={16} />} accent="#00d4ff" />
-          <StatCard label="Avg Reply Rate" value="23%" icon={<TrendingUp size={16} />} accent="#00ff88" />
-          <StatCard label="Meetings Booked" value={meetingsBooked} icon={<CalendarCheck size={16} />} accent="#00ff88" />
+          <StatCard label="Contact Rate" value={`${contactRate}%`} icon={<TrendingUp size={16} />} accent="#00ff88" />
+          <StatCard label="Meetings Won" value={meetingsBooked} icon={<CalendarCheck size={16} />} accent="#00ff88" />
         </div>
 
         {/* Middle Row */}
@@ -104,11 +103,11 @@ export default function DashboardPage() {
           {/* Activity Feed */}
           <div className="bg-surface border border-border rounded-lg p-5">
             <h3 className="text-sm font-semibold text-text mb-4">Recent Activity</h3>
-            {activity.length === 0 ? (
+            {recentActivity.length === 0 ? (
               <p className="text-sm text-muted text-center py-8">No activity yet. Run the agent or score leads to see activity here.</p>
             ) : (
               <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                {activity.map(a => (
+                {recentActivity.map(a => (
                   <div key={a.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-white/[0.02] transition-colors">
                     {activityIcon(a.type)}
                     <span className="text-sm text-text flex-1">{a.text}</span>
@@ -149,11 +148,11 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {campaignList.length === 0 ? (
-              <p className="text-sm text-muted text-center py-8">No campaigns yet. Create one to start tracking outreach.</p>
+            {activeCampaigns.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">No active campaigns. Create one to start tracking outreach.</p>
             ) : (
               <div className="space-y-2">
-                {campaignList.filter(c => c.status !== "complete").map(c => (
+                {activeCampaigns.map(c => (
                   <div key={c.id} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-white/[0.02] transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-text truncate">{c.name}</p>

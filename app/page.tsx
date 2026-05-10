@@ -15,6 +15,7 @@ import TopBar from "@/components/layout/TopBar";
 import FilterPanel from "@/components/FilterPanel";
 import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
+import ImportModal from "@/components/ImportModal";
 import { Progress } from "@/components/ui/progress";
 
 const API_HEADERS = {
@@ -378,60 +379,15 @@ export default function Home() {
     dispatch({ type: "SET_RUNNING", payload: false });
   }, [source, mock]);
 
-  // Import past Apify runs
-  const [importing, setImporting] = useState(false);
-  const handleImport = useCallback(async () => {
-    setImporting(true);
-    dispatch({ type: "CLEAR_LOG" });
-    dispatch({ type: "SET_PROGRESS", payload: 10 });
-
-    const ts = () =>
-      new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-    try {
-      dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Fetching past Apify runs…", type: "info" } });
-      dispatch({ type: "SET_PROGRESS", payload: 30 });
-
-      const res = await fetch("/api/leads/import", { method: "POST", headers: API_HEADERS });
-      const data = await res.json() as {
-        error?: string;
-        message?: string;
-        added?: number;
-        updated?: number;
-        total?: number;
-        runs?: Array<{ runId: string; count: number }>;
-      };
-
-      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
-
-      dispatch({ type: "SET_PROGRESS", payload: 80 });
-
-      // Summarize per-run in the log
-      if (data.runs && data.runs.length > 0) {
-        data.runs.forEach((r, i) => {
-          dispatch({ type: "APPEND_LOG", payload: { id: i + 1, ts: ts(), text: `Run ${r.runId.slice(0, 8)}… → ${r.count} leads`, type: "info" } });
-        });
-      }
-
-      // Re-fetch leads from Supabase so the table updates
-      const { fetchLeadsFromDB, computeStatsFromLeads: computeStats } = await import("@/lib/db");
-      const stored = await fetchLeadsFromDB();
-      dispatch({ type: "SET_LEADS", payload: stored });
-      const newStats = await computeStats(stored);
-      dispatch({ type: "SET_STATS", payload: newStats });
-      dispatch({ type: "SET_PROGRESS", payload: 100 });
-
-      const summary = `${data.added ?? 0} new · ${data.updated ?? 0} updated leads imported`;
-      dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: summary, type: "success" } });
-      showToast(summary);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      dispatch({ type: "APPEND_LOG", payload: { id: 99, ts: ts(), text: `✗ ${msg}`, type: "warn" } });
-      showToast(msg, "error");
-      dispatch({ type: "SET_PROGRESS", payload: 0 });
-    }
-
-    setImporting(false);
+  // Import modal
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const handleImported = useCallback(async (added: number, updated: number) => {
+    const { fetchLeadsFromDB, computeStatsFromLeads: computeStats } = await import("@/lib/db");
+    const stored = await fetchLeadsFromDB();
+    dispatch({ type: "SET_LEADS", payload: stored });
+    const newStats = await computeStats(stored);
+    dispatch({ type: "SET_STATS", payload: newStats });
+    showToast(`${added} new · ${updated} updated leads imported`);
   }, [dispatch]);
 
   // Selection
@@ -668,45 +624,31 @@ export default function Home() {
 
             {/* Import from Apify */}
             <button
-              onClick={handleImport}
-              disabled={importing || running}
-              title="Import all pre-fetched leads from past Apify runs into Supabase"
+              onClick={() => setImportModalOpen(true)}
+              disabled={running}
+              title="Browse and import leads from past Apify runs"
               className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: importing
-                  ? "rgba(124,58,237,0.15)"
-                  : "rgba(124,58,237,0.12)",
+                background: "rgba(124,58,237,0.12)",
                 color: "#7c3aed",
                 border: "1px solid rgba(124,58,237,0.35)",
-                boxShadow: importing ? "none" : "0 0 14px rgba(124,58,237,0.18)",
+                boxShadow: "0 0 14px rgba(124,58,237,0.18)",
               }}
               onMouseEnter={e => {
-                if (!importing && !running) {
+                if (!running) {
                   (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.22)";
                   (e.currentTarget as HTMLElement).style.boxShadow = "0 0 22px rgba(124,58,237,0.3)";
                 }
               }}
               onMouseLeave={e => {
-                if (!importing && !running) {
+                if (!running) {
                   (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.12)";
                   (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px rgba(124,58,237,0.18)";
                 }
               }}
             >
-              {importing ? (
-                <>
-                  <div
-                    className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-                    style={{ borderColor: "rgba(124,58,237,0.4)", borderTopColor: "#7c3aed" }}
-                  />
-                  Importing…
-                </>
-              ) : (
-                <>
-                  <CloudDownload size={13} />
-                  Import
-                </>
-              )}
+              <CloudDownload size={13} />
+              Import
             </button>
 
             {/* Export CSV */}
@@ -906,6 +848,11 @@ export default function Home() {
       </div>
 
       {/* Google Drive Modal */}
+      <ImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImported={handleImported}
+      />
       <GDriveModal
         open={gdrive}
         onClose={() => setGdrive(false)}

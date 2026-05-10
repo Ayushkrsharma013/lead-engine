@@ -26,12 +26,6 @@ function extractEmail(item: Record<string, unknown>): string {
   return "";
 }
 
-/**
- * Map a raw Apify item into a partial Lead — intentionally omit `id` so that
- * sanitizeLead (called inside mergeLeadsInDB) generates a safe alphanumeric id.
- * Using the LinkedIn URL as the id causes "Invalid path specified in request URL"
- * because Supabase embeds the id in the REST URL path.
- */
 function apifyItemToLead(item: Record<string, unknown>): Partial<Lead> {
   const email = extractEmail(item);
   const rawStatus = String(item.email_status || "");
@@ -56,7 +50,9 @@ function apifyItemToLead(item: Record<string, unknown>): Partial<Lead> {
   };
 }
 
-export async function POST(req: NextRequest) {
+// ─── GET — List past Apify runs with lead counts ──────────────────────────────
+
+export async function GET(req: NextRequest) {
   const authError = validateApiAuth(req);
   if (authError) return authError;
 
@@ -65,7 +61,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. List all SUCCEEDED runs for this actor (up to 50)
     const runsRes = await fetch(
       `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
       { headers: APIFY_HEADERS },
@@ -75,18 +70,93 @@ export async function POST(req: NextRequest) {
     }
 
     const runsData = await runsRes.json() as {
-      data?: { items?: Array<{ id: string; defaultDatasetId: string }> };
+      data?: { items?: Array<{ id: string; defaultDatasetId: string; finishedAt: string }> };
     };
     const runs = runsData?.data?.items ?? [];
 
     if (runs.length === 0) {
+      return NextResponse.json({ runs: [] });
+    }
+
+    // Fetch item count for each run (just count, not full data)
+    const runList = await Promise.all(
+      runs.map(async (run) => {
+        try {
+          const countRes = await fetch(
+            `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=1`,
+            { headers: APIFY_HEADERS },
+          );
+          if (!countRes.ok) return null;
+          const items = await countRes.json() as Record<string, unknown>[];
+          return {
+            runId: run.id,
+            finishedAt: run.finishedAt || "",
+            leadCount: Array.isArray(items) ? items.length : 0,
+            datasetId: run.defaultDatasetId,
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const validRuns = runList.filter(Boolean).sort(
+      (a, b) => new Date(b!.finishedAt).getTime() - new Date(a!.finishedAt).getTime()
+    );
+
+    return NextResponse.json({ runs: validRuns });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err ?? "");
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+// ─── POST — Import leads from selected Apify runs ─────────────────────────────
+
+export async function POST(req: NextRequest) {
+  const authError = validateApiAuth(req);
+  if (authError) return authError;
+
+  if (!APIFY_TOKEN) {
+    return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
+  }
+
+  try {
+    // Accept optional body to filter runs + limit
+    let body: { runIds?: string[]; limit?: number } = {};
+    try { body = await req.json(); } catch { /* no body = import all */ }
+
+    const selectedRunIds = body.runIds?.length ? new Set(body.runIds) : null;
+    const itemLimit = typeof body.limit === "number" ? Math.min(Math.max(1, body.limit), 2000) : 200;
+
+    // 1. List all SUCCEEDED runs
+    const runsRes = await fetch(
+      `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
+      { headers: APIFY_HEADERS },
+    );
+    if (!runsRes.ok) {
+      throw new Error(`Apify list-runs failed: HTTP ${runsRes.status}`);
+    }
+
+    const runsData = await runsRes.json() as {
+      data?: { items?: Array<{ id: string; defaultDatasetId: string; finishedAt: string }> };
+    };
+    const allRuns = runsData?.data?.items ?? [];
+
+    // Filter to selected runs if specified
+    const runs = selectedRunIds
+      ? allRuns.filter(r => selectedRunIds.has(r.id))
+      : allRuns;
+
+    if (runs.length === 0) {
       return NextResponse.json({
-        message: "No past successful runs found on Apify",
+        message: "No matching runs found",
         added: 0, updated: 0, total: 0,
+        runs: [],
       });
     }
 
-    // 2. Fetch leads from every run's dataset
+    // 2. Fetch leads from selected runs
     const allPartialLeads: Partial<Lead>[] = [];
     const runSummary: Array<{ runId: string; count: number }> = [];
 
@@ -94,7 +164,7 @@ export async function POST(req: NextRequest) {
       if (!run.defaultDatasetId) continue;
       try {
         const dataRes = await fetch(
-          `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=200`,
+          `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=${itemLimit}`,
           { headers: APIFY_HEADERS },
         );
         if (!dataRes.ok) continue;
@@ -104,9 +174,7 @@ export async function POST(req: NextRequest) {
         const leads = items.map(apifyItemToLead);
         allPartialLeads.push(...leads);
         runSummary.push({ runId: run.id, count: leads.length });
-      } catch {
-        // Skip any single dataset failure silently
-      }
+      } catch { /* skip single dataset failure */ }
     }
 
     if (allPartialLeads.length === 0) {
@@ -117,7 +185,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Deduplicate within the batch (same lead may appear in multiple runs)
+    // 3. Deduplicate
     const seen = new Map<string, Partial<Lead>>();
     for (const lead of allPartialLeads) {
       const key = lead.email || lead.linkedin || lead.name;
@@ -125,7 +193,7 @@ export async function POST(req: NextRequest) {
     }
     const deduped = Array.from(seen.values());
 
-    // 4. mergeLeadsInDB handles: sanitization (safe IDs), dedup against existing, upsert into Supabase
+    // 4. Merge into DB
     const { added, updated } = await mergeLeadsInDB(deduped as Lead[]);
 
     return NextResponse.json({

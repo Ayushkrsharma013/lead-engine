@@ -2,7 +2,10 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, type Dispatch } from "react";
 import { supabase } from "./supabase";
-import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "./db";
+import {
+  fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads,
+  getMessages, getSequences, getCampaigns, getClients, getActivityLog,
+} from "./db";
 import { seedIfEmpty } from "./seed";
 import type {
   Lead, Message, Sequence, Campaign, Client, ActivityLogEntry,
@@ -338,8 +341,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: "SET_LEADS", payload: leads });
         const stats = await computeStatsFromLeads(leads);
         dispatch({ type: "SET_STATS", payload: stats });
+
+        // Load all supporting data in parallel
+        const [messages, sequences, campaigns, clients, activityLog] = await Promise.all([
+          getMessages().catch(() => [] as Message[]),
+          getSequences().catch(() => [] as Sequence[]),
+          getCampaigns().catch(() => [] as Campaign[]),
+          getClients().catch(() => [] as Client[]),
+          getActivityLog(50).catch(() => [] as ActivityLogEntry[]),
+        ]);
+        dispatch({ type: "SET_MESSAGES", payload: messages });
+        dispatch({ type: "SET_SEQUENCES", payload: sequences });
+        dispatch({ type: "SET_CAMPAIGNS", payload: campaigns });
+        dispatch({ type: "SET_CLIENTS", payload: clients });
+        dispatch({ type: "SET_ACTIVITY_LOG", payload: activityLog });
       } catch (e) {
-        console.error("Failed to load leads from Supabase:", e);
+        console.error("Failed to load from Supabase:", e);
       }
       dispatch({ type: "SET_LOADING", payload: false });
     }
