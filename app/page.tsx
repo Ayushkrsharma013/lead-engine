@@ -298,24 +298,44 @@ export default function Home() {
             dispatch({ type: "SET_PROGRESS", payload: 80 });
             dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Processing ${pollData.leads?.length ?? 0} leads…`, type: "info" } });
 
-            const liveLeads: Lead[] = (pollData.leads ?? []).map((item, idx) => ({
-              id: `live-${Date.now()}-${idx}`,
-              name:        String(item.full_name       || item.name     || ""),
-              title:       String(item.job_title        || item.title    || ""),
-              company:     String(item.job_company_name || item.company  || ""),
-              industry:    String(item.job_company_industry || item.industry || ""),
-              location:    String(item.location_name   || item.location || ""),
-              email: Array.isArray(item.emails) && item.emails.length > 0
-                ? String((item.emails[0] as Record<string, unknown>).address ?? item.emails[0] ?? "")
-                : String(item.email || ""),
-              emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
-                ? String(item.email_status) : "not_found") as Lead["emailStatus"],
-              linkedin:    String(item.linkedin_url    || ""),
-              website:     String(item.job_company_website || ""),
-              companySize: String(item.job_company_size || ""),
-              score:       Math.floor(70 + Math.random() * 28),
-              source,
-            }));
+            const liveLeads: Lead[] = (pollData.leads ?? []).map((item, idx) => {
+              // Apify actor returns emails in various shapes — handle all cases
+              const extractEmail = (): string => {
+                if (Array.isArray(item.emails) && item.emails.length > 0) {
+                  const first = item.emails[0];
+                  if (typeof first === "object" && first !== null)
+                    return String((first as Record<string, unknown>).address || first || "");
+                  return String(first || "");
+                }
+                if (typeof item.emails === "string" && item.emails.trim()) return item.emails.trim();
+                if (typeof item.work_email === "string" && item.work_email.trim()) return item.work_email.trim();
+                if (typeof item.email === "string" && item.email.trim()) return item.email.trim();
+                if (typeof item.personal_emails === "string") {
+                  const first = item.personal_emails.split(/\s+/)[0];
+                  if (first) return first;
+                }
+                if (Array.isArray(item.personal_emails) && item.personal_emails.length > 0)
+                  return String(item.personal_emails[0]);
+                return "";
+              };
+
+              return {
+                id: `live-${Date.now()}-${idx}`,
+                name:        String(item.full_name       || item.name     || ""),
+                title:       String(item.job_title        || item.title    || ""),
+                company:     String(item.job_company_name || item.company  || ""),
+                industry:    String(item.job_company_industry || item.industry || ""),
+                location:    String(item.location_name   || item.location || ""),
+                email:       extractEmail(),
+                emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
+                  ? String(item.email_status) : "not_found") as Lead["emailStatus"],
+                linkedin:    String(item.linkedin_url    || ""),
+                website:     String(item.job_company_website || ""),
+                companySize: String(item.job_company_size || ""),
+                score:       Math.floor(70 + Math.random() * 28),
+                source,
+              };
+            });
 
             const { stored, added, updated, rejected } = await mergeLeadsInDB(liveLeads);
             dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: liveLeads, added, updated } });
