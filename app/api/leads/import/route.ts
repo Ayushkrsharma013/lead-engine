@@ -110,8 +110,16 @@ export async function POST() {
       });
     }
 
-    // 3. mergeLeadsInDB handles: sanitization (safe IDs), dedup, upsert into Supabase
-    const { added, updated } = await mergeLeadsInDB(allPartialLeads as Lead[]);
+    // 3. Deduplicate within the batch (same lead may appear in multiple runs)
+    const seen = new Map<string, Partial<Lead>>();
+    for (const lead of allPartialLeads) {
+      const key = lead.email || lead.linkedin || lead.name;
+      if (key && !seen.has(key)) seen.set(key, lead);
+    }
+    const deduped = Array.from(seen.values());
+
+    // 4. mergeLeadsInDB handles: sanitization (safe IDs), dedup against existing, upsert into Supabase
+    const { added, updated } = await mergeLeadsInDB(deduped as Lead[]);
 
     return NextResponse.json({
       message: `Imported ${added + updated} leads (${added} new, ${updated} updated) from ${runs.length} run(s)`,
