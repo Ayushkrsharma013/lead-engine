@@ -13,6 +13,12 @@ import { DEFAULT_FILTERS, DEFAULT_SORT, DEFAULT_PAGINATION } from "./types";
 
 // ─── State ──────────────────────────────────────────────────────────────────────
 
+export interface EnabledSources {
+  linkedin: boolean;
+  gmaps: boolean;
+  amazon: boolean;
+}
+
 export interface AppState {
   // Data
   leads: Lead[];
@@ -30,6 +36,10 @@ export interface AppState {
   theme: "dark" | "light";
   sidebarCollapsed: boolean;
   activeModule: ModuleName;
+  settingsOpen: boolean;
+
+  // Source gating
+  enabledSources: EnabledSources;
 
   // Lead table state
   selected: string[];
@@ -52,6 +62,12 @@ export interface AppState {
   notifications: Notification[];
 }
 
+const DEFAULT_ENABLED_SOURCES: EnabledSources = {
+  linkedin: true,
+  gmaps: false,
+  amazon: false,
+};
+
 const initialState: AppState = {
   leads: [],
   latestLeads: [],
@@ -64,6 +80,8 @@ const initialState: AppState = {
   theme: "dark",
   sidebarCollapsed: false,
   activeModule: "leads",
+  settingsOpen: false,
+  enabledSources: DEFAULT_ENABLED_SOURCES,
   selected: [],
   filters: DEFAULT_FILTERS,
   sort: DEFAULT_SORT,
@@ -85,10 +103,16 @@ function initFromStorage(): AppState {
   try {
     const theme = localStorage.getItem("leados_theme");
     const sidebar = localStorage.getItem("leados_sidebar");
+    const sourcesRaw = localStorage.getItem("leados_sources");
+    let enabledSources = DEFAULT_ENABLED_SOURCES;
+    if (sourcesRaw) {
+      try { enabledSources = { ...DEFAULT_ENABLED_SOURCES, ...JSON.parse(sourcesRaw) }; } catch { /* ignore */ }
+    }
     return {
       ...initialState,
       theme: theme === "light" ? "light" : "dark",
       sidebarCollapsed: sidebar === "closed",
+      enabledSources,
     };
   } catch {
     return initialState;
@@ -138,7 +162,10 @@ export type AppAction =
   | { type: "SAVE_CLIENT"; payload: Client }
   | { type: "SET_ACTIVITY_LOG"; payload: ActivityLogEntry[] }
   | { type: "ADD_NOTIFICATION"; payload: Notification }
-  | { type: "MARK_ALL_READ" };
+  | { type: "MARK_ALL_READ" }
+  | { type: "TOGGLE_SETTINGS" }
+  | { type: "SET_SETTINGS_OPEN"; payload: boolean }
+  | { type: "SET_ENABLED_SOURCES"; payload: EnabledSources };
 
 function reducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
@@ -152,6 +179,12 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, activeModule: action.payload };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
+    case "TOGGLE_SETTINGS":
+      return { ...state, settingsOpen: !state.settingsOpen };
+    case "SET_SETTINGS_OPEN":
+      return { ...state, settingsOpen: action.payload };
+    case "SET_ENABLED_SOURCES":
+      return { ...state, enabledSources: action.payload };
 
     case "SET_LEADS":
       return {
@@ -282,13 +315,14 @@ export function useApp() {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState, initFromStorage);
 
-  // Persist theme and sidebar to localStorage
+  // Persist theme, sidebar, and source settings to localStorage
   useEffect(() => {
     try {
       localStorage.setItem("leados_theme", state.theme);
       localStorage.setItem("leados_sidebar", state.sidebarCollapsed ? "closed" : "open");
+      localStorage.setItem("leados_sources", JSON.stringify(state.enabledSources));
     } catch { /* ignore */ }
-  }, [state.theme, state.sidebarCollapsed]);
+  }, [state.theme, state.sidebarCollapsed, state.enabledSources]);
 
   // Apply theme to <html>
   useEffect(() => {

@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Zap,
+  ChevronLeft, ChevronRight, Zap, Settings2,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -160,6 +160,23 @@ export default function ProSidebar() {
             ? <ChevronRight size={15} />
             : <><ChevronLeft size={15} /><span className="text-[12px] font-medium">Collapse</span></>
           }
+        </button>
+
+        {/* Settings button */}
+        <button
+          onClick={() => dispatch({ type: "TOGGLE_SETTINGS" })}
+          className="w-full h-9 flex items-center gap-2 transition-colors"
+          style={{
+            justifyContent: collapsed ? "center" : "flex-start",
+            paddingLeft: collapsed ? 0 : 14,
+            color: "var(--muted)",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          title="Settings"
+        >
+          <Settings2 size={15} />
+          {!collapsed && <span className="text-[12px] font-medium">Settings</span>}
         </button>
 
         {/* Theme toggle */}

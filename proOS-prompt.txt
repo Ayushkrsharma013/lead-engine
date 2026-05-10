@@ -1,0 +1,959 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LinkedIn ProOS — Claude Code Build Prompt
+Full Stack: LeadGen Engine + ProOS + Supabase + Collapsible Sidebar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are working on an existing Next.js 14 + TypeScript + Tailwind CSS project.
+
+Repo:  https://github.com/Ayushkrsharma013/lead-engine
+Live:  https://lead-engine-henna.vercel.app
+
+BEFORE writing a single line of code:
+1. Clone the repo and read every file in /app, /components, /lib
+2. Understand existing types, data structures, component patterns, color system
+3. Identify where Supabase is already configured (check /lib for supabase client)
+4. Do NOT assume anything — read the actual source first
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Transform LeadGen Engine into LinkedIn ProOS — a full OS-style prospecting
+platform for LinkedIn + Email multi-touch outreach.
+
+Target users : Agencies + Solopreneurs targeting SaaS, Founders, Consultants
+Brand name   : "LinkedIn ProOS" (update all page titles and headers)
+Result       : ONE cohesive SaaS product — not modules glued together
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 0 — SUPABASE AS THE ONLY DATABASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ALL application data lives in Supabase. localStorage is allowed ONLY for:
+  "leados_theme"    → "dark" | "light"
+  "leados_sidebar"  → "open" | "closed"
+
+The Anthropic API key is stored in React Context / state ONLY.
+It must NEVER be written to localStorage, Supabase, logs, or anywhere.
+
+── SQL MIGRATIONS (run these first) ────────────────────────
+
+-- 1. LEADS
+create table if not exists leads (
+  id                  uuid primary key default gen_random_uuid(),
+  created_at          timestamptz default now(),
+  name                text not null,
+  title               text,
+  company             text,
+  industry            text,
+  location            text,
+  email               text,
+  email_status        text default 'unknown',
+  linkedin_url        text,
+  icp_score           integer default 0,
+  status              text default 'new',
+  kanban_column       text default 'New',
+  source              text default 'linkedin',
+  notes               text,
+  sequence_id         uuid,
+  client_id           uuid,
+  last_touched        timestamptz default now(),
+  scoring_reasoning   jsonb,
+  recommended_action  text
+);
+
+-- email_status  : 'verified' | 'risky' | 'unknown'
+-- status        : 'new' | 'contacted' | 'replied' | 'hot' | 'meeting' | 'won' | 'lost'
+-- source        : 'linkedin' | 'google_maps' | 'amazon' | 'manual'
+-- kanban_column : 'New' | 'Contacted' | 'Replied' | 'Hot Lead' | 'Meeting Booked' | 'Closed Won' | 'Closed Lost'
+
+-- 2. MESSAGES
+create table if not exists messages (
+  id            uuid primary key default gen_random_uuid(),
+  created_at    timestamptz default now(),
+  lead_id       uuid references leads(id) on delete cascade,
+  message_type  text,
+  tone          text,
+  subject       text,
+  body          text not null,
+  char_count    integer
+);
+-- message_type: 'linkedin_connection' | 'linkedin_dm' | 'cold_email' | 'followup_email' | 'breakup_email'
+
+-- 3. SEQUENCES
+create table if not exists sequences (
+  id                  uuid primary key default gen_random_uuid(),
+  created_at          timestamptz default now(),
+  name                text not null,
+  steps               jsonb not null default '[]',
+  assigned_lead_ids   jsonb default '[]'
+);
+-- steps item: { day: number, channel: 'linkedin'|'email', type: string, template: string, active: boolean }
+
+-- 4. CAMPAIGNS
+create table if not exists campaigns (
+  id                uuid primary key default gen_random_uuid(),
+  created_at        timestamptz default now(),
+  name              text not null,
+  target_industry   text,
+  status            text default 'active',
+  lead_ids          jsonb default '[]'
+);
+-- status: 'active' | 'paused' | 'complete'
+
+-- 5. CLIENTS
+create table if not exists clients (
+  id                  uuid primary key default gen_random_uuid(),
+  created_at          timestamptz default now(),
+  name                text not null,
+  company             text,
+  industry            text,
+  monthly_retainer    integer default 0,
+  status              text default 'active'
+);
+
+-- 6. ACTIVITY LOG
+create table if not exists activity_log (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz default now(),
+  type        text,
+  text        text not null,
+  lead_id     uuid
+);
+-- type: 'lead_added' | 'message_sent' | 'scored_hot' | 'meeting_booked' | 'lead_moved' | 'notification'
+
+── SUPABASE CLIENT (/lib/supabase.ts) ───────────────────────
+
+import { createClient } from '@supabase/supabase-js'
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+── DATA ACCESS LAYER (/lib/db.ts) ───────────────────────────
+
+Export typed async functions for every entity:
+
+  getLeads(filters?)          → Lead[]
+  addLead(lead)               → Lead
+  updateLead(id, updates)     → Lead
+  deleteLead(id)              → void
+  getMessages(leadId?)        → Message[]
+  addMessage(msg)             → Message
+  getSequences()              → Sequence[]
+  saveSequence(seq)           → Sequence
+  deleteSequence(id)          → void
+  getCampaigns()              → Campaign[]
+  saveCampaign(c)             → Campaign
+  getClients()                → Client[]
+  saveClient(c)               → Client
+  updateClient(id, updates)   → Client
+  getActivityLog(limit?)      → Activity[]
+  logActivity(entry)          → void
+
+All functions: proper try/catch, throw descriptive errors.
+
+── REAL-TIME SUBSCRIPTION ───────────────────────────────────
+
+In AppContext on mount, subscribe to leads table changes:
+
+  supabase
+    .channel('leads_rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+      refreshLeads()   // re-fetch and update context state
+    })
+    .subscribe()
+
+This keeps Kanban and Lead table in sync across browser tabs.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — PRESERVE EVERYTHING EXISTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep ALL of the following working, now wired to Supabase instead of mock data:
+- Lead table columns: Name, Title, Company, Location, Email, LinkedIn, Score, Source, Saved
+- Score badges: red (<40), amber (40–70), green (>70)
+- Email verification badges: Verified / Risky
+- Filters sidebar: Role, Company, Geography, Email Quality, Lead Score, Date Saved, Source
+  (Search now uses Supabase ilike queries)
+- Mock / Live toggle
+- Run Agent button
+- LinkedIn / Google Maps / Amazon source tabs
+- Search bar
+- CSV export (reads current filtered lead state)
+- Pagination
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — DARK / LIGHT THEME TOGGLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sun/moon toggle button in top bar. State in localStorage("leados_theme").
+Toggle by adding class "light" on <html> element.
+Transition: 200ms ease on background-color and color everywhere.
+
+CSS variables on :root:
+
+  Dark (default)          Light
+  --bg        #060608     #f8f8f6
+  --surface   #0d0d12     #ffffff
+  --surface2  #13131a     #f1f1ef
+  --border    #1e1e2e     #e2e2e0
+  --text      #e8e8f0     #1a1a2e
+  --muted     #6b6b80     #6b6b80
+
+Accent constants (never change between themes):
+  --accent-blue    #00d4ff   ← primary CTAs, active sidebar item
+  --accent-purple  #7c3aed   ← AI features
+  --accent-orange  #ff6b35   ← hot leads, alerts
+  --accent-green   #00ff88   ← success, verified
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — COLLAPSIBLE SIDEBAR WITH CLAUDE-STYLE ICONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Component: /components/layout/Sidebar.tsx
+Install:   npm install lucide-react  (if not already present)
+
+── TWO STATES ───────────────────────────────────────────────
+
+  EXPANDED   width: 220px  — shows icon + text label
+  COLLAPSED  width: 56px   — shows icon only
+
+Toggle button: pinned to bottom of sidebar, centered.
+  Expanded  → shows <ChevronLeft size={16}/> + "Collapse" label
+  Collapsed → shows <ChevronRight size={16}/> only
+
+Width transition: 250ms cubic-bezier(0.4, 0, 0.2, 1) on the sidebar element.
+Label fade: opacity 0→1 / 1→0 in 150ms, overflow: hidden.
+State persisted: localStorage("leados_sidebar") = "open" | "closed"
+
+── TOOLTIP ON COLLAPSED ─────────────────────────────────────
+
+When sidebar is collapsed and user hovers a nav item:
+  Show tooltip: module name
+  Style: position fixed, left: 64px, z-index 9999
+         background var(--surface2), border 1px solid var(--border)
+         font-size 12px, padding 6px 12px, border-radius 6px
+         Small left-pointing arrow (CSS pseudo-element)
+  Animate: opacity 0→1 in 120ms
+
+── LUCIDE ICONS (outline, same style as Claude UI) ──────────
+
+Use OUTLINE variants only — never filled variants.
+Icon size: 18px (className="w-[18px] h-[18px]")
+
+Module → Icon mapping:
+  Command Center      →  <LayoutDashboard />
+  Lead Intelligence   →  <Users />
+  AI Message Lab      →  <MessageSquare />
+  Lead Scorer         →  <Target />
+  Sequence Builder    →  <GitBranch />
+  Kanban Pipeline     →  <KanbanSquare />
+  Analytics           →  <BarChart2 />
+  Client Manager      →  <Briefcase />
+
+Icon color:
+  Default  → color: var(--muted)
+  Hover    → color: var(--text)
+  Active   → color: var(--accent-blue)
+
+── NAV ITEM DESIGN ──────────────────────────────────────────
+
+Each nav item (button or div):
+  height: 40px
+  display: flex, align-items: center, gap: 10px
+  padding: 0 16px (expanded) | justify-content: center (collapsed)
+  border-radius: 6px
+  margin: 2px 8px
+  cursor: pointer
+  transition: background 150ms ease
+
+  DEFAULT state:
+    background: transparent
+    icon: var(--muted)
+    label: var(--muted), font-size 13px, font-weight 500
+
+  HOVER state (not active):
+    background: rgba(255,255,255,0.04)
+    icon + label: var(--text)
+
+  ACTIVE state:
+    border-left: 3px solid var(--accent-blue)
+    background: rgba(0,212,255,0.07)
+    icon: var(--accent-blue)
+    label: var(--text)
+    margin-left: 5px (to offset the 3px left border visually)
+
+── SIDEBAR STRUCTURE (top to bottom) ────────────────────────
+
+  ┌─────────────────────┐
+  │  ⚡ LinkedIn ProOS   │  ← logo area, height 56px, border-bottom 1px var(--border)
+  │                     │    Collapsed: "⚡" only
+  ├─────────────────────┤
+  │  [LayoutDashboard]  Command Center     │
+  │  [Users]            Lead Intelligence  │  ← active item has blue left border
+  ├─ ─ ─ separator ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+  │  [MessageSquare]    AI Message Lab     │
+  │  [Target]           Lead Scorer        │
+  ├─ ─ ─ separator ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+  │  [GitBranch]        Sequence Builder   │
+  │  [KanbanSquare]     Kanban Pipeline    │
+  │  [BarChart2]        Analytics          │
+  │  [Briefcase]        Client Manager     │
+  ├─────────────────────┤
+  │  [ChevronLeft]  Collapse               │  ← toggle button, pinned bottom
+  │  ProOS v1.0                            │  ← version, 10px muted, expanded only
+  └─────────────────────┘
+
+Separator: 1px solid var(--border), margin: 6px 16px
+
+── FILTERS PANEL VISIBILITY ─────────────────────────────────
+
+The existing filters sidebar (Role, Company, Geography etc.) is shown
+ONLY when activeModule === 'leads'.
+
+All other modules: filters panel hidden, main content fills full width.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — GLOBAL APP CONTEXT (/lib/AppContext.tsx)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+React Context + useReducer. Wrap entire app in /app/layout.tsx.
+
+interface AppState {
+  leads         : Lead[]
+  campaigns     : Campaign[]
+  sequences     : Sequence[]
+  clients       : Client[]
+  activityLog   : Activity[]
+  messages      : Message[]
+  apiKey        : string          // in-memory ONLY
+  theme         : 'dark' | 'light'
+  activeModule  : ModuleName
+  sidebarOpen   : boolean
+  notifications : Notification[]
+  isLoading     : boolean
+}
+
+type ModuleName = 'dashboard' | 'leads' | 'message-lab' | 'scorer'
+                | 'sequences' | 'kanban' | 'analytics' | 'clients'
+
+On app mount:
+  1. Read theme + sidebarOpen from localStorage
+  2. Fetch all data from Supabase in parallel (Promise.all)
+  3. Subscribe to Supabase real-time on leads table
+  4. Set isLoading = false
+
+Dispatch actions:
+  SET_API_KEY | SET_THEME | TOGGLE_SIDEBAR | SET_MODULE
+  SET_LEADS | ADD_LEAD | UPDATE_LEAD | DELETE_LEAD
+  ADD_MESSAGE | SET_SEQUENCES | SAVE_SEQUENCE | DELETE_SEQUENCE
+  SET_CAMPAIGNS | SAVE_CAMPAIGN
+  SET_CLIENTS | SAVE_CLIENT
+  ADD_NOTIFICATION | MARK_ALL_READ
+  LOG_ACTIVITY | SET_LOADING
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 1 — COMMAND CENTER (/app/dashboard)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOP ROW — 5 stat cards, equal width, full row:
+
+  Total Leads       count(leads)                           icon: <Users size={16}/>
+  Hot Leads         count where icp_score > 80             icon: <Zap size={16}/> orange
+  Messages Sent     count(messages)                        icon: <Send size={16}/>
+  Avg Reply Rate    "23%" mock for now                     icon: <TrendingUp size={16}/>
+  Meetings Booked   count where status = 'meeting'         icon: <CalendarCheck size={16}/> green
+
+Card design:
+  background var(--surface), border 1px var(--border), border-radius 8px, padding 20px
+  Label: 12px var(--muted) on top
+  Value: 32px bold var(--text) below
+  Trend: small row, "+X this week" green or "-X" red, 11px
+  Hover: translateY(-2px), transition 200ms
+
+MIDDLE ROW — two columns 60% | 40%:
+
+  LEFT — Recent Activity Feed:
+    SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 10
+    Each row: icon + text + relative time ("2 min ago")
+    Icons by type:
+      lead_added     → <UserPlus size={14}/> color green
+      message_sent   → <Mail size={14}/> color blue
+      scored_hot     → <Zap size={14}/> color orange
+      meeting_booked → <CalendarCheck size={14}/> color green
+      lead_moved     → <ArrowRight size={14}/> color muted
+    Scrollable, max-height 300px
+    Empty state: muted centered text
+
+  RIGHT — Active Campaigns:
+    SELECT * FROM campaigns WHERE status != 'complete' ORDER BY created_at DESC
+    Each row: name + status badge + progress bar + reply rate
+    Status badges: Active (green), Paused (amber)
+    [+ New Campaign] → modal with Name + Target Industry → INSERT campaigns
+
+BOTTOM ROW — Quick Action Bar:
+  [<UserPlus size={14}/> Add Lead]
+  [<Sparkles size={14}/> Generate Message]
+  [<Target size={14}/> Score Lead]
+  [<Download size={14}/> Export CSV]
+
+  Button style: height 40px, border 1px var(--border), border-radius 6px,
+  background transparent, hover background var(--surface2), transition 150ms
+  Each navigates to relevant module or opens modal
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 2 — AI MESSAGE LAB (/app/message-lab)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Calls Anthropic API from browser.
+Endpoint : POST https://api.anthropic.com/v1/messages
+Model    : claude-sonnet-4-20250514
+Tokens   : 1000
+
+API Key stored in AppContext.apiKey (in-memory only, shared with Lead Scorer).
+
+TOP BAR:
+  [<Key size={14}/> Anthropic API Key:  [______________]] [Connect]
+  type="password", stored only in context state via SET_API_KEY dispatch
+  On connect: show green dot "● Connected"
+  If already set: show connected state immediately on mount
+
+MAIN LAYOUT — two columns:
+
+LEFT (Input, 40%):
+
+  1. Lead Selector dropdown
+     Options from AppContext.leads
+     Display: "Emily Zhang — Head of Sales @ Figma (Score: 93)"
+
+  2. Message Type — 3 tabs:
+     [LinkedIn Connection]  [LinkedIn DM]  [Cold Email]
+     Active: border-bottom 2px var(--accent-blue), color var(--text)
+     LinkedIn Connection shows char counter (max 300)
+
+  3. Tone — 4 pills:
+     [Professional]  [Friendly]  [Direct]  [Consultative]
+     Selected: background var(--accent-purple), color white
+     Default: border 1px var(--border), color var(--muted)
+
+  4. Your Offer textarea:
+     Placeholder: "e.g. We help SaaS companies reduce churn by 40%..."
+     rows=4, resize vertical
+
+  5. [<Sparkles size={16}/> Generate with Claude]
+     Full width, background var(--accent-purple), color white, height 44px, border-radius 8px
+     Loading state: spinner icon + "Generating..."
+     Disabled: no apiKey OR no selectedLead
+
+RIGHT (Output, 60%):
+
+  Output box:
+    background var(--surface2), border 1px var(--border), border-radius 8px
+    min-height 200px, padding 16px, font-size 14px, line-height 1.6
+    Cold Email: "Subject:" muted label + subject text, <hr>, then body
+    Typewriter: render one char per 12ms via setInterval
+    Char count badge (bottom-right of box): red if over limit
+
+  Action buttons row:
+    [<Copy size={14}/> Copy]
+    [<BookmarkPlus size={14}/> Save to Lead]  → INSERT messages, log activity, toast
+    [<RefreshCw size={14}/> Regenerate]
+
+  Message History (collapsible, <ChevronDown/> toggle):
+    SELECT * FROM messages ORDER BY created_at DESC LIMIT 5
+    Each: lead name + type badge + first 80 chars + timestamp + [Copy]
+
+API CALL IMPLEMENTATION:
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: `You are an expert B2B sales copywriter for LinkedIn + Email outreach
+               specializing in SaaS, Founders, and Agencies.
+               Never use "I hope this finds you well" or similar clichés.
+               Always reference something specific about the person or company.
+               Be direct, human, value-first. No buzzwords.`,
+      messages: [{ role: 'user', content: buildPrompt(lead, type, tone, offer) }]
+    })
+  })
+
+  function buildPrompt(lead, messageType, tone, offer) {
+    const base = `Write a ${messageType} with ${tone} tone for:
+      Name: ${lead.name} | Title: ${lead.title}
+      Company: ${lead.company} | Industry: ${lead.industry}
+      Offer: ${offer}
+      Notes: ${lead.notes || 'none'}`
+
+    if (messageType === 'linkedin_connection')
+      return base + '\n\nMax 300 characters. No hashtags. Reference something specific.'
+    if (messageType === 'cold_email')
+      return base + '\n\nReturn ONLY valid JSON: {"subject":"...","body":"..."}'
+    return base
+  }
+
+Errors:
+  No API key → red inline error below the Generate button
+  API error  → red toast (bottom-right, 4s auto-dismiss)
+  Rate limit → amber toast "Rate limited — please wait a moment"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 3 — AI LEAD SCORER (/app/scorer)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Uses shared AppContext.apiKey. No re-entry if already connected.
+
+MAIN LAYOUT — two columns:
+
+LEFT (Input, 45%):
+
+  1. Lead Info textarea (rows=10, resize vertical)
+     Label: "Paste Lead Information"
+     Placeholder: "Paste LinkedIn bio, job title, company info, or any raw text..."
+
+  2. ICP Criteria checklist (user can toggle each):
+     Each item: <Checkbox/> + label + points badge
+
+       Decision maker (C-suite / VP / Director / Founder)   30 pts
+       Company size 10–500 employees                         20 pts
+       SaaS / Tech / Agency industry                         20 pts
+       Active on LinkedIn in last 30 days                    15 pts
+       Located in US / UK / India / EU                       15 pts
+
+     Below: "Max possible: 100 pts" in muted 12px
+
+  3. [<Target size={16}/> Score with Claude]
+     Full width, background var(--accent-orange), color white, height 44px
+     Loading: "Analyzing lead..."
+
+RIGHT (Output, 55%):
+
+  Score Ring (SVG, 160×160px):
+    Outer arc: stroke var(--border), stroke-width 12, r=60
+    Progress arc: animated stroke-dashoffset
+      Color: #ef4444 (<40) | #f59e0b (40–70) | #00ff88 (>70)
+      Animation: dashoffset from full circumference to score value, 1.2s ease-out
+    Center: score number 48px bold, "ICP Score" 12px muted
+
+  Reasoning Card:
+    Title "Why this score" bold 14px
+    Bullet list from Claude response reasoning[]
+
+  Recommended Action:
+    "Recommended:" label (muted) + badge:
+      "Connect Now"    → rgba(0,255,136,0.1) bg, #00ff88 border+text
+      "Add to Nurture" → rgba(245,158,11,0.1) bg, #f59e0b border+text
+      "Skip"           → rgba(239,68,68,0.1)  bg, #ef4444 border+text
+
+  Risk Factors (collapsible, only if present):
+    <ChevronDown/> toggle, red-tinted bullet items
+
+  [<Plus size={14}/> Add to Pipeline] button (green):
+    Mini-modal: Name, Title, Company (pre-fill if parseable), Score (read-only)
+    Save → INSERT leads into Supabase → dispatch ADD_LEAD → log activity → toast
+
+API CALL:
+  Prompt: "Analyze this lead and score them 0–100 as an ICP match.
+   Lead info: ${leadText}
+   Active criteria: ${activeCriteria.map(c => `- ${c.label}: ${c.points}pts`).join('\n')}
+   Return ONLY valid JSON, nothing outside the JSON:
+   {
+     \"score\": <0-100>,
+     \"reasoning\": [\"...\", \"...\", \"...\"],
+     \"recommended_action\": \"Connect now\"|\"Add to nurture\"|\"Skip\",
+     \"risk_factors\": [\"...\"]
+   }"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 4 — SEQUENCE BUILDER (/app/sequences)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No API. All data in Supabase sequences table.
+
+TOP BAR:
+  Large name input (placeholder: "My LinkedIn Outreach Sequence")
+  [<Save size={14}/> Save Sequence] → INSERT/UPDATE Supabase
+  [Assign to Leads ▾] → multi-select lead dropdown → update sequence_id on leads
+
+VERTICAL TIMELINE:
+
+  Step card layout:
+  ┌─────────────────────────────────────────────────┐
+  │ ⠿  Step N                  [toggle ●]  [<Trash/>]│
+  │                                                 │
+  │  Day [__0__]   Channel [LinkedIn ▾]             │
+  │                                                 │
+  │  [Message template textarea, 3 rows]            │
+  │  [{{first_name}}] [{{company}}] [{{industry}}]  │
+  └─────────────────────────────────────────────────┘
+       │
+    dashed line — "+X days" muted 11px centered
+       │
+
+  Controls:
+  - ⠿ drag handle left edge — HTML5 DnD reorder
+  - Day: number input min=0
+  - Channel: select [LinkedIn | Email]
+  - Active toggle pill (on/off without deleting)
+  - Trash icon: delete with confirm popover
+  - Variable chips: click to insert at cursor position in textarea
+
+[+ Add Step] button below last step
+
+DEFAULT 5-STEP TEMPLATE (pre-loaded for new sequences):
+
+  Step 1 | Day 0  | LinkedIn | Connection Request
+    "Hi {{first_name}}, I came across your profile while researching
+    {{industry}} leaders and was impressed by your work at {{company}}.
+    Would love to connect."
+
+  Step 2 | Day 3  | LinkedIn | Follow-up DM
+    "Hey {{first_name}}, wanted to follow up on my connection request.
+    I help companies like {{company}} with [your offer]. Worth a quick chat?"
+
+  Step 3 | Day 5  | Email    | Cold Email
+    Subject: "Quick question about {{company}}"
+    Body: "Hi {{first_name}}, I noticed... Would a 15-min call make sense?"
+
+  Step 4 | Day 8  | Email    | Follow-up
+    "Hi {{first_name}}, just bumping this up in case it got buried..."
+
+  Step 5 | Day 12 | Email    | Breakup
+    "Hi {{first_name}}, last note from me — should I close your file?"
+
+SAVED SEQUENCES LIST (below builder):
+  SELECT * FROM sequences ORDER BY created_at DESC
+  Table: Name | Steps | Assigned Leads | Created | [Edit] [Duplicate] [Delete]
+  Click row → loads into builder
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 5 — KANBAN PIPELINE (/app/kanban)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Install: npm install @hello-pangea/dnd
+
+7 columns (horizontal scroll):
+  New | Contacted | Replied | Hot Lead | Meeting Booked | Closed Won | Closed Lost
+
+Data: all leads from Supabase, grouped by kanban_column.
+On drop: UPDATE leads SET kanban_column, status WHERE id → dispatch UPDATE_LEAD → log activity
+
+COLUMN STYLING:
+  Width 240px, min-height 500px, background var(--surface)
+  Header: 40px height, 13px bold, count badge dark pill
+
+  "Hot Lead"     : border-top 3px solid var(--accent-orange)
+                   box-shadow inset 0 2px 20px rgba(255,107,53,0.08)
+  "Closed Won"   : border-top 3px solid var(--accent-green)
+  "Closed Lost"  : border-top 3px solid var(--muted), cards at 70% opacity
+
+LEAD CARDS:
+  Avatar circle 32px, initials, background by first letter:
+    A–E → purple tint | F–J → blue tint | K–O → orange tint
+    P–T → green tint  | U–Z → amber tint
+
+  Card contents:
+    Avatar + Name (13px bold) + Title (12px muted) + Company (12px muted)
+    Score badge + "· X days ago" (last_touched relative)
+
+  Hover: border brightens, cursor grab
+  Dragging: rotate(1.5deg), opacity 0.88
+
+CLICK CARD → RIGHT DETAIL PANEL (360px, slides in from right):
+  Animation: translateX(360px) → 0 in 220ms
+  Background var(--surface), border-left 1px var(--border)
+
+  Contents:
+  - Avatar + Name + Title (large header)
+  - Lead fields grid (read-only labels + values)
+  - Notes textarea (auto-save to Supabase on blur, debounce 500ms)
+  - Message History: SELECT messages WHERE lead_id ORDER BY created_at DESC
+    Each: type badge + subject (email) + first 100 chars + timestamp
+  - [<MessageSquare size={14}/> Generate Message] → navigate to Message Lab with lead pre-selected
+  - [Move to column ▾] → UPDATE kanban_column + status in Supabase
+  - [<Trash size={14}/> Delete Lead] → confirm popover → DELETE from Supabase
+  - [<X size={16}/> Close] top-right corner
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 6 — ANALYTICS (/app/analytics)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Install if missing: npm install recharts
+
+DATE FILTER PILLS: [7D] [30D] [90D] [All]
+Selected: background var(--accent-blue), color #060608
+Filters all charts and stat cards.
+
+TOP STAT ROW (4 cards same design as Dashboard):
+  Leads Added (period) | Messages Sent | Hot Leads | Won Deals
+
+2×2 CHART GRID (ResponsiveContainer width="100%"):
+
+Chart 1 — Weekly Leads Added (BarChart):
+  X: last 8 week start dates
+  Y: leads created_at grouped by week
+  Bar fill: var(--accent-blue)
+  Grid lines: var(--border) 0.5px
+  Tooltip: var(--surface) background, var(--text)
+
+Chart 2 — Outreach Channels (PieChart innerRadius):
+  Segments by messages.message_type count:
+    linkedin_connection → #00d4ff
+    linkedin_dm         → #7c3aed
+    cold_email          → #ff6b35
+    followup_email      → #00ff88
+  Center label: "X Total"
+  Legend below
+
+Chart 3 — ICP Score Distribution (BarChart):
+  Buckets: 0–20, 20–40, 40–60, 60–80, 80–100
+  Count leads per bucket
+  Bar colors per bucket: #ef4444, #f97316, #f59e0b, #84cc16, #00ff88
+
+Chart 4 — Pipeline Funnel (horizontal BarChart):
+  Rows: Total → Contacted → Replied → Hot → Meeting → Won
+  Values: lead counts per status from Supabase
+  Bar: fill var(--accent-blue)
+  Data labels on bars: count + (% of total)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE 7 — CLIENT MANAGER (/app/clients)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All data in Supabase clients table. Leads link via client_id.
+
+TOP BAR:
+  Mode toggle: [Personal Mode] [Agency Mode ●]
+  [+ Add Client] → modal
+
+CLIENT LIST TABLE:
+  Columns: Avatar | Name | Company | Industry | Leads | Sequences | Retainer | Actions
+  Actions: [View Pipeline] [Generate Report] [Archive]
+
+ADD CLIENT MODAL:
+  Name (text), Company (text), Industry (text), Monthly Retainer (number $)
+  Save → INSERT clients → dispatch SET_CLIENTS
+
+CLIENT DETAIL VIEW (click row):
+  Existing lead table component re-used, filtered by client_id prop
+  Stats bar at top: Total Leads | Hot Leads | Messages Sent | Retainer
+
+  [<FileText size={14}/> Generate Report] button:
+  Creates this formatted text and copies to clipboard:
+
+  ════════════════════════════════════
+  CLIENT REPORT — {{client.name}}
+  Generated: {{date}}
+  ════════════════════════════════════
+
+  Pipeline Summary
+  ├ Total Leads     : X
+  ├ Hot Leads (>80) : X
+  ├ In Sequence     : X
+  ├ Messages Sent   : X
+  └ Meetings Booked : X
+
+  Top Leads This Period
+  1. [Name] — [Company] — Score: XX
+  2. [Name] — [Company] — Score: XX
+  3. [Name] — [Company] — Score: XX
+
+  Recommended Actions
+  → Follow up with X leads in "Replied"
+  → X leads unscored — run AI scorer
+  → X leads untouched 7+ days
+
+  Monthly Retainer : $X
+  ════════════════════════════════════
+
+  Toast: "Report copied to clipboard ✓"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GLOBAL FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── COMMAND PALETTE (/components/layout/CommandPalette.tsx) ──
+
+Trigger: keydown Meta+K / Ctrl+K on document
+Overlay: rgba(0,0,0,0.6) + backdrop-filter blur(4px)
+Panel: var(--surface), border 1px var(--border), border-radius 12px
+       width 520px, max-height 400px, centered vertically
+
+Search input: <Search size={16}/> icon, auto-focused, placeholder "Search leads, modules, actions..."
+
+Results (fuzzy match):
+  - All leads (name + company) → navigate to leads + highlight
+  - Module names → switch activeModule
+  - Actions: "Add Lead" "Generate Message" "Score Lead" "Export CSV" "New Campaign"
+
+Keyboard nav: ArrowUp/Down, Enter to execute, Escape to close
+
+── NOTIFICATION BELL (/components/layout/NotificationBell.tsx) ──
+
+Position: top bar right, before theme toggle
+Icon: <Bell size={18}/>
+Unread badge: red dot with count, CSS pulse animation
+
+Dropdown (click):
+  width 300px, var(--surface2), border 1px var(--border), border-radius 8px
+  Max 5 items, "Mark all read" link at bottom
+
+Auto-generates when:
+  lead added         → "New lead added: [Name]"
+  icp_score > 80     → "🔥 [Name] scored [XX] — Hot Lead!"
+  status = 'meeting' → "📅 [Name] booked a meeting"
+
+Notifications stored in activity_log (type = 'notification').
+
+── TOAST SYSTEM (/components/ui/Toast.tsx) ──────────────────
+
+Position: fixed bottom-right, z-index 9999
+Auto-dismiss: 4 seconds
+Slide up on appear, slide down on dismiss
+
+Types:
+  success → border-left 3px var(--accent-green)
+  error   → border-left 3px #ef4444
+  warning → border-left 3px var(--accent-orange)
+  info    → border-left 3px var(--accent-blue)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/app
+  layout.tsx                   ← AppContext wrapper + Sidebar + TopBar
+  page.tsx                     ← Lead Intelligence (existing, wired to Supabase)
+  /dashboard/page.tsx
+  /message-lab/page.tsx
+  /scorer/page.tsx
+  /sequences/page.tsx
+  /kanban/page.tsx
+  /analytics/page.tsx
+  /clients/page.tsx
+
+/components
+  /layout
+    Sidebar.tsx                ← collapsible, Lucide icons, tooltips
+    TopBar.tsx                 ← existing enhanced + bell + theme toggle + Cmd+K trigger
+    ThemeToggle.tsx
+    CommandPalette.tsx
+    NotificationBell.tsx
+  /modules
+    /Dashboard/                StatCard.tsx, ActivityFeed.tsx, CampaignList.tsx, QuickActions.tsx
+    /MessageLab/               LeadSelector.tsx, MessageTypeTab.tsx, ToneSelector.tsx, OutputPanel.tsx
+    /Scorer/                   ScoreRing.tsx, ReasoningCard.tsx, CriteriaChecklist.tsx
+    /Sequences/                StepCard.tsx, SequenceTimeline.tsx, SavedSequences.tsx
+    /Kanban/                   KanbanBoard.tsx, KanbanColumn.tsx, LeadCard.tsx, DetailPanel.tsx
+    /Analytics/                WeeklyBar.tsx, ChannelDoughnut.tsx, ScoreDist.tsx, FunnelBar.tsx
+    /Clients/                  ClientTable.tsx, ClientDetail.tsx, ReportGenerator.tsx
+  /ui
+    Toast.tsx | Modal.tsx | Badge.tsx | Button.tsx | Input.tsx | Spinner.tsx
+
+/lib
+  supabase.ts                  ← Supabase client
+  db.ts                        ← all typed DB functions
+  AppContext.tsx                ← global state + real-time subscription
+  types.ts                     ← Lead, Message, Sequence, Campaign, Client, Activity
+  sampleData.ts                ← 15 pre-seeded leads
+  utils.ts                     ← formatRelativeTime, generateCSV, buildPrompt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAMPLE DATA — seed if leads table is empty on first load
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SaaS / Tech (5):
+  Jake Taylor    | CTO           | Loom     | Internet           | 89 | verified | hot
+  Emily Zhang    | Head of Sales | Figma    | Computer Software  | 93 | verified | replied
+  David Kim      | Founder & CEO | Retool   | Internet           | 96 | verified | meeting
+  Amanda Foster  | VP Sales      | Airtable | Computer Software  | 82 | risky    | contacted
+  Chris Nakamura | CMO           | Stripe   | Financial Services | 88 | verified | new
+
+Founders (5):
+  Sarah Chen     | Founder        | Notion Alt    | Productivity      | 91 | verified | hot
+  Marcus Williams| CEO            | AI Startup    | Artificial Intel. | 78 | verified | contacted
+  Priya Sharma   | Co-Founder     | DevTools Co   | Software Dev      | 85 | risky    | new
+  Alex Rodriguez | Solo Founder   | MarTech SaaS  | Marketing Tech    | 67 | unknown  | new
+  Jordan Lee     | Founder & CTO  | Data Platform | Analytics         | 94 | verified | replied
+
+Agencies (5):
+  Rachel Kim     | Agency Director| Growth Co     | Marketing Agency  | 87 | verified | contacted
+  Tom Baker      | Head of Growth | Performance   | Digital Agency    | 72 | verified | new
+  Nina Patel     | Consultant     | RevOps Firm   | B2B Consulting    | 65 | risky    | new
+  Carlos Mendez  | Partner        | Creative Agcy | Design Agency     | 55 | unknown  | new
+  Lisa Wong      | Director       | Content Studio| Content Marketing | 38 | risky    | lost
+
+kanban_column derived from status:
+  new→New | contacted→Contacted | replied→Replied | hot→Hot Lead
+  meeting→Meeting Booked | won→Closed Won | lost→Closed Lost
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Preserve ALL existing visual design as the base — do not restyle existing components
+- Use CSS variables everywhere — no hardcoded colors except the 4 accent constants
+- Lucide icons: outline only, 16–18px, color inherits or uses CSS variable
+- No emoji in UI (use Lucide icons instead)
+- Loading states: skeleton shimmer animation, not spinners, for data fetches
+- Error states: red border-left + red helper text inline, never alert()
+- Modals: backdrop-filter blur(8px), var(--surface) bg, 1px var(--border), border-radius 12px
+- All transitions: 150–200ms ease on interactive elements
+- Border radius: 6–8px cards, 8px inputs, 12px modals
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFICATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After building, verify each item:
+
+  ✓ Existing lead table loads from Supabase — zero localStorage
+  ✓ Sidebar collapses smoothly to 56px, Lucide icons visible
+  ✓ Sidebar expands to 220px, labels animate in
+  ✓ Collapsed sidebar shows tooltips on hover
+  ✓ Active sidebar item has blue left border + tinted bg
+  ✓ Dark/light theme toggle works, persists on refresh
+  ✓ Filters panel shows ONLY on Lead Intelligence module
+  ✓ All 7 modules render without TypeScript errors
+  ✓ AI Message Lab generates messages with valid Anthropic API key
+  ✓ Typewriter animation plays on generated message
+  ✓ AI Lead Scorer returns JSON, score ring animates
+  ✓ Kanban drag-and-drop updates Supabase in real-time
+  ✓ Kanban detail panel slides in on card click
+  ✓ Sequence Builder saves to Supabase
+  ✓ Analytics charts render with real Supabase data
+  ✓ Cmd+K opens command palette, keyboard nav works
+  ✓ Notification bell shows unread count and dropdown
+  ✓ Toast notifications appear and auto-dismiss
+  ✓ Anthropic API key is NEVER written to any storage
+  ✓ No app data in localStorage (only theme + sidebar)
+  ✓ Sample data auto-seeded on first load if leads table empty
+
+Deploy:
+  vercel --prod

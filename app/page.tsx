@@ -388,7 +388,7 @@ export default function Home() {
               className="flex items-center gap-0.5 p-0.5 rounded-xl"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}
             >
-              {(["linkedin", "gmaps", "amazon"] as Source[]).map(s => (
+              {(["linkedin", "gmaps", "amazon"] as Source[]).filter(s => state.enabledSources[s]).map(s => (
                 <button
                   key={s}
                   onClick={() => handleSourceChange(s)}
