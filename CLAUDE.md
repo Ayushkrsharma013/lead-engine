@@ -58,8 +58,9 @@ lead-engine/
 │   │   ├── ThemeToggle.tsx     # Sun/moon toggle
 │   │   ├── CommandPalette.tsx  # Cmd+K global search (leads, modules, actions)
 │   │   └── NotificationBell.tsx# Bell icon + dropdown with unread count
-│   ├── Shell.tsx               # App shell: Sidebar + content + Toast + CommandPalette
+│   ├── Shell.tsx               # App shell: Sidebar + content + Toast + CommandPalette + SettingsModal
 │   ├── FilterPanel.tsx         # Vertical filter sidebar (272px) below TopBar — collapsible sections
+│   ├── SettingsModal.tsx        # Settings modal — source toggles, AI model guide, about info
 │   ├── GDriveModal.tsx         # Google Drive export modal
 │   ├── LeadsTable.tsx          # Data table with sort headers + row selection
 │   ├── Pagination.tsx          # Page nav (first/prev/pages/next/last + size)
@@ -192,10 +193,12 @@ interface AppState {
   apiKey: string;                   // in-memory ONLY — never persisted
   theme: "dark"|"light";            // persisted to localStorage("leados_theme")
   sidebarCollapsed: boolean;        // persisted to localStorage("leados_sidebar")
+  settingsOpen: boolean;            // Settings modal visibility
+  enabledSources: EnabledSources;   // per-source toggle — persisted to localStorage("leados_sources")
   activeModule: ModuleName;
   notifications: Notification[];
   loading: boolean;
-  // Legacy lead table state:
+  // Lead table state:
   selected: string[]; filters: FilterState; sort: SortState;
   pagination: PaginationState; tab: "all"|"latest"; source: Source;
   mock: boolean; running: boolean; log: LogEntry[]; progress: number;
@@ -293,7 +296,7 @@ Active filter chips in the chip bar are color-coded by group:
 
 | Route | Module | Key features |
 |---|---|---|
-| `/` | Lead Intelligence | TopBar + filter sidebar (272px, 7 collapsible sections) + search + leads table, agent run, CSV/Drive export |
+| `/` | Lead Intelligence | TopBar + source tabs (with enable/disable via Settings), filter sidebar (272px, 7 sections), search, leads table, agent run, CSV/Drive export |
 | `/dashboard` | Command Center | 5 stat cards, activity feed, campaigns, quick actions |
 | `/message-lab` | AI Message Lab | Claude API, typewriter, 3 message types, 4 tones, history |
 | `/scorer` | Lead Scorer | ICP criteria, SVG score ring, reasoning, add-to-pipeline |
@@ -311,6 +314,7 @@ Active filter chips in the chip bar are color-coded by group:
 - **Toggle**: ChevronLeft/ChevronRight button at bottom
 - **Active indicator**: 3px blue left border + `rgba(0,212,255,0.07)` background
 - **Theme toggle**: sun/moon below collapse button
+- **Settings button**: Settings2 icon above theme toggle — opens SettingsModal (source toggles, AI model guide, about)
 - **Separators**: between nav groups (Command Center+Leads | Message Lab+Scorer | Sequences+Kanban+Analytics+Clients)
 
 ---
@@ -352,12 +356,13 @@ The Anthropic API key is entered by the user in the UI (Message Lab or Scorer) a
 
 ## localStorage usage
 
-Only 3 keys are allowed in localStorage — everything else is in Supabase:
+Only 4 keys are allowed in localStorage — everything else is in Supabase:
 
 | Key | Purpose | Values |
 |---|---|---|
 | `leados_theme` | Theme preference | `"dark"` \| `"light"` |
 | `leados_sidebar` | Sidebar state | `"open"` \| `"closed"` |
+| `leados_sources` | Enabled data sources | `{"linkedin":true,"gmaps":false,"amazon":false}` |
 | `leadgen_gdrive_client_id` | Google Drive OAuth client ID | string |
 
 ---
