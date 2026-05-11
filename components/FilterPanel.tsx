@@ -1,10 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
+
+// ─── Sub-label ──────────────────────────────────────────────────────────────────
+function SubLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-[9px] font-bold uppercase tracking-[0.14em] mt-3 mb-1.5 select-none"
+      style={{ color: "var(--ink-4)", opacity: 0.40 }}
+    >
+      {children}
+    </p>
+  );
+}
 
 // ─── Chip multi-select ────────────────────────────────────────────────────────
 function ChipGroup({
@@ -16,7 +28,7 @@ function ChipGroup({
   accent?: string;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5 mt-2">
+    <div className="flex flex-wrap gap-1.5">
       {options.map(opt => {
         const active = selected.includes(opt);
         return (
@@ -25,10 +37,10 @@ function ChipGroup({
             onClick={() => onToggle(opt)}
             className={active ? "filter-chip-active" : "filter-chip"}
             style={active ? {
-              background: `${accent}18`,
-              borderColor: `${accent}50`,
+              background: `linear-gradient(90deg, ${accent}18, ${accent}14)`,
+              borderColor: `${accent}30`,
               color: accent,
-              boxShadow: `0 0 8px ${accent}12`,
+              boxShadow: `0 0 8px ${accent}10`,
             } : undefined}
           >
             {opt}
@@ -55,18 +67,21 @@ function Section({
         onClick={() => setOpen(!open)}
         className="section-header"
       >
-        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em]">
+        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] select-none">
           {title}
-          {count ? (
+          {count != null && count > 0 ? (
             <span className="section-count">
               {count}
             </span>
           ) : null}
         </span>
         <ChevronDown
-          size={11}
-          className="transition-transform duration-200"
-          style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}
+          size={12}
+          className="transition-transform duration-250"
+          style={{
+            transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
         />
       </button>
       {open && (
@@ -100,9 +115,14 @@ interface FilterPanelProps {
   filters: FilterState;
   onChange: (f: FilterState) => void;
   accent: string;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export default function FilterPanel({ filters, onChange, accent }: FilterPanelProps) {
+const COLLAPSED_W = 48;
+const EXPANDED_W = 272;
+
+export default function FilterPanel({ filters, onChange, accent, collapsed, onToggleCollapse }: FilterPanelProps) {
   const toggle = (key: keyof FilterState, value: string) => {
     const arr = filters[key] as string[];
     const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
@@ -114,191 +134,347 @@ export default function FilterPanel({ filters, onChange, accent }: FilterPanelPr
 
   return (
     <aside
-      className="w-[272px] shrink-0 h-full flex flex-col overflow-hidden"
+      className="shrink-0 h-full flex flex-col overflow-hidden relative"
       style={{
-        background: "var(--surface)",
-        borderRight: "1px solid var(--line)",
+        width: collapsed ? COLLAPSED_W : EXPANDED_W,
+        background: "var(--sidebar-bg)",
+        borderRight: "1px solid var(--sidebar-border)",
+        transition: "width 250ms cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3 shrink-0"
-        style={{ borderBottom: "1px solid var(--line)" }}
-      >
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal size={12} style={{ color: "var(--accent)" }} />
-          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-            Filters
-          </span>
-          {activeCount > 0 && (
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-              style={{
-                background: "var(--accent-soft)",
-                color: "var(--accent)",
-                border: "1px solid var(--accent)/35",
-              }}
-            >
-              {activeCount}
-            </span>
-          )}
-        </div>
-        {activeCount > 0 && (
-          <button
-            onClick={() => onChange(DEFAULT_FILTERS)}
-            className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-ink"
-            style={{ color: "var(--ink-3)" }}
+      {/* ── Collapsed mode ── */}
+      {collapsed ? (
+        <>
+          {/* Icon + active count */}
+          <div
+            className="flex flex-col items-center shrink-0"
+            style={{
+              height: 56,
+              justifyContent: "center",
+              borderBottom: "1px solid var(--sidebar-border)",
+            }}
           >
-            <RotateCcw size={10} />
-            Reset
-          </button>
-        )}
-      </div>
-
-      {/* Sections */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Role */}
-        <Section title="Role" count={filters.seniority.length + filters.jobFunction.length} defaultOpen>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--ink-3)" }}>Seniority Level</p>
-          <ChipGroup options={SENIORITY} selected={filters.seniority} onToggle={v => toggle("seniority", v)} accent={accent} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--ink-3)" }}>Job Function</p>
-          <ChipGroup options={FUNCTIONS} selected={filters.jobFunction} onToggle={v => toggle("jobFunction", v)} accent={accent} />
-        </Section>
-
-        {/* Company */}
-        <Section title="Company" count={filters.industries.length + filters.companySizes.length} defaultOpen>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1 mt-1" style={{ color: "var(--ink-3)" }}>Industry</p>
-          <ChipGroup options={INDUSTRIES} selected={filters.industries} onToggle={v => toggle("industries", v)} accent={accent} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mt-3 mb-1" style={{ color: "var(--ink-3)" }}>Company Size</p>
-          <ChipGroup options={SIZES} selected={filters.companySizes} onToggle={v => toggle("companySizes", v)} accent={accent} />
-        </Section>
-
-        {/* Geography */}
-        <Section title="Geography" count={filters.countries.length} defaultOpen={false}>
-          <ChipGroup options={COUNTRIES} selected={filters.countries} onToggle={v => toggle("countries", v)} accent={accent} />
-        </Section>
-
-        {/* Email Quality */}
-        <Section title="Email Quality" count={filters.emailStatus.length}>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {EMAIL_OPTS.map(opt => {
-              const active = filters.emailStatus.includes(opt);
-              const { label, color } = EMAIL_CONFIG[opt];
-              return (
-                <button
-                  key={opt}
-                  onClick={() => toggle("emailStatus", opt)}
-                  className={active ? "filter-chip-active" : "filter-chip"}
-                  style={active ? {
-                    background: `${color}18`,
-                    borderColor: `${color}50`,
-                    color,
-                    boxShadow: `0 0 8px ${color}12`,
-                  } : undefined}
+            <div className="relative">
+              <SlidersHorizontal size={16} style={{ color: activeCount > 0 ? "var(--accent)" : "var(--ink-3)" }} />
+              {activeCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-2.5 text-[9px] px-1 py-0 rounded-full font-bold select-none"
+                  style={{
+                    background: "rgba(201,168,124,0.15)",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(201,168,124,0.25)",
+                    lineHeight: "12px",
+                    minWidth: 14,
+                    textAlign: "center",
+                  }}
                 >
-                  <span
-                    className="filter-chip-dot"
-                    style={{ background: active ? color : "rgba(255,255,255,0.2)" }}
-                  />
-                  {label}
-                </button>
-              );
-            })}
+                  {activeCount}
+                </span>
+              )}
+            </div>
           </div>
-        </Section>
 
-        {/* Lead Score */}
-        <Section title="Lead Score" count={filters.minScore > 0 ? 1 : 0}>
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2 mt-1" style={{ color: "var(--ink-3)" }}>
-            Minimum Score
-          </p>
-          <div className="flex gap-1.5 flex-wrap">
-            {SCORE_OPTIONS.map(score => {
-              const active = filters.minScore === score;
-              return (
-                <button
-                  key={score}
-                  onClick={() => onChange({ ...filters, minScore: score })}
-                  className={(active ? "filter-chip-active" : "filter-chip") + " tabular-nums"}
-                  style={active ? {
-                    background: `${accent}18`,
-                    borderColor: `${accent}50`,
-                    color: accent,
-                    boxShadow: `0 0 8px ${accent}12`,
-                  } : undefined}
+          {/* Active filter indicator dots */}
+          <div className="flex-1 flex flex-col items-center py-3 gap-1.5">
+            {activeCount > 0 && (
+              <>
+                {filters.seniority.length > 0 && <IndicatorDot color={accent} />}
+                {filters.jobFunction.length > 0 && <IndicatorDot color={accent} />}
+                {filters.industries.length > 0 && <IndicatorDot color={accent} />}
+                {filters.companySizes.length > 0 && <IndicatorDot color={accent} />}
+                {filters.countries.length > 0 && <IndicatorDot color={accent} />}
+                {filters.emailStatus.length > 0 && <IndicatorDot color={accent} />}
+                {filters.minScore > 0 && <IndicatorDot color={accent} />}
+                {(filters.dateFrom || filters.dateTo) && <IndicatorDot color={accent} />}
+                {filters.sources.length > 0 && <IndicatorDot color={accent} />}
+                {filters.keyword && <IndicatorDot color={accent} />}
+              </>
+            )}
+            {activeCount === 0 && (
+              <div className="flex-1 flex items-center">
+                <span
+                  className="text-[8px] font-medium uppercase tracking-[0.12em] -rotate-90 whitespace-nowrap select-none"
+                  style={{ color: "var(--ink-4)", opacity: 0.35 }}
                 >
-                  {score === 0 ? "Any" : `${score}+`}
-                </button>
-              );
-            })}
-          </div>
-        </Section>
-
-        {/* Date Saved */}
-        <Section title="Date Saved" count={dateRangeCount} defaultOpen={false}>
-          <div className="mt-2 space-y-2.5">
-            <div>
-              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--ink-3)" }}>From</label>
-              <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-3)" }} />
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
-                  className="filter-date-input"
-                />
+                  No filters
+                </span>
               </div>
-            </div>
-            <div>
-              <label className="text-[9px] font-bold uppercase tracking-[0.1em] block mb-1.5" style={{ color: "var(--ink-3)" }}>To</label>
-              <div className="relative">
-                <Calendar size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--ink-3)" }} />
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  min={filters.dateFrom || undefined}
-                  onChange={e => onChange({ ...filters, dateTo: e.target.value })}
-                  className="filter-date-input"
-                />
-              </div>
-            </div>
-            {dateRangeCount > 0 && (
-              <button
-                onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
-                className="text-[11px] font-medium transition-colors hover:text-ink"
-                style={{ color: "var(--ink-3)" }}
-              >
-                Clear dates
-              </button>
             )}
           </div>
-        </Section>
 
-        {/* Source */}
-        <Section title="Source" count={filters.sources.length} defaultOpen={false}>
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            {SOURCES.map(src => {
-              const active = filters.sources.includes(src);
-              const c = SOURCE_COLORS[src];
-              return (
-                <button
-                  key={src}
-                  onClick={() => toggle("sources", src)}
-                  className={active ? "filter-chip-active" : "filter-chip"}
-                  style={active ? {
-                    background: `${c}18`,
-                    borderColor: `${c}50`,
-                    color: c,
-                    boxShadow: `0 0 8px ${c}12`,
-                  } : undefined}
-                >
-                  {SOURCE_LABELS[src]}
-                </button>
-              );
-            })}
+          {/* Expand toggle */}
+          <div
+            className="shrink-0 py-1.5 flex justify-center"
+            style={{ borderTop: "1px solid var(--sidebar-border)" }}
+          >
+            <button
+              onClick={onToggleCollapse}
+              className="flex items-center justify-center rounded-lg transition-all duration-200"
+              style={{
+                width: 36,
+                height: 36,
+                color: "var(--ink-3)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)";
+                (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+              }}
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
-        </Section>
-      </div>
+        </>
+      ) : (
+        <>
+          {/* ── Header ── */}
+          <div
+            className="flex items-center justify-between px-4 shrink-0"
+            style={{
+              height: 56,
+              borderBottom: "1px solid var(--sidebar-border)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={13} style={{ color: "var(--accent)" }} />
+              <span
+                className="text-[11px] font-bold uppercase tracking-[0.12em] select-none"
+                style={{ color: "var(--ink)" }}
+              >
+                Filters
+              </span>
+              {activeCount > 0 && (
+                <span
+                  className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold select-none"
+                  style={{
+                    background: "rgba(201,168,124,0.08)",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(201,168,124,0.15)",
+                  }}
+                >
+                  {activeCount}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-0.5">
+              {activeCount > 0 && (
+                <button
+                  onClick={() => onChange(DEFAULT_FILTERS)}
+                  className="flex items-center gap-1.5 text-[11px] font-medium rounded-lg transition-all duration-200 px-2.5 py-1"
+                  style={{ color: "var(--ink-3)", background: "transparent" }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+                    (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                    (e.currentTarget as HTMLElement).style.background = "transparent";
+                  }}
+                >
+                  <RotateCcw size={10} />
+                  Reset
+                </button>
+              )}
+              {/* Collapse toggle */}
+              <button
+                onClick={onToggleCollapse}
+                className="flex items-center justify-center rounded-lg transition-all duration-200"
+                style={{
+                  width: 28,
+                  height: 28,
+                  color: "var(--ink-3)",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                }}
+              >
+                <ChevronLeft size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Sections ── */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Role */}
+            <Section title="Role" count={filters.seniority.length + filters.jobFunction.length} defaultOpen>
+              <SubLabel>Seniority Level</SubLabel>
+              <ChipGroup options={SENIORITY} selected={filters.seniority} onToggle={v => toggle("seniority", v)} accent={accent} />
+              <SubLabel>Job Function</SubLabel>
+              <ChipGroup options={FUNCTIONS} selected={filters.jobFunction} onToggle={v => toggle("jobFunction", v)} accent={accent} />
+            </Section>
+
+            {/* Company */}
+            <Section title="Company" count={filters.industries.length + filters.companySizes.length} defaultOpen>
+              <SubLabel>Industry</SubLabel>
+              <ChipGroup options={INDUSTRIES} selected={filters.industries} onToggle={v => toggle("industries", v)} accent={accent} />
+              <SubLabel>Company Size</SubLabel>
+              <ChipGroup options={SIZES} selected={filters.companySizes} onToggle={v => toggle("companySizes", v)} accent={accent} />
+            </Section>
+
+            {/* Geography */}
+            <Section title="Geography" count={filters.countries.length} defaultOpen={false}>
+              <div className="mt-2">
+                <ChipGroup options={COUNTRIES} selected={filters.countries} onToggle={v => toggle("countries", v)} accent={accent} />
+              </div>
+            </Section>
+
+            {/* Email Quality */}
+            <Section title="Email Quality" count={filters.emailStatus.length} defaultOpen>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {EMAIL_OPTS.map(opt => {
+                  const active = filters.emailStatus.includes(opt);
+                  const { label, color } = EMAIL_CONFIG[opt];
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => toggle("emailStatus", opt)}
+                      className={active ? "filter-chip-active" : "filter-chip"}
+                      style={active ? {
+                        background: `linear-gradient(90deg, ${color}18, ${color}12)`,
+                        borderColor: `${color}40`,
+                        color,
+                        boxShadow: `0 0 8px ${color}10`,
+                      } : undefined}
+                    >
+                      <span
+                        className="filter-chip-dot"
+                        style={{
+                          background: active ? color : "var(--ink-4)",
+                          opacity: active ? 1 : 0.4,
+                        }}
+                      />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+
+            {/* Lead Score */}
+            <Section title="Lead Score" count={filters.minScore > 0 ? 1 : 0} defaultOpen>
+              <SubLabel>Minimum Score</SubLabel>
+              <div className="flex gap-1.5 flex-wrap">
+                {SCORE_OPTIONS.map(score => {
+                  const active = filters.minScore === score;
+                  return (
+                    <button
+                      key={score}
+                      onClick={() => onChange({ ...filters, minScore: score })}
+                      className={(active ? "filter-chip-active" : "filter-chip") + " tabular-nums"}
+                      style={active ? {
+                        background: `linear-gradient(90deg, ${accent}18, ${accent}14)`,
+                        borderColor: `${accent}30`,
+                        color: accent,
+                        boxShadow: `0 0 8px ${accent}10`,
+                      } : undefined}
+                    >
+                      {score === 0 ? "Any" : `${score}+`}
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+
+            {/* Date Saved */}
+            <Section title="Date Saved" count={dateRangeCount} defaultOpen={false}>
+              <div className="mt-2 space-y-2.5">
+                <div>
+                  <SubLabel>From</SubLabel>
+                  <div className="relative">
+                    <Calendar
+                      size={11}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: "var(--ink-3)" }}
+                    />
+                    <input
+                      type="date"
+                      value={filters.dateFrom}
+                      onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
+                      className="filter-date-input"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <SubLabel>To</SubLabel>
+                  <div className="relative">
+                    <Calendar
+                      size={11}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: "var(--ink-3)" }}
+                    />
+                    <input
+                      type="date"
+                      value={filters.dateTo}
+                      min={filters.dateFrom || undefined}
+                      onChange={e => onChange({ ...filters, dateTo: e.target.value })}
+                      className="filter-date-input"
+                    />
+                  </div>
+                </div>
+                {dateRangeCount > 0 && (
+                  <button
+                    onClick={() => onChange({ ...filters, dateFrom: "", dateTo: "" })}
+                    className="text-[11px] font-medium transition-colors duration-200 rounded-lg px-2.5 py-1"
+                    style={{ color: "var(--ink-3)" }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.color = "var(--ink)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }}
+                  >
+                    Clear dates
+                  </button>
+                )}
+              </div>
+            </Section>
+
+            {/* Source */}
+            <Section title="Source" count={filters.sources.length} defaultOpen={false}>
+              <div className="flex gap-1.5 flex-wrap mt-2">
+                {SOURCES.map(src => {
+                  const active = filters.sources.includes(src);
+                  const c = SOURCE_COLORS[src];
+                  return (
+                    <button
+                      key={src}
+                      onClick={() => toggle("sources", src)}
+                      className={active ? "filter-chip-active" : "filter-chip"}
+                      style={active ? {
+                        background: `linear-gradient(90deg, ${c}18, ${c}12)`,
+                        borderColor: `${c}40`,
+                        color: c,
+                        boxShadow: `0 0 8px ${c}10`,
+                      } : undefined}
+                    >
+                      {SOURCE_LABELS[src]}
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+          </div>
+        </>
+      )}
     </aside>
+  );
+}
+
+function IndicatorDot({ color }: { color: string }) {
+  return (
+    <div
+      className="w-1.5 h-1.5 rounded-full shrink-0"
+      style={{ background: color, opacity: 0.5 }}
+    />
   );
 }

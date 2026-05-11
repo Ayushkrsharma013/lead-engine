@@ -31,10 +31,14 @@ interface ScoreResult {
   risk_factors: string[];
 }
 
+const cardBg = "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)";
+const cardBorder = "1px solid rgba(201,168,124,0.07)";
+const brass = "#C9A87C";
+
 function getScoreColor(score: number): string {
-  if (score >= 70) return "var(--positive)";
-  if (score >= 40) return "var(--info)";
-  return "var(--negative)";
+  if (score >= 70) return "#A8C99A";
+  if (score >= 40) return "#9AB3C8";
+  return "#D49484";
 }
 
 function ScoreRing({ score }: { score: number }) {
@@ -43,23 +47,31 @@ function ScoreRing({ score }: { score: number }) {
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center relative">
       <svg width="160" height="160" viewBox="0 0 160 160">
-        <circle cx="80" cy="80" r="60" fill="none" stroke="var(--line)" strokeWidth="12" />
+        <circle cx="80" cy="80" r="60" fill="none" stroke="var(--line)" strokeWidth="10" />
         <circle
           cx="80" cy="80" r="60" fill="none"
           stroke={color}
-          strokeWidth="12"
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform="rotate(-90 80 80)"
-          style={{ transition: "stroke-dashoffset 1.2s ease-out" }}
+          style={{ transition: "stroke-dashoffset 1.2s ease-out", filter: `drop-shadow(0 0 6px ${color}40)` }}
+        />
+        {/* Background glow ring */}
+        <circle
+          cx="80" cy="80" r="60" fill="none"
+          stroke={color}
+          strokeWidth="1"
+          opacity={0.3}
+          transform="rotate(-90 80 80)"
         />
       </svg>
-      <div className="absolute text-center" style={{ marginTop: -100 }}>
-        <div className="text-[48px] font-bold text-ink tabular-nums">{score}</div>
-        <div className="text-xs text-ink-3">ICP Score</div>
+      <div className="absolute text-center" style={{ marginTop: -104 }}>
+        <div className="text-[48px] font-bold tabular-nums" style={{ color: "var(--ink)" }}>{score}</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--ink-4)" }}>ICP Score</div>
       </div>
     </div>
   );
@@ -69,32 +81,27 @@ export default function ScorerPage() {
   const { state, dispatch } = useApp();
   const { apiKey } = state;
 
-  // API key
   const [keyInput, setKeyInput] = useState(apiKey);
   const [connected, setConnected] = useState(!!apiKey);
+  const [showKeyInput, setShowKeyInput] = useState(false);
 
-  // Form
   const [leadText, setLeadText] = useState("");
   const [criteria, setCriteria] = useState(DEFAULT_CRITERIA);
 
-  // Scoring
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState("");
 
-  // Add to pipeline modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [addName, setAddName] = useState("");
   const [addTitle, setAddTitle] = useState("");
   const [addCompany, setAddCompany] = useState("");
 
-  // Toast helper
   const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
     dispatch({ type: "SET_TOAST", payload: { msg, type } });
     setTimeout(() => dispatch({ type: "SET_TOAST", payload: null }), 4000);
   };
 
-  // Sync API key
   useEffect(() => {
     if (apiKey) { setKeyInput(apiKey); setConnected(true); }
   }, [apiKey]);
@@ -103,6 +110,7 @@ export default function ScorerPage() {
     if (!keyInput.trim()) return;
     dispatch({ type: "SET_API_KEY", payload: keyInput.trim() });
     setConnected(true);
+    setShowKeyInput(false);
   };
 
   const toggleCriteria = (idx: number) => {
@@ -112,8 +120,8 @@ export default function ScorerPage() {
   const maxPoints = criteria.filter(c => c.active).reduce((s, c) => s + c.points, 0);
 
   const handleScore = async () => {
-    if (!apiKey) { setError("Please connect your Anthropic API key first."); return; }
-    if (!leadText.trim()) { setError("Please paste lead information to score."); return; }
+    if (!apiKey) { setError("API key required — click the key icon above."); return; }
+    if (!leadText.trim()) { setError("Paste lead information to score."); return; }
     setError("");
     setScoring(true);
     setResult(null);
@@ -182,20 +190,10 @@ Return ONLY valid JSON, nothing outside the JSON:
     const now = new Date().toISOString();
     const newLead: Lead = {
       id: `scored-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: addName,
-      title: addTitle,
-      company: addCompany,
-      industry: "",
-      location: "",
-      email: "",
-      emailStatus: "not_found",
-      linkedin: "",
-      website: "",
-      companySize: "",
-      score: result?.score ?? 0,
-      source: "linkedin",
-      savedAt: now,
-      fetchedAt: now,
+      name: addName, title: addTitle, company: addCompany,
+      industry: "", location: "", email: "", emailStatus: "not_found",
+      linkedin: "", website: "", companySize: "",
+      score: result?.score ?? 0, source: "linkedin", savedAt: now, fetchedAt: now,
     };
 
     try {
@@ -207,84 +205,160 @@ Return ONLY valid JSON, nothing outside the JSON:
       showToast(`Added ${addName} to pipeline`);
       setShowAddModal(false);
       setAddName(""); setAddTitle(""); setAddCompany("");
-    } catch {
-      showToast("Failed to add lead", "error");
-    }
+    } catch { showToast("Failed to add lead", "error"); }
   };
 
   return (
     <>
       <TopBar title="Lead Scorer" subtitle="AI-powered ICP scoring" />
 
-      <div className="flex-1 overflow-y-auto">
-        {/* API Key Bar */}
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-line bg-surface2">
-          <Key size={14} className="text-ink-3 shrink-0" />
-          <input
-            type="password"
-            value={keyInput}
-            onChange={e => setKeyInput(e.target.value)}
-            placeholder="sk-ant-api03-..."
-            className="flex-1 h-8 rounded-md bg-white/5 border border-line px-3 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-orange/40 font-mono"
-          />
-          <button
-            onClick={handleConnect}
-            disabled={!keyInput.trim()}
-            className="flex items-center gap-1.5 h-8 px-4 rounded-md bg-negative/20 text-negative text-xs font-medium hover:bg-negative/30 disabled:opacity-40 transition-colors"
-          >
-            {connected ? <><Check size={12} /> Connected</> : "Connect"}
-          </button>
-          {connected && <span className="w-2 h-2 rounded-full bg-positive shrink-0" />}
-        </div>
+      <div className="flex-1 overflow-hidden flex">
+        {/* ── LEFT — Input (42%) ── */}
+        <div className="w-[42%] min-w-[360px] flex flex-col overflow-hidden" style={{ borderRight: "1px solid var(--sidebar-border)" }}>
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
-        <div className="flex h-[calc(100vh-160px)]">
-          {/* LEFT — Input (45%) */}
-          <div className="w-[45%] min-w-[340px] border-r border-line p-5 space-y-5 overflow-y-auto">
             {/* Lead Info */}
             <div>
-              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Lead Information</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                Lead Information
+              </label>
               <textarea
                 value={leadText}
                 onChange={e => setLeadText(e.target.value)}
                 placeholder="Paste LinkedIn bio, job title, company info, or any raw text…"
                 rows={10}
-                className="w-full rounded-md bg-white/5 border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3/70 focus:outline-none focus:border-accent-orange/40 resize-y mt-1.5"
+                className="w-full rounded-lg mt-1.5 px-3 py-2.5 text-[13px] outline-none transition-all duration-200 resize-y"
+                style={{
+                  color: "var(--ink)", background: "var(--surface-2)",
+                  border: "1px solid var(--line)",
+                }}
+                onFocus={e => (e.currentTarget as HTMLTextAreaElement).style.borderColor = "var(--accent)"}
+                onBlur={e => (e.currentTarget as HTMLTextAreaElement).style.borderColor = "var(--line)"}
               />
             </div>
 
             {/* ICP Criteria */}
             <div>
-              <label className="text-[11px] font-semibold text-ink-3 uppercase tracking-wider">ICP Criteria</label>
-              <div className="space-y-2 mt-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                ICP Criteria
+              </label>
+              <div className="space-y-1 mt-1.5">
                 {criteria.map((c, i) => (
-                  <label key={i} className="flex items-center gap-2.5 cursor-pointer group">
+                  <label
+                    key={i}
+                    className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 transition-all duration-200"
+                    style={{ background: "transparent" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.02)"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                  >
                     <input
                       type="checkbox"
                       checked={c.active}
                       onChange={() => toggleCriteria(i)}
-                      className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 accent-accent-orange cursor-pointer"
+                      className="w-3.5 h-3.5 rounded cursor-pointer"
+                      style={{ accentColor: brass }}
                     />
-                    <span className="text-xs text-ink flex-1">{c.label}</span>
-                    <span className="text-[10px] font-bold text-ink-3 bg-white/5 px-1.5 py-0.5 rounded tabular-nums">{c.points} pts</span>
+                    <span className="text-[12px] flex-1" style={{ color: c.active ? "var(--ink-2)" : "var(--ink-4)" }}>
+                      {c.label}
+                    </span>
+                    <span
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md tabular-nums"
+                      style={c.active
+                        ? { background: "rgba(201,168,124,0.08)", color: "var(--accent)", border: "1px solid rgba(201,168,124,0.15)" }
+                        : { background: "transparent", color: "var(--ink-4)", border: "1px solid var(--line)" }
+                      }
+                    >
+                      {c.points} pts
+                    </span>
                   </label>
                 ))}
               </div>
-              <p className="text-[10px] text-ink-3 mt-2">Max possible: {maxPoints} pts (with selected criteria)</p>
+              <p className="text-[10px] mt-2" style={{ color: "var(--ink-4)" }}>
+                Max possible: <span className="font-bold" style={{ color: "var(--accent)" }}>{maxPoints} pts</span> with selected criteria
+              </p>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs">
+              <div className="flex items-start gap-2 p-3 rounded-lg text-[12px]" style={{ background: "rgba(212,148,132,0.08)", border: "1px solid rgba(212,148,132,0.20)", color: "var(--negative)" }}>
                 <AlertCircle size={13} className="shrink-0 mt-0.5" />
                 {error}
               </div>
             )}
 
+            {/* API Key (inline) */}
+            <div>
+              {!connected && !showKeyInput ? (
+                <button
+                  onClick={() => setShowKeyInput(true)}
+                  className="flex items-center gap-2 text-[11px] font-medium transition-all duration-200 rounded-lg px-3 py-2"
+                  style={{ color: "var(--ink-4)", border: "1px dashed var(--line)" }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.color = "var(--ink-2)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.color = "var(--ink-4)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "var(--line)";
+                  }}
+                >
+                  <Key size={11} /> Add API key to score
+                </button>
+              ) : showKeyInput && !connected ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    value={keyInput}
+                    onChange={e => setKeyInput(e.target.value)}
+                    placeholder="sk-ant-api03-..."
+                    className="flex-1 h-8 rounded-lg px-3 text-xs font-mono outline-none transition-all duration-200"
+                    style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+                    onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
+                    onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
+                    onKeyDown={e => { if (e.key === "Enter") handleConnect(); }}
+                  />
+                  <button
+                    onClick={handleConnect}
+                    disabled={!keyInput.trim()}
+                    className="h-8 px-3 rounded-lg text-[11px] font-medium transition-all duration-200 disabled:opacity-40"
+                    style={{ background: "rgba(201,168,124,0.12)", color: "var(--accent)", border: "1px solid rgba(201,168,124,0.20)" }}
+                  >
+                    Connect
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--positive)" }} />
+                  <span className="text-[10px]" style={{ color: "var(--ink-4)" }}>API connected</span>
+                </div>
+              )}
+            </div>
+
             {/* Score Button */}
             <button
               onClick={handleScore}
               disabled={scoring || !apiKey || !leadText.trim()}
-              className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-negative text-white text-sm font-semibold hover:bg-negative/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: scoring
+                  ? "rgba(212,148,132,0.08)"
+                  : "linear-gradient(90deg, rgba(212,148,132,0.16), rgba(212,148,132,0.10))",
+                color: "#E8B4A8",
+                border: "1px solid rgba(212,148,132,0.25)",
+                boxShadow: scoring ? "none" : "0 0 16px rgba(212,148,132,0.10)",
+              }}
+              onMouseEnter={e => {
+                if (!scoring) {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 24px rgba(212,148,132,0.20)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,148,132,0.40)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!scoring) {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(212,148,132,0.10)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,148,132,0.25)";
+                }
+              }}
             >
               {scoring ? (
                 <><Loader2 size={14} className="animate-spin" /> Analyzing lead…</>
@@ -293,23 +367,30 @@ Return ONLY valid JSON, nothing outside the JSON:
               )}
             </button>
           </div>
+        </div>
 
-          {/* RIGHT — Output (55%) */}
-          <div className="flex-1 p-5 space-y-5 overflow-y-auto flex flex-col items-center">
+        {/* ── RIGHT — Output (58%) ── */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 flex flex-col items-center">
             {result ? (
               <>
                 {/* Score Ring */}
-                <div className="relative pt-4">
+                <div className="pt-2">
                   <ScoreRing score={result.score} />
                 </div>
 
                 {/* Reasoning */}
-                <div className="w-full max-w-md bg-surface border border-line rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-ink mb-2">Why this score</h4>
-                  <ul className="space-y-1.5">
+                <div
+                  className="w-full max-w-md rounded-xl p-5"
+                  style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
+                >
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.14em] mb-3 select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                    Why this score
+                  </h4>
+                  <ul className="space-y-2">
                     {result.reasoning.map((r, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-ink-3">
-                        <span className="text-accent mt-0.5">•</span>
+                      <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--ink-2)" }}>
+                        <span className="mt-0.5 shrink-0" style={{ color: brass }}>•</span>
                         {r}
                       </li>
                     ))}
@@ -318,14 +399,18 @@ Return ONLY valid JSON, nothing outside the JSON:
 
                 {/* Recommended Action */}
                 <div className="w-full max-w-md">
-                  <span className="text-[10px] text-ink-3 uppercase tracking-wider">Recommended Action</span>
-                  <div className={`mt-1 inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold ${
-                    result.recommended_action === "Connect now"
-                      ? "bg-positive/10 text-positive border border-accent-green/25"
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                    Recommended Action
+                  </span>
+                  <div
+                    className="mt-1.5 inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold"
+                    style={result.recommended_action === "Connect now"
+                      ? { background: "rgba(168,201,154,0.10)", color: "var(--positive)", border: "1px solid rgba(168,201,154,0.20)" }
                       : result.recommended_action === "Add to nurture"
-                      ? "bg-negative/10 text-negative border border-accent-orange/25"
-                      : "bg-red-500/10 text-red-400 border border-red-500/25"
-                  }`}>
+                        ? { background: "rgba(212,148,132,0.08)", color: "var(--negative)", border: "1px solid rgba(212,148,132,0.18)" }
+                        : { background: "rgba(212,148,132,0.06)", color: "#D49484", border: "1px solid rgba(212,148,132,0.15)" }
+                    }
+                  >
                     {result.recommended_action}
                   </div>
                 </div>
@@ -334,14 +419,19 @@ Return ONLY valid JSON, nothing outside the JSON:
                 {result.risk_factors.length > 0 && (
                   <div className="w-full max-w-md">
                     <details className="group">
-                      <summary className="flex items-center gap-1.5 text-xs font-semibold text-ink-3 cursor-pointer hover:text-ink transition-colors">
-                        <ChevronDown size={12} className="group-open:rotate-180 transition-transform" />
+                      <summary className="flex items-center gap-1.5 text-[11px] font-medium cursor-pointer transition-colors duration-200 select-none" style={{ color: "var(--ink-3)" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--ink)"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"}
+                      >
+                        <ChevronDown size={12} style={{ transform: "rotate(-90deg)", transition: "transform 250ms cubic-bezier(0.4,0,0.2,1)" }}
+                          className="group-open:rotate-0"
+                        />
                         Risk Factors ({result.risk_factors.length})
                       </summary>
-                      <ul className="mt-2 space-y-1.5">
+                      <ul className="mt-2 space-y-1.5 pl-5">
                         {result.risk_factors.map((r, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-red-400">
-                            <span>•</span>
+                          <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--negative)" }}>
+                            <span className="mt-0.5">•</span>
                             {r}
                           </li>
                         ))}
@@ -353,14 +443,27 @@ Return ONLY valid JSON, nothing outside the JSON:
                 {/* Add to Pipeline */}
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 h-10 px-4 rounded-lg bg-positive/10 text-positive border border-accent-green/25 text-sm font-medium hover:bg-positive/20 transition-colors"
+                  className="flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-medium transition-all duration-200"
+                  style={{
+                    background: "linear-gradient(90deg, rgba(168,201,154,0.12), rgba(168,201,154,0.08))",
+                    color: "var(--positive)",
+                    border: "1px solid rgba(168,201,154,0.20)",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(168,201,154,0.15)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,201,154,0.35)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,201,154,0.20)";
+                  }}
                 >
                   <Plus size={14} /> Add to Pipeline
                 </button>
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-sm text-ink-3/50 text-center">
+                <p className="text-[13px] text-center" style={{ color: "var(--ink-3)", opacity: 0.5 }}>
                   {scoring ? "Analyzing lead profile…" : "Score results will appear here"}
                 </p>
               </div>
@@ -369,37 +472,51 @@ Return ONLY valid JSON, nothing outside the JSON:
         </div>
       </div>
 
-      {/* Add to Pipeline Mini Modal */}
+      {/* Add to Pipeline Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
-          <div className="w-[400px] max-w-[95vw] bg-surface border border-line rounded-xl shadow-2xl p-6 space-y-4 animate-fade-up" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold text-ink">Add to Pipeline</h3>
+          <div
+            className="w-[400px] max-w-[95vw] rounded-xl p-6 space-y-4 animate-fade-up"
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-[14px] font-bold" style={{ color: "var(--ink)" }}>Add to Pipeline</h3>
             <div className="space-y-3">
-              <input
-                type="text" placeholder="Name *"
-                value={addName} onChange={e => setAddName(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-green/40"
-              />
-              <input
-                type="text" placeholder="Title"
-                value={addTitle} onChange={e => setAddTitle(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-green/40"
-              />
-              <input
-                type="text" placeholder="Company"
-                value={addCompany} onChange={e => setAddCompany(e.target.value)}
-                className="w-full h-9 rounded-md bg-white/5 border border-line px-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent-green/40"
-              />
+              {([
+                { ph: "Name *", val: addName, set: setAddName },
+                { ph: "Title", val: addTitle, set: setAddTitle },
+                { ph: "Company", val: addCompany, set: setAddCompany },
+              ]).map(f => (
+                <input
+                  key={f.ph}
+                  type="text" placeholder={f.ph}
+                  value={f.val} onChange={e => f.set(e.target.value)}
+                  className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all duration-200"
+                  style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+                  onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
+                  onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
+                />
+              ))}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-ink-3">Score:</span>
-                <span className="text-sm font-bold text-ink">{result?.score ?? 0}</span>
+                <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>Score:</span>
+                <span className="text-[14px] font-bold" style={{ color: "var(--ink)" }}>{result?.score ?? 0}</span>
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <button onClick={handleAddToPipeline} disabled={!addName.trim()} className="flex-1 h-9 rounded-md bg-positive/20 text-positive text-sm font-medium hover:bg-positive/30 disabled:opacity-40 transition-colors">
+              <button
+                onClick={handleAddToPipeline} disabled={!addName.trim()}
+                className="flex-1 h-9 rounded-lg text-[13px] font-medium transition-all duration-200 disabled:opacity-40"
+                style={{ background: "rgba(168,201,154,0.12)", color: "var(--positive)", border: "1px solid rgba(168,201,154,0.20)" }}
+              >
                 Save Lead
               </button>
-              <button onClick={() => setShowAddModal(false)} className="flex-1 h-9 rounded-md bg-white/5 text-ink-3 text-sm hover:bg-white/[0.08] transition-colors">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 h-9 rounded-lg text-[13px] font-medium transition-all duration-200"
+                style={{ background: "transparent", color: "var(--ink-3)", border: "1px solid var(--line)" }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)"}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+              >
                 Cancel
               </button>
             </div>

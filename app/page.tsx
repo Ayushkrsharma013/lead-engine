@@ -458,6 +458,7 @@ export default function Home() {
 
   const filterCount = countActiveFilters(filters);
   const [gdrive, setGdrive] = useState(false);
+  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg">
@@ -472,7 +473,13 @@ export default function Home() {
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Filter Panel — vertical sidebar */}
-        <FilterPanel filters={filters} onChange={handleFilterChange} accent={accent} />
+        <FilterPanel
+          filters={filters}
+          onChange={handleFilterChange}
+          accent={accent}
+          collapsed={filterPanelCollapsed}
+          onToggleCollapse={() => setFilterPanelCollapsed(prev => !prev)}
+        />
 
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">

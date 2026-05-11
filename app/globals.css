@@ -145,43 +145,48 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 
 /* ─── Filter chips ──────────────────────────────────────────────────────── */
 .filter-chip {
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase;
-  padding: 4px 9px; border-radius: 999px;
+  font-family: 'Geist', sans-serif;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.01em;
+  padding: 4px 10px; border-radius: 999px;
   background: transparent; border: 1px solid var(--line); color: var(--ink-3);
   cursor: pointer; user-select: none;
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
 }
-.filter-chip:hover { border-color: var(--line-strong); color: var(--ink); background: var(--surface-2); }
-.filter-chip:active { transform: translateY(0.5px); }
+.filter-chip:hover {
+  border-color: var(--line-strong); color: var(--ink-2);
+  background: linear-gradient(90deg, rgba(237,234,226,0.02), rgba(201,168,124,0.05));
+}
 
 [data-theme="light"] .filter-chip { background: transparent; border-color: var(--line); color: var(--ink-3); }
-[data-theme="light"] .filter-chip:hover { border-color: var(--line-strong); color: var(--ink); background: var(--surface-2); }
+[data-theme="light"] .filter-chip:hover { border-color: var(--line-strong); color: var(--ink-2); background: linear-gradient(90deg, rgba(28,24,18,0.02), rgba(139,111,63,0.06)); }
 
 .filter-chip-active {
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px; font-weight: 400; letter-spacing: 0.02em; text-transform: uppercase;
-  padding: 4px 9px; border-radius: 999px;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+  font-family: 'Geist', sans-serif;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.01em;
+  padding: 4px 10px; border-radius: 999px;
   cursor: pointer; user-select: none;
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background 200ms ease, box-shadow 200ms ease;
 }
-.filter-chip-active:active { transform: translateY(0.5px); }
 
 .filter-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
 /* ─── Filter panel sections ─────────────────────────────────────────────── */
-.section-group { border-bottom: 1px solid var(--line); }
+.section-group { border-bottom: 1px solid var(--sidebar-border); }
 .section-header {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
-  padding: 0.625rem 1rem; color: var(--ink-3); cursor: pointer;
-  transition: color 150ms ease;
+  padding: 0.625rem 1rem 0.625rem 1rem;
+  color: var(--ink-3); cursor: pointer;
+  transition: color 200ms ease;
 }
-.section-header:hover { color: var(--ink); }
+.section-header:hover { color: var(--ink-2); }
+.section-header:active { color: var(--ink); }
+
 .section-count {
-  font-size: 9px; padding: 0 0.375rem; line-height: 1rem; border-radius: 999px;
-  font-weight: 700; background: var(--accent-soft); color: var(--accent);
-  border: 1px solid var(--accent-soft);
+  font-size: 10px; padding: 0 0.375rem; line-height: 1rem; border-radius: 999px;
+  font-weight: 600;
+  background: rgba(201,168,124,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(201,168,124,0.15);
 }
 
 /* ─── Filter date inputs ────────────────────────────────────────────────── */
@@ -189,12 +194,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
   width: 100%; height: 2rem; border-radius: 8px;
   padding-left: 1.75rem; padding-right: 0.5rem; font-size: 11px;
   color: var(--ink); background: var(--surface); border: 1px solid var(--line);
-  outline: none; transition: border-color 150ms ease;
+  outline: none; transition: border-color 200ms ease, background 200ms ease;
 }
-.filter-date-input:focus { border-color: var(--accent); }
+.filter-date-input:focus { border-color: var(--accent); background: var(--surface-2); }
 [data-theme="dark"] .filter-date-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 [data-theme="light"] .filter-date-input { background: var(--surface-2); border-color: var(--line); }
-[data-theme="light"] .filter-date-input:focus { border-color: var(--accent); }
+[data-theme="light"] .filter-date-input:focus { border-color: var(--accent); background: var(--surface); }
 
 /* ─── Search input ──────────────────────────────────────────────────────── */
 .search-input {
