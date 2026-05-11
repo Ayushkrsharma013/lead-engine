@@ -20,7 +20,7 @@ const NAV_GROUPS: { label: string; items: NavItemDef[] }[] = [
     label: "Overview",
     items: [
       { module: "dashboard", label: "Command Center",    icon: LayoutDashboard, href: "/dashboard" },
-      { module: "leads",     label: "Lead Intelligence", icon: Users,           href: "/" },
+      { module: "leads",     label: "Lead Intelligence", icon: Users,           href: "/leads" },
     ],
   },
   {
@@ -57,7 +57,7 @@ export default function ProSidebar() {
   const navContainerRef = useRef<HTMLDivElement>(null);
 
   const isActive = useCallback((href: string) => {
-    if (href === "/") return pathname === "/";
+    if (href === "/leads") return pathname === "/leads";
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   }, [pathname]);

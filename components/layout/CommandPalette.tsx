@@ -12,7 +12,7 @@ import type { ModuleName } from "@/lib/types";
 
 const MODULES: { name: string; icon: LucideIcon; path: string; module: ModuleName; desc: string }[] = [
   { name: "Command Center",    icon: LayoutDashboard, path: "/dashboard",   module: "dashboard",    desc: "Overview & campaigns" },
-  { name: "Lead Intelligence", icon: Users,           path: "/",            module: "leads",        desc: "Browse & filter leads" },
+  { name: "Lead Intelligence", icon: Users,           path: "/leads",       module: "leads",        desc: "Browse & filter leads" },
   { name: "AI Message Lab",    icon: MessageSquare,   path: "/message-lab", module: "message-lab",  desc: "Generate outreach with Claude" },
   { name: "Lead Scorer",       icon: Target,          path: "/scorer",      module: "scorer",       desc: "ICP scoring & analysis" },
   { name: "Sequence Builder",  icon: GitBranch,       path: "/sequences",   module: "sequences",    desc: "Build outreach sequences" },
@@ -22,7 +22,7 @@ const MODULES: { name: string; icon: LucideIcon; path: string; module: ModuleNam
 ];
 
 const QUICK_ACTIONS = [
-  { name: "Run Lead Agent",     path: "/",            desc: "Fetch new leads from LinkedIn", icon: Zap },
+  { name: "Run Lead Agent",     path: "/leads",       desc: "Fetch new leads from LinkedIn", icon: Zap },
   { name: "Generate Message",   path: "/message-lab", desc: "Create AI-powered outreach",    icon: MessageSquare },
   { name: "Score a Lead",       path: "/scorer",      desc: "Run ICP scoring analysis",      icon: Target },
 ];
@@ -70,7 +70,7 @@ export default function CommandPalette() {
     | { type: "action"; label: string; sub: string; path: string; icon: LucideIcon };
 
   const allResults: ResultItem[] = [
-    ...matchedLeads.map(l => ({ type: "lead" as const, label: l.name, sub: `${l.title} · ${l.company}`, path: "/", lead: l })),
+    ...matchedLeads.map(l => ({ type: "lead" as const, label: l.name, sub: `${l.title} · ${l.company}`, path: "/leads", lead: l })),
     ...matchedModules.map(m => ({ type: "module" as const, label: m.name, sub: m.desc, path: m.path, module: m.module, icon: m.icon })),
     ...matchedActions.map(a => ({ type: "action" as const, label: a.name, sub: a.desc, path: a.path, icon: a.icon })),
   ];

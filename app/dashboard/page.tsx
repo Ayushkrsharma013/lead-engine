@@ -557,7 +557,7 @@ export default function DashboardPage() {
             Quick Actions
           </span>
           {([
-            { href: "/",            icon: UserPlus,  label: "Add Lead" },
+            { href: "/leads",        icon: UserPlus,  label: "Add Lead" },
             { href: "/message-lab", icon: Sparkles,  label: "Generate Message" },
             { href: "/scorer",      icon: Target,    label: "Score Lead" },
           ] as const).map(a => (

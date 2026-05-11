@@ -1,880 +1,279 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import {
-  Search, Play, Download, X, RotateCcw, ChevronRight,
-  Sparkles, Database, HardDrive, CloudDownload,
+  Zap, Sparkles, Target, Users, BarChart3, MessageSquare,
+  ArrowRight, Check, ChevronRight, Linkedin, Mail, Globe,
+  Shield, Building2, TrendingUp, Send, Bot,
 } from "lucide-react";
-import type { Source, Lead, LogEntry, FilterState, SortField } from "@/lib/types";
-import { DEFAULT_FILTERS, DEFAULT_PAGINATION } from "@/lib/types";
-import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } from "@/lib/filters";
-import { generateCSV, stableLeadId } from "@/lib/storage";
-import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "@/lib/db";
-import { useApp } from "@/lib/AppContext";
-import TopBar from "@/components/layout/TopBar";
-import FilterPanel from "@/components/FilterPanel";
-import LeadsTable from "@/components/LeadsTable";
-import GDriveModal from "@/components/GDriveModal";
-import ImportModal from "@/components/ImportModal";
-import { Progress } from "@/components/ui/progress";
 
-const API_HEADERS = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
-};
+/* ─── Constants ──────────────────────────────────────────────────────────── */
 
-const ACCENT: Record<Source, string> = {
-  linkedin: "var(--accent)",
-  gmaps:    "var(--positive)",
-  amazon:   "var(--negative)",
-};
+const FEATURES = [
+  { icon: Users, title: "Lead Discovery", desc: "AI-powered scraping from LinkedIn, Google Maps, and Amazon. Find decision-makers with verified emails at scale.", color: "#C9A87C" },
+  { icon: Sparkles, title: "AI Message Lab", desc: "Generate personalised outreach with Gemini. LinkedIn connections, DMs, and cold emails that convert.", color: "#A8C99A" },
+  { icon: Target, title: "ICP Scoring", desc: "Score every lead against your ideal customer profile. Prioritise hot leads with AI reasoning.", color: "#D49484" },
+  { icon: BarChart3, title: "Pipeline Analytics", desc: "Track conversion rates, source performance, and campaign ROI with live dashboard charts.", color: "#9AB3C8" },
+  { icon: MessageSquare, title: "Sequences", desc: "Build multi-step outreach cadences. Drag-and-drop timeline, variable templates, automated follow-ups.", color: "#C9A87C" },
+  { icon: Bot, title: "24/7 AI Agent", desc: "A live AI agent inside the platform — answer questions, run tasks, and even chat via Telegram.", color: "#A8C99A" },
+];
 
-function getChipColor(group: keyof FilterState, value: string): string {
-  switch (group) {
-    case "keyword":       return "var(--accent)";
-    case "seniority":     return "var(--accent)";
-    case "jobFunction":   return "var(--info)";
-    case "industries":    return "var(--positive)";
-    case "companySizes":  return "var(--accent)";
-    case "countries":     return "var(--info)";
-    case "emailStatus":   return value === "verified" ? "var(--positive)" : value === "risky" ? "var(--info)" : "#6b6b80";
-    case "minScore":      return "var(--negative)";
-    case "sources":       return value === "linkedin" ? "var(--accent)" : value === "gmaps" ? "var(--positive)" : "var(--negative)";
-    case "dateFrom":
-    case "dateTo":        return "var(--accent)";
-    default:              return "var(--accent)";
-  }
-}
-const MOCK_LEADS: Record<Source, Lead[]> = {
-  linkedin: [
-    { id:"l1",name:"Emily Zhang",title:"Head of Sales",company:"Figma",industry:"Computer Software",location:"San Francisco, CA",email:"emily@figma.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/emilyzhang",website:"figma.com",companySize:"501-1000",score:93,source:"linkedin"},
-    { id:"l2",name:"Jake Taylor",title:"CTO",company:"Loom",industry:"Internet",location:"New York, NY",email:"jake@loom.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/jaketaylor",website:"loom.com",companySize:"201-500",score:89,source:"linkedin"},
-    { id:"l3",name:"David Kim",title:"Founder & CEO",company:"Retool",industry:"Internet",location:"Austin, TX",email:"david@retool.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/davidkim",website:"retool.com",companySize:"201-500",score:96,source:"linkedin"},
-    { id:"l4",name:"Sarah Chen",title:"VP Marketing",company:"Notion",industry:"Productivity",location:"San Francisco, CA",email:"sarah@notion.so",emailStatus:"verified",linkedin:"https://linkedin.com/in/sarahchen",website:"notion.so",companySize:"501-1000",score:91,source:"linkedin"},
-    { id:"l5",name:"Marcus Williams",title:"Director of Engineering",company:"Vercel",industry:"Developer Tools",location:"Remote, US",email:"marcus@vercel.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/marcuswilliams",website:"vercel.com",companySize:"201-500",score:87,source:"linkedin"},
-    { id:"l6",name:"Amanda Foster",title:"VP Sales",company:"Airtable",industry:"Computer Software",location:"Los Angeles, CA",email:"amanda@airtable.com",emailStatus:"risky",linkedin:"https://linkedin.com/in/amandafoster",website:"airtable.com",companySize:"501-1000",score:82,source:"linkedin"},
-    { id:"l7",name:"Chris Nakamura",title:"CMO",company:"Stripe",industry:"Financial Services",location:"Chicago, IL",email:"chris@stripe.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/chrisnakamura",website:"stripe.com",companySize:"1001-5000",score:88,source:"linkedin"},
-    { id:"l8",name:"Priya Sharma",title:"Co-Founder",company:"DevTools Co",industry:"Software Development",location:"Bangalore, IN",email:"priya@devtools.co",emailStatus:"risky",linkedin:"https://linkedin.com/in/priyasharma",website:"devtools.co",companySize:"11-50",score:85,source:"linkedin"},
-    { id:"l9",name:"Jordan Lee",title:"Founder & CTO",company:"Data Platform",industry:"Analytics",location:"Remote, US",email:"jordan@dataplatform.io",emailStatus:"verified",linkedin:"https://linkedin.com/in/jordanlee",website:"dataplatform.io",companySize:"51-200",score:94,source:"linkedin"},
-    { id:"l10",name:"Rachel Kim",title:"Agency Director",company:"Growth Co",industry:"Marketing Agency",location:"New York, NY",email:"rachel@growthco.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/rachelkim",website:"growthco.com",companySize:"11-50",score:87,source:"linkedin"},
-  ],
-  gmaps: [
-    { id:"g1",name:"Tom Baker",title:"Owner",company:"Baker's Cafe",industry:"Hospitality",location:"Portland, OR",email:"tom@bakerscafe.com",emailStatus:"verified",linkedin:"",website:"bakerscafe.com",companySize:"11-50",score:72,source:"gmaps"},
-    { id:"g2",name:"Nina Patel",title:"Managing Director",company:"Sun Dental",industry:"Healthcare",location:"Austin, TX",email:"nina@sundental.com",emailStatus:"risky",linkedin:"https://linkedin.com/in/ninapatel",website:"sundental.com",companySize:"1-10",score:65,source:"gmaps"},
-    { id:"g3",name:"Carlos Mendez",title:"Founder",company:"Mendez Law",industry:"Legal Services",location:"Miami, FL",email:"carlos@mendezlaw.com",emailStatus:"not_found",linkedin:"",website:"mendezlaw.com",companySize:"1-10",score:55,source:"gmaps"},
-  ],
-  amazon: [
-    { id:"a1",name:"Lisa Wong",title:"CEO",company:"EcoGoods",industry:"Consumer Goods",location:"Seattle, WA",email:"lisa@ecogoods.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/lisawong",website:"ecogoods.com",companySize:"11-50",score:76,source:"amazon"},
-    { id:"a2",name:"Alex Rodriguez",title:"Founder",company:"FitGear Pro",industry:"Sports & Outdoors",location:"Denver, CO",email:"alex@fitgearpro.com",emailStatus:"risky",linkedin:"https://linkedin.com/in/alexrodriguez",website:"fitgearpro.com",companySize:"1-10",score:67,source:"amazon"},
-    { id:"a3",name:"Sarah Mitchell",title:"VP Operations",company:"HomeStyle",industry:"Home & Kitchen",location:"Atlanta, GA",email:"sarah@homestyle.com",emailStatus:"verified",linkedin:"https://linkedin.com/in/sarahmitchell",website:"homestyle.com",companySize:"51-200",score:81,source:"amazon"},
-  ],
-};
+const PRICING = [
+  { name: "Starter", price: 499, desc: "For solo founders and small agencies", features: ["Up to 500 leads/mo", "LinkedIn scraping", "AI Message Lab", "Basic ICP scoring", "Email support"], cta: "Start Free Trial", popular: false },
+  { name: "Pro", price: 1499, desc: "For growing B2B sales teams", features: ["Up to 5,000 leads/mo", "All 3 sources (LinkedIn, Maps, Amazon)", "Advanced AI scoring", "Sequence builder", "Kanban pipeline", "Google Drive export", "Priority support"], cta: "Start Free Trial", popular: true },
+  { name: "Enterprise", price: null, desc: "For agencies and large teams", features: ["Unlimited leads", "Custom AI model training", "White-label client portal", "Telegram agent integration", "API access", "Dedicated account manager", "SLA guarantee"], cta: "Talk to Sales", popular: false },
+];
 
-const LOG_STEPS: Record<string, Array<{ text: string; type: "info" | "success" | "warn" }>> = {
-  linkedin: [
-    { text: "Initializing Apify actor: x_guru~Leads-Scraper", type: "info" },
-    { text: "Applying filters: SaaS + B2B + Decision Makers", type: "info" },
-    { text: "Querying 300M+ LinkedIn profiles…", type: "info" },
-    { text: "Fetching page 1 of 4 (50 profiles each)", type: "info" },
-    { text: "Fetching page 2 of 4 (50 profiles each)", type: "info" },
-    { text: "Fetching page 3 of 4 (50 profiles each)", type: "info" },
-    { text: "Fetching page 4 of 4 (50 profiles each)", type: "info" },
-    { text: "Enriching emails via Hunter.io…", type: "info" },
-    { text: "Computing ICP scores…", type: "info" },
-    { text: "Complete! 86% email coverage achieved.", type: "success" },
-  ],
-  gmaps: [
-    { text: "Launching Google Maps scraper…", type: "info" },
-    { text: "Searching keyword: 'SaaS companies' in target cities", type: "info" },
-    { text: "Extracting business profiles from Maps listings", type: "info" },
-    { text: "Cross-referencing with LinkedIn for contact enrichment", type: "info" },
-    { text: "Complete! Results enriched with emails.", type: "success" },
-  ],
-  amazon: [
-    { text: "Scanning Amazon Seller Central data…", type: "info" },
-    { text: "Filtering by category + revenue signals", type: "info" },
-    { text: "Resolving seller identities via Hunter.io", type: "info" },
-    { text: "Complete! Seller contacts resolved.", type: "success" },
-  ],
-};
-type Tab = "all" | "latest";
+const STEPS = [
+  { step: "01", title: "Connect Sources", desc: "Plug in LinkedIn, Google Maps, or Amazon. Our AI scrapes verified contacts in real-time." },
+  { step: "02", title: "Score & Prioritise", desc: "Every lead gets an ICP score. AI reasoning tells you exactly why they're a fit." },
+  { step: "03", title: "Outreach at Scale", desc: "Generate personalised messages, build sequences, and track pipeline — all from one dashboard." },
+];
 
-// ─── Agent Log ────────────────────────────────────────────────────────────────
-function AgentLog({ log, accent }: { log: LogEntry[]; accent: string }) {
-  const endRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
+/* ─── Page ───────────────────────────────────────────────────────────────── */
+
+export default function LandingPage() {
   return (
-    <div
-      className="shrink-0"
-      style={{
-        borderTop: "1px solid var(--line)",
-        background: "var(--surface)",
-      }}
-    >
-      <div className="px-4 py-2 flex items-center gap-2">
-        <div
-          className="w-1.5 h-1.5 rounded-full animate-pulse-glow"
-          style={{ background: accent, boxShadow: `0 0 6px ${accent}` }}
-        />
-        <span
-          className="text-[9px] font-bold uppercase tracking-[0.12em]"
-          style={{ color: "var(--ink-3)" }}
-        >
-          Agent Log
-        </span>
-      </div>
-      <div className="px-4 pb-3 space-y-1 max-h-24 overflow-y-auto">
-        {log.length === 0
-          ? <p className="text-[11px]" style={{ color: "var(--ink-3)", opacity: 0.5 }}>Run the agent to see activity…</p>
-          : log.map(e => (
-            <div key={e.id} className="flex items-start gap-1.5 animate-fade-up">
-              <ChevronRight
-                size={9}
-                className="mt-0.5 shrink-0"
-                style={{ color: e.type === "success" ? "var(--positive)" : e.type === "warn" ? "var(--negative)" : "var(--accent)" }}
-              />
-              <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--ink-3)", opacity: 0.6 }}>{e.ts}</span>
-              <span
-                className="text-[11px]"
-                style={{
-                  color: e.type === "success" ? "var(--positive)"
-                       : e.type === "warn"    ? "var(--negative)"
-                       : "var(--ink-3)",
-                }}
-              >
-                {e.text}
-              </span>
+    <div className="bg-bg text-ink font-geist">
+      {/* ── Nav ── */}
+      <nav className="sticky top-0 z-50 border-b" style={{ background: "rgba(8,8,10,0.85)", backdropFilter: "blur(16px)", borderColor: "var(--sidebar-border)" }}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-14">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(201,168,124,0.12)", border: "1px solid rgba(201,168,124,0.22)" }}>
+              <Zap size={13} style={{ color: "var(--accent)" }} />
             </div>
-          ))
-        }
-        <div ref={endRef} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Stats bar ────────────────────────────────────────────────────────────────
-function StatsBar({ total, withEmail, avgScore, topIndustry, accent }: {
-  total: number; withEmail: number; avgScore: number; topIndustry: string; accent: string;
-}) {
-  if (total === 0) return null;
-  const emailPct = total > 0 ? Math.round((withEmail / total) * 100) : 0;
-  return (
-    <div
-      className="flex items-center gap-2 px-4 py-2 shrink-0"
-      style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
-    >
-      <StatCard label="Total Leads"    value={total.toLocaleString()} accent={accent} />
-      <StatCard label="Email Coverage" value={`${emailPct}%`}         accent="var(--positive)" />
-      <StatCard label="Avg ICP Score"  value={String(avgScore)}        accent="var(--negative)" />
-      <StatCard label="Top Industry"   value={topIndustry}             accent="var(--info)" />
-    </div>
-  );
-}
-function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-      style={{
-        background: `${accent}08`,
-        border: `1px solid ${accent}18`,
-      }}
-    >
-      <span className="text-[13px] font-bold tabular-nums leading-none" style={{ color: accent }}>{value}</span>
-      <span className="text-[10px] font-medium" style={{ color: "var(--ink-3)" }}>{label}</span>
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-export default function Home() {
-  const { state, dispatch } = useApp();
-  const abortRef = useRef(false);
-
-  const { leads, latestLeads, selected, filters, sort, pagination, tab, source, mock, running, log, progress: prog, stats } = state;
-  const accent = ACCENT[source];
-
-  const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
-    dispatch({ type: "SET_TOAST", payload: { msg, type } });
-    setTimeout(() => dispatch({ type: "SET_TOAST", payload: null }), 4000);
-  };
-
-  // Derived data
-  const sourceLeads = tab === "latest" ? latestLeads : leads;
-  const filtered = applyFilters(sourceLeads, filters);
-  const sorted = sortLeads(filtered, sort);
-
-  // Sort toggle
-  const handleSort = (field: SortField) => {
-    dispatch({
-      type: "SET_SORT",
-      payload: sort.field === field
-        ? { field, dir: sort.dir === "asc" ? "desc" : "asc" }
-        : { field, dir: field === "savedAt" ? "desc" : "asc" },
-    });
-  };
-
-  const handleFilterChange = (f: FilterState) => {
-    dispatch({ type: "SET_FILTERS", payload: f });
-  };
-
-  // Run agent
-  const handleRun = useCallback(async () => {
-    abortRef.current = false;
-    dispatch({ type: "SET_RUNNING", payload: true });
-    dispatch({ type: "CLEAR_LOG" });
-    dispatch({ type: "SET_PROGRESS", payload: 0 });
-    dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
-
-    const ts = () =>
-      new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-    if (mock) {
-      const steps = LOG_STEPS[source];
-      for (let i = 0; i < steps.length; i++) {
-        if (abortRef.current) break;
-        await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
-        dispatch({ type: "APPEND_LOG", payload: { id: i, ts: ts(), text: steps[i].text, type: steps[i].type } });
-        dispatch({ type: "SET_PROGRESS", payload: Math.round(((i + 1) / steps.length) * 100) });
-      }
-      if (!abortRef.current) {
-        const incoming = MOCK_LEADS[source];
-        const { stored, added, updated } = await mergeLeadsInDB(incoming);
-        dispatch({ type: "MERGE_LEADS", payload: { stored, incoming, added, updated } });
-        const newStats = await computeStatsFromLeads(stored);
-        dispatch({ type: "SET_STATS", payload: newStats });
-        showToast(`${added} new · ${updated} updated leads`);
-      }
-    } else {
-      try {
-        // Step 1: Start the actor
-        dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Starting Apify actor…", type: "info" } });
-        dispatch({ type: "SET_PROGRESS", payload: 10 });
-
-        const startRes = await fetch("/api/leads", {
-          method: "POST",
-          headers: API_HEADERS,
-          body: JSON.stringify({ source, fields: {} }),
-        });
-
-        if (!startRes.ok) {
-          const e = await startRes.json().catch(() => ({}));
-          throw new Error((e as { error?: string }).error || `HTTP ${startRes.status}`);
-        }
-
-        const startData = await startRes.json() as { runId?: string; error?: string };
-        if (!startData.runId) throw new Error(startData.error || "Failed to start actor");
-
-        const runId = startData.runId;
-        dispatch({ type: "APPEND_LOG", payload: { id: 1, ts: ts(), text: `Actor started — run ${runId}`, type: "info" } });
-        dispatch({ type: "SET_PROGRESS", payload: 20 });
-
-        // Step 2: Poll for results
-        let pollCount = 0;
-        const maxPolls = 120; // 10 minutes at 5s intervals
-        let completed = false;
-
-        while (pollCount < maxPolls && !abortRef.current) {
-          await new Promise(r => setTimeout(r, 5000));
-          pollCount++;
-
-          const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`, { headers: API_HEADERS });
-
-          const pollData = await pollRes.json() as {
-            status?: string; leads?: Record<string, unknown>[]; error?: string;
-          };
-
-          // Permanent errors — fail fast, don't keep polling
-          if (!pollRes.ok && pollRes.status >= 400 && pollRes.status < 500) {
-            throw new Error(pollData.error || `Poll failed with HTTP ${pollRes.status}`);
-          }
-
-          // Transient errors — log and keep polling
-          if (!pollRes.ok) {
-            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: HTTP ${pollRes.status} — retrying…`, type: "warn" } });
-            continue;
-          }
-
-          // Error embedded in 200 response (e.g. FAILED status from Apify)
-          if (pollData.error) {
-            throw new Error(pollData.error);
-          }
-
-          if (pollData.status === "SUCCEEDED") {
-            dispatch({ type: "SET_PROGRESS", payload: 80 });
-            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Processing ${pollData.leads?.length ?? 0} leads…`, type: "info" } });
-
-            const liveLeads: Lead[] = (pollData.leads ?? []).map((item) => {
-              // Apify actor returns emails in various shapes — handle all cases
-              const extractEmail = (): string => {
-                if (Array.isArray(item.emails) && item.emails.length > 0) {
-                  const first = item.emails[0];
-                  if (typeof first === "object" && first !== null)
-                    return String((first as Record<string, unknown>).address || first || "");
-                  return String(first || "");
-                }
-                if (typeof item.emails === "string" && item.emails.trim()) return item.emails.trim();
-                if (typeof item.work_email === "string" && item.work_email.trim()) return item.work_email.trim();
-                if (typeof item.email === "string" && item.email.trim()) return item.email.trim();
-                if (typeof item.personal_emails === "string") {
-                  const first = item.personal_emails.split(/\s+/)[0];
-                  if (first) return first;
-                }
-                if (Array.isArray(item.personal_emails) && item.personal_emails.length > 0)
-                  return String(item.personal_emails[0]);
-                return "";
-              };
-
-              const email = extractEmail().toLowerCase().trim();
-              const linkedin = String(item.linkedin_url || "").trim();
-              const name = String(item.full_name || item.name || "").trim();
-              const company = String(item.job_company_name || item.company || "").trim();
-
-              return {
-                id:          stableLeadId(email, linkedin, name, company),
-                name,
-                title:       String(item.job_title        || item.title    || ""),
-                company,
-                industry:    String(item.job_company_industry || item.industry || ""),
-                location:    String(item.location_name   || item.location || ""),
-                email,
-                emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
-                  ? String(item.email_status) : "not_found") as Lead["emailStatus"],
-                linkedin,
-                website:     String(item.job_company_website || ""),
-                companySize: String(item.job_company_size || ""),
-                score:       Math.floor(70 + Math.random() * 28),
-                source,
-              };
-            });
-
-            const { stored, added, updated, rejected } = await mergeLeadsInDB(liveLeads);
-            dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: liveLeads, added, updated } });
-            const newStats = await computeStatsFromLeads(stored);
-            dispatch({ type: "SET_STATS", payload: newStats });
-            dispatch({ type: "SET_PROGRESS", payload: 100 });
-
-            const logMsg = `${added} new · ${updated} updated${rejected ? ` · ${rejected} rejected` : ""}`;
-            dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: logMsg, type: "success" } });
-            showToast(logMsg);
-            completed = true;
-            break;
-          }
-
-          if (pollData.status === "FAILED" || pollData.status === "ABORTED" || pollData.status === "TIMED-OUT") {
-            throw new Error(`Actor run ${pollData.status}`);
-          }
-
-          // Still running — update progress
-          const pct = Math.min(20 + Math.floor(pollCount / maxPolls * 50), 70);
-          dispatch({ type: "SET_PROGRESS", payload: pct });
-          dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Poll ${pollCount}: still running…`, type: "info" } });
-        }
-
-        if (!completed && !abortRef.current) {
-          throw new Error("Timed out waiting for actor — it may still complete on Apify");
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        dispatch({ type: "APPEND_LOG", payload: { id: 99, ts: ts(), text: `✗ ${msg}`, type: "warn" } });
-        showToast(msg, "error");
-        dispatch({ type: "SET_PROGRESS", payload: 0 });
-      }
-    }
-    dispatch({ type: "SET_RUNNING", payload: false });
-  }, [source, mock]);
-
-  // Import modal
-  const [importModalOpen, setImportModalOpen] = useState(false);
-  const handleImported = useCallback(async (added: number, updated: number) => {
-    const stored = await fetchLeadsFromDB();
-    dispatch({ type: "SET_LEADS", payload: stored });
-    // Reset filters + switch to All Saved Leads tab so imported leads are immediately visible
-    dispatch({ type: "SET_FILTERS", payload: DEFAULT_FILTERS });
-    dispatch({ type: "SET_TAB", payload: "all" });
-    dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
-    const newStats = await computeStatsFromLeads(stored);
-    dispatch({ type: "SET_STATS", payload: newStats });
-    showToast(`${added} new · ${updated} updated leads imported`);
-  }, [dispatch, showToast]);
-
-  // Selection
-  const handleSelect = (id: string) => dispatch({ type: "TOGGLE_LEAD_SELECTION", payload: id });
-
-  const handleSelectAll = () => {
-    const { page, pageSize } = pagination;
-    const pageIds = sorted.slice((page - 1) * pageSize, page * pageSize).map(l => l.id);
-    if (pageIds.every(id => selected.includes(id))) {
-      dispatch({ type: "SET_LEAD_SELECTION", payload: selected.filter(id => !pageIds.includes(id)) });
-    } else {
-      dispatch({ type: "SET_LEAD_SELECTION", payload: Array.from(new Set([...selected, ...pageIds])) });
-    }
-  };
-
-  // Delete
-  const handleDelete = async (ids: string[]) => {
-    const stored = await deleteLeadsFromDB(ids);
-    dispatch({ type: "DELETE_LEADS", payload: { stored, deletedIds: ids } });
-    const newStats = await computeStatsFromLeads(stored);
-    dispatch({ type: "SET_STATS", payload: newStats });
-    showToast(`${ids.length} lead${ids.length > 1 ? "s" : ""} deleted`);
-  };
-
-  // Export CSV
-  const getExportLeads = (ids?: string[]) =>
-    ids?.length ? sorted.filter(l => ids.includes(l.id)) : sorted;
-
-  const handleExportCSV = (ids?: string[]) => {
-    const toExport = getExportLeads(ids);
-    const csv = generateCSV(toExport);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `leads-${source}-${Date.now()}.csv`;
-    a.click();
-    showToast(`${toExport.length} leads exported as CSV`);
-  };
-
-  const driveLeads = selected.length ? sorted.filter(l => selected.includes(l.id)) : sorted;
-  const driveCsv = generateCSV(driveLeads);
-  const driveFile = `leads-${tab === "latest" ? "latest" : "all"}-${new Date().toISOString().slice(0, 10)}.csv`;
-
-  // Filter chips
-  const chips = getActiveFilterChips(filters);
-  const removeChip = (group: keyof FilterState, value: string) => {
-    if (group === "keyword")   handleFilterChange({ ...filters, keyword: "" });
-    else if (group === "minScore") handleFilterChange({ ...filters, minScore: 0 });
-    else if (group === "dateFrom") handleFilterChange({ ...filters, dateFrom: "" });
-    else if (group === "dateTo")   handleFilterChange({ ...filters, dateTo: "" });
-    else handleFilterChange({ ...filters, [group]: (filters[group] as string[]).filter(v => v !== value) });
-  };
-
-  const handleSourceChange = (s: Source) => {
-    dispatch({ type: "SET_SOURCE", payload: s });
-    dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
-    dispatch({ type: "CLEAR_LOG" });
-    dispatch({ type: "SET_PROGRESS", payload: 0 });
-    dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
-  };
-
-  const filterCount = countActiveFilters(filters);
-  const [gdrive, setGdrive] = useState(false);
-  const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
-
-  return (
-    <div className="flex flex-col h-screen overflow-hidden bg-bg">
-      {/* Top bar */}
-      <TopBar />
-
-      {/* Progress bar */}
-      <div className="fixed top-14 left-0 right-0 z-40">
-        <Progress value={running ? prog : 0} />
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Filter Panel — vertical sidebar */}
-        <FilterPanel
-          filters={filters}
-          onChange={handleFilterChange}
-          accent={accent}
-          collapsed={filterPanelCollapsed}
-          onToggleCollapse={() => setFilterPanelCollapsed(prev => !prev)}
-        />
-
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-
-          {/* Source tabs + mock toggle */}
-          <div
-            className="flex items-center gap-2 px-4 py-2.5 shrink-0"
-            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
-          >
-            {/* Source tabs */}
-            <div
-              className="flex items-center gap-0.5 p-0.5 rounded-xl"
-              style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
-            >
-              {(["linkedin", "gmaps", "amazon"] as Source[]).filter(s => state.enabledSources[s]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => handleSourceChange(s)}
-                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all duration-200"
-                  style={source === s ? {
-                    background: `${ACCENT[s]}20`,
-                    color: ACCENT[s],
-                    boxShadow: `0 0 12px ${ACCENT[s]}20, inset 0 1px 0 var(--surface-2)`,
-                    border: `1px solid ${ACCENT[s]}30`,
-                  } : {
-                    color: "var(--ink-3)",
-                    border: "1px solid transparent",
-                  }}
-                >
-                  <span
-                    className="w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center"
-                    style={{
-                      background: source === s ? `${ACCENT[s]}35` : "var(--surface-2)",
-                      color: source === s ? ACCENT[s] : "var(--ink-3)",
-                    }}
-                  >
-                    {s === "linkedin" ? "in" : s === "gmaps" ? "G" : "a"}
-                  </span>
-                  {s === "linkedin" ? "LinkedIn" : s === "gmaps" ? "Google Maps" : "Amazon"}
-                </button>
-              ))}
-            </div>
-
-            {/* Mock / Live toggle */}
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-              style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
-            >
-              <span className="text-[11px] font-medium" style={{ color: "var(--ink-3)" }}>Mock</span>
-              <button
-                role="switch"
-                aria-checked={mock}
-                onClick={() => dispatch({ type: "SET_MOCK", payload: !mock })}
-                className="relative w-8 h-4 rounded-full transition-all duration-200 focus:outline-none"
-                style={{ background: mock ? "rgba(0,212,255,0.4)" : "rgba(255,255,255,0.12)" }}
-              >
-                <span
-                  className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 shadow-sm"
-                  style={{ transform: mock ? "translateX(16px)" : "translateX(0)" }}
-                />
-              </button>
-              <span
-                className="text-[11px] font-bold w-7"
-                style={{ color: mock ? "var(--negative)" : "var(--positive)" }}
-              >
-                {mock ? "ON" : "LIVE"}
-              </span>
-            </div>
-
-            <div className="flex-1" />
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px]"
-              style={{
-                background: "var(--surface-2)",
-                border: "1px solid var(--line)",
-                color: "var(--ink-3)",
-              }}
-            >
-              <span className="font-bold tabular-nums" style={{ color: "var(--ink)" }}>{leads.length}</span>
-              <span>saved leads</span>
-            </div>
+            <span className="font-bold text-[13px] tracking-tight">LinkedIn<span style={{ color: "var(--accent)" }}>ProOS</span></span>
           </div>
-
-          {/* Search + actions bar */}
-          <div
-            className="flex items-center gap-2.5 px-4 py-2.5 shrink-0"
-            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
-          >
-            {/* Search field */}
-            <div className="flex-1 relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--ink-3)" }}
-              />
-              <input
-                type="text"
-                placeholder="Search leads by name, title, company, email…"
-                value={filters.keyword}
-                onChange={e => handleFilterChange({ ...filters, keyword: e.target.value })}
-                className={`search-input ${filters.keyword ? "has-value" : ""}`}
-              />
-              {filters.keyword ? (
-                <button
-                  onClick={() => handleFilterChange({ ...filters, keyword: "" })}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:text-ink"
-                  style={{ color: "var(--ink-3)", background: "var(--line)" }}
-                >
-                  <X size={11} />
-                </button>
-              ) : (
-                <span className="search-shortcut">⌘K</span>
-              )}
-            </div>
-
-            {/* Run Agent — premium glow button */}
-            <button
-              onClick={handleRun}
-              disabled={running}
-              className="flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: running
-                  ? `${accent}20`
-                  : `linear-gradient(135deg, ${accent}30 0%, ${accent}15 100%)`,
-                color: accent,
-                border: `1px solid ${accent}40`,
-                boxShadow: running ? "none" : `0 0 16px ${accent}20`,
-              }}
-              onMouseEnter={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 24px ${accent}35`;
-                  (e.currentTarget as HTMLElement).style.borderColor = `${accent}60`;
-                }
-              }}
-              onMouseLeave={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.boxShadow = `0 0 16px ${accent}20`;
-                  (e.currentTarget as HTMLElement).style.borderColor = `${accent}40`;
-                }
-              }}
-            >
-              {running ? (
-                <>
-                  <div
-                    className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-                    style={{ borderColor: `${accent}40`, borderTopColor: accent }}
-                  />
-                  Running…
-                </>
-              ) : (
-                <>
-                  <Play size={12} fill="currentColor" />
-                  Run Agent
-                </>
-              )}
-            </button>
-
-            {/* Import from Apify */}
-            <button
-              onClick={() => setImportModalOpen(true)}
-              disabled={running}
-              title="Browse and import leads from past Apify runs"
-              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--info-soft)",
-                color: "var(--info)",
-                border: "1px solid rgba(124,58,237,0.35)",
-                boxShadow: "0 0 14px rgba(124,58,237,0.18)",
-              }}
-              onMouseEnter={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.22)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 22px rgba(124,58,237,0.3)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "var(--info-soft)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px rgba(124,58,237,0.18)";
-                }
-              }}
-            >
-              <CloudDownload size={13} />
-              Import
-            </button>
-
-            {/* Export CSV */}
-            {sorted.length > 0 && (
-              <button
-                onClick={() => handleExportCSV(selected.length ? selected : undefined)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--line)",
-                  color: "var(--ink-3)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--line)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--ink)";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                }}
-              >
-                <Download size={12} />
-                {selected.length ? `CSV (${selected.length})` : "CSV"}
-              </button>
-            )}
-
-            {/* Google Drive export */}
-            {sorted.length > 0 && (
-              <button
-                onClick={() => setGdrive(true)}
-                title="Export to Google Drive"
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
-                style={{
-                  background: "var(--accent-soft)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                  color: "var(--accent)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)/50";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)";
-                }}
-              >
-                <HardDrive size={12} />
-                Drive
-              </button>
-            )}
+          <div className="flex items-center gap-3">
+            <Link href="/portal/login" className="text-[12px] font-medium transition-colors duration-200" style={{ color: "var(--ink-3)" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--ink)"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"}>
+              Client Portal
+            </Link>
+            <Link href="/dashboard"
+              className="flex items-center gap-1.5 h-8 px-4 rounded-lg text-[12px] font-semibold transition-all duration-200"
+              style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.14), rgba(201,168,124,0.08))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.22)" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(201,168,124,0.15)"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = "none"}>
+              Launch App <ChevronRight size={12} />
+            </Link>
           </div>
-
-          {/* Active filter chips */}
-          {chips.length > 0 && (
-            <div
-              className="flex items-center gap-1.5 px-4 py-2 flex-wrap shrink-0 animate-fade-in"
-              style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
-            >
-              <span
-                className="text-[9px] font-bold uppercase tracking-[0.1em] shrink-0"
-                style={{ color: "var(--ink-3)" }}
-              >
-                Active:
-              </span>
-              {chips.map((chip, i) => {
-                const chipColor = getChipColor(chip.group, chip.value);
-                return (
-                  <span
-                    key={i}
-                    className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium animate-fade-in"
-                    style={{
-                      background: `${chipColor}12`,
-                      border: `1px solid ${chipColor}30`,
-                      color: chipColor,
-                    }}
-                  >
-                    {chip.label}
-                    <button
-                      onClick={() => removeChip(chip.group, chip.value)}
-                      className="transition-opacity hover:opacity-60 ml-0.5"
-                      style={{ color: chipColor }}
-                    >
-                      <X size={9} />
-                    </button>
-                  </span>
-                );
-              })}
-              <button
-                onClick={() => handleFilterChange(DEFAULT_FILTERS)}
-                className="flex items-center gap-1 text-[11px] font-medium transition-colors ml-1 hover:text-ink"
-                style={{ color: "var(--ink-3)" }}
-              >
-                <RotateCcw size={9} /> Clear all
-              </button>
-            </div>
-          )}
-
-          {/* Stats bar */}
-          <StatsBar {...stats} accent={accent} />
-
-          {/* Tab bar */}
-          <div
-            className="flex items-center gap-1.5 px-4 py-2 shrink-0"
-            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
-          >
-            {([
-              { key: "all" as Tab, label: "All Saved Leads", count: applyFilters(leads, filters).length, total: leads.length, icon: Database },
-              { key: "latest" as Tab, label: "Latest Run", count: applyFilters(latestLeads, filters).length, total: latestLeads.length, icon: Sparkles },
-            ] as const).map(({ key, label, count, total, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  dispatch({ type: "SET_TAB", payload: key });
-                  dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
-                  dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
-                }}
-                className="flex items-center gap-2 h-8 px-3 rounded-lg text-[12px] font-medium transition-all duration-150"
-                style={tab === key ? {
-                  background: "var(--surface-2)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "var(--ink)",
-                  boxShadow: "inset 0 1px 0 var(--surface-2)",
-                } : {
-                  border: "1px solid transparent",
-                  color: "var(--ink-3)",
-                }}
-                onMouseEnter={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink)";
-                }}
-                onMouseLeave={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                }}
-              >
-                <Icon size={11} />
-                {label}
-                <span
-                  className="text-[10px] px-1.5 py-0.5 rounded-md font-bold tabular-nums"
-                  style={tab === key ? {
-                    background: "rgba(255,255,255,0.1)",
-                    color: "var(--ink)",
-                  } : {
-                    background: "var(--surface-2)",
-                    color: "var(--ink-3)",
-                  }}
-                >
-                  {count}{total > count ? `/${total}` : ""}
-                </span>
-              </button>
-            ))}
-
-            <div className="flex-1" />
-
-            {filterCount > 0 ? (
-              <span className="flex items-center gap-1.5 text-[10px] font-medium shrink-0" style={{ color: "var(--ink-3)" }}>
-                <span
-                  className="px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums"
-                  style={{
-                    background: "rgba(0,212,255,0.1)",
-                    color: "var(--accent)",
-                    border: "1px solid rgba(0,212,255,0.2)",
-                  }}
-                >
-                  {filterCount}
-                </span>
-                filter{filterCount > 1 ? "s" : ""}
-                <span className="mx-0.5" style={{ opacity: 0.3 }}>·</span>
-                <span className="tabular-nums" style={{ color: "var(--ink)" }}>{sorted.length.toLocaleString()}</span>
-                result{sorted.length !== 1 ? "s" : ""}
-              </span>
-            ) : (
-              <span className="text-[10px] font-medium shrink-0 tabular-nums" style={{ color: "var(--ink-3)" }}>
-                {sorted.length.toLocaleString()} result{sorted.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-
-          {/* Leads Table */}
-          <LeadsTable
-            leads={sorted}
-            running={running}
-            accent={accent}
-            selected={selected}
-            sort={sort}
-            pagination={pagination}
-            totalFiltered={sorted.length}
-            onSelect={handleSelect}
-            onSelectAll={handleSelectAll}
-            onDelete={handleDelete}
-            onExport={ids => handleExportCSV(ids)}
-            onSort={handleSort}
-            onPaginationChange={p => dispatch({ type: "SET_PAGINATION", payload: p })}
-          />
-
-          {/* Agent Log */}
-          {log.length > 0 && <AgentLog log={log} accent={accent} />}
         </div>
-      </div>
+      </nav>
 
-      {/* Google Drive Modal */}
-      <ImportModal
-        open={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
-        onImported={handleImported}
-      />
-      <GDriveModal
-        open={gdrive}
-        onClose={() => setGdrive(false)}
-        csvContent={driveCsv}
-        fileName={driveFile}
-        leadCount={driveLeads.length}
-      />
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
+        {/* Background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at center, rgba(201,168,124,0.06) 0%, transparent 70%)" }} />
+
+        <div className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium mb-6"
+            style={{ background: "rgba(201,168,124,0.08)", color: "var(--accent)", border: "1px solid rgba(201,168,124,0.18)" }}>
+            <Zap size={11} /> AI-Powered B2B Prospecting Platform
+          </div>
+          <h1 className="text-[48px] font-bold leading-[1.1] tracking-tight mb-5">
+            Find, Score, and Close
+            <br />
+            <span style={{ color: "var(--accent)" }}>B2B Leads</span> on Autopilot
+          </h1>
+          <p className="text-[16px] leading-relaxed max-w-2xl mx-auto mb-8" style={{ color: "var(--ink-3)" }}>
+            LinkedIn ProOS scrapes verified contacts from LinkedIn, Google Maps, and Amazon.
+            AI scores every lead, generates personalised outreach, and tracks your pipeline — all in one platform.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/dashboard"
+              className="flex items-center gap-2 h-11 px-6 rounded-xl text-[14px] font-semibold transition-all duration-200"
+              style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.20), rgba(201,168,124,0.12))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.30)", boxShadow: "0 0 20px rgba(201,168,124,0.12)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 32px rgba(201,168,124,0.22)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(201,168,124,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+              Get Started Free <ArrowRight size={15} />
+            </Link>
+            <Link href="#features"
+              className="flex items-center gap-2 h-11 px-6 rounded-xl text-[13px] font-medium transition-all duration-200"
+              style={{ background: "transparent", color: "var(--ink-2)", border: "1px solid var(--line)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(237,234,226,0.15)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; }}>
+              See How It Works
+            </Link>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-10 text-[12px]" style={{ color: "var(--ink-4)" }}>
+            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> No credit card required</span>
+            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> 14-day free trial</span>
+            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> Cancel anytime</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section id="features" className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>Features</span>
+          <h2 className="text-[28px] font-bold mt-2 mb-3">Everything You Need to Prospect</h2>
+          <p className="text-[14px] max-w-xl mx-auto" style={{ color: "var(--ink-3)" }}>From discovery to deal — a complete B2B prospecting engine powered by AI.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {FEATURES.map(f => (
+            <div key={f.title}
+              className="rounded-xl p-5 transition-all duration-200 group"
+              style={{ background: "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))", border: "1px solid rgba(201,168,124,0.07)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.18)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.07)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: `${f.color}14`, border: `1px solid ${f.color}25` }}>
+                <f.icon size={16} style={{ color: f.color }} />
+              </div>
+              <h3 className="text-[14px] font-semibold mb-1.5">{f.title}</h3>
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section className="py-20" style={{ background: "var(--sidebar-bg)", borderTop: "1px solid var(--sidebar-border)", borderBottom: "1px solid var(--sidebar-border)" }}>
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>How It Works</span>
+            <h2 className="text-[28px] font-bold mt-2 mb-3">Three Steps to Your Pipeline</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-8">
+            {STEPS.map((s, i) => (
+              <div key={s.step} className="text-center relative">
+                <div className="text-[48px] font-bold mb-3" style={{ color: "var(--accent)", opacity: 0.15 }}>{s.step}</div>
+                <h3 className="text-[16px] font-semibold mb-2">{s.title}</h3>
+                <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>{s.desc}</p>
+                {i < 2 && (
+                  <div className="hidden lg:block absolute top-8 -right-4" style={{ color: "var(--ink-4)" }}>
+                    <ChevronRight size={20} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>Pricing</span>
+          <h2 className="text-[28px] font-bold mt-2 mb-3">Simple, Transparent Pricing</h2>
+          <p className="text-[14px] max-w-xl mx-auto" style={{ color: "var(--ink-3)" }}>Start with a 14-day free trial. No credit card required. Upgrade anytime.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {PRICING.map(p => (
+            <div key={p.name}
+              className="rounded-xl p-6 transition-all duration-200 relative"
+              style={{
+                background: p.popular ? "linear-gradient(180deg, rgba(201,168,124,0.06), rgba(12,13,11,0.6))" : "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))",
+                border: p.popular ? "1px solid rgba(201,168,124,0.18)" : "1px solid rgba(201,168,124,0.07)",
+                boxShadow: p.popular ? "0 0 24px rgba(201,168,124,0.08)" : "0 1px 3px rgba(0,0,0,0.25)",
+              }}>
+              {p.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.10em]"
+                  style={{ background: "var(--accent)", color: "var(--bg)" }}>Most Popular</div>
+              )}
+              <h3 className="text-[16px] font-semibold mb-1">{p.name}</h3>
+              <p className="text-[11px] mb-4" style={{ color: "var(--ink-3)" }}>{p.desc}</p>
+              <div className="mb-5">
+                {p.price ? (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>$</span>
+                    <span className="text-[36px] font-bold">{p.price.toLocaleString()}</span>
+                    <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>/month</span>
+                  </div>
+                ) : (
+                  <span className="text-[28px] font-bold">Custom</span>
+                )}
+              </div>
+              <ul className="space-y-2 mb-6">
+                {p.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
+                    <Check size={12} className="shrink-0 mt-0.5" style={{ color: "var(--positive)" }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/dashboard"
+                className="block text-center h-10 rounded-xl text-[13px] font-semibold transition-all duration-200 flex items-center justify-center"
+                style={p.popular
+                  ? { background: "linear-gradient(90deg, rgba(201,168,124,0.18), rgba(201,168,124,0.10))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.25)" }
+                  : { background: "transparent", color: "var(--ink-2)", border: "1px solid var(--line)" }}>
+                {p.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Trust / Stats ── */}
+      <section className="py-16" style={{ background: "var(--sidebar-bg)", borderTop: "1px solid var(--sidebar-border)" }}>
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="grid grid-cols-3 gap-8 text-center">
+            {[
+              { value: "10,000+", label: "Leads Generated" },
+              { value: "92%", label: "Email Verification Rate" },
+              { value: "3.2x", label: "Average Pipeline Growth" },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="text-[32px] font-bold mb-1" style={{ color: "var(--accent)" }}>{s.value}</div>
+                <div className="text-[12px]" style={{ color: "var(--ink-4)" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <h2 className="text-[28px] font-bold mb-3">Ready to Fill Your Pipeline?</h2>
+        <p className="text-[14px] mb-8" style={{ color: "var(--ink-3)" }}>Start your 14-day free trial. No credit card, no setup fees, no commitment.</p>
+        <Link href="/dashboard"
+          className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-[14px] font-semibold transition-all duration-200"
+          style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.22), rgba(201,168,124,0.14))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.30)", boxShadow: "0 0 24px rgba(201,168,124,0.14)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 40px rgba(201,168,124,0.25)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 24px rgba(201,168,124,0.14)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+          Launch ProOS <ArrowRight size={15} />
+        </Link>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ borderTop: "1px solid var(--sidebar-border)", background: "var(--sidebar-bg)" }}>
+        <div className="max-w-5xl mx-auto px-6 py-10">
+          <div className="grid grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "rgba(201,168,124,0.10)", border: "1px solid rgba(201,168,124,0.18)" }}>
+                  <Zap size={11} style={{ color: "var(--accent)" }} />
+                </div>
+                <span className="font-bold text-[12px]">ProOS</span>
+              </div>
+              <p className="text-[11px] leading-relaxed" style={{ color: "var(--ink-4)" }}>AI-powered B2B prospecting platform. Find, score, and close leads on autopilot.</p>
+            </div>
+            {[
+              { label: "Product", links: ["Features", "Pricing", "Client Portal", "API"] },
+              { label: "Company", links: ["About", "Blog", "Contact", "Privacy"] },
+              { label: "Connect", links: ["LinkedIn", "Twitter", "Email", "Telegram"] },
+            ].map(col => (
+              <div key={col.label}>
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3" style={{ color: "var(--ink-4)" }}>{col.label}</h4>
+                <ul className="space-y-1.5">
+                  {col.links.map(l => (
+                    <li key={l}><span className="text-[11px] cursor-pointer transition-colors duration-150" style={{ color: "var(--ink-3)" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--ink)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"}>{l}</span></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="pt-6 flex items-center justify-between text-[10px]" style={{ borderTop: "1px solid var(--sidebar-border)", color: "var(--ink-4)" }}>
+            <span>© 2026 LinkedIn ProOS. All rights reserved.</span>
+            <span>Built by Ayush Kumar Sharma</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
