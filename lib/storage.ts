@@ -182,6 +182,23 @@ export function getStorageStats() {
   return { total: leads.length, withEmail, avgScore, topIndustry };
 }
 
+// ─── Stable lead ID ────────────────────────────────────────────────────────────
+
+/** Generate a stable, deterministic ID from the lead's best unique keys.
+ *  Same email/linkedin/name+company always produces the same ID,
+ *  so re-importing never duplicates across agent runs or API imports. */
+export function stableLeadId(email: string, linkedin: string, name: string, company: string): string {
+  const key = email.toLowerCase().trim()
+    || linkedin.toLowerCase().trim()
+    || `${name.toLowerCase().trim()}|${company.toLowerCase().trim()}`;
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) {
+    h = ((h << 5) + h) ^ key.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return `apify-${h.toString(36)}`;
+}
+
 // ─── CSV generation ───────────────────────────────────────────────────────────
 export function generateCSV(leads: Lead[]): string {
   const HEADERS = [

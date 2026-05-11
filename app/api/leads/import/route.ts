@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiAuth } from "@/lib/api-auth";
 import { mergeLeadsInDB } from "@/lib/db";
+import { stableLeadId } from "@/lib/storage";
 import type { Lead } from "@/lib/types";
 
 export const maxDuration = 300;
@@ -10,20 +11,6 @@ const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
 const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 type ApifyEmailObj = { address?: string; [k: string]: unknown };
-
-/** Generate a stable ID from the lead's best unique key so re-importing never duplicates */
-function stableLeadId(email: string, linkedin: string, name: string, company: string): string {
-  const key = email.toLowerCase().trim()
-    || linkedin.toLowerCase().trim()
-    || `${name.toLowerCase().trim()}|${company.toLowerCase().trim()}`;
-  // Simple but stable djb2-style hash → base36 string
-  let h = 5381;
-  for (let i = 0; i < key.length; i++) {
-    h = ((h << 5) + h) ^ key.charCodeAt(i);
-    h = h >>> 0; // keep unsigned 32-bit
-  }
-  return `apify-${h.toString(36)}`;
-}
 
 function extractEmail(item: Record<string, unknown>): string {
   if (Array.isArray(item.emails) && item.emails.length > 0) {

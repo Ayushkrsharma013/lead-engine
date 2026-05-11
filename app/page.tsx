@@ -8,8 +8,8 @@ import {
 import type { Source, Lead, LogEntry, FilterState, SortField } from "@/lib/types";
 import { DEFAULT_FILTERS, DEFAULT_PAGINATION } from "@/lib/types";
 import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } from "@/lib/filters";
-import { generateCSV } from "@/lib/storage";
-import { mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "@/lib/db";
+import { generateCSV, stableLeadId } from "@/lib/storage";
+import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "@/lib/db";
 import { useApp } from "@/lib/AppContext";
 import TopBar from "@/components/layout/TopBar";
 import FilterPanel from "@/components/FilterPanel";
@@ -304,7 +304,7 @@ export default function Home() {
             dispatch({ type: "SET_PROGRESS", payload: 80 });
             dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Processing ${pollData.leads?.length ?? 0} leads…`, type: "info" } });
 
-            const liveLeads: Lead[] = (pollData.leads ?? []).map((item, idx) => {
+            const liveLeads: Lead[] = (pollData.leads ?? []).map((item) => {
               // Apify actor returns emails in various shapes — handle all cases
               const extractEmail = (): string => {
                 if (Array.isArray(item.emails) && item.emails.length > 0) {
@@ -325,17 +325,22 @@ export default function Home() {
                 return "";
               };
 
+              const email = extractEmail().toLowerCase().trim();
+              const linkedin = String(item.linkedin_url || "").trim();
+              const name = String(item.full_name || item.name || "").trim();
+              const company = String(item.job_company_name || item.company || "").trim();
+
               return {
-                id: `live-${Date.now()}-${idx}`,
-                name:        String(item.full_name       || item.name     || ""),
+                id:          stableLeadId(email, linkedin, name, company),
+                name,
                 title:       String(item.job_title        || item.title    || ""),
-                company:     String(item.job_company_name || item.company  || ""),
+                company,
                 industry:    String(item.job_company_industry || item.industry || ""),
                 location:    String(item.location_name   || item.location || ""),
-                email:       extractEmail(),
+                email,
                 emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
                   ? String(item.email_status) : "not_found") as Lead["emailStatus"],
-                linkedin:    String(item.linkedin_url    || ""),
+                linkedin,
                 website:     String(item.job_company_website || ""),
                 companySize: String(item.job_company_size || ""),
                 score:       Math.floor(70 + Math.random() * 28),
@@ -382,16 +387,16 @@ export default function Home() {
   // Import modal
   const [importModalOpen, setImportModalOpen] = useState(false);
   const handleImported = useCallback(async (added: number, updated: number) => {
-    const { fetchLeadsFromDB, computeStatsFromLeads: computeStats } = await import("@/lib/db");
     const stored = await fetchLeadsFromDB();
     dispatch({ type: "SET_LEADS", payload: stored });
-    // Switch to All Saved Leads tab so the newly imported leads are immediately visible
+    // Reset filters + switch to All Saved Leads tab so imported leads are immediately visible
+    dispatch({ type: "SET_FILTERS", payload: DEFAULT_FILTERS });
     dispatch({ type: "SET_TAB", payload: "all" });
     dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
-    const newStats = await computeStats(stored);
+    const newStats = await computeStatsFromLeads(stored);
     dispatch({ type: "SET_STATS", payload: newStats });
     showToast(`${added} new · ${updated} updated leads imported`);
-  }, [dispatch]);
+  }, [dispatch, showToast]);
 
   // Selection
   const handleSelect = (id: string) => dispatch({ type: "TOGGLE_LEAD_SELECTION", payload: id });
