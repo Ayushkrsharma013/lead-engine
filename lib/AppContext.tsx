@@ -10,7 +10,7 @@ import { seedIfEmpty } from "./seed";
 import type {
   Lead, Message, Sequence, Campaign, Client, ActivityLogEntry,
   FilterState, SortState, PaginationState, Source, Stats, LogEntry,
-  ModuleName, Notification,
+  ModuleName, Notification, AgentMessage,
 } from "./types";
 import { DEFAULT_FILTERS, DEFAULT_SORT, DEFAULT_PAGINATION } from "./types";
 
@@ -56,6 +56,8 @@ export interface AppState {
   running: boolean;
   log: LogEntry[];
   progress: number;
+  agentCollapsed: boolean;
+  agentMessages: AgentMessage[];
 
   // Misc
   toast: { msg: string; type: "success" | "warn" | "error" } | null;
@@ -93,6 +95,8 @@ const initialState: AppState = {
   running: false,
   log: [],
   progress: 0,
+  agentCollapsed: true,
+  agentMessages: [],
   toast: null,
   stats: { total: 0, withEmail: 0, avgScore: 0, topIndustry: "—" },
   loading: true,
@@ -113,12 +117,14 @@ function initFromStorage(): AppState {
     const geminiKey = localStorage.getItem("proos_gemini_key") || "";
     const openaiKey = localStorage.getItem("proos_openai_key") || "";
     const apiKey = anthropicKey || geminiKey || openaiKey || ""; // use first available as default
+    const agent = localStorage.getItem("leados_agent");
     return {
       ...initialState,
       theme: theme === "light" ? "light" : "dark",
       sidebarCollapsed: sidebar === "closed",
       enabledSources,
       apiKey,
+      agentCollapsed: agent !== "open",
     };
   } catch {
     return initialState;
@@ -148,6 +154,8 @@ export type AppAction =
   | { type: "SET_SOURCE"; payload: Source }
   | { type: "SET_MOCK"; payload: boolean }
   // Agent
+  | { type: "TOGGLE_AGENT" }
+  | { type: "ADD_AGENT_MESSAGE"; payload: AgentMessage }
   | { type: "SET_RUNNING"; payload: boolean }
   | { type: "SET_PROGRESS"; payload: number }
   | { type: "APPEND_LOG"; payload: LogEntry }
@@ -237,6 +245,11 @@ function reducer(state: AppState, action: AppAction): AppState {
     case "SET_MOCK":
       return { ...state, mock: action.payload };
 
+    case "TOGGLE_AGENT":
+      return { ...state, agentCollapsed: !state.agentCollapsed };
+    case "ADD_AGENT_MESSAGE":
+      return { ...state, agentMessages: [...state.agentMessages, action.payload] };
+
     case "SET_RUNNING":
       return { ...state, running: action.payload };
     case "SET_PROGRESS":
@@ -321,8 +334,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("leados_theme", state.theme);
       localStorage.setItem("leados_sidebar", state.sidebarCollapsed ? "closed" : "open");
       localStorage.setItem("leados_sources", JSON.stringify(state.enabledSources));
+      localStorage.setItem("leados_agent", state.agentCollapsed ? "closed" : "open");
     } catch { /* ignore */ }
-  }, [state.theme, state.sidebarCollapsed, state.enabledSources]);
+  }, [state.theme, state.sidebarCollapsed, state.enabledSources, state.agentCollapsed]);
 
   // Apply theme to <html>
   useEffect(() => {

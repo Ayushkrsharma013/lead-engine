@@ -40,12 +40,15 @@ Offer: ${offer || "Not specified"}`;
   return base + "\n\nBe direct, human, value-first. No buzzwords or clichés like \"I hope this finds you well\".";
 }
 
+const GEMINI_KEY = "proos_gemini_key";
+
 export default function MessageLabPage() {
   const { state, dispatch } = useApp();
-  const { leads, apiKey } = state;
+  const { leads } = state;
 
-  const [keyInput, setKeyInput] = useState(apiKey);
-  const [connected, setConnected] = useState(!!apiKey);
+  const geminiApiKey = typeof window !== "undefined" ? localStorage.getItem(GEMINI_KEY) || "" : "";
+  const [keyInput, setKeyInput] = useState(geminiApiKey);
+  const [connected, setConnected] = useState(!!geminiApiKey);
   const [showKeyInput, setShowKeyInput] = useState(false);
 
   const [selectedLeadId, setSelectedLeadId] = useState("");
@@ -72,20 +75,21 @@ export default function MessageLabPage() {
     if (selectedLeadId) { getMessages(selectedLeadId).then(setHistory).catch(() => {}); }
   }, [selectedLeadId]);
 
-  useEffect(() => {
-    if (apiKey) { setKeyInput(apiKey); setConnected(true); }
-  }, [apiKey]);
+  const getActiveApiKey = () => {
+    return typeof window !== "undefined" ? localStorage.getItem(GEMINI_KEY) || "" : "";
+  };
 
   const handleConnect = () => {
     if (!keyInput.trim()) return;
-    dispatch({ type: "SET_API_KEY", payload: keyInput.trim() });
+    localStorage.setItem(GEMINI_KEY, keyInput.trim());
     setConnected(true);
     setError("");
     setShowKeyInput(false);
   };
 
   const handleGenerate = async () => {
-    if (!apiKey) { setError("API key required — click the key icon above."); return; }
+    const key = getActiveApiKey();
+    if (!key) { setError("API key required — add your Gemini key above."); return; }
     if (!selectedLead) { setError("Select a lead first."); return; }
     setError("");
     setGenerating(true);
@@ -93,34 +97,33 @@ export default function MessageLabPage() {
     setSubject("");
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are an expert B2B sales copywriter for LinkedIn + Email outreach specializing in SaaS, Founders, and Agencies.
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: `You are an expert B2B sales copywriter for LinkedIn + Email outreach specializing in SaaS, Founders, and Agencies.
 Never use "I hope this finds you well" or similar clichés.
 Always reference something specific about the person or company.
-Be direct, human, value-first. No buzzwords.`,
-          messages: [{ role: "user", content: buildPrompt(selectedLead, messageType, tone, offer) }],
-        }),
-      });
+Be direct, human, value-first. No buzzwords.` }],
+            },
+            contents: [{ parts: [{ text: buildPrompt(selectedLead, messageType, tone, offer) }] }],
+            generationConfig: { maxOutputTokens: 1000 },
+          }),
+        },
+      );
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         const err = errData as { error?: { message?: string } };
         if (res.status === 429) throw new Error("Rate limited — please wait a moment");
-        throw new Error(err.error?.message || `API error: ${res.status}`);
+        throw new Error(err.error?.message || `Gemini API error: ${res.status}`);
       }
 
-      const data = await res.json() as { content?: Array<{ text?: string }> };
-      const text = data.content?.[0]?.text || "";
+      const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
       if (messageType === "cold_email") {
         try {
@@ -168,7 +171,7 @@ Be direct, human, value-first. No buzzwords.`,
 
   return (
     <>
-      <TopBar title="AI Message Lab" subtitle="Generate personalized outreach with Claude" />
+      <TopBar title="AI Message Lab" subtitle="Generate personalized outreach with Gemini" />
 
       <div className="flex-1 overflow-hidden flex">
         {/* ── LEFT — Input (42%) ── */}
@@ -319,7 +322,7 @@ Be direct, human, value-first. No buzzwords.`,
                     type="password"
                     value={keyInput}
                     onChange={e => setKeyInput(e.target.value)}
-                    placeholder="sk-ant-api03-..."
+                    placeholder="AIzaSy..."
                     className="flex-1 h-8 rounded-lg px-3 text-xs font-mono outline-none transition-all duration-200"
                     style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
                     onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
@@ -346,7 +349,7 @@ Be direct, human, value-first. No buzzwords.`,
             {/* Generate */}
             <button
               onClick={handleGenerate}
-              disabled={generating || !apiKey || !selectedLead}
+              disabled={generating || !connected || !selectedLead}
               className="w-full flex items-center justify-center gap-2 h-11 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: generating
@@ -372,7 +375,7 @@ Be direct, human, value-first. No buzzwords.`,
               {generating ? (
                 <><Loader2 size={14} className="animate-spin" /> Generating…</>
               ) : (
-                <><Sparkles size={14} /> Generate with Claude</>
+                <><Sparkles size={14} /> Generate with Gemini</>
               )}
             </button>
           </div>

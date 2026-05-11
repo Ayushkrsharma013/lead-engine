@@ -1,6 +1,7 @@
 "use client";
 
 import ProSidebar from "./layout/Sidebar";
+import AgentPanel from "./AgentPanel";
 import ToastContainer from "./Toast";
 import CommandPalette from "./layout/CommandPalette";
 import { useApp } from "@/lib/AppContext";
@@ -64,6 +65,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative" style={{ zIndex: 1 }}>
         {state.loading ? <LoadingScreen /> : children}
       </div>
+      <AgentPanel />
       <ToastContainer />
       <CommandPalette />
     </div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import {
-  Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign,
-  Star, Info, Check, AlertTriangle, Globe, Key, Eye, EyeOff, Sparkles,
+  Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign, Bot,
+  Star, Info, Check, AlertTriangle, Globe, Key, Eye, EyeOff, Sparkles, Send,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -77,6 +77,7 @@ const SOURCES_CONFIG: {
 const TABS = [
   { id: "sources", label: "Data Sources", icon: Globe },
   { id: "keys",    label: "API Keys",     icon: Key },
+  { id: "agent",   label: "Agent",        icon: Bot },
   { id: "about",   label: "About",        icon: Info },
 ] as const;
 type TabId = typeof TABS[number]["id"];
@@ -248,6 +249,242 @@ function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
   );
 }
 
+// ─── Agent Config Tab ───────────────────────────────────────────────────────────
+const AGENT_STORAGE_KEYS = {
+  telegramToken: "proos_telegram_bot_token",
+  agentName: "proos_agent_name",
+  autoReply: "proos_agent_auto_reply",
+};
+
+function AgentConfigTab() {
+  const [telegramToken, setTelegramToken] = useState("");
+  const [agentName, setAgentName] = useState("");
+  const [autoReply, setAutoReply] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [webhookStatus, setWebhookStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setTelegramToken(localStorage.getItem(AGENT_STORAGE_KEYS.telegramToken) || "");
+      setAgentName(localStorage.getItem(AGENT_STORAGE_KEYS.agentName) || "ProOS Agent");
+      const ar = localStorage.getItem(AGENT_STORAGE_KEYS.autoReply);
+      setAutoReply(ar === null ? true : ar === "true");
+    }
+  }, []);
+
+  const handleSave = () => {
+    localStorage.setItem(AGENT_STORAGE_KEYS.telegramToken, telegramToken.trim());
+    localStorage.setItem(AGENT_STORAGE_KEYS.agentName, agentName.trim() || "ProOS Agent");
+    localStorage.setItem(AGENT_STORAGE_KEYS.autoReply, String(autoReply));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSetupWebhook = async () => {
+    setWebhookStatus("Setting up...");
+    try {
+      const res = await fetch("/api/agent/telegram?action=set");
+      const data = await res.json() as { webhookUrl?: string; result?: { ok?: boolean; description?: string } };
+      if (data.result?.ok) {
+        setWebhookStatus("Webhook registered: " + (data.webhookUrl || "OK"));
+      } else {
+        setWebhookStatus("Failed: " + (data.result?.description || "Unknown error"));
+      }
+    } catch {
+      setWebhookStatus("Error connecting");
+    }
+  };
+
+  const webhookUrl = typeof window !== "undefined"
+    ? `https://${window.location.host}/api/agent/telegram`
+    : "";
+
+  return (
+    <>
+      <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+        Configure your ProOS Agent — the 24/7 AI that lives inside the platform. Connect Telegram to chat with your agent from anywhere.
+      </p>
+
+      {/* Agent Identity */}
+      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(201,168,124,0.08)", border: "1px solid rgba(201,168,124,0.18)" }}>
+            <Bot size={18} style={{ color: "var(--accent)" }} />
+          </div>
+          <div>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Agent Identity</span>
+            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Customise how your agent appears</p>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
+            Agent Name
+          </label>
+          <input
+            type="text" value={agentName}
+            onChange={e => setAgentName(e.target.value)}
+            placeholder="ProOS Agent"
+            className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all duration-200"
+            style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+            onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
+            onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
+          />
+        </div>
+      </div>
+
+      {/* Telegram */}
+      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(154,179,200,0.10)", border: "1px solid rgba(154,179,200,0.18)" }}>
+            <Send size={18} style={{ color: "var(--info)" }} />
+          </div>
+          <div>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Telegram Integration</span>
+            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Chat with your agent via Telegram from anywhere</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
+              Bot Token
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="password" value={telegramToken}
+                onChange={e => setTelegramToken(e.target.value)}
+                placeholder="123456:ABC-DEF1234ghikl..."
+                className="flex-1 h-9 rounded-lg px-3 text-[12px] font-mono outline-none transition-all duration-200"
+                style={{ color: telegramToken ? "var(--info)" : "var(--ink-3)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+                onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--info)"}
+                onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
+              />
+            </div>
+            <p className="text-[10px] mt-1" style={{ color: "var(--ink-4)" }}>
+              Get your token from <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: "var(--info)" }}>@BotFather</a> on Telegram
+            </p>
+          </div>
+
+          {telegramToken && (
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
+                Webhook URL
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text" readOnly value={webhookUrl}
+                  className="flex-1 h-9 rounded-lg px-3 text-[11px] font-mono outline-none"
+                  style={{ color: "var(--ink-2)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+                />
+                <button
+                  onClick={() => { navigator.clipboard.writeText(webhookUrl); }}
+                  className="h-9 px-3 rounded-lg text-[11px] font-medium transition-all duration-200"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink-3)" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={handleSetupWebhook}
+                  className="h-8 px-4 rounded-lg text-[11px] font-medium transition-all duration-200"
+                  style={{ background: "rgba(154,179,200,0.10)", color: "var(--info)", border: "1px solid rgba(154,179,200,0.20)" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(154,179,200,0.18)"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(154,179,200,0.10)"}
+                >
+                  Auto-setup Webhook
+                </button>
+                {webhookStatus && (
+                  <span className="text-[10px]" style={{ color: webhookStatus.includes("Failed") ? "var(--negative)" : "var(--positive)" }}>
+                    {webhookStatus}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Gemini Key */}
+      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(168,201,154,0.08)", border: "1px solid rgba(168,201,154,0.15)" }}>
+            <Sparkles size={18} style={{ color: "var(--positive)" }} />
+          </div>
+          <div>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>AI Brain</span>
+            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>The agent uses Gemini 2.5 Flash for fast, intelligent responses</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+          style={{ background: "rgba(168,201,154,0.06)", border: "1px solid rgba(168,201,154,0.12)" }}>
+          <span className="w-2 h-2 rounded-full" style={{ background: "var(--positive)" }} />
+          <span className="text-[12px]" style={{ color: "var(--ink-2)" }}>
+            Using Gemini key from <span style={{ color: "var(--accent)" }}>API Keys</span> tab
+          </span>
+          <span className="flex-1" />
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+            style={{ background: "rgba(168,201,154,0.10)", color: "var(--positive)", border: "1px solid rgba(168,201,154,0.18)" }}>
+            Connected
+          </span>
+        </div>
+      </div>
+
+      {/* Behaviour */}
+      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(212,148,132,0.06)", border: "1px solid rgba(212,148,132,0.12)" }}>
+            <Zap size={18} style={{ color: "var(--negative)" }} />
+          </div>
+          <div>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Behaviour</span>
+            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Control how your agent operates</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <label className="flex items-center justify-between cursor-pointer py-1.5">
+            <span className="text-[12px]" style={{ color: "var(--ink-2)" }}>Auto-reply on Telegram</span>
+            <button
+              role="switch"
+              aria-checked={autoReply}
+              onClick={() => setAutoReply(!autoReply)}
+              className="relative w-10 h-5 rounded-full transition-all duration-200 focus:outline-none shrink-0"
+              style={{ background: autoReply ? "var(--positive)" : "var(--line)" }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+                style={{ left: 2, transform: autoReply ? "translateX(20px)" : "translateX(0)" }}
+              />
+            </button>
+          </label>
+          <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
+            When enabled, the agent automatically responds to Telegram messages. Disable to review messages in ProOS first.
+          </p>
+        </div>
+      </div>
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-[13px] font-semibold transition-all duration-200"
+        style={{
+          background: saved ? "rgba(168,201,154,0.10)" : "linear-gradient(90deg, rgba(201,168,124,0.14), rgba(201,168,124,0.08))",
+          color: saved ? "var(--positive)" : "var(--accent-ink)",
+          border: saved ? "1px solid rgba(168,201,154,0.20)" : "1px solid rgba(201,168,124,0.22)",
+        }}
+      >
+        {saved ? <><Check size={14} /> Saved</> : "Save Agent Configuration"}
+      </button>
+    </>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { state, dispatch } = useApp();
@@ -356,6 +593,9 @@ export default function SettingsPage() {
               </div>
             </>
           )}
+
+          {/* Agent tab */}
+          {activeTab === "agent" && <AgentConfigTab />}
 
           {/* About tab */}
           {activeTab === "about" && (

@@ -161,3 +161,10 @@ export interface MergeResult {
   updated: number;
   rejected: number;
 }
+
+export interface AgentMessage {
+  id: string;
+  role: "user" | "agent";
+  text: string;
+  ts: string;
+}

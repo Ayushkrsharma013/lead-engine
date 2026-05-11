@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Zap, Settings2,
+  ChevronLeft, ChevronRight, Zap, Settings2, Sparkles,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -197,6 +197,15 @@ export default function ProSidebar() {
         className="shrink-0 py-1.5"
         style={{ borderTop: "1px solid var(--sidebar-border)" }}
       >
+        {/* Agent */}
+        <SidebarBottomButton
+          collapsed={collapsed}
+          active={!state.agentCollapsed}
+          icon={Sparkles}
+          label="Agent"
+          onClick={() => dispatch({ type: "TOGGLE_AGENT" })}
+        />
+
         {/* Settings */}
         <SidebarBottomButton
           collapsed={collapsed}

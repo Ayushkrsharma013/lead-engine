@@ -34,6 +34,7 @@ interface ScoreResult {
 const cardBg = "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)";
 const cardBorder = "1px solid rgba(201,168,124,0.07)";
 const brass = "#C9A87C";
+const GEMINI_KEY = "proos_gemini_key";
 
 function getScoreColor(score: number): string {
   if (score >= 70) return "#A8C99A";
@@ -79,10 +80,10 @@ function ScoreRing({ score }: { score: number }) {
 
 export default function ScorerPage() {
   const { state, dispatch } = useApp();
-  const { apiKey } = state;
 
-  const [keyInput, setKeyInput] = useState(apiKey);
-  const [connected, setConnected] = useState(!!apiKey);
+  const geminiApiKey = typeof window !== "undefined" ? localStorage.getItem(GEMINI_KEY) || "" : "";
+  const [keyInput, setKeyInput] = useState(geminiApiKey);
+  const [connected, setConnected] = useState(!!geminiApiKey);
   const [showKeyInput, setShowKeyInput] = useState(false);
 
   const [leadText, setLeadText] = useState("");
@@ -102,13 +103,13 @@ export default function ScorerPage() {
     setTimeout(() => dispatch({ type: "SET_TOAST", payload: null }), 4000);
   };
 
-  useEffect(() => {
-    if (apiKey) { setKeyInput(apiKey); setConnected(true); }
-  }, [apiKey]);
+  const getActiveApiKey = () => {
+    return typeof window !== "undefined" ? localStorage.getItem(GEMINI_KEY) || "" : "";
+  };
 
   const handleConnect = () => {
     if (!keyInput.trim()) return;
-    dispatch({ type: "SET_API_KEY", payload: keyInput.trim() });
+    localStorage.setItem(GEMINI_KEY, keyInput.trim());
     setConnected(true);
     setShowKeyInput(false);
   };
@@ -120,7 +121,8 @@ export default function ScorerPage() {
   const maxPoints = criteria.filter(c => c.active).reduce((s, c) => s + c.points, 0);
 
   const handleScore = async () => {
-    if (!apiKey) { setError("API key required — click the key icon above."); return; }
+    const key = getActiveApiKey();
+    if (!key) { setError("API key required — add your Gemini key above."); return; }
     if (!leadText.trim()) { setError("Paste lead information to score."); return; }
     setError("");
     setScoring(true);
@@ -129,21 +131,18 @@ export default function ScorerPage() {
     const activeCriteria = criteria.filter(c => c.active);
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: "You are an expert B2B sales qualification analyst. Score leads objectively based on the criteria provided. Return ONLY valid JSON, nothing outside the JSON object.",
-          messages: [{
-            role: "user",
-            content: `Analyze this lead and score them 0-100 as an ICP match.
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: "You are an expert B2B sales qualification analyst. Score leads objectively based on the criteria provided. Return ONLY valid JSON, nothing outside the JSON object." }],
+            },
+            contents: [{
+              parts: [{
+                text: `Analyze this lead and score them 0-100 as an ICP match.
 
 Lead info:
 ${leadText}
@@ -158,19 +157,22 @@ Return ONLY valid JSON, nothing outside the JSON:
   "recommended_action": "Connect now" | "Add to nurture" | "Skip",
   "risk_factors": ["risk 1", "risk 2"]
 }`,
-          }],
-        }),
-      });
+              }],
+            }],
+            generationConfig: { maxOutputTokens: 1000 },
+          }),
+        },
+      );
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         const err = errData as { error?: { message?: string } };
         if (res.status === 429) throw new Error("Rate limited — please wait a moment");
-        throw new Error(err.error?.message || `API error: ${res.status}`);
+        throw new Error(err.error?.message || `Gemini API error: ${res.status}`);
       }
 
-      const data = await res.json() as { content?: Array<{ text?: string }> };
-      const text = data.content?.[0]?.text || "";
+      const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const parsed = JSON.parse(text) as ScoreResult;
       setResult(parsed);
 
@@ -210,7 +212,7 @@ Return ONLY valid JSON, nothing outside the JSON:
 
   return (
     <>
-      <TopBar title="Lead Scorer" subtitle="AI-powered ICP scoring" />
+      <TopBar title="Lead Scorer" subtitle="AI-powered ICP scoring with Gemini" />
 
       <div className="flex-1 overflow-hidden flex">
         {/* ── LEFT — Input (42%) ── */}
@@ -310,7 +312,7 @@ Return ONLY valid JSON, nothing outside the JSON:
                     type="password"
                     value={keyInput}
                     onChange={e => setKeyInput(e.target.value)}
-                    placeholder="sk-ant-api03-..."
+                    placeholder="AIzaSy..."
                     className="flex-1 h-8 rounded-lg px-3 text-xs font-mono outline-none transition-all duration-200"
                     style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
                     onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
@@ -337,7 +339,7 @@ Return ONLY valid JSON, nothing outside the JSON:
             {/* Score Button */}
             <button
               onClick={handleScore}
-              disabled={scoring || !apiKey || !leadText.trim()}
+              disabled={scoring || !connected || !leadText.trim()}
               className="w-full flex items-center justify-center gap-2 h-11 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: scoring
@@ -363,7 +365,7 @@ Return ONLY valid JSON, nothing outside the JSON:
               {scoring ? (
                 <><Loader2 size={14} className="animate-spin" /> Analyzing lead…</>
               ) : (
-                <><Target size={14} /> Score with Claude</>
+                <><Target size={14} /> Score with Gemini</>
               )}
             </button>
           </div>
