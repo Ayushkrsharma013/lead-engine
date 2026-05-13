@@ -1211,10 +1211,6 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-weight: 800;
-  font-size: 0.9rem;
-  font-family: var(--font-heading);
-  letter-spacing: -0.02em;
   flex-shrink: 0;
 }
 .landing-page .chat-header-info {
@@ -1295,6 +1291,87 @@
   border-bottom-right-radius: 6px;
   box-shadow: 0 2px 8px rgba(232, 66, 10, 0.3);
 }
+
+/* ─── Chat enhancements ─────────────────────────────────────────────────── */
+.landing-page .chat-strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.landing-page .chat-bubble.success {
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+.landing-page .chat-bubble-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+.landing-page .chat-bubble-reply-btn {
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.landing-page .chat-bubble-reply-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 66, 10, 0.25);
+}
+.landing-page .chat-bubble.bot .chat-bubble-reply-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.landing-page .chat-bubble.bot .chat-bubble-reply-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.landing-page .chat-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  animation: fade-in-up 0.35s ease;
+}
+.landing-page .typing-bubble {
+  padding: 12px 18px !important;
+  min-width: 52px;
+}
+.landing-page .typing-bubble .typing-dots {
+  display: flex;
+  gap: 3px;
+}
+.landing-page .typing-bubble .typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce-dot 1.4s ease-in-out infinite;
+}
+.landing-page .typing-bubble .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.landing-page .typing-bubble .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Remove old static quick replies */
 .landing-page .chat-quick-replies {
   display: flex;
   flex-wrap: wrap;

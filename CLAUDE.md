@@ -156,6 +156,7 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 | `clients` | `id UUID PK`, name, company, industry, monthly_retainer, status | — |
 | `activity_log` | `id UUID PK`, type, text, lead_id UUID | Ordered by created_at DESC |
 | `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Landing page email collection |
+| `appointments` | `id UUID PK`, date TEXT, time TEXT, name TEXT, email TEXT, company TEXT, notes TEXT, created_at | Book-a-demo scheduling |
 
 ### Data access layer (`lib/db.ts`)
 
@@ -308,6 +309,7 @@ Active filter chips in the chip bar are color-coded by group:
 | Route | Module | Key features |
 |---|---|---|
 | `/` | Landing Page | Marketing page — hero with typewriter, pipeline visual, how-it-works (5 steps), pricing (3 tiers), testimonials, ROI calculator, FAQ accordion, premium chat widget, email capture modal. No sidebar/shell chrome. |
+| `/book` | Appointment Scheduling | Multi-step booking flow — date picker → time slots → booking form → confirmation. Inspired by Cal.com/cal.diy patterns. Own nav bar, no admin chrome. POSTs to `/api/appointments`. |
 | `/leads` | Lead Intelligence | TopBar + source tabs, filter sidebar (272px, 7 sections), search, leads table, agent run, CSV/Drive export |
 | `/dashboard` | Command Center | 5 stat cards, activity feed, campaigns, quick actions |
 | `/message-lab` | AI Message Lab | Claude API, typewriter, 3 message types, 4 tones, history |
@@ -400,6 +402,20 @@ The Anthropic API key is entered by the user in the UI (Message Lab or Scorer) a
 - **ASCII canvas**: Japanese character particle animation (dark mode only)
 - **Custom cursor**: Dot + ring with hover detection (desktop only, hidden ≤900px)
 - **Theme toggle**: Independent from app — uses `prospectingos-theme` localStorage key
+
+---
+
+## Booking page (`app/book/page.tsx` + `app/api/appointments/route.ts`)
+
+Multi-step appointment scheduling flow inspired by Cal.com/cal.diy patterns:
+
+- **Step 1 — Date Picker**: Month calendar with prev/next navigation, past dates disabled, selected date highlighted with accent color
+- **Step 2 — Time Slots**: Morning (9am-11:30am) and afternoon (12pm-5pm) slots in 3-column grid, 30min intervals
+- **Step 3 — Booking Form**: Name*, Email*, Company, Notes fields with accent focus rings. Validates email format.
+- **Step 4 — Confirmation**: Success checkmark with appointment summary (date + time), back-to-home CTA
+- **Progress bar**: Top nav with numbered steps (1→2→3) showing current position
+- **API**: `POST /api/appointments` → Supabase `appointments` table (date, time, name, email, company, notes)
+- **Self-contained**: Own CSS variables on root div, no dependency on landing.css. Listed in Shell's `MARKETING_ROUTES` so it renders without admin chrome.
 
 ---
 

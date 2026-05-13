@@ -1,11 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import {
   Globe, Filter, FileText, PenLine, Bell, ArrowRight,
-  ArrowDown, Menu, X,
+  ArrowDown, Menu, X, Send, Sparkles, Calendar, CheckCircle2,
 } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
+import {
+  type BookingStep,
+  type BookingData,
+  initialBookingState,
+  getNextStep,
+  isBookingQuery,
+  type BotMessage,
+} from "@/lib/booking-chat";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Prospecting OS — Landing Page
@@ -23,28 +32,26 @@ const FAQ_ITEMS = [
   { q: "Can I upgrade later?", a: "Absolutely. Upgrades are seamless — we activate additional features on your existing workflow." },
 ];
 
-function getBotResponse(msg: string): string {
-  const m = msg.toLowerCase().trim();
-  if (m.includes("how does it work") || m.includes("how it work"))
-    return "1. Source — Sales Navigator exports ICP.\n2. Filter — only decision-makers.\n3. Score — Gemini AI (1–10).\n4. Enrich — company info + icebreaker.\n5. Deliver — Telegram/Slack/CRM daily.\n\nWant a demo? Just ask!";
-  if (m.includes("pricing") || m.includes("price") || m.includes("cost"))
-    return "Basic: $2,500 one-time setup.\nPro: $3,500/month (most popular).\nAdvanced: $10K+/month (full AI SDR).\n\nWhich fits your needs?";
-  if (m.includes("go-live") || m.includes("how long") || m.includes("timeline"))
-    return "Basic: 4–6 hours.\nPro: 2–3 days.\nAdvanced: 1–2 weeks.\n\nMost clients are live within the same week!";
-  if (m.includes("demo") || m.includes("book") || m.includes("schedule"))
-    return "Great choice! Email us at hello@prospectingos.com — we'll schedule a 20-min demo within 24 hours.\n\nOr drop your name + company here and we'll reach out.";
-  if (m.includes("guarantee") || m.includes("risk"))
-    return "If you don't get 50+ qualified leads on Pro in month 1, month 2 is free. We'll also refine your ICP at no cost.";
-  if (m.includes("sales navigator") || m.includes("linkedin"))
-    return "Yes — Sales Navigator ($99/mo) is required. It powers the entire pipeline. We'll help configure your filters during onboarding.";
-  return "I'm here to help! Ask about how it works, pricing, go-live timelines, or book a demo — whatever's most useful to you right now.";
-}
-
 /* ─── ASCII particle ──────────────────────────────────────────────────────── */
 
 interface Particle {
   x: number; y: number; char: string; fontSize: number;
   speedY: number; speedX: number; opacity: number;
+}
+
+/* ─── Chat message type ──────────────────────────────────────────────────── */
+
+interface ChatMessage {
+  text: string;
+  type: "bot" | "user";
+  quickReplies?: string[];
+  isSuccess?: boolean;
+}
+
+function formatMessage(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="chat-strong">$1</strong>')
+    .replace(/\n/g, "<br/>");
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -112,30 +119,80 @@ export default function LandingPage() {
   /* ─── FAQ ──────────────────────────────────────────────────────────────── */
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  /* ─── Booking state machine ───────────────────────────────────────────── */
+  const [bookingStep, setBookingStep] = useState<BookingStep>("idle");
+  const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
+  const bookingRef = useRef({ step: "idle" as BookingStep, data: {} as Partial<BookingData> });
+
   /* ─── Chat widget ──────────────────────────────────────────────────────── */
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ text: string; type: "bot" | "user" }[]>([
-    { text: "Hi! I'm the Prospecting OS assistant. Ask me how it works, pricing, go-live time, or book a demo.", type: "bot" },
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      text: "Hi! I'm <strong class=\"chat-strong\">Pros Bot</strong> — your AI assistant. Ask me about how it works, pricing, timelines, or say <strong class=\"chat-strong\">\"Book a Demo\"</strong> and I'll get you scheduled!",
+      type: "bot",
+      quickReplies: ["How it works", "Pricing", "Book a Demo", "Go-live time"],
+    },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [typing, setTyping] = useState(false);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
-  const addMessage = useCallback((text: string, type: "bot" | "user") => {
-    setChatMessages(prev => [...prev, { text, type }]);
+  const addBotMessage = useCallback((msg: BotMessage, isSuccess = false) => {
+    setChatMessages(prev => [...prev, { text: msg.text, type: "bot", quickReplies: msg.quickReplies, isSuccess }]);
+  }, []);
+
+  const addUserMessage = useCallback((text: string) => {
+    setChatMessages(prev => [...prev, { text, type: "user" }]);
   }, []);
 
   const handleUserMessage = useCallback((text: string) => {
-    addMessage(text, "user");
+    addUserMessage(text);
     setTyping(true);
+
+    // Reset to idle if user types "reset" or starts over
+    const clean = text.toLowerCase().trim();
+    if (clean === "reset" || clean === "start over") {
+      bookingRef.current = { step: "idle", data: {} };
+      setBookingStep("idle");
+      setBookingData({});
+    }
+
+    const current = bookingRef.current;
+    const result = getNextStep(current.step, current.data, text);
+
+    // Update ref + state
+    bookingRef.current = { step: result.step, data: result.data };
+    setBookingStep(result.step);
+    setBookingData(result.data);
+
+    // If booking completed, try to persist
+    if (result.step === "done" && result.data.email) {
+      try {
+        fetch("/api/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: result.data.name,
+            email: result.data.email,
+            company: result.data.company,
+            date: result.data.date,
+            time: result.data.time,
+            notes: "Booked via Pros Bot chat",
+          }),
+        });
+      } catch { /* non-critical */ }
+    }
+
     setTimeout(() => {
       setTyping(false);
-      addMessage(getBotResponse(text), "bot");
-    }, 900 + Math.random() * 700);
-  }, [addMessage]);
+      addBotMessage(result.botMessage, result.step === "done");
+    }, 700 + Math.random() * 600);
+  }, [addUserMessage, addBotMessage]);
 
-  useEffect(() => { chatMessagesRef.current?.scrollTo(0, chatMessagesRef.current.scrollHeight); }, [chatMessages]);
+  useEffect(() => {
+    chatMessagesRef.current?.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: "smooth" });
+  }, [chatMessages]);
 
   const openChat = useCallback(() => {
     setChatOpen(true);
@@ -423,7 +480,7 @@ export default function LandingPage() {
               <ul className="pricing-features">
                 {["Everything in Basic", "AI icebreaker per lead", "Company enrichment", "Daily Slack digest", "Duplicate check", "Monthly ICP refinement", "Dedicated Slack channel"].map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <button className="btn-primary" onClick={openChat}>Book a Demo <ArrowRight size={14} style={{ display: "inline" }} /></button>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Book a Demo <ArrowRight size={14} style={{ display: "inline" }} /></Link>
             </div>
             {/* Advanced */}
             <div className="pricing-card reveal">
@@ -531,48 +588,68 @@ export default function LandingPage() {
         <div className="container"><p>© 2026 Prospecting OS. AI-powered B2B prospecting.</p></div>
       </footer>
 
-      {/* ══════════ Premium Chat Widget ══════════ */}
+      {/* ══════════ Premium Chat Widget — Pros Bot ══════════ */}
       <div className="chat-widget">
         <button className="chat-trigger" onClick={() => setChatOpen(o => !o)} aria-label="Open chat">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          <Sparkles size={22} />
           <span className="pulse-ring" />
         </button>
         <div className={`chat-window${chatOpen ? " open" : ""}`}>
           <div className="chat-header">
-            <div className="chat-header-logo">OS</div>
+            <div className="chat-header-logo">
+              <Sparkles size={18} />
+            </div>
             <div className="chat-header-info">
-              <div className="chat-title">Prospecting OS AI</div>
-              <div className="chat-status"><span className="status-dot" /> Online now</div>
+              <div className="chat-title">Pros Bot</div>
+              <div className="chat-status"><span className="status-dot" /> Online — replies instantly</div>
             </div>
             <button className="chat-close" onClick={() => setChatOpen(false)} aria-label="Close chat"><X size={18} /></button>
           </div>
           <div className="chat-messages" ref={chatMessagesRef}>
             {chatMessages.map((m, i) => (
-              <div key={i} className={`chat-bubble ${m.type}`}>{m.text}</div>
+              <div key={i} className={`chat-bubble ${m.type}${m.isSuccess ? " success" : ""}`}>
+                <span dangerouslySetInnerHTML={{ __html: formatMessage(m.text) }} />
+                {m.quickReplies && m.quickReplies.length > 0 && (
+                  <div className="chat-bubble-replies">
+                    {m.quickReplies.map((qr, j) => (
+                      <button
+                        key={j}
+                        className="chat-bubble-reply-btn"
+                        onClick={() => handleUserMessage(qr)}
+                      >
+                        {qr === "Book a Demo" && <Calendar size={11} />}
+                        {qr === "Explore Platform" && <ArrowRight size={11} />}
+                        {qr === "How it works" && <Sparkles size={11} />}
+                        {qr}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {m.isSuccess && (
+                  <div className="chat-success-badge">
+                    <CheckCircle2 size={14} /> Booking confirmed
+                  </div>
+                )}
+              </div>
             ))}
-          </div>
-          <div className="chat-quick-replies" style={{ display: typing ? "none" : "flex" }}>
-            {["How it works", "Pricing", "Go-live time", "Book a demo"].map(label => (
-              <button key={label} className="quick-reply-btn" onClick={() => handleUserMessage(label === "How it works" ? "How does it work?" : label === "Go-live time" ? "Go-live time?" : label === "Book a demo" ? "Book a demo" : "Pricing?")}>
-                {label}
-              </button>
-            ))}
+            {typing && (
+              <div className="chat-bubble bot typing-bubble">
+                <div className="typing-dots"><span /><span /><span /></div>
+              </div>
+            )}
           </div>
           <div className="chat-input-row">
             <input
               ref={chatInputRef}
               type="text"
-              placeholder="Type your question..."
+              placeholder="Type your message..."
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") sendChat(); }}
             />
             <button className="chat-send-btn" onClick={sendChat} aria-label="Send message">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+              <Send size={16} />
             </button>
-          </div>
-          <div className="typing-indicator" style={{ display: typing ? "flex" : "none" }}>
-            AI thinking<div className="typing-dots"><span /><span /><span /></div>
           </div>
         </div>
       </div>
