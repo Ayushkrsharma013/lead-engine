@@ -117,7 +117,7 @@ export default function BookPage() {
 
   /* ─── Render ──────────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen" style={{
+    <div className="h-screen overflow-hidden flex flex-col" style={{
       background: "#0e0d0a", color: "#f5f4f1",
       fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif",
       "--bg-primary": "#0e0d0a", "--bg-secondary": "#141310",
@@ -131,13 +131,23 @@ export default function BookPage() {
       "--success": "#22c55e", "--success-bg": "rgba(34,197,94,0.1)",
     } as React.CSSProperties}>
       {/* ══════ Nav ══════ */}
-      <nav className="sticky top-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
+      <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight no-underline" style={{ color: "var(--text-primary, #f5f4f1)" }}>
             <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
             Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
           </a>
-          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: "var(--text-tertiary, #7a7875)" }}>
+          <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--text-tertiary, #7a7875)" }}>
+            <a
+              href="/api/auth/google-calendar"
+              title="Connect Google Calendar to get notifications for new bookings"
+              className="flex items-center gap-1.5 text-[11px] font-medium transition-colors hover:opacity-80 no-underline"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              <Calendar size={13} />
+              <span className="hidden sm:inline">Connect Calendar</span>
+            </a>
+            <span style={{ color: "var(--border)" }}>|</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 1 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 1 ? "#fff" : "var(--text-tertiary)" }}>1</span>
             <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Date</span>
             <span style={{ color: "var(--text-tertiary)" }}>→</span>
@@ -150,10 +160,10 @@ export default function BookPage() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 lg:py-12">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="max-w-6xl mx-auto px-6 py-3 lg:py-4 flex-1 min-h-0 overflow-hidden w-full">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 h-full">
           {/* Left — Booking Form */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-y-auto">
         {step === 4 ? (
           /* ══════════════════════ STEP 4 — Confirmation ════════════════ */
           <div className="text-center py-12 animate-scale-in">
@@ -181,11 +191,11 @@ export default function BookPage() {
         ) : (
           <>
             {/* ══════ Header ══════ */}
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1.5 rounded-full" style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))", color: "var(--badge-text, #ff8a5c)" }}>
+            <div className="text-center mb-3">
+              <div className="inline-flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-widest mb-2 px-3 py-1.5 rounded-full" style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))", color: "var(--badge-text, #ff8a5c)" }}>
                 Book a Demo
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight mb-3">Schedule Your Demo</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight mb-1">Schedule Your Demo</h1>
               <p className="text-base max-w-md mx-auto" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
                 See how Prospecting OS finds 500+ qualified leads every month — in a 20-minute walkthrough.
               </p>
@@ -194,9 +204,9 @@ export default function BookPage() {
             {/* ══════════════════════ STEP 1 — Date Picker ══════════════ */}
             {step === 1 && (
               <div className="animate-fade-up">
-                <div className="rounded-2xl p-6" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
                   {/* Month nav */}
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-3">
                     <button onClick={prevMonth} className="p-2 rounded-lg transition-colors hover:bg-white/5" aria-label="Previous month">
                       <ChevronLeft size={18} style={{ color: "var(--text-secondary)" }} />
                     </button>
@@ -209,7 +219,7 @@ export default function BookPage() {
                   </div>
 
                   {/* Day headers */}
-                  <div className="grid grid-cols-7 mb-2">
+                  <div className="grid grid-cols-7 mb-1">
                     {DAYS.map(d => (
                       <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wider py-1" style={{ color: "var(--text-tertiary, #7a7875)" }}>
                         {d}
@@ -233,7 +243,7 @@ export default function BookPage() {
                           disabled={past}
                           onClick={() => selectDate(viewYear, viewMonth, day)}
                           className={classNames(
-                            "h-11 rounded-xl text-sm font-semibold transition-all",
+                            "h-10 rounded-xl text-sm font-semibold transition-all",
                             past && "opacity-20 cursor-not-allowed",
                             !past && !isSelected && "hover:bg-white/5 cursor-pointer",
                             isSelected && "text-white cursor-pointer",
@@ -250,7 +260,7 @@ export default function BookPage() {
                 <button
                   disabled={!selectedDate}
                   onClick={() => setStep(2)}
-                  className="w-full mt-6 h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: selectedDate ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedDate ? "#fff" : "var(--text-tertiary)" }}
                 >
                   {selectedDate ? `Continue — ${selectedDate}` : "Select a date to continue"}
@@ -262,20 +272,20 @@ export default function BookPage() {
             {/* ══════════════════════ STEP 2 — Time Slots ══════════════ */}
             {step === 2 && (
               <div className="animate-fade-up">
-                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
                   <ArrowLeft size={14} /> {selectedDate}
                 </button>
 
-                <div className="rounded-2xl p-6" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
-                  <div className="grid grid-cols-3 gap-2.5 mb-6">
+                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
                     {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
                       const isSel = selectedTime === t;
                       return (
                         <button
                           key={t}
                           onClick={() => setSelectedTime(t)}
-                          className="h-11 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
+                          className="h-10 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
                           style={{
                             background: isSel ? "var(--accent, #e8420a)" : "transparent",
                             color: isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
@@ -288,7 +298,7 @@ export default function BookPage() {
                     })}
                   </div>
 
-                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
                   <div className="grid grid-cols-3 gap-2.5">
                     {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
                       const isSel = selectedTime === t;
@@ -296,7 +306,7 @@ export default function BookPage() {
                         <button
                           key={t}
                           onClick={() => setSelectedTime(t)}
-                          className="h-11 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
+                          className="h-10 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
                           style={{
                             background: isSel ? "var(--accent, #e8420a)" : "transparent",
                             color: isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
@@ -313,7 +323,7 @@ export default function BookPage() {
                 <button
                   disabled={!selectedTime}
                   onClick={confirmDateTime}
-                  className="w-full mt-6 h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: selectedTime ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedTime ? "#fff" : "var(--text-tertiary)" }}
                 >
                   {selectedTime ? `Confirm — ${selectedDate} at ${selectedTime}` : "Pick a time slot"}
@@ -325,11 +335,11 @@ export default function BookPage() {
             {/* ══════════════════════ STEP 3 — Booking Form ════════════ */}
             {step === 3 && (
               <div className="animate-fade-up">
-                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
                   <ArrowLeft size={14} /> {selectedDate} at {selectedTime}
                 </button>
 
-                <div className="rounded-2xl p-6 space-y-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                <div className="rounded-2xl p-4 lg:p-5 space-y-4" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
                   {/* Name */}
                   <div>
                     <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
@@ -403,7 +413,7 @@ export default function BookPage() {
                 <button
                   onClick={submit}
                   disabled={submitting || !name.trim() || !email.trim()}
-                  className="w-full mt-6 h-12 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
                 >
                   {submitting ? (
@@ -419,13 +429,15 @@ export default function BookPage() {
           </div>
 
           {/* Right — Pros Bot Conversational Agent */}
-          <div className="hidden lg:block w-80 xl:w-96 flex-shrink-0" style={{ height: "calc(100vh - 100px)", position: "sticky", top: 88 }}>
-            <div className="mb-3 flex items-center gap-2 px-1">
+          <div className="hidden lg:flex lg:flex-col w-80 xl:w-96 flex-shrink-0 h-full min-h-0">
+            <div className="mb-2 flex items-center gap-2 px-1 flex-shrink-0">
               <Sparkles size={16} style={{ color: "var(--accent, #e8420a)" }} />
               <span className="text-sm font-bold tracking-tight">Book via Chat</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--badge-bg)", color: "var(--badge-text)" }}>AI</span>
             </div>
-            <ProsBotPanel embedded />
+            <div className="flex-1 min-h-0">
+              <ProsBotPanel embedded />
+            </div>
           </div>
 
           {/* Mobile — slide-up chat toggle */}

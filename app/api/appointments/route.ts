@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { createCalendarEvent, isCalendarConnected } from "@/lib/google-calendar";
 
 export interface Appointment {
   id: string;
@@ -71,7 +72,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, note: error.message });
     }
 
-    return NextResponse.json({ ok: true, id: data.id });
+    // Create Google Calendar event (non-blocking)
+    let calendarLink: string | undefined;
+    if (isCalendarConnected()) {
+      try {
+        const calResult = await createCalendarEvent({
+          summary: `Demo: ${name.trim()} — ${company ? company.trim() : "Prospecting OS"}`,
+          description: [
+            `New demo booking from Prospecting OS.`,
+            `Name: ${name.trim()}`,
+            `Email: ${email.trim().toLowerCase()}`,
+            company ? `Company: ${company.trim()}` : "",
+            notes ? `Notes: ${notes.trim()}` : "",
+            `Booked via: Website`,
+          ].filter(Boolean).join("\n"),
+          startDate: date,
+          startTime: time,
+          attendees: [{ email: email.trim().toLowerCase(), displayName: name.trim() }],
+        });
+        if (calResult.htmlLink) {
+          calendarLink = calResult.htmlLink;
+        } else if (calResult.error) {
+          console.warn("[appointments] calendar event skipped:", calResult.error);
+        }
+      } catch (err) {
+        console.warn("[appointments] calendar event creation failed:", err);
+      }
+    }
+
+    return NextResponse.json({ ok: true, id: data.id, calendarLink });
   } catch (err) {
     console.error("[appointments] unexpected error:", err);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
