@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Users, Zap, TrendingUp, Send,
   UserPlus, Mail, ArrowRight, Plus, Download, Target, Sparkles,
-  CalendarCheck, Activity, PhoneCall, Trophy,
+  CalendarCheck, Activity, PhoneCall, Trophy, Clock, Building2,
 } from "lucide-react";
+import type { Appointment } from "@/app/api/appointments/route";
 import Link from "next/link";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer,
@@ -319,14 +320,30 @@ export default function DashboardPage() {
   const activeCampaigns = campaigns.filter(c => c.status !== "complete");
   const recentActivity = (activityLog as ActivityLogEntry[]).slice(0, 10);
 
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [apptsLoading, setApptsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/appointments")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setAppointments(d); })
+      .catch(() => {})
+      .finally(() => setApptsLoading(false));
+  }, []);
+
+  const upcomingAppts = appointments.filter(a => {
+    const d = new Date(`${a.date}T${a.time}`);
+    return d >= new Date();
+  });
+
   return (
     <>
       <TopBar title="Command Center" subtitle="Overview of your prospecting pipeline" />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
-        {/* ── Row 1: Graph Cards (5-col) ── */}
-        <div className="grid grid-cols-5 gap-3" style={{ minHeight: 210 }}>
+        {/* ── Row 1: Graph Cards (6-col) ── */}
+        <div className="grid grid-cols-6 gap-3" style={{ minHeight: 210 }}>
 
           {/* Total Leads */}
           <GraphCard icon={Users} label="Total Leads" value={leads.length.toLocaleString()}
@@ -361,6 +378,28 @@ export default function DashboardPage() {
             sub={meetingsWon > 0 ? `${Math.round((meetingsWon / leads.length) * 100)}% conversion` : "no meetings yet"}
             accent="var(--positive)"
             chart={<MiniArea data={mtWeekly} dataKey="count" color="#A8C99A" id="meetings" />}
+          />
+
+          {/* Appointments Booked */}
+          <GraphCard icon={CalendarCheck} label="Demos Booked" value={appointments.length}
+            sub={upcomingAppts.length > 0 ? `${upcomingAppts.length} upcoming` : "no demos yet"}
+            accent="#e8420a"
+            chart={
+              <div className="flex items-end gap-0.5 h-full pt-1">
+                {appointments.slice(0, 7).reverse().map((a, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm transition-all" style={{
+                    height: `${Math.max(20, Math.min(100, (i + 1) * 14))}%`,
+                    background: "#e8420a",
+                    opacity: 0.35 + (i / 7) * 0.65,
+                  }} />
+                ))}
+                {appointments.length === 0 && (
+                  <div className="w-full text-[10px] flex items-center justify-center" style={{ color: "var(--ink-4)" }}>
+                    No bookings yet
+                  </div>
+                )}
+              </div>
+            }
           />
         </div>
 
@@ -541,7 +580,77 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Row 3: Quick Actions ── */}
+        {/* ── Row 3: Appointments ── */}
+        <div
+          className="rounded-xl p-5"
+          style={{
+            background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)",
+            border: `1px solid ${cardBorder}`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Demo Bookings
+            </h3>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(232,66,10,0.10)", color: "#e8420a", border: "1px solid rgba(232,66,10,0.18)" }}>
+              {appointments.length} total
+            </span>
+          </div>
+
+          {apptsLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+            </div>
+          ) : appointments.length === 0 ? (
+            <p className="text-sm text-center py-6" style={{ color: "var(--ink-3)" }}>
+              No demo bookings yet. They&apos;ll appear here when visitors book via the landing page or Pros Bot.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: "var(--line)" }}>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2 pr-4" style={{ color: "var(--ink-4)" }}>Name</th>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2 pr-4" style={{ color: "var(--ink-4)" }}>Company</th>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2 pr-4" style={{ color: "var(--ink-4)" }}>Email</th>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2 pr-4" style={{ color: "var(--ink-4)" }}>Date</th>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2 pr-4" style={{ color: "var(--ink-4)" }}>Time</th>
+                    <th className="text-[10px] font-semibold uppercase tracking-wider pb-2" style={{ color: "var(--ink-4)" }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map(a => {
+                    const isUpcoming = new Date(`${a.date}T${a.time}`) >= new Date();
+                    return (
+                      <tr key={a.id} className="border-b transition-colors duration-150" style={{ borderColor: "var(--line)" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.02)"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                      >
+                        <td className="py-2.5 pr-4 text-[13px] font-medium" style={{ color: "var(--ink)" }}>{a.name}</td>
+                        <td className="py-2.5 pr-4 text-[13px]" style={{ color: "var(--ink-3)" }}>{a.company || "—"}</td>
+                        <td className="py-2.5 pr-4 text-[12px]" style={{ color: "var(--ink-3)" }}>{a.email}</td>
+                        <td className="py-2.5 pr-4 text-[12px] tabular-nums" style={{ color: "var(--ink-2)" }}>{a.date}</td>
+                        <td className="py-2.5 pr-4 text-[12px] tabular-nums font-medium" style={{ color: "var(--ink)" }}>{a.time}</td>
+                        <td className="py-2.5">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={
+                            isUpcoming
+                              ? { background: "rgba(168,201,154,0.10)", color: "var(--positive)", border: "1px solid rgba(168,201,154,0.18)" }
+                              : { background: "rgba(237,234,226,0.04)", color: "var(--ink-3)", border: "1px solid var(--line)" }
+                          }>
+                            {isUpcoming ? "Upcoming" : "Past"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ── Row 4: Quick Actions ── */}
         <div
           className="rounded-xl p-4 flex items-center gap-3"
           style={{

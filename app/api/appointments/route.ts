@@ -1,6 +1,37 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  name: string;
+  email: string;
+  company: string;
+  notes: string;
+  created_at: string;
+}
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("[appointments] fetch failed:", error.message);
+      return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
+    }
+
+    return NextResponse.json(data || []);
+  } catch (err) {
+    console.error("[appointments] unexpected error:", err);
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
