@@ -423,6 +423,38 @@ Multi-step appointment scheduling flow inspired by Cal.com/cal.diy patterns:
 
 Agent-browser screenshots (`landing*.png`) and `.ruflo/` state are gitignored — they are debugging artifacts, not project assets.
 
+## QA_Bot — Automated Sanity Testing
+
+QA_Bot is an automated testing agent powered by Vercel agent-browser. It runs full end-to-end sanity
+checks against the running app — covering landing page UI, booking flow, dashboard, and API endpoints.
+
+### How to run
+```bash
+# Full sanity suite (37 checks across 4 scenarios)
+bash tests/sanity.sh
+
+# Individual scenarios
+bash tests/scenarios/landing-page.sh   # 16 checks — hero, cards, icons, chat, emoji-free
+bash tests/scenarios/booking-flow.sh   #  8 checks — calendar, time slots, Pros Bot panel
+bash tests/scenarios/dashboard.sh      #  7 checks — stat cards, Demo Bookings table
+bash tests/scenarios/api.sh            #  6 checks — CRUD endpoints, validation
+```
+
+Override target URL: `BASE_URL=http://localhost:3001 bash tests/sanity.sh`
+
+### Scenario files
+| File | Scope |
+|---|---|
+| `tests/sanity.sh` | Orchestrator — runs all 4 scenarios, prints pass/fail summary with exit code |
+| `tests/scenarios/landing-page.sh` | Navbar, hero, how-it-works (SVG icons, no emoji), pricing, testimonials, FAQ, chat widget, Pros Bot |
+| `tests/scenarios/booking-flow.sh` | /book page load, calendar, time slots, Pros Bot panel, conversational booking |
+| `tests/scenarios/dashboard.sh` | TopBar, 6 stat cards, Demo Bookings table, activity feed, campaigns, quick actions |
+| `tests/scenarios/api.sh` | GET/POST /api/appointments, POST /api/leads/capture, input validation |
+
+### Agent definition
+`.claude/agents/QA_Bot.md` — full agent instructions with environment requirements and reporting format.
+Invoke via `/qa` command (`@.claude/commands/qa.md`).
+
 ## Development commands
 
 ```bash
@@ -430,6 +462,7 @@ npm run dev      # Start dev server at http://localhost:3000
 npm run build    # Production build (tsc + Next.js) — must pass with 0 errors
 npm run lint     # ESLint check
 agent-browser open http://localhost:3000   # Browser testing (requires global install)
+bash tests/sanity.sh                       # QA_Bot full sanity suite
 ```
 
 ---
