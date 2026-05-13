@@ -186,6 +186,16 @@ export async function deleteLeadsFromDB(ids: string[]): Promise<Lead[]> {
   return fetchLeadsFromDB();
 }
 
+export async function batchUpdateLeadStatus(ids: string[], status: Lead["status"]): Promise<Lead[]> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("leads")
+    .update({ status, last_touched: now, updated_at: now })
+    .in("id", ids);
+  if (error) throw error;
+  return fetchLeadsFromDB();
+}
+
 export async function computeStatsFromLeads(leads: Lead[]): Promise<Stats> {
   const withEmail = leads.filter(l => l.emailStatus === "verified").length;
   const avgScore = leads.length

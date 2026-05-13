@@ -1,279 +1,584 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Zap, Sparkles, Target, Users, BarChart3, MessageSquare,
-  ArrowRight, Check, ChevronRight, Linkedin, Mail, Globe,
-  Shield, Building2, TrendingUp, Send, Bot,
+  Globe, Filter, FileText, PenLine, Bell, ArrowRight,
+  ArrowDown, Menu, X,
 } from "lucide-react";
+import EmailCaptureModal from "@/components/EmailCaptureModal";
 
-/* ─── Constants ──────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Prospecting OS — Landing Page
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-const FEATURES = [
-  { icon: Users, title: "Lead Discovery", desc: "AI-powered scraping from LinkedIn, Google Maps, and Amazon. Find decision-makers with verified emails at scale.", color: "#C9A87C" },
-  { icon: Sparkles, title: "AI Message Lab", desc: "Generate personalised outreach with Gemini. LinkedIn connections, DMs, and cold emails that convert.", color: "#A8C99A" },
-  { icon: Target, title: "ICP Scoring", desc: "Score every lead against your ideal customer profile. Prioritise hot leads with AI reasoning.", color: "#D49484" },
-  { icon: BarChart3, title: "Pipeline Analytics", desc: "Track conversion rates, source performance, and campaign ROI with live dashboard charts.", color: "#9AB3C8" },
-  { icon: MessageSquare, title: "Sequences", desc: "Build multi-step outreach cadences. Drag-and-drop timeline, variable templates, automated follow-ups.", color: "#C9A87C" },
-  { icon: Bot, title: "24/7 AI Agent", desc: "A live AI agent inside the platform — answer questions, run tasks, and even chat via Telegram.", color: "#A8C99A" },
+const FULL_TEXT = "Your Pipeline on Autopilot.";
+const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789+-*/=<>{}[]()&|!?@#$%^&*;:,.~`".split("");
+
+const FAQ_ITEMS = [
+  { q: "Do I need a LinkedIn Sales Navigator subscription?", a: "Yes — Sales Navigator is the engine. A basic plan ($99/mo) is all you need. We'll help configure your search filters during onboarding." },
+  { q: "How long does it take to go live?", a: "Basic: 4–6 hours. Pro: 2–3 days. Advanced: 1–2 weeks for email infra and CRM integration." },
+  { q: "What industries does this work for?", a: "SaaS, consulting, agencies, professional services — worldwide. If your clients are on LinkedIn, our system works." },
+  { q: "Will this get my domain blacklisted?", a: "No. Proper warm-up, rate limiting, and human-like patterns. Advanced plans use a secondary domain for outreach." },
+  { q: "What if I'm not happy in month 1?", a: "Less than 50 qualified leads on Pro? Month 2 is free. We'll refine your ICP at no extra cost." },
+  { q: "Can I upgrade later?", a: "Absolutely. Upgrades are seamless — we activate additional features on your existing workflow." },
 ];
 
-const PRICING = [
-  { name: "Starter", price: 499, desc: "For solo founders and small agencies", features: ["Up to 500 leads/mo", "LinkedIn scraping", "AI Message Lab", "Basic ICP scoring", "Email support"], cta: "Start Free Trial", popular: false },
-  { name: "Pro", price: 1499, desc: "For growing B2B sales teams", features: ["Up to 5,000 leads/mo", "All 3 sources (LinkedIn, Maps, Amazon)", "Advanced AI scoring", "Sequence builder", "Kanban pipeline", "Google Drive export", "Priority support"], cta: "Start Free Trial", popular: true },
-  { name: "Enterprise", price: null, desc: "For agencies and large teams", features: ["Unlimited leads", "Custom AI model training", "White-label client portal", "Telegram agent integration", "API access", "Dedicated account manager", "SLA guarantee"], cta: "Talk to Sales", popular: false },
-];
+function getBotResponse(msg: string): string {
+  const m = msg.toLowerCase().trim();
+  if (m.includes("how does it work") || m.includes("how it work"))
+    return "1. Source — Sales Navigator exports ICP.\n2. Filter — only decision-makers.\n3. Score — Gemini AI (1–10).\n4. Enrich — company info + icebreaker.\n5. Deliver — Telegram/Slack/CRM daily.\n\nWant a demo? Just ask!";
+  if (m.includes("pricing") || m.includes("price") || m.includes("cost"))
+    return "Basic: $2,500 one-time setup.\nPro: $3,500/month (most popular).\nAdvanced: $10K+/month (full AI SDR).\n\nWhich fits your needs?";
+  if (m.includes("go-live") || m.includes("how long") || m.includes("timeline"))
+    return "Basic: 4–6 hours.\nPro: 2–3 days.\nAdvanced: 1–2 weeks.\n\nMost clients are live within the same week!";
+  if (m.includes("demo") || m.includes("book") || m.includes("schedule"))
+    return "Great choice! Email us at hello@prospectingos.com — we'll schedule a 20-min demo within 24 hours.\n\nOr drop your name + company here and we'll reach out.";
+  if (m.includes("guarantee") || m.includes("risk"))
+    return "If you don't get 50+ qualified leads on Pro in month 1, month 2 is free. We'll also refine your ICP at no cost.";
+  if (m.includes("sales navigator") || m.includes("linkedin"))
+    return "Yes — Sales Navigator ($99/mo) is required. It powers the entire pipeline. We'll help configure your filters during onboarding.";
+  return "I'm here to help! Ask about how it works, pricing, go-live timelines, or book a demo — whatever's most useful to you right now.";
+}
 
-const STEPS = [
-  { step: "01", title: "Connect Sources", desc: "Plug in LinkedIn, Google Maps, or Amazon. Our AI scrapes verified contacts in real-time." },
-  { step: "02", title: "Score & Prioritise", desc: "Every lead gets an ICP score. AI reasoning tells you exactly why they're a fit." },
-  { step: "03", title: "Outreach at Scale", desc: "Generate personalised messages, build sequences, and track pipeline — all from one dashboard." },
-];
+/* ─── ASCII particle ──────────────────────────────────────────────────────── */
 
-/* ─── Page ───────────────────────────────────────────────────────────────── */
+interface Particle {
+  x: number; y: number; char: string; fontSize: number;
+  speedY: number; speedX: number; opacity: number;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Component
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function LandingPage() {
+  /* ─── Theme ────────────────────────────────────────────────────────────── */
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("prospectingos-theme");
+    if (stored === "light" || stored === "dark") {
+      setTheme(stored);
+      document.documentElement.setAttribute("data-theme", stored);
+    } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+      setTheme("light");
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("prospectingos-theme", next);
+  }, [theme]);
+
+  /* ─── Typewriter ───────────────────────────────────────────────────────── */
+  const [typewriterText, setTypewriterText] = useState("");
+
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < FULL_TEXT.length) {
+        setTypewriterText(FULL_TEXT.slice(0, i + 1));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 60 + Math.random() * 45);
+    const timeout = setTimeout(() => clearInterval(timer), FULL_TEXT.length * 120 + 1000);
+    return () => { clearInterval(timer); clearTimeout(timeout); };
+  }, []);
+
+  /* ─── Live counter ─────────────────────────────────────────────────────── */
+  const [counter, setCounter] = useState(47);
+  const [bump, setBump] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter(c => {
+        const next = c + Math.floor(Math.random() * 5) + 1;
+        return next;
+      });
+      setBump(true);
+      setTimeout(() => setBump(false), 350);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ─── Mobile menu ──────────────────────────────────────────────────────── */
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  /* ─── FAQ ──────────────────────────────────────────────────────────────── */
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  /* ─── Chat widget ──────────────────────────────────────────────────────── */
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ text: string; type: "bot" | "user" }[]>([
+    { text: "Hi! I'm the Prospecting OS assistant. Ask me how it works, pricing, go-live time, or book a demo.", type: "bot" },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  const addMessage = useCallback((text: string, type: "bot" | "user") => {
+    setChatMessages(prev => [...prev, { text, type }]);
+  }, []);
+
+  const handleUserMessage = useCallback((text: string) => {
+    addMessage(text, "user");
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      addMessage(getBotResponse(text), "bot");
+    }, 900 + Math.random() * 700);
+  }, [addMessage]);
+
+  useEffect(() => { chatMessagesRef.current?.scrollTo(0, chatMessagesRef.current.scrollHeight); }, [chatMessages]);
+
+  const openChat = useCallback(() => {
+    setChatOpen(true);
+    setTimeout(() => chatInputRef.current?.focus(), 400);
+  }, []);
+
+  const sendChat = useCallback(() => {
+    const t = chatInput.trim();
+    if (!t) return;
+    setChatInput("");
+    handleUserMessage(t);
+  }, [chatInput, handleUserMessage]);
+
+  /* ─── Navbar shadow on scroll ──────────────────────────────────────────── */
+  const [navShadow, setNavShadow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setNavShadow(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* ─── Scroll reveal ────────────────────────────────────────────────────── */
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); }
+      }),
+      { rootMargin: "0px 0px -50px 0px", threshold: 0.1 }
+    );
+    document.querySelectorAll(".landing-page .reveal").forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  /* ─── Smooth scroll for anchor links ───────────────────────────────────── */
+  const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href === "#") return;
+    e.preventDefault();
+    const target = document.querySelector(href);
+    if (target) {
+      window.scrollTo({ top: target.getBoundingClientRect().top + window.pageYOffset - 80, behavior: "smooth" });
+    }
+  }, []);
+
+  /* ─── ASCII canvas ─────────────────────────────────────────────────────── */
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const count = 45;
+    if (particlesRef.current.length === 0) {
+      for (let i = 0; i < count; i++) {
+        particlesRef.current.push({
+          x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+          fontSize: 14 + Math.random() * 18,
+          speedY: 0.2 + Math.random() * 0.5, speedX: (Math.random() - 0.5) * 0.3,
+          opacity: 0.1 + Math.random() * 0.2,
+        });
+      }
+    }
+
+    let raf: number;
+    const animate = () => {
+      const isDark = document.documentElement.getAttribute("data-theme") !== "light";
+      if (!isDark) { ctx.clearRect(0, 0, canvas.width, canvas.height); raf = requestAnimationFrame(animate); return; }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '14px "JetBrains Mono", monospace';
+      ctx.textAlign = "center";
+      for (const p of particlesRef.current) {
+        ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+        ctx.fillText(p.char, p.x, p.y);
+        p.y -= p.speedY;
+        p.x += p.speedX;
+        if (p.y < -20) { p.y = canvas.height + 20; p.x = Math.random() * canvas.width; p.char = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]; }
+        if (p.x < -20) p.x = canvas.width + 20;
+        if (p.x > canvas.width + 20) p.x = -20;
+      }
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+
+  /* ─── Custom cursor ────────────────────────────────────────────────────── */
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const ringPosRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth <= 900) return;
+    const dot = dotRef.current;
+    const ring = ringRef.current;
+    if (!dot || !ring) return;
+
+    const onMove = (e: MouseEvent) => { mouseRef.current.x = e.clientX; mouseRef.current.y = e.clientY; dot.style.left = e.clientX + "px"; dot.style.top = e.clientY + "px"; };
+    let raf: number;
+    const animateRing = () => {
+      ringPosRef.current.x += (mouseRef.current.x - ringPosRef.current.x) * 0.12;
+      ringPosRef.current.y += (mouseRef.current.y - ringPosRef.current.y) * 0.12;
+      ring.style.left = ringPosRef.current.x + "px";
+      ring.style.top = ringPosRef.current.y + "px";
+      raf = requestAnimationFrame(animateRing);
+    };
+    raf = requestAnimationFrame(animateRing);
+    document.addEventListener("mousemove", onMove, { passive: true });
+
+    const sel = "a, button, input, .faq-question, .quick-reply-btn, .chat-trigger, .theme-toggle, .pricing-card, .how-card";
+    const onOver = (e: MouseEvent) => { if ((e.target as Element).closest(sel)) ring.classList.add("hovering"); };
+    const onOut = (e: MouseEvent) => { if ((e.target as Element).closest(sel)) ring.classList.remove("hovering"); };
+    document.addEventListener("mouseover", onOver, { passive: true });
+    document.addEventListener("mouseout", onOut, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseover", onOver);
+      document.removeEventListener("mouseout", onOut);
+    };
+  }, []);
+
+  /* ─── Render ───────────────────────────────────────────────────────────── */
   return (
-    <div className="bg-bg text-ink font-geist">
-      {/* ── Nav ── */}
-      <nav className="sticky top-0 z-50 border-b" style={{ background: "rgba(8,8,10,0.85)", backdropFilter: "blur(16px)", borderColor: "var(--sidebar-border)" }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-14">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(201,168,124,0.12)", border: "1px solid rgba(201,168,124,0.22)" }}>
-              <Zap size={13} style={{ color: "var(--accent)" }} />
-            </div>
-            <span className="font-bold text-[13px] tracking-tight">LinkedIn<span style={{ color: "var(--accent)" }}>ProOS</span></span>
+    <div className="landing-page">
+      {/* ASCII Canvas */}
+      <canvas id="asciiCanvas" ref={canvasRef} />
+
+      {/* Custom Cursor */}
+      <div className="cursor-dot" ref={dotRef} />
+      <div className="cursor-ring" ref={ringRef} />
+
+      {/* ══════════ Navbar ══════════ */}
+      <nav className="navbar" style={{ boxShadow: navShadow ? "0 1px 8px rgba(0,0,0,0.15)" : "none" }}>
+        <div className="container">
+          <a href="#" className="nav-logo" onClick={e => smoothScroll(e as never, "#")}>
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+            Prospecting <span className="accent">OS</span>
+          </a>
+          <ul className="nav-links">
+            <li><a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a></li>
+            <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
+            <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI</a></li>
+            <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
+          </ul>
+          <button className="nav-cta desktop-only" onClick={openChat}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+            Talk to Us
+          </button>
+          <div className="theme-toggle-wrapper">
+            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme">
+              <span className="toggle-icon moon">
+                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+              </span>
+              <span className="toggle-icon sun">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
+              </span>
+              <span className="toggle-thumb" />
+            </button>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/portal/login" className="text-[12px] font-medium transition-colors duration-200" style={{ color: "var(--ink-3)" }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--ink)"}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"}>
-              Client Portal
-            </Link>
-            <Link href="/dashboard"
-              className="flex items-center gap-1.5 h-8 px-4 rounded-lg text-[12px] font-semibold transition-all duration-200"
-              style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.14), rgba(201,168,124,0.08))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.22)" }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = "0 0 16px rgba(201,168,124,0.15)"}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = "none"}>
-              Launch App <ChevronRight size={12} />
-            </Link>
-          </div>
+          <button className="nav-hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at center, rgba(201,168,124,0.06) 0%, transparent 70%)" }} />
+      {/* Mobile Menu */}
+      <div className={`mobile-menu${mobileOpen ? " open" : ""}`}>
+        <a href="#how-it-works" onClick={e => { smoothScroll(e, "#how-it-works"); setMobileOpen(false); }}>How It Works</a>
+        <a href="#pricing" onClick={e => { smoothScroll(e, "#pricing"); setMobileOpen(false); }}>Pricing</a>
+        <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI</a>
+        <a href="#faq" onClick={e => { smoothScroll(e, "#faq"); setMobileOpen(false); }}>FAQ</a>
+        <button className="nav-cta" onClick={openChat}>Talk to Us</button>
+      </div>
 
-        <div className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium mb-6"
-            style={{ background: "rgba(201,168,124,0.08)", color: "var(--accent)", border: "1px solid rgba(201,168,124,0.18)" }}>
-            <Zap size={11} /> AI-Powered B2B Prospecting Platform
-          </div>
-          <h1 className="text-[48px] font-bold leading-[1.1] tracking-tight mb-5">
-            Find, Score, and Close
-            <br />
-            <span style={{ color: "var(--accent)" }}>B2B Leads</span> on Autopilot
-          </h1>
-          <p className="text-[16px] leading-relaxed max-w-2xl mx-auto mb-8" style={{ color: "var(--ink-3)" }}>
-            LinkedIn ProOS scrapes verified contacts from LinkedIn, Google Maps, and Amazon.
-            AI scores every lead, generates personalised outreach, and tracks your pipeline — all in one platform.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Link href="/dashboard"
-              className="flex items-center gap-2 h-11 px-6 rounded-xl text-[14px] font-semibold transition-all duration-200"
-              style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.20), rgba(201,168,124,0.12))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.30)", boxShadow: "0 0 20px rgba(201,168,124,0.12)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 32px rgba(201,168,124,0.22)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(201,168,124,0.12)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-              Get Started Free <ArrowRight size={15} />
-            </Link>
-            <Link href="#features"
-              className="flex items-center gap-2 h-11 px-6 rounded-xl text-[13px] font-medium transition-all duration-200"
-              style={{ background: "transparent", color: "var(--ink-2)", border: "1px solid var(--line)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(237,234,226,0.15)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = "var(--line)"; }}>
-              See How It Works
-            </Link>
-          </div>
-          <div className="flex items-center justify-center gap-6 mt-10 text-[12px]" style={{ color: "var(--ink-4)" }}>
-            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> No credit card required</span>
-            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> 14-day free trial</span>
-            <span className="flex items-center gap-1.5"><Check size={12} style={{ color: "var(--positive)" }} /> Cancel anytime</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>Features</span>
-          <h2 className="text-[28px] font-bold mt-2 mb-3">Everything You Need to Prospect</h2>
-          <p className="text-[14px] max-w-xl mx-auto" style={{ color: "var(--ink-3)" }}>From discovery to deal — a complete B2B prospecting engine powered by AI.</p>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {FEATURES.map(f => (
-            <div key={f.title}
-              className="rounded-xl p-5 transition-all duration-200 group"
-              style={{ background: "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))", border: "1px solid rgba(201,168,124,0.07)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.18)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.07)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: `${f.color}14`, border: `1px solid ${f.color}25` }}>
-                <f.icon size={16} style={{ color: f.color }} />
-              </div>
-              <h3 className="text-[14px] font-semibold mb-1.5">{f.title}</h3>
-              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>{f.desc}</p>
+      {/* ══════════ Hero ══════════ */}
+      <section className="hero">
+        <div className="container">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+              AI-Powered B2B Prospecting
             </div>
-          ))}
+            <h1>
+              <span className="typewriter-text">{typewriterText}</span>
+              <span className="typewriter-cursor">|</span>
+            </h1>
+            <p className="hero-subtitle">500+ qualified leads/month. Zero manual research. One AI system that finds, scores, and delivers your ideal clients — while you sleep.</p>
+            <div className="hero-ctas">
+              <button className="btn-primary" onClick={openChat}>See How It Works <ArrowRight size={16} style={{ display: "inline" }} /></button>
+              <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")}>View Pricing <ArrowDown size={16} style={{ display: "inline" }} /></a>
+            </div>
+            <div className="hero-stats">
+              <div><span>500+</span> LEADS/MONTH</div>
+              <div><span>97%</span> LESS MANUAL WORK</div>
+              <div><span>4h</span> TO GO LIVE</div>
+            </div>
+          </div>
+
+          {/* Pipeline Visual */}
+          <div className="hero-visual" style={{ position: "relative" }}>
+            <div className="pipeline-card">
+              <div className="pipeline-card-header"><span>HOT LEADS THIS WEEK</span><span style={{ color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--success)", display: "inline-block", animation: "pulse-dot 2s ease-in-out infinite" }} /> LIVE</span></div>
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <span className={`pipeline-live-counter${bump ? " bump" : ""}`}>{counter}</span>
+                <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>qualified & scored</div>
+              </div>
+              <div className="pipeline-steps">
+                <div className="pipeline-step"><span className="step-num">1</span><span className="step-label">Source Leads (Sales Navigator)</span><span className="step-badge live">LIVE</span></div>
+                <div className="pipeline-step"><span className="step-num">2</span><span className="step-label">Filter Decision Makers</span><span className="step-badge ai">AI</span></div>
+                <div className="pipeline-step"><span className="step-num">3</span><span className="step-label">Score & Qualify (1–10)</span><span className="step-badge ai">AI</span></div>
+                <div className="pipeline-step"><span className="step-num">4</span><span className="step-label">Personalize Icebreaker</span><span className="step-badge ai">AI</span></div>
+                <div className="pipeline-step"><span className="step-num">5</span><span className="step-label">Alert & Deliver</span><span className="step-badge auto">AUTO</span></div>
+              </div>
+            </div>
+            <div className="floating-alert">
+              <span className="alert-dot" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+              <span>New lead scored <strong>8.5/10</strong> — TechCorp CEO</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="py-20" style={{ background: "var(--sidebar-bg)", borderTop: "1px solid var(--sidebar-border)", borderBottom: "1px solid var(--sidebar-border)" }}>
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>How It Works</span>
-            <h2 className="text-[28px] font-bold mt-2 mb-3">Three Steps to Your Pipeline</h2>
+      {/* ══════════ How It Works ══════════ */}
+      <section className="section" id="how-it-works">
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// How It Works</div>
+            <h2 className="section-title">From Zero to Pipeline in 5 Steps</h2>
+            <p className="section-subtext">Every morning, fresh leads land in your inbox — scored, enriched, and ready to close.</p>
           </div>
-          <div className="grid grid-cols-3 gap-8">
-            {STEPS.map((s, i) => (
-              <div key={s.step} className="text-center relative">
-                <div className="text-[48px] font-bold mb-3" style={{ color: "var(--accent)", opacity: 0.15 }}>{s.step}</div>
-                <h3 className="text-[16px] font-semibold mb-2">{s.title}</h3>
-                <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>{s.desc}</p>
-                {i < 2 && (
-                  <div className="hidden lg:block absolute top-8 -right-4" style={{ color: "var(--ink-4)" }}>
-                    <ChevronRight size={20} />
-                  </div>
-                )}
+          <div className="how-grid">
+            {[
+              { Icon: Globe, title: "Source", desc: "Sales Navigator exports your ICP automatically." },
+              { Icon: Filter, title: "Filter", desc: "Only decision-makers pass through." },
+              { Icon: FileText, title: "Score", desc: "Gemini AI scores leads 1–10. Only 7+ advance." },
+              { Icon: PenLine, title: "Enrich", desc: "Company enrichment + unique icebreaker." },
+              { Icon: Bell, title: "Deliver", desc: "Hot leads in Telegram, Slack, or CRM daily." },
+            ].map((item, i) => (
+              <div key={i} className="how-card reveal">
+                <span className="how-icon"><item.Icon size={32} strokeWidth={1.5} /></span>
+                <h4>{item.title}</h4>
+                <p>{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Pricing ── */}
-      <section id="pricing" className="max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>Pricing</span>
-          <h2 className="text-[28px] font-bold mt-2 mb-3">Simple, Transparent Pricing</h2>
-          <p className="text-[14px] max-w-xl mx-auto" style={{ color: "var(--ink-3)" }}>Start with a 14-day free trial. No credit card required. Upgrade anytime.</p>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {PRICING.map(p => (
-            <div key={p.name}
-              className="rounded-xl p-6 transition-all duration-200 relative"
-              style={{
-                background: p.popular ? "linear-gradient(180deg, rgba(201,168,124,0.06), rgba(12,13,11,0.6))" : "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))",
-                border: p.popular ? "1px solid rgba(201,168,124,0.18)" : "1px solid rgba(201,168,124,0.07)",
-                boxShadow: p.popular ? "0 0 24px rgba(201,168,124,0.08)" : "0 1px 3px rgba(0,0,0,0.25)",
-              }}>
-              {p.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.10em]"
-                  style={{ background: "var(--accent)", color: "var(--bg)" }}>Most Popular</div>
-              )}
-              <h3 className="text-[16px] font-semibold mb-1">{p.name}</h3>
-              <p className="text-[11px] mb-4" style={{ color: "var(--ink-3)" }}>{p.desc}</p>
-              <div className="mb-5">
-                {p.price ? (
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>$</span>
-                    <span className="text-[36px] font-bold">{p.price.toLocaleString()}</span>
-                    <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>/month</span>
-                  </div>
-                ) : (
-                  <span className="text-[28px] font-bold">Custom</span>
-                )}
-              </div>
-              <ul className="space-y-2 mb-6">
-                {p.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
-                    <Check size={12} className="shrink-0 mt-0.5" style={{ color: "var(--positive)" }} />
-                    {f}
-                  </li>
-                ))}
+      {/* ══════════ Pricing ══════════ */}
+      <section className="section" id="pricing" style={{ background: "var(--bg-secondary)" }}>
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// Pricing</div>
+            <h2 className="section-title">Choose Your Pipeline Power</h2>
+            <p className="section-subtext">From self-serve AI scoring to a fully managed AI SDR.</p>
+          </div>
+          <div className="pricing-grid">
+            {/* Basic */}
+            <div className="pricing-card reveal">
+              <h3>Basic</h3>
+              <div className="price">$2,500</div>
+              <span className="price-period">ONE-TIME SETUP</span>
+              <ul className="pricing-features">
+                {["Full n8n workflow", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1 week support"].map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <Link href="/dashboard"
-                className="block text-center h-10 rounded-xl text-[13px] font-semibold transition-all duration-200 flex items-center justify-center"
-                style={p.popular
-                  ? { background: "linear-gradient(90deg, rgba(201,168,124,0.18), rgba(201,168,124,0.10))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.25)" }
-                  : { background: "transparent", color: "var(--ink-2)", border: "1px solid var(--line)" }}>
-                {p.cta}
-              </Link>
+              <button className="btn-secondary" onClick={openChat}>Get Started <ArrowRight size={14} style={{ display: "inline" }} /></button>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Trust / Stats ── */}
-      <section className="py-16" style={{ background: "var(--sidebar-bg)", borderTop: "1px solid var(--sidebar-border)" }}>
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid grid-cols-3 gap-8 text-center">
-            {[
-              { value: "10,000+", label: "Leads Generated" },
-              { value: "92%", label: "Email Verification Rate" },
-              { value: "3.2x", label: "Average Pipeline Growth" },
-            ].map(s => (
-              <div key={s.label}>
-                <div className="text-[32px] font-bold mb-1" style={{ color: "var(--accent)" }}>{s.value}</div>
-                <div className="text-[12px]" style={{ color: "var(--ink-4)" }}>{s.label}</div>
-              </div>
-            ))}
+            {/* Pro (Popular) */}
+            <div className="pricing-card popular reveal">
+              <div className="popular-badge">MOST POPULAR</div>
+              <h3>Pro</h3>
+              <div className="price">$3,500</div>
+              <span className="price-period">PER MONTH</span>
+              <ul className="pricing-features">
+                {["Everything in Basic", "AI icebreaker per lead", "Company enrichment", "Daily Slack digest", "Duplicate check", "Monthly ICP refinement", "Dedicated Slack channel"].map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+              <button className="btn-primary" onClick={openChat}>Book a Demo <ArrowRight size={14} style={{ display: "inline" }} /></button>
+            </div>
+            {/* Advanced */}
+            <div className="pricing-card reveal">
+              <h3>Advanced</h3>
+              <div className="price">$10K+</div>
+              <span className="price-period">PER MONTH</span>
+              <ul className="pricing-features">
+                {["Everything in Pro", "Auto cold email sending", "3-touch follow-up", "AI reply detection", "HubSpot CRM sync", "A/B testing", "Weekly reports"].map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+              <button className="btn-secondary" onClick={openChat}>Talk to Us <ArrowRight size={14} style={{ display: "inline" }} /></button>
+            </div>
+          </div>
+          <div className="guarantee-badge reveal">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
+            No 50 qualified leads in month 1? Month 2 is free.
           </div>
         </div>
       </section>
 
-      {/* ── CTA ── */}
-      <section className="max-w-3xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-[28px] font-bold mb-3">Ready to Fill Your Pipeline?</h2>
-        <p className="text-[14px] mb-8" style={{ color: "var(--ink-3)" }}>Start your 14-day free trial. No credit card, no setup fees, no commitment.</p>
-        <Link href="/dashboard"
-          className="inline-flex items-center gap-2 h-12 px-8 rounded-xl text-[14px] font-semibold transition-all duration-200"
-          style={{ background: "linear-gradient(90deg, rgba(201,168,124,0.22), rgba(201,168,124,0.14))", color: "var(--accent-ink)", border: "1px solid rgba(201,168,124,0.30)", boxShadow: "0 0 24px rgba(201,168,124,0.14)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 40px rgba(201,168,124,0.25)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 24px rgba(201,168,124,0.14)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-          Launch ProOS <ArrowRight size={15} />
-        </Link>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer style={{ borderTop: "1px solid var(--sidebar-border)", background: "var(--sidebar-bg)" }}>
-        <div className="max-w-5xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "rgba(201,168,124,0.10)", border: "1px solid rgba(201,168,124,0.18)" }}>
-                  <Zap size={11} style={{ color: "var(--accent)" }} />
+      {/* ══════════ Testimonials ══════════ */}
+      <section className="section">
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// Social Proof</div>
+            <h2 className="section-title">Trusted by B2B Teams</h2>
+          </div>
+          <div className="testimonials-grid">
+            {[
+              { quote: "We were spending 15 hours a week on manual prospecting. Now we get 200+ scored leads every Monday morning.", initials: "AK", name: "Alex Kendall", role: "VP Sales, SaaS Co. · Austin, TX" },
+              { quote: "The icebreakers are scary good. Our cold email reply rate went from 2% to 11% in the first month.", initials: "MR", name: "Maria Rodriguez", role: "Founder, GrowthLab · London, UK" },
+              { quote: "I was skeptical about AI lead gen. But this is different — every lead comes with context.", initials: "JP", name: "James Park", role: "CEO, TechVentures · Singapore" },
+            ].map((t, i) => (
+              <div key={i} className="testimonial-card reveal">
+                <p className="quote">&ldquo;{t.quote}&rdquo;</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar">{t.initials}</div>
+                  <div className="author-info"><strong>{t.name}</strong>{t.role}</div>
                 </div>
-                <span className="font-bold text-[12px]">ProOS</span>
-              </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: "var(--ink-4)" }}>AI-powered B2B prospecting platform. Find, score, and close leads on autopilot.</p>
-            </div>
-            {[
-              { label: "Product", links: ["Features", "Pricing", "Client Portal", "API"] },
-              { label: "Company", links: ["About", "Blog", "Contact", "Privacy"] },
-              { label: "Connect", links: ["LinkedIn", "Twitter", "Email", "Telegram"] },
-            ].map(col => (
-              <div key={col.label}>
-                <h4 className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3" style={{ color: "var(--ink-4)" }}>{col.label}</h4>
-                <ul className="space-y-1.5">
-                  {col.links.map(l => (
-                    <li key={l}><span className="text-[11px] cursor-pointer transition-colors duration-150" style={{ color: "var(--ink-3)" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--ink)"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"}>{l}</span></li>
-                  ))}
-                </ul>
               </div>
             ))}
           </div>
-          <div className="pt-6 flex items-center justify-between text-[10px]" style={{ borderTop: "1px solid var(--sidebar-border)", color: "var(--ink-4)" }}>
-            <span>© 2026 LinkedIn ProOS. All rights reserved.</span>
-            <span>Built by Ayush Kumar Sharma</span>
+        </div>
+      </section>
+
+      {/* ══════════ ROI ══════════ */}
+      <section className="section" id="roi" style={{ background: "var(--bg-secondary)" }}>
+        <div className="container">
+          <div className="roi-grid">
+            <div className="roi-text reveal">
+              <div className="section-eyebrow">// ROI Calculator</div>
+              <h3>The Math is Simple</h3>
+              <p>An in-house SDR costs $4–6K/month and delivers ~50 leads. Our AI delivers <strong>500+ scored leads</strong> for a fraction.</p>
+            </div>
+            <div className="roi-calc-card reveal">
+              <div className="roi-row"><span className="label">Hot leads/month</span><span className="value">200+</span></div>
+              <div className="roi-row"><span className="label">Average close rate</span><span className="value">2–5%</span></div>
+              <div className="roi-row"><span className="label">New clients/month</span><span className="value">4–10</span></div>
+              <div className="roi-row"><span className="label">Avg. project value</span><span className="value">$5K–$15K</span></div>
+              <div className="roi-row"><span className="label">Revenue generated</span><span className="value">$20K–$150K</span></div>
+              <div className="roi-row"><span className="label">Cost of Pro plan</span><span className="value">$3,500/mo</span></div>
+              <div className="roi-highlight"><span>Minimum ROI</span><span>5.7x — 42x</span></div>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* ══════════ FAQ ══════════ */}
+      <section className="section" id="faq">
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// FAQ</div>
+            <h2 className="section-title">Got Questions?</h2>
+          </div>
+          <div className="faq-list">
+            {FAQ_ITEMS.map((item, i) => (
+              <div key={i} className={`faq-item reveal${openFaq === i ? " open" : ""}`}>
+                <button className="faq-question" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  {item.q}
+                  <span className="faq-icon">+</span>
+                </button>
+                <div className="faq-answer"><p>{item.a}</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ Final CTA ══════════ */}
+      <section className="final-cta">
+        <div className="container reveal">
+          <h2>Stop Hunting. Start Closing.</h2>
+          <p>Your ideal clients are on LinkedIn right now. Let AI find them, score them, and deliver them — every single day.</p>
+          <div className="cta-group">
+            <button className="btn-primary" onClick={openChat}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              Chat With Us Now
+            </button>
+            <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")}>See Pricing <ArrowRight size={14} style={{ display: "inline" }} /></a>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ Footer ══════════ */}
+      <footer className="footer">
+        <div className="container"><p>© 2026 Prospecting OS. AI-powered B2B prospecting.</p></div>
       </footer>
+
+      {/* ══════════ Premium Chat Widget ══════════ */}
+      <div className="chat-widget">
+        <button className="chat-trigger" onClick={() => setChatOpen(o => !o)} aria-label="Open chat">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          <span className="pulse-ring" />
+        </button>
+        <div className={`chat-window${chatOpen ? " open" : ""}`}>
+          <div className="chat-header">
+            <div className="chat-header-logo">OS</div>
+            <div className="chat-header-info">
+              <div className="chat-title">Prospecting OS AI</div>
+              <div className="chat-status"><span className="status-dot" /> Online now</div>
+            </div>
+            <button className="chat-close" onClick={() => setChatOpen(false)} aria-label="Close chat"><X size={18} /></button>
+          </div>
+          <div className="chat-messages" ref={chatMessagesRef}>
+            {chatMessages.map((m, i) => (
+              <div key={i} className={`chat-bubble ${m.type}`}>{m.text}</div>
+            ))}
+          </div>
+          <div className="chat-quick-replies" style={{ display: typing ? "none" : "flex" }}>
+            {["How it works", "Pricing", "Go-live time", "Book a demo"].map(label => (
+              <button key={label} className="quick-reply-btn" onClick={() => handleUserMessage(label === "How it works" ? "How does it work?" : label === "Go-live time" ? "Go-live time?" : label === "Book a demo" ? "Book a demo" : "Pricing?")}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="chat-input-row">
+            <input
+              ref={chatInputRef}
+              type="text"
+              placeholder="Type your question..."
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") sendChat(); }}
+            />
+            <button className="chat-send-btn" onClick={sendChat} aria-label="Send message">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+            </button>
+          </div>
+          <div className="typing-indicator" style={{ display: typing ? "flex" : "none" }}>
+            AI thinking<div className="typing-dots"><span /><span /><span /></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Email Capture Modal — entry intent + exit intent */}
+      <EmailCaptureModal />
     </div>
   );
 }

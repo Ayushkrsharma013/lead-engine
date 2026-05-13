@@ -1,4 +1,4 @@
-# LinkedIn ProOS — CLAUDE.md
+# Prospecting OS — CLAUDE.md
 
 Project context and conventions for AI-assisted development.
 
@@ -6,9 +6,12 @@ Project context and conventions for AI-assisted development.
 
 ## What this project is
 
-**LinkedIn ProOS** is a full-stack B2B prospecting platform built with Next.js 14, Supabase, and the Anthropic API.  
+**Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, and the Anthropic API.  
 It provides 8 integrated modules for lead management, AI-powered messaging, ICP scoring, outreach sequences, kanban pipeline, analytics, and client management.  
-Leads are persisted in Supabase (Postgres) — localStorage is used only for theme and sidebar preferences.
+Leads are persisted in Supabase (Postgres) — localStorage is used only for theme, sidebar preferences, and email capture state.
+
+The **root route `/`** is a marketing landing page (Prospecting OS) with a separate layout — no sidebar, no admin chrome.  
+The **app routes** (`/leads`, `/dashboard`, etc.) use the full Shell layout with Sidebar + TopBar.
 
 Repo: `github.com/Ayushkrsharma013/lead-engine`  
 Live: deployed via Vercel from the `main` branch
@@ -21,16 +24,18 @@ Live: deployed via Vercel from the `main` branch
 |---|---|
 | Framework | Next.js 14.2.5 (App Router) |
 | Language | TypeScript 5 — strict mode ON |
-| Styling | Tailwind CSS 3 + CSS variables (dark + light themes) |
+| Styling | Tailwind CSS 3 + CSS variables (dark + light themes) + `app/landing.css` (marketing page) |
+| Fonts | Landing: Cabinet Grotesk + JetBrains Mono + Instrument Serif. App: Geist + Geist Mono |
 | Database | Supabase (Postgres) — `@supabase/supabase-js` |
 | State | React Context + useReducer (`lib/AppContext.tsx`) |
 | Realtime | Supabase Realtime on leads table |
-| Icons | lucide-react ^0.400.0 (outline variants only, 16-18px) |
+| Icons | lucide-react ^0.400.0 (outline variants only, 16-18px; no emoji characters) |
 | Charts | recharts (Analytics module) |
 | Drag & Drop | @hello-pangea/dnd (Kanban module) |
 | AI | Anthropic API — called from browser (Message Lab + Scorer) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
 | Google Drive | Google Identity Services (GIS) — client-side OAuth |
+| Browser testing | agent-browser CLI (Vercel) — screenshots gitignored |
 | Deploy | Vercel (auto-deploys on push to `main`) |
 
 ---
@@ -40,17 +45,21 @@ Live: deployed via Vercel from the `main` branch
 ```
 lead-engine/
 ├── app/
-│   ├── layout.tsx              # Root layout — AppProvider + Shell wrapper
-│   ├── page.tsx                # Lead Intelligence (TopBar + filter sidebar + leads table + agent)
-│   ├── globals.css             # CSS variables (dark/light), scrollbar, fonts
+│   ├── layout.tsx              # Root layout — AppProvider + Shell + font imports + landing.css
+│   ├── page.tsx                # Marketing landing page (hero, how-it-works, pricing, FAQ, chat widget)
+│   ├── globals.css             # App CSS variables (dark/light), scrollbar, fonts, filter components
+│   ├── landing.css             # Landing page styles scoped to .landing-page (orange accent #e8420a)
 │   ├── api/leads/route.ts      # POST /api/leads — Apify scraping proxy
+│   ├── api/leads/capture/route.ts # POST /api/leads/capture — email capture from landing page
 │   ├── dashboard/page.tsx      # Command Center (stats, activity, campaigns)
+│   ├── leads/page.tsx          # Lead Intelligence (TopBar + filter sidebar + leads table + agent)
 │   ├── message-lab/page.tsx    # AI Message Lab (Anthropic API, typewriter)
 │   ├── scorer/page.tsx         # AI Lead Scorer (ICP scoring, SVG ring)
 │   ├── sequences/page.tsx      # Sequence Builder (timeline, DnD reorder)
 │   ├── kanban/page.tsx         # Kanban Pipeline (7-column DnD board)
 │   ├── analytics/page.tsx      # Analytics (4 recharts, date filters)
-│   └── clients/page.tsx        # Client Manager (CRUD, reports)
+│   ├── clients/page.tsx        # Client Manager (CRUD, reports)
+│   └── portal/                 # Client portal (login, leads, billing)
 ├── components/
 │   ├── layout/
 │   │   ├── Sidebar.tsx         # Collapsible sidebar (220px/56px), Lucide icons
@@ -58,9 +67,10 @@ lead-engine/
 │   │   ├── ThemeToggle.tsx     # Sun/moon toggle
 │   │   ├── CommandPalette.tsx  # Cmd+K global search (leads, modules, actions)
 │   │   └── NotificationBell.tsx# Bell icon + dropdown with unread count
-│   ├── Shell.tsx               # App shell: Sidebar + content + Toast + CommandPalette + SettingsModal
+│   ├── Shell.tsx               # App shell: skips sidebar for `/` route (MARKETING_ROUTES)
+│   ├── EmailCaptureModal.tsx   # Email capture modal — entry intent (12s) + exit intent
 │   ├── FilterPanel.tsx         # Vertical filter sidebar (272px) below TopBar — collapsible sections
-│   ├── SettingsModal.tsx        # Settings modal — source toggles, AI model guide, about info
+│   ├── SettingsModal.tsx       # Settings modal — source toggles, AI model guide, about info
 │   ├── GDriveModal.tsx         # Google Drive export modal
 │   ├── LeadsTable.tsx          # Data table with sort headers + row selection
 │   ├── Pagination.tsx          # Page nav (first/prev/pages/next/last + size)
@@ -68,7 +78,7 @@ lead-engine/
 │   └── ui/                     # UI primitives (button, badge, input, select, etc.)
 ├── lib/
 │   ├── types.ts                # All shared types + default constants
-│   ├── supabase.ts             # Supabase client (createClient)
+│   ├── supabase.ts             # Supabase client (exports `supabase` instance)
 │   ├── db.ts                   # Typed async data access layer (16 functions)
 │   ├── storage.ts              # validateLead, sanitizeLead, generateCSV
 │   ├── filters.ts              # applyFilters, sortLeads, countActiveFilters
@@ -135,7 +145,7 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 
 ## Database — Supabase
 
-### Tables (6)
+### Tables (7)
 
 | Table | Key columns | Notes |
 |---|---|---|
@@ -145,6 +155,7 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 | `campaigns` | `id UUID PK`, name, target_industry, status, lead_ids JSONB | — |
 | `clients` | `id UUID PK`, name, company, industry, monthly_retainer, status | — |
 | `activity_log` | `id UUID PK`, type, text, lead_id UUID | Ordered by created_at DESC |
+| `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Landing page email collection |
 
 ### Data access layer (`lib/db.ts`)
 
@@ -296,7 +307,8 @@ Active filter chips in the chip bar are color-coded by group:
 
 | Route | Module | Key features |
 |---|---|---|
-| `/` | Lead Intelligence | TopBar + source tabs (with enable/disable via Settings), filter sidebar (272px, 7 sections), search, leads table, agent run, CSV/Drive export |
+| `/` | Landing Page | Marketing page — hero with typewriter, pipeline visual, how-it-works (5 steps), pricing (3 tiers), testimonials, ROI calculator, FAQ accordion, premium chat widget, email capture modal. No sidebar/shell chrome. |
+| `/leads` | Lead Intelligence | TopBar + source tabs, filter sidebar (272px, 7 sections), search, leads table, agent run, CSV/Drive export |
 | `/dashboard` | Command Center | 5 stat cards, activity feed, campaigns, quick actions |
 | `/message-lab` | AI Message Lab | Claude API, typewriter, 3 message types, 4 tones, history |
 | `/scorer` | Lead Scorer | ICP criteria, SVG score ring, reasoning, add-to-pipeline |
@@ -304,6 +316,7 @@ Active filter chips in the chip bar are color-coded by group:
 | `/kanban` | Kanban Pipeline | 7 columns, @hello-pangea/dnd, detail panel, notes auto-save |
 | `/analytics` | Analytics | 4 recharts, date filters (7d/30d/90d/all) |
 | `/clients` | Client Manager | Client CRUD, detail view, report generator |
+| `/portal` | Client Portal | Login, client leads, billing |
 
 ---
 
@@ -356,16 +369,43 @@ The Anthropic API key is entered by the user in the UI (Message Lab or Scorer) a
 
 ## localStorage usage
 
-Only 4 keys are allowed in localStorage — everything else is in Supabase:
-
 | Key | Purpose | Values |
 |---|---|---|
-| `leados_theme` | Theme preference | `"dark"` \| `"light"` |
+| `leados_theme` | App theme preference | `"dark"` \| `"light"` |
 | `leados_sidebar` | Sidebar state | `"open"` \| `"closed"` |
 | `leados_sources` | Enabled data sources | `{"linkedin":true,"gmaps":false,"amazon":false}` |
 | `leadgen_gdrive_client_id` | Google Drive OAuth client ID | string |
+| `prospectingos-theme` | Landing page theme (independent) | `"dark"` \| `"light"` |
+| `prospectingos_email_capture` | Email capture state (`submitted`, `dismissedAt`) | JSON object |
 
 ---
+
+## Email capture modal (`components/EmailCaptureModal.tsx`)
+
+- **Entry intent**: Shows 12s after page load if not previously submitted/dismissed
+- **Exit intent**: Shows on `mouseleave` when cursor exits viewport top (desktop only)
+- **States**: idle → submitting → done (success checkmark)
+- **Persistence**: localStorage `prospectingos_email_capture` prevents re-show; exit re-trigger has 24h cooldown after dismiss
+- **API**: POSTs to `/api/leads/capture` → Supabase `email_captures` table (non-critical — fails silently)
+- **Dismiss**: Esc key, X button, or backdrop click
+
+---
+
+## Landing page (`app/page.tsx` + `app/landing.css`)
+
+- Scoped CSS under `.landing-page` class — separate variable system (`--accent: #e8420a` orange) from app gold (`--accent: #C9A87C`)
+- Responsive breakpoints: 1024px, 900px, 768px, 600px, 400px
+- **Sections**: Hero (typewriter), How It Works (5 Lucide-icon cards), Pricing (3 tiers + popular badge), Testimonials, ROI calculator, FAQ accordion, Final CTA, Footer
+- **Premium chat widget**: Fixed bottom-right, quick replies, bot response engine
+- **ASCII canvas**: Japanese character particle animation (dark mode only)
+- **Custom cursor**: Dot + ring with hover detection (desktop only, hidden ≤900px)
+- **Theme toggle**: Independent from app — uses `prospectingos-theme` localStorage key
+
+---
+
+## .gitignore
+
+Agent-browser screenshots (`landing*.png`) and `.ruflo/` state are gitignored — they are debugging artifacts, not project assets.
 
 ## Development commands
 
@@ -373,6 +413,7 @@ Only 4 keys are allowed in localStorage — everything else is in Supabase:
 npm run dev      # Start dev server at http://localhost:3000
 npm run build    # Production build (tsc + Next.js) — must pass with 0 errors
 npm run lint     # ESLint check
+agent-browser open http://localhost:3000   # Browser testing (requires global install)
 ```
 
 ---

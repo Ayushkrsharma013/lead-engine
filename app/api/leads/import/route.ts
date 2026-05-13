@@ -120,7 +120,36 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ─── POST — Import leads from selected Apify runs ─────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function fetchAllDatasetItems(datasetId: string): Promise<Record<string, unknown>[]> {
+  const allItems: Record<string, unknown>[] = [];
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 50; // safety cap: 50,000 leads max per run
+  let offset = 0;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const res = await fetch(
+      `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${PAGE_SIZE}&offset=${offset}`,
+      { headers: APIFY_HEADERS },
+    );
+    if (!res.ok) {
+      console.error(`fetchAllDatasetItems: page ${page} failed HTTP ${res.status} for dataset ${datasetId}`);
+      break;
+    }
+    const items = await res.json() as Record<string, unknown>[];
+    if (!Array.isArray(items) || items.length === 0) break;
+    allItems.push(...items);
+    if (items.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+    // Small delay between pages to avoid Apify rate limits
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  return allItems;
+}
+
+// ─── POST — Import leads from selected Apify run ──────────────────────────────
 
 export async function POST(req: NextRequest) {
   const authError = validateApiAuth(req);
@@ -131,14 +160,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Accept optional body to filter runs + limit
-    let body: { runIds?: string[]; limit?: number } = {};
-    try { body = await req.json(); } catch { /* no body = import all */ }
+    let body: { runId?: string; runIds?: string[] } = {};
+    try { body = await req.json(); } catch { /* no body */ }
 
-    const selectedRunIds = body.runIds?.length ? new Set(body.runIds) : null;
-    const itemLimit = typeof body.limit === "number" ? Math.min(Math.max(1, body.limit), 2000) : 200;
+    // Support both single runId and legacy runIds array
+    const targetRunIds = body.runId ? [body.runId] : body.runIds ?? [];
+    if (targetRunIds.length === 0) {
+      return NextResponse.json({ error: "No runId provided" }, { status: 400 });
+    }
 
-    // 1. List all SUCCEEDED runs
+    const runIdSet = new Set(targetRunIds);
+
+    // 1. Find the target run(s) from the run history
     const runsRes = await fetch(
       `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
       { headers: APIFY_HEADERS },
@@ -151,34 +184,24 @@ export async function POST(req: NextRequest) {
       data?: { items?: Array<{ id: string; defaultDatasetId: string; finishedAt: string }> };
     };
     const allRuns = runsData?.data?.items ?? [];
-
-    // Filter to selected runs if specified
-    const runs = selectedRunIds
-      ? allRuns.filter(r => selectedRunIds.has(r.id))
-      : allRuns;
+    const runs = allRuns.filter(r => runIdSet.has(r.id));
 
     if (runs.length === 0) {
       return NextResponse.json({
         message: "No matching runs found",
         added: 0, updated: 0, total: 0,
-        runs: [],
       });
     }
 
-    // 2. Fetch leads from selected runs
+    // 2. Fetch ALL leads from selected run(s) with pagination
     const allLeads: Lead[] = [];
     const runSummary: Array<{ runId: string; count: number }> = [];
 
     for (const run of runs) {
       if (!run.defaultDatasetId) continue;
       try {
-        const dataRes = await fetch(
-          `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=${itemLimit}`,
-          { headers: APIFY_HEADERS },
-        );
-        if (!dataRes.ok) continue;
-        const items = await dataRes.json() as Record<string, unknown>[];
-        if (!Array.isArray(items) || items.length === 0) continue;
+        const items = await fetchAllDatasetItems(run.defaultDatasetId);
+        if (items.length === 0) continue;
 
         const leads = items.map(apifyItemToLead);
         allLeads.push(...leads);
@@ -190,32 +213,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         message: `Found ${runs.length} run(s) but all datasets were empty`,
         added: 0, updated: 0, total: 0,
-        runs: runSummary,
       });
     }
 
-    // 3. Pre-deduplicate across runs using stable ID (same person won't appear twice)
+    // 3. Pre-deduplicate across runs using stable ID
     const seen = new Map<string, Lead>();
     for (const lead of allLeads) {
       if (!seen.has(lead.id)) seen.set(lead.id, lead);
     }
     const deduped = Array.from(seen.values());
 
-    // 4. Merge into DB (mergeLeadsInDB handles dedup against existing saved leads)
-    const { added, updated } = await mergeLeadsInDB(deduped);
+    // 4. Merge into DB (mergeLeadsInDB handles dedup against existing leads)
+    const { stored, added, updated } = await mergeLeadsInDB(deduped);
 
+    // Return the imported leads so the frontend can show them in "Latest Run"
     return NextResponse.json({
-      message: `Imported ${added + updated} leads (${added} new, ${updated} updated) from ${runs.length} run(s)`,
+      message: `${added + updated} leads imported successfully`,
       added,
       updated,
       total: added + updated,
-      runs: runSummary,
+      leads: deduped,
     });
   } catch (err: unknown) {
     const detail = err instanceof Error
       ? err.message
       : typeof err === "object" ? JSON.stringify(err) : String(err ?? "");
     console.error("import route error:", detail);
-    return NextResponse.json({ error: detail || "Unknown error" }, { status: 500 });
+    return NextResponse.json({ error: detail || "Failed to import leads" }, { status: 500 });
   }
 }

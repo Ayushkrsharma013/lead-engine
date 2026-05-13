@@ -3,13 +3,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Search, Play, Download, X, RotateCcw, ChevronRight,
-  Sparkles, Database, HardDrive, CloudDownload,
+  Sparkles, Database, HardDrive, CloudDownload, Flame,
 } from "lucide-react";
 import type { Source, Lead, LogEntry, FilterState, SortField } from "@/lib/types";
 import { DEFAULT_FILTERS, DEFAULT_PAGINATION } from "@/lib/types";
 import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } from "@/lib/filters";
 import { generateCSV, stableLeadId } from "@/lib/storage";
-import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads } from "@/lib/db";
+import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads, batchUpdateLeadStatus } from "@/lib/db";
 import { useApp } from "@/lib/AppContext";
 import TopBar from "@/components/layout/TopBar";
 import FilterPanel from "@/components/FilterPanel";
@@ -194,10 +194,10 @@ export default function Home() {
   const { leads, latestLeads, selected, filters, sort, pagination, tab, source, mock, running, log, progress: prog, stats } = state;
   const accent = ACCENT[source];
 
-  const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
+  const showToast = useCallback((msg: string, type: "success" | "warn" | "error" = "success") => {
     dispatch({ type: "SET_TOAST", payload: { msg, type } });
     setTimeout(() => dispatch({ type: "SET_TOAST", payload: null }), 4000);
-  };
+  }, [dispatch]);
 
   // Derived data
   const sourceLeads = tab === "latest" ? latestLeads : leads;
@@ -386,16 +386,22 @@ export default function Home() {
 
   // Import modal
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const handleImported = useCallback(async (added: number, updated: number) => {
+  const [importedRunIds, setImportedRunIds] = useState<Set<string>>(new Set());
+  const handleImported = useCallback(async (added: number, updated: number, total: number, leads: Lead[]) => {
     const stored = await fetchLeadsFromDB();
-    dispatch({ type: "SET_LEADS", payload: stored });
-    // Reset filters + switch to All Saved Leads tab so imported leads are immediately visible
+    // Use MERGE_LEADS to populate both "All Saved Leads" AND "Latest Run" tabs
+    dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: leads, added, updated } });
     dispatch({ type: "SET_FILTERS", payload: DEFAULT_FILTERS });
-    dispatch({ type: "SET_TAB", payload: "all" });
     dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
     const newStats = await computeStatsFromLeads(stored);
     dispatch({ type: "SET_STATS", payload: newStats });
-    showToast(`${added} new · ${updated} updated leads imported`);
+    if (added > 0) {
+      showToast(`${added} new leads imported successfully`);
+    } else if (updated > 0) {
+      showToast(`${updated} leads updated — already in database, showing in Latest Run`);
+    } else {
+      showToast(`No new leads — all ${total} leads already in database`);
+    }
   }, [dispatch, showToast]);
 
   // Selection
@@ -419,6 +425,20 @@ export default function Home() {
     dispatch({ type: "SET_STATS", payload: newStats });
     showToast(`${ids.length} lead${ids.length > 1 ? "s" : ""} deleted`);
   };
+
+  // Move to Hot
+  const handleMoveToHot = useCallback(async (ids: string[]) => {
+    try {
+      const stored = await batchUpdateLeadStatus(ids, "hot");
+      dispatch({ type: "SET_LEADS", payload: stored });
+      dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
+      const newStats = await computeStatsFromLeads(stored);
+      dispatch({ type: "SET_STATS", payload: newStats });
+      showToast(`${ids.length} lead${ids.length > 1 ? "s" : ""} moved to Hot`);
+    } catch {
+      showToast("Failed to update leads", "error");
+    }
+  }, [dispatch, showToast]);
 
   // Export CSV
   const getExportLeads = (ids?: string[]) =>
@@ -666,6 +686,32 @@ export default function Home() {
               Import
             </button>
 
+            {/* Move to Hot — visible when leads selected in Latest Run tab */}
+            {tab === "latest" && selected.length > 0 && (
+              <button
+                onClick={() => handleMoveToHot(selected)}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-all shrink-0"
+                title="Mark selected leads as Hot"
+                style={{
+                  background: "rgba(255,107,53,0.15)",
+                  color: "var(--accent-orange)",
+                  border: "1px solid rgba(255,107,53,0.35)",
+                  boxShadow: "0 0 12px rgba(255,107,53,0.12)",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,107,53,0.25)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 18px rgba(255,107,53,0.22)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,107,53,0.15)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 12px rgba(255,107,53,0.12)";
+                }}
+              >
+                <Flame size={13} />
+                Hot ({selected.length})
+              </button>
+            )}
+
             {/* Export CSV */}
             {sorted.length > 0 && (
               <button
@@ -867,6 +913,8 @@ export default function Home() {
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         onImported={handleImported}
+        importedRunIds={importedRunIds}
+        onRunImported={(runId) => setImportedRunIds(prev => new Set(prev).add(runId))}
       />
       <GDriveModal
         open={gdrive}
