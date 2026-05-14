@@ -82,13 +82,14 @@ lead-engine/
 │   ├── clients/page.tsx        # Client Manager
 │   └── portal/                 # Client portal
 ├── components/
+│   ├── Navbar.tsx            # Marketing landing navbar (scroll-aware glass morphism)
 │   ├── layout/
 │   │   ├── Sidebar.tsx
 │   │   ├── TopBar.tsx
 │   │   ├── ThemeToggle.tsx
 │   │   ├── CommandPalette.tsx
 │   │   └── NotificationBell.tsx
-│   ├── Shell.tsx
+│   ├── Shell.tsx             # Renders Navbar on marketing pages
 │   ├── EmailCaptureModal.tsx
 │   ├── FilterPanel.tsx
 │   ├── SettingsModal.tsx
@@ -98,6 +99,7 @@ lead-engine/
 │   ├── Toast.tsx
 │   └── ui/
 ├── lib/
+│   ├── nav.ts                  # Landing nav items (Features, Pricing, FAQ)
 │   ├── types.ts                # All shared types + default constants
 │   ├── supabase.ts             # Supabase clients: `supabase` (anon) + `supabaseAdmin` (service role)
 │   ├── db.ts                   # Typed async data access layer (uses supabaseAdmin)
