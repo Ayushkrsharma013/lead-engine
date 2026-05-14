@@ -2,19 +2,38 @@
 
 Project context and conventions for AI-assisted development.
 
+**Important**: This project now shares its Supabase database with FlowForges (mark1). Both apps read/write from the same `leads`, `messages`, `sequences`, `campaigns`, `clients`, `activity_log`, `appointments`, and `email_captures` tables.
+
 ---
 
 ## What this project is
 
 **Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, and the Anthropic API.  
-It provides 8 integrated modules for lead management, AI-powered messaging, ICP scoring, outreach sequences, kanban pipeline, analytics, and client management.  
-Leads are persisted in Supabase (Postgres) — localStorage is used only for theme, sidebar preferences, and email capture state.
+It provides 8 integrated modules for lead management, AI-powered messaging, ICP scoring, outreach sequences, kanban pipeline, analytics, and client management.
 
 The **root route `/`** is a marketing landing page (Prospecting OS) with a separate layout — no sidebar, no admin chrome.  
 The **app routes** (`/leads`, `/dashboard`, etc.) use the full Shell layout with Sidebar + TopBar.
 
 Repo: `github.com/Ayushkrsharma013/lead-engine`  
 Live: deployed via Vercel from the `main` branch
+
+---
+
+## Shared Database Architecture
+
+Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
+- **Project**: `mark1-flowforges` (`otxifqcvgmxoxemmgbjd`), region ap-south-1
+- **Tables shared**: `leads`, `messages`, `sequences`, `campaigns`, `clients`, `activity_log`, `lead_activity_log`, `appointments`, `email_captures`
+
+### Why shared?
+- FlowForges AI employees (Atlas, Echo, etc.) read and manage leads from the same pool
+- Pipeline Kanban in FlowForges shows leads scraped by Lead Engine (and vice versa)
+- Avoids data silos and sync complexity
+
+### Auth implications
+- FlowForges uses Supabase SSR Auth (cookies) with `profiles` table
+- Lead Engine uses a simpler model — server-side DB operations use `supabaseAdmin` (service role) to bypass RLS
+- **Required env var**: `SUPABASE_SERVICE_ROLE_KEY` (from FlowForges Supabase dashboard)
 
 ---
 
@@ -26,7 +45,7 @@ Live: deployed via Vercel from the `main` branch
 | Language | TypeScript 5 — strict mode ON |
 | Styling | Tailwind CSS 3 + CSS variables (dark + light themes) + `app/landing.css` (marketing page) |
 | Fonts | Landing: Cabinet Grotesk + JetBrains Mono + Instrument Serif. App: Geist + Geist Mono |
-| Database | Supabase (Postgres) — `@supabase/supabase-js` |
+| Database | Supabase (Postgres) — shared with FlowForges |
 | State | React Context + useReducer (`lib/AppContext.tsx`) |
 | Realtime | Supabase Realtime on leads table |
 | Icons | lucide-react ^0.400.0 (outline variants only, 16-18px; no emoji characters) |
@@ -46,47 +65,49 @@ Live: deployed via Vercel from the `main` branch
 lead-engine/
 ├── app/
 │   ├── layout.tsx              # Root layout — AppProvider + Shell + font imports + landing.css
-│   ├── page.tsx                # Marketing landing page (hero, how-it-works, pricing, FAQ, chat widget)
-│   ├── globals.css             # App CSS variables (dark/light), scrollbar, fonts, filter components
+│   ├── page.tsx                # Marketing landing page
+│   ├── globals.css             # App CSS variables (dark/light), scrollbar, fonts
 │   ├── landing.css             # Landing page styles scoped to .landing-page (orange accent #e8420a)
 │   ├── api/leads/route.ts      # POST /api/leads — Apify scraping proxy
-│   ├── api/leads/capture/route.ts # POST /api/leads/capture — email capture from landing page
+│   ├── api/leads/import/route.ts  # POST /api/leads/import — import into shared DB
+│   ├── api/leads/capture/route.ts # POST /api/leads/capture — email capture
+│   ├── api/appointments/route.ts  # GET/POST appointments
 │   ├── dashboard/page.tsx      # Command Center (stats, activity, campaigns)
-│   ├── leads/page.tsx          # Lead Intelligence (TopBar + filter sidebar + leads table + agent)
-│   ├── message-lab/page.tsx    # AI Message Lab (Anthropic API, typewriter)
-│   ├── scorer/page.tsx         # AI Lead Scorer (ICP scoring, SVG ring)
-│   ├── sequences/page.tsx      # Sequence Builder (timeline, DnD reorder)
-│   ├── kanban/page.tsx         # Kanban Pipeline (7-column DnD board)
-│   ├── analytics/page.tsx      # Analytics (4 recharts, date filters)
-│   ├── clients/page.tsx        # Client Manager (CRUD, reports)
-│   └── portal/                 # Client portal (login, leads, billing)
+│   ├── leads/page.tsx          # Lead Intelligence
+│   ├── message-lab/page.tsx    # AI Message Lab
+│   ├── scorer/page.tsx         # AI Lead Scorer
+│   ├── sequences/page.tsx      # Sequence Builder
+│   ├── kanban/page.tsx         # Kanban Pipeline
+│   ├── analytics/page.tsx      # Analytics
+│   ├── clients/page.tsx        # Client Manager
+│   └── portal/                 # Client portal
 ├── components/
 │   ├── layout/
-│   │   ├── Sidebar.tsx         # Collapsible sidebar (220px/56px), Lucide icons
-│   │   ├── TopBar.tsx          # Module header with Cmd+K trigger + bell + theme
-│   │   ├── ThemeToggle.tsx     # Sun/moon toggle
-│   │   ├── CommandPalette.tsx  # Cmd+K global search (leads, modules, actions)
-│   │   └── NotificationBell.tsx# Bell icon + dropdown with unread count
-│   ├── Shell.tsx               # App shell: skips sidebar for `/` route (MARKETING_ROUTES)
-│   ├── EmailCaptureModal.tsx   # Email capture modal — entry intent (12s) + exit intent
-│   ├── FilterPanel.tsx         # Vertical filter sidebar (272px) below TopBar — collapsible sections
-│   ├── SettingsModal.tsx       # Settings modal — source toggles, AI model guide, about info
-│   ├── GDriveModal.tsx         # Google Drive export modal
-│   ├── LeadsTable.tsx          # Data table with sort headers + row selection
-│   ├── Pagination.tsx          # Page nav (first/prev/pages/next/last + size)
-│   ├── Toast.tsx               # Bottom-right toast notifications (4 types)
-│   └── ui/                     # UI primitives (button, badge, input, select, etc.)
+│   │   ├── Sidebar.tsx
+│   │   ├── TopBar.tsx
+│   │   ├── ThemeToggle.tsx
+│   │   ├── CommandPalette.tsx
+│   │   └── NotificationBell.tsx
+│   ├── Shell.tsx
+│   ├── EmailCaptureModal.tsx
+│   ├── FilterPanel.tsx
+│   ├── SettingsModal.tsx
+│   ├── GDriveModal.tsx
+│   ├── LeadsTable.tsx
+│   ├── Pagination.tsx
+│   ├── Toast.tsx
+│   └── ui/
 ├── lib/
 │   ├── types.ts                # All shared types + default constants
-│   ├── supabase.ts             # Supabase client (exports `supabase` instance)
-│   ├── db.ts                   # Typed async data access layer (16 functions)
-│   ├── storage.ts              # validateLead, sanitizeLead, generateCSV
-│   ├── filters.ts              # applyFilters, sortLeads, countActiveFilters
-│   ├── AppContext.tsx           # Global state (useReducer + realtime subscription)
-│   ├── seed.ts                 # 15-lead sample data seeder
-│   ├── google-drive.ts         # GIS OAuth token flow + Drive multipart upload
-│   └── utils.ts                # cn() helper (clsx + tailwind-merge)
-└── CLAUDE.md                   # ← you are here
+│   ├── supabase.ts             # Supabase clients: `supabase` (anon) + `supabaseAdmin` (service role)
+│   ├── db.ts                   # Typed async data access layer (uses supabaseAdmin)
+│   ├── storage.ts              # validateLead, sanitizeLead, generateCSV, stableLeadId
+│   ├── filters.ts
+│   ├── AppContext.tsx
+│   ├── seed.ts
+│   ├── google-drive.ts
+│   └── utils.ts
+└── CLAUDE.md
 ```
 
 ---
@@ -143,34 +164,38 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 
 ---
 
-## Database — Supabase
+## Database — Supabase (Shared with FlowForges)
 
-### Tables (7)
+**Project**: `mark1-flowforges` (`otxifqcvgmxoxemmgbjd`)
+
+### Tables (shared)
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `leads` | `id TEXT PK`, email_status, score, source, kanban_column, status, notes | Real-time enabled |
+| `leads` | `id TEXT PK`, email_status, score, source, kanban_column, status, notes, user_id | RLS enabled (user-scoped). Shared with FlowForges |
 | `messages` | `id UUID PK`, lead_id FK, subject, body, tone, message_type | CASCADE delete |
 | `sequences` | `id UUID PK`, name, steps JSONB, assigned_lead_ids JSONB | — |
 | `campaigns` | `id UUID PK`, name, target_industry, status, lead_ids JSONB | — |
 | `clients` | `id UUID PK`, name, company, industry, monthly_retainer, status | — |
 | `activity_log` | `id UUID PK`, type, text, lead_id UUID | Ordered by created_at DESC |
-| `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Landing page email collection |
-| `appointments` | `id UUID PK`, date TEXT, time TEXT, name TEXT, email TEXT, company TEXT, notes TEXT, created_at | Book-a-demo scheduling |
+| `lead_activity_log` | `id UUID PK`, user_id, type, text, lead_id | Lead-specific activity |
+| `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Public insert RLS policy |
+| `appointments` | `id UUID PK`, date TEXT, time TEXT, name TEXT, email TEXT, company TEXT, notes TEXT, created_at | Public insert RLS policy |
 
 ### Data access layer (`lib/db.ts`)
 
-All functions are async and handle snake_case ↔ camelCase transformation:
+All functions use `supabaseAdmin` (service role) to bypass RLS:
 
 ```typescript
 // Leads
 fetchLeadsFromDB() → Promise<Lead[]>
 mergeLeadsInDB(incoming: Lead[]) → Promise<MergeResult>
 deleteLeadsFromDB(ids: string[]) → Promise<Lead[]>
-computeStatsFromLeads(leads: Lead[]) → Promise<Stats>
+batchUpdateLeadStatus(ids, status) → Promise<Lead[]>
+computeStatsFromLeads(leads) → Promise<Stats>
 
 // Messages
-getMessages(leadId?: string) → Promise<Message[]>
+getMessages(leadId?) → Promise<Message[]>
 addMessage(msg) → Promise<Message>
 
 // Sequences
@@ -188,7 +213,7 @@ saveClient(c) → Promise<Client>
 updateClient(id, updates) → Promise<Client>
 
 // Activity Log
-getActivityLog(limit?: number) → Promise<ActivityLogEntry[]>
+getActivityLog(limit?) → Promise<ActivityLogEntry[]>
 logActivity(entry) → Promise<void>
 ```
 
@@ -210,7 +235,6 @@ interface AppState {
   activeModule: ModuleName;
   notifications: Notification[];
   loading: boolean;
-  // Lead table state:
   selected: string[]; filters: FilterState; sort: SortState;
   pagination: PaginationState; tab: "all"|"latest"; source: Source;
   mock: boolean; running: boolean; log: LogEntry[]; progress: number;
@@ -242,7 +266,7 @@ interface AppState {
 | `--text` | `#e8e8f0` | `#1a1a2e` |
 | `--muted` | `#6b6b80` | `#6b6b80` |
 
-### Accent constants (never change between themes)
+### Accent constants
 
 | Variable | Value | Usage |
 |---|---|---|
@@ -251,9 +275,9 @@ interface AppState {
 | `--accent-orange` | `#ff6b35` | Hot leads, alerts, Scorer, amazon source |
 | `--accent-green` | `#00ff88` | Success, verified, gmaps source |
 
-Theme is applied via `data-theme="light"` attribute on `<html>`. Toggle in TopBar dispatches `SET_THEME`.
+Theme is applied via `data-theme="light"` attribute on `<html>`.
 
-### Tailwind color mapping (`tailwind.config.ts`)
+### Tailwind color mapping
 
 ```
 bg-bg          → var(--bg)
@@ -262,45 +286,18 @@ bg-surface-2   → var(--surface2)
 border-border  → var(--border)
 text-text      → var(--text)
 text-muted     → var(--muted)
-bg-accent-blue → var(--accent-blue) (same for purple, orange, green)
+bg-accent-blue → var(--accent-blue)
 text-accent-blue → var(--accent-blue)
 ```
 
-### CSS component classes (in `app/globals.css`)
-
-| Class | Purpose |
-|---|---|
-| `.filter-chip` | Inactive filter chip — hover/active transitions, light/dark support |
-| `.filter-chip-active` | Active filter chip — inherits color/border/shadow from inline style |
-| `.filter-chip-dot` | 6px colored dot inside email quality chips |
-| `.section-group` | Collapsible filter section wrapper — bottom border |
-| `.section-header` | Section toggle button — hover transitions, no JS handlers |
-| `.section-count` | Blue count badge inside section headers |
-| `.filter-date-input` | Date picker input — focus glow, theme-aware calendar icon |
-| `.search-input` | Search bar — gradient focus ring, ⌘K shortcut hint |
-| `.search-shortcut` | ⌘K badge inside search bar |
-| `.transition-premium` | Universal `150ms cubic-bezier(0.4, 0, 0.2, 1)` transition |
-
-### Filter chip colors
-
-Active filter chips in the chip bar are color-coded by group:
-- keyword/seniority/companySizes/dates → `--accent-blue` (#00d4ff)
-- jobFunction/countries → `--accent-purple` (#7c3aed)
-- industries → `--accent-green` (#00ff88)
-- emailStatus → per-status color (verified=#10b981, risky=#f59e0b, not_found=#6b6b80)
-- minScore → `--accent-orange` (#ff6b35)
-- sources → per-source color (linkedin=blue, gmaps=green, amazon=orange)
-
 ### Design rules
 
-- Use CSS variable-based Tailwind classes everywhere — no hardcoded hex colors except the 4 accent constants in inline styles
-- Lucide icons: outline variants only, `size={16}` or `size={18}`, color inherits from parent or CSS variable
-- Transitions: 150-200ms ease on interactive elements (use `.transition-premium` or `transition-all duration-150`)
+- Use CSS variable-based Tailwind classes everywhere
+- Lucide icons: outline variants only, `size={16}` or `size={18}`
+- Transitions: 150-200ms ease on interactive elements
 - Border radius: 6-8px cards/buttons, 12px modals
-- Modals: `bg-black/60 backdrop-blur-sm` overlay, `bg-surface border border-border rounded-xl` panel
-- Loading states: subtle spinner (border accent + transparent), not heavy animations
+- Modals: `bg-black/60 backdrop-blur-sm` overlay
 - Scrollbar: 4px wide, transparent track, white/10 thumb
-- Filter interactions: use CSS classes instead of JS `onMouseEnter`/`onMouseLeave` for hover states — smoother and no DOM thrashing
 
 ---
 
@@ -308,52 +305,17 @@ Active filter chips in the chip bar are color-coded by group:
 
 | Route | Module | Key features |
 |---|---|---|
-| `/` | Landing Page | Marketing page — hero with typewriter, pipeline visual, how-it-works (5 steps), pricing (3 tiers), testimonials, ROI calculator, FAQ accordion, premium chat widget, email capture modal. No sidebar/shell chrome. |
-| `/book` | Appointment Scheduling | Multi-step booking flow — date picker → time slots → booking form → confirmation. Inspired by Cal.com/cal.diy patterns. Own nav bar, no admin chrome. POSTs to `/api/appointments`. |
-| `/leads` | Lead Intelligence | TopBar + source tabs, filter sidebar (272px, 7 sections), search, leads table, agent run, CSV/Drive export |
-| `/dashboard` | Command Center | 5 stat cards, activity feed, campaigns, quick actions |
-| `/message-lab` | AI Message Lab | Claude API, typewriter, 3 message types, 4 tones, history |
-| `/scorer` | Lead Scorer | ICP criteria, SVG score ring, reasoning, add-to-pipeline |
-| `/sequences` | Sequence Builder | Timeline DnD, 5-step default, variable chips, Supabase CRUD |
-| `/kanban` | Kanban Pipeline | 7 columns, @hello-pangea/dnd, detail panel, notes auto-save |
-| `/analytics` | Analytics | 4 recharts, date filters (7d/30d/90d/all) |
-| `/clients` | Client Manager | Client CRUD, detail view, report generator |
-| `/portal` | Client Portal | Login, client leads, billing |
-
----
-
-## Sidebar (`components/layout/Sidebar.tsx`)
-
-- **Expanded**: 220px — shows icon + label + left border on active item
-- **Collapsed**: 56px — shows icon only, tooltips on hover
-- **Toggle**: ChevronLeft/ChevronRight button at bottom
-- **Active indicator**: 3px blue left border + `rgba(0,212,255,0.07)` background
-- **Theme toggle**: sun/moon below collapse button
-- **Settings button**: Settings2 icon above theme toggle — opens SettingsModal (source toggles, AI model guide, about)
-- **Separators**: between nav groups (Command Center+Leads | Message Lab+Scorer | Sequences+Kanban+Analytics+Clients)
-
----
-
-## TypeScript gotchas
-
-1. **Double-cast pattern** — never cast directly between non-overlapping types; always go through `unknown`:
-   ```typescript
-   // ✗ fails strict mode
-   obj as Record<string, unknown>
-   // ✓ correct
-   obj as unknown as Record<string, unknown>
-   ```
-
-2. **LucideIcon type** — use `import type { LucideIcon } from "lucide-react"` for icon component types, not `React.ComponentType<{ size?: number }>`.
-
-3. **Set spread** — `[...new Set()]` requires `--downlevelIteration`; use `Array.from(new Set(...))` instead.
-
-4. **Window globals** — use the `gis()` accessor pattern rather than `declare const google` to avoid SSR errors.
-
-5. **Supabase Realtime** — requires the table to be added to the publication:
-   ```sql
-   ALTER PUBLICATION supabase_realtime ADD TABLE leads;
-   ```
+| `/` | Landing Page | Marketing page — no sidebar/shell chrome |
+| `/book` | Appointment Scheduling | Multi-step booking flow |
+| `/leads` | Lead Intelligence | Filter sidebar, leads table, agent run, CSV/Drive export |
+| `/dashboard` | Command Center | Stats, activity feed, campaigns |
+| `/message-lab` | AI Message Lab | Claude API, typewriter, message types |
+| `/scorer` | Lead Scorer | ICP criteria, SVG score ring |
+| `/sequences` | Sequence Builder | Timeline DnD, Supabase CRUD |
+| `/kanban` | Kanban Pipeline | 7 columns, DnD, detail panel |
+| `/analytics` | Analytics | 4 recharts, date filters |
+| `/clients` | Client Manager | CRUD, reports |
+| `/portal` | Client Portal | Login, leads, billing |
 
 ---
 
@@ -361,107 +323,21 @@ Active filter chips in the chip bar are color-coded by group:
 
 | Variable | Where | Purpose |
 |---|---|---|
-| `APIFY_API_KEY` | Vercel → Settings → Env Vars | Required for live scraping |
-| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + `.env.local` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Supabase anon key |
+| `APIFY_API_KEY` | Vercel + `.env.local` | Required for live scraping |
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + `.env.local` | Supabase project URL (shared with FlowForges) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Supabase anon key (shared with FlowForges) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + `.env.local` | **Required** — service role for server-side DB ops (bypasses RLS) |
 
-The Anthropic API key is entered by the user in the UI (Message Lab or Scorer) and stored ONLY in React Context memory. Google Drive Client ID is stored in `localStorage` (`leadgen_gdrive_client_id`).
-
----
-
-## localStorage usage
-
-| Key | Purpose | Values |
-|---|---|---|
-| `leados_theme` | App theme preference | `"dark"` \| `"light"` |
-| `leados_sidebar` | Sidebar state | `"open"` \| `"closed"` |
-| `leados_sources` | Enabled data sources | `{"linkedin":true,"gmaps":false,"amazon":false}` |
-| `leadgen_gdrive_client_id` | Google Drive OAuth client ID | string |
-| `prospectingos-theme` | Landing page theme (independent) | `"dark"` \| `"light"` |
-| `prospectingos_email_capture` | Email capture state (`submitted`, `dismissedAt`) | JSON object |
+The Anthropic API key is entered by the user in the UI and stored ONLY in React Context memory. Google Drive Client ID is stored in `localStorage`.
 
 ---
-
-## Email capture modal (`components/EmailCaptureModal.tsx`)
-
-- **Entry intent**: Shows 12s after page load if not previously submitted/dismissed
-- **Exit intent**: Shows on `mouseleave` when cursor exits viewport top (desktop only)
-- **States**: idle → submitting → done (success checkmark)
-- **Persistence**: localStorage `prospectingos_email_capture` prevents re-show; exit re-trigger has 24h cooldown after dismiss
-- **API**: POSTs to `/api/leads/capture` → Supabase `email_captures` table (non-critical — fails silently)
-- **Dismiss**: Esc key, X button, or backdrop click
-
----
-
-## Landing page (`app/page.tsx` + `app/landing.css`)
-
-- Scoped CSS under `.landing-page` class — separate variable system (`--accent: #e8420a` orange) from app gold (`--accent: #C9A87C`)
-- Responsive breakpoints: 1024px, 900px, 768px, 600px, 400px
-- **Sections**: Hero (typewriter), How It Works (5 Lucide-icon cards), Pricing (3 tiers + popular badge), Testimonials, ROI calculator, FAQ accordion, Final CTA, Footer
-- **Premium chat widget**: Fixed bottom-right, quick replies, bot response engine
-- **ASCII canvas**: Japanese character particle animation (dark mode only)
-- **Custom cursor**: Dot + ring with hover detection (desktop only, hidden ≤900px)
-- **Theme toggle**: Independent from app — uses `prospectingos-theme` localStorage key
-
----
-
-## Booking page (`app/book/page.tsx` + `app/api/appointments/route.ts`)
-
-Multi-step appointment scheduling flow inspired by Cal.com/cal.diy patterns:
-
-- **Step 1 — Date Picker**: Month calendar with prev/next navigation, past dates disabled, selected date highlighted with accent color
-- **Step 2 — Time Slots**: Morning (9am-11:30am) and afternoon (12pm-5pm) slots in 3-column grid, 30min intervals
-- **Step 3 — Booking Form**: Name*, Email*, Company, Notes fields with accent focus rings. Validates email format.
-- **Step 4 — Confirmation**: Success checkmark with appointment summary (date + time), back-to-home CTA
-- **Progress bar**: Top nav with numbered steps (1→2→3) showing current position
-- **API**: `POST /api/appointments` → Supabase `appointments` table (date, time, name, email, company, notes)
-- **Self-contained**: Own CSS variables on root div, no dependency on landing.css. Listed in Shell's `MARKETING_ROUTES` so it renders without admin chrome.
-
----
-
-## .gitignore
-
-Agent-browser screenshots (`landing*.png`) and `.ruflo/` state are gitignored — they are debugging artifacts, not project assets.
-
-## QA_Bot — Automated Sanity Testing
-
-QA_Bot is an automated testing agent powered by Vercel agent-browser. It runs full end-to-end sanity
-checks against the running app — covering landing page UI, booking flow, dashboard, and API endpoints.
-
-### How to run
-```bash
-# Full sanity suite (37 checks across 4 scenarios)
-bash tests/sanity.sh
-
-# Individual scenarios
-bash tests/scenarios/landing-page.sh   # 16 checks — hero, cards, icons, chat, emoji-free
-bash tests/scenarios/booking-flow.sh   #  8 checks — calendar, time slots, Pros Bot panel
-bash tests/scenarios/dashboard.sh      #  7 checks — stat cards, Demo Bookings table
-bash tests/scenarios/api.sh            #  6 checks — CRUD endpoints, validation
-```
-
-Override target URL: `BASE_URL=http://localhost:3001 bash tests/sanity.sh`
-
-### Scenario files
-| File | Scope |
-|---|---|
-| `tests/sanity.sh` | Orchestrator — runs all 4 scenarios, prints pass/fail summary with exit code |
-| `tests/scenarios/landing-page.sh` | Navbar, hero, how-it-works (SVG icons, no emoji), pricing, testimonials, FAQ, chat widget, Pros Bot |
-| `tests/scenarios/booking-flow.sh` | /book page load, calendar, time slots, Pros Bot panel, conversational booking |
-| `tests/scenarios/dashboard.sh` | TopBar, 6 stat cards, Demo Bookings table, activity feed, campaigns, quick actions |
-| `tests/scenarios/api.sh` | GET/POST /api/appointments, POST /api/leads/capture, input validation |
-
-### Agent definition
-`.claude/agents/QA_Bot.md` — full agent instructions with environment requirements and reporting format.
-Invoke via `/qa` command (`@.claude/commands/qa.md`).
 
 ## Development commands
 
 ```bash
 npm run dev      # Start dev server at http://localhost:3000
-npm run build    # Production build (tsc + Next.js) — must pass with 0 errors
+npm run build    # Production build — must pass with 0 errors
 npm run lint     # ESLint check
-agent-browser open http://localhost:3000   # Browser testing (requires global install)
 bash tests/sanity.sh                       # QA_Bot full sanity suite
 ```
 
@@ -471,6 +347,5 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 - **Trigger**: push to `main` branch on GitHub
 - **Platform**: Vercel (project: `lead-engine`)
-- **Build command**: `npm run build` (Next.js default)
-- **Build failures to watch for**: TypeScript strict-mode errors, missing env vars
-- **Required env vars on Vercel**: `APIFY_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **Build command**: `npm run build`
+- **Required env vars on Vercel**: `APIFY_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`

@@ -1,4 +1,5 @@
-import { supabase } from "./supabase";
+import { supabaseAdmin } from "./supabase";
+const supabase = supabaseAdmin;
 import { sanitizeLead } from "./storage";
 import type {
   Lead, Message, Sequence, Campaign, Client,
