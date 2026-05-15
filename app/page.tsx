@@ -295,7 +295,8 @@ export default function LandingPage() {
   }, []);
 
   /* ─── ROI money canvas animation ───────────────────────────────────────── */
-  const MONEY_CHARS = "$ € ¥ ₹ ¢ £ ₿ 💰 💵 💎 ⚡ ✨ █ ▓ ▒ ░".split(" ");
+  const MONEY_CHARS = "$ € ¥ ₹ ¢ £ ₿ ₩ ₽ ◈ ◆ ◇ ● ○ ◎ ⬡ ⬢ ⬟ ⬠ ▓ ░ ▒ ▀ ∑ ∏ ∫".split(" ");
+  const roiMouseRef = useRef({ x: -999, y: -999, onCanvas: false });
   useEffect(() => {
     const canvas = roiCanvasRef.current;
     if (!canvas) return;
@@ -319,6 +320,19 @@ export default function LandingPage() {
     ro.observe(section);
     window.addEventListener("scroll", resize, { passive: true });
     resize();
+
+    // Track mouse relative to canvas
+    const onMove = (e: MouseEvent) => {
+      const r = canvas.getBoundingClientRect();
+      roiMouseRef.current = {
+        x: e.clientX - r.left,
+        y: e.clientY - r.top,
+        onCanvas: e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom,
+      };
+    };
+    const onLeave = () => { roiMouseRef.current.onCanvas = false; };
+    section.addEventListener("mousemove", onMove, { passive: true });
+    section.addEventListener("mouseleave", onLeave);
 
     // Init floating money particles
     if (roiParticlesRef.current.length === 0) {
@@ -350,6 +364,7 @@ export default function LandingPage() {
 
     let raf: number;
     let lastPopup = 0;
+    let mouseTrail: { x: number; y: number; t: number }[] = [];
     const animate = (ts: number) => {
       const isDark = document.documentElement.getAttribute("data-theme") !== "light";
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -360,33 +375,61 @@ export default function LandingPage() {
 
       const w = canvas.width;
       const h = canvas.height;
+      const mx = roiMouseRef.current.x;
+      const my = roiMouseRef.current.y;
+      const mouseOn = roiMouseRef.current.onCanvas;
 
-      // Floating money particles
+      // Mouse trail
+      if (mouseOn) {
+        mouseTrail.push({ x: mx, y: my, t: ts });
+        if (mouseTrail.length > 12) mouseTrail.shift();
+      }
+      // Decay trail
+      mouseTrail = mouseTrail.filter(p => ts - p.t < 600);
+
+      // Floating money particles — attracted to mouse
       for (const p of roiParticlesRef.current) {
-        ctx.fillStyle = `rgba(0, 212, 255, ${p.opacity})`;
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        // Attraction force toward cursor
+        let ax = 0, ay = 0;
+        if (mouseOn && dist < 200 && dist > 5) {
+          const force = (200 - dist) / 200 * 0.06;
+          ax = (dx / dist) * force;
+          ay = (dy / dist) * force;
+        }
+        p.y -= p.speedY + ay;
+        p.x += p.speedX + ax + Math.sin(p.y * 0.01) * 0.2;
+        // Boost opacity when near cursor
+        const cursorGlow = mouseOn && dist < 150 ? (1 - dist / 150) * 0.35 : 0;
+        ctx.fillStyle = `rgba(0, 212, 255, ${Math.min(1, p.opacity + cursorGlow)})`;
         ctx.font = `${p.fontSize}px "JetBrains Mono", monospace`;
         ctx.fillText(p.char, p.x, p.y);
-        p.y -= p.speedY;
-        p.x += p.speedX + Math.sin(p.y * 0.01) * 0.2;
         if (p.y < -30) { p.y = h + 30; p.x = Math.random() * w; p.char = MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)]; }
         if (p.x < -20) p.x = w + 20;
         if (p.x > w + 20) p.x = -20;
       }
 
-      // Shooting stars
+      // Shooting stars — curved toward cursor
       for (const star of roiStarsRef.current) {
         star.phase += 0.008;
+        // Gravitate toward mouse if on canvas
+        if (mouseOn) {
+          const sx = mx - star.x;
+          const sy = my - star.y;
+          const sd = Math.sqrt(sx * sx + sy * sy);
+          if (sd > 1) { star.x += (sx / sd) * 1.2; star.y += (sy / sd) * 0.7; }
+        }
         star.x += 2.5;
         star.y += 1.2;
-        if (star.x > w + 60 || star.y > h + 60) {
+        if (star.x > w + 60 || star.y > h + 60 || star.x < -60) {
           star.x = -60;
           star.y = Math.random() * h * 0.5;
           star.trail = [];
         }
-        // Trail
         star.trail.push({ x: star.x, y: star.y, char: MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)] });
         if (star.trail.length > 18) star.trail.shift();
-        // Draw trail
         for (let i = 0; i < star.trail.length; i++) {
           const t = star.trail[i];
           const alpha = (i / star.trail.length) * 0.55;
@@ -394,17 +437,17 @@ export default function LandingPage() {
           ctx.font = `${10 + (i / star.trail.length) * 10}px "JetBrains Mono", monospace`;
           ctx.fillText(t.char, t.x, t.y);
         }
-        // Head
         ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.font = '18px "JetBrains Mono", monospace';
         ctx.fillText("✦", star.x, star.y);
       }
 
-      // Popup bursts
-      if (ts - lastPopup > 2200 + Math.random() * 3000) {
+      // Popup bursts — spawn near mouse if on canvas, random otherwise
+      const popInterval = mouseOn ? 1400 : 2800;
+      if (ts - lastPopup > popInterval + Math.random() * 2000) {
         lastPopup = ts;
-        const px = w * 0.3 + Math.random() * w * 0.4;
-        const py = h * 0.2 + Math.random() * h * 0.5;
+        const px = mouseOn ? mx + (Math.random() - 0.5) * 120 : w * 0.3 + Math.random() * w * 0.4;
+        const py = mouseOn ? my + (Math.random() - 0.5) * 80 : h * 0.2 + Math.random() * h * 0.5;
         const burst: { x: number; y: number; vx: number; vy: number; char: string; life: number }[] = [];
         for (let i = 0; i < 14; i++) {
           const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.3;
@@ -425,7 +468,7 @@ export default function LandingPage() {
         for (const p of pop.particles) {
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.04; // gravity
+          p.vy += 0.04;
           p.life -= 0.015;
           if (p.life > 0) {
             ctx.fillStyle = `rgba(255, 200, 50, ${p.life * 0.75})`;
@@ -435,6 +478,16 @@ export default function LandingPage() {
         }
       }
       roiPopupsRef.current = roiPopupsRef.current.filter(pop => pop.particles.some(p => p.life > 0));
+
+      // Mouse cursor glow
+      if (mouseOn) {
+        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, 120);
+        glow.addColorStop(0, "rgba(0, 212, 255, 0.08)");
+        glow.addColorStop(0.5, "rgba(0, 212, 255, 0.03)");
+        glow.addColorStop(1, "rgba(0, 212, 255, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // Glow pulse on ROI card
       const pulse = Math.sin(ts * 0.002) * 0.5 + 0.5;
@@ -449,6 +502,8 @@ export default function LandingPage() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("scroll", resize);
+      section.removeEventListener("mousemove", onMove);
+      section.removeEventListener("mouseleave", onLeave);
     };
   }, []);
 
