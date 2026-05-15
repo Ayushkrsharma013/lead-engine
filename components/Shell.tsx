@@ -4,7 +4,6 @@ import ProSidebar from "./layout/Sidebar";
 import AgentPanel from "./AgentPanel";
 import ToastContainer from "./Toast";
 import CommandPalette from "./layout/CommandPalette";
-import { Navbar } from "./Navbar";
 import { useApp } from "@/lib/AppContext";
 import { usePathname } from "next/navigation";
 import { Zap } from "lucide-react";
@@ -47,7 +46,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   if (isMarketing) {
     return (
       <div className="min-h-screen bg-bg">
-        <Navbar />
         {children}
         <ToastContainer />
       </div>

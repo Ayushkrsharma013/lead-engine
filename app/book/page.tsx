@@ -5,7 +5,9 @@ import Link from "next/link";
 import {
   Calendar, Clock, User, Mail, Building2, MessageSquare,
   ArrowLeft, ArrowRight, CheckCircle, Zap, ChevronLeft, ChevronRight,
+  Sparkles,
 } from "lucide-react";
+import ProsBotPanel from "@/components/ProsBotPanel";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -140,7 +142,7 @@ export default function BookPage() {
 
       {/* ══════ Nav ══════ */}
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
-        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight no-underline" style={{ color: "var(--text-primary, #f5f4f1)" }}>
             <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
             Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
@@ -182,7 +184,9 @@ export default function BookPage() {
       </nav>
 
       {/* ══════ Main ══════ */}
-      <div className="max-w-2xl mx-auto px-6 py-4 lg:py-6 flex-1 min-h-0 overflow-y-auto w-full">
+      <div className="max-w-6xl mx-auto px-6 py-3 lg:py-4 flex-1 min-h-0 overflow-hidden w-full">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 h-full">
+          <div className="flex-1 min-w-0 overflow-y-auto">
 
         {step === 4 ? (
           /* ══════════════════════ STEP 4 — Confirmation ════════════════ */
@@ -298,7 +302,7 @@ export default function BookPage() {
 
                 <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
                   <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
-                  <div className="grid grid-cols-4 gap-2.5 mb-4">
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
                     {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
                       const isSel = selectedTime === t;
                       return (
@@ -319,7 +323,7 @@ export default function BookPage() {
                   </div>
 
                   <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
-                  <div className="grid grid-cols-4 gap-2.5">
+                  <div className="grid grid-cols-3 gap-2.5">
                     {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
                       const isSel = selectedTime === t;
                       return (
@@ -445,7 +449,26 @@ export default function BookPage() {
               </div>
             )}
           </>
-        )}
+          )}
+          </div>
+
+          {/* Right — Pros Bot Conversational Agent */}
+          <div className="hidden lg:flex lg:flex-col w-80 xl:w-96 flex-shrink-0 h-full min-h-0">
+            <div className="mb-2 flex items-center gap-2 px-1 flex-shrink-0">
+              <Sparkles size={16} style={{ color: "var(--accent, #e8420a)" }} />
+              <span className="text-sm font-bold tracking-tight">Book via Chat</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--badge-bg)", color: "var(--badge-text)" }}>AI</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ProsBotPanel embedded />
+            </div>
+          </div>
+
+          {/* Mobile — slide-up chat toggle */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
+            <ProsBotPanel embedded />
+          </div>
+        </div>
       </div>
     </div>
   );
