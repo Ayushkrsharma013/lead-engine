@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Zap, Settings2, Sparkles,
+  ChevronLeft, ChevronRight, Settings2, Sparkles,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -104,15 +104,11 @@ export default function ProSidebar() {
           borderBottom: "1px solid var(--sidebar-border)",
         }}
       >
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{
-            background: "var(--accent-soft)",
-            border: "1px solid rgba(201,168,124,0.25)",
-          }}
-        >
-          <Zap size={15} style={{ color: "var(--accent)" }} />
-        </div>
+        <img
+          src="/prospecting-os/assets/Logo_Icon.png"
+          alt="Prospecting OS"
+          className="w-8 h-8 rounded-lg object-contain shrink-0"
+        />
         <div
           className="overflow-hidden whitespace-nowrap"
           style={{
@@ -124,7 +120,7 @@ export default function ProSidebar() {
         >
           <div className="flex items-baseline gap-1.5">
             <span className="font-bold text-[14px] tracking-tight" style={{ color: "var(--ink)" }}>
-              LinkedIn
+              Prospecting
             </span>
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
@@ -134,7 +130,7 @@ export default function ProSidebar() {
                 border: "1px solid rgba(201,168,124,0.20)",
               }}
             >
-              ProOS
+              OS
             </span>
           </div>
         </div>
