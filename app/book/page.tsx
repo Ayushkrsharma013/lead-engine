@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import {
   Calendar, Clock, User, Mail, Building2, MessageSquare,
   ArrowLeft, ArrowRight, CheckCircle, Zap, ChevronLeft, ChevronRight,
@@ -138,7 +139,7 @@ export default function BookPage() {
             Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
           </a>
           <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--text-tertiary, #7a7875)" }}>
-            <a
+            <Link
               href="/api/auth/google-calendar"
               title="Connect Google Calendar to get notifications for new bookings"
               className="flex items-center gap-1.5 text-[11px] font-medium transition-colors hover:opacity-80 no-underline"
@@ -146,7 +147,7 @@ export default function BookPage() {
             >
               <Calendar size={13} />
               <span className="hidden sm:inline">Connect Calendar</span>
-            </a>
+            </Link>
             <span style={{ color: "var(--border)" }}>|</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 1 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 1 ? "#fff" : "var(--text-tertiary)" }}>1</span>
             <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Date</span>
