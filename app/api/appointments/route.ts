@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { createCalendarEvent, isCalendarConnected } from "@/lib/google-calendar";
+import { sendTelegramNotification, sendEmailNotification } from "@/lib/notify";
 
 export interface Appointment {
   id: string;
@@ -40,7 +41,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { date, time, name, email, company, notes } = body;
+    const { date, time, name, email, company, notes, timezone } = body;
 
     if (!date || !time || !name || !email) {
       return NextResponse.json({ error: "Missing required fields (date, time, name, email)" }, { status: 400 });
@@ -88,6 +89,7 @@ export async function POST(req: Request) {
           ].filter(Boolean).join("\n"),
           startDate: date,
           startTime: time,
+          timezone: timezone || "Asia/Kolkata",
           attendees: [{ email: email.trim().toLowerCase(), displayName: name.trim() }],
         });
         if (calResult.htmlLink) {
@@ -99,6 +101,22 @@ export async function POST(req: Request) {
         console.warn("[appointments] calendar event creation failed:", err);
       }
     }
+
+    // Fire Telegram + Email notifications in parallel (non-blocking)
+    const bookingDetails = {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      company: company ? company.trim() : undefined,
+      notes: notes ? notes.trim() : undefined,
+      date,
+      time,
+      timezone: timezone || "Asia/Kolkata",
+      calendarLink,
+    };
+    void Promise.all([
+      sendTelegramNotification(bookingDetails),
+      sendEmailNotification(bookingDetails),
+    ]);
 
     return NextResponse.json({ ok: true, id: data.id, calendarLink });
   } catch (err) {

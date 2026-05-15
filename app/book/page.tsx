@@ -114,7 +114,7 @@ export default function BookPage() {
       const res = await fetch("/prospecting-os/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, time: selectedTime, name: name.trim(), email: email.trim(), company: company.trim(), notes: notes.trim() }),
+        body: JSON.stringify({ date: selectedDate, time: selectedTime, name: name.trim(), email: email.trim(), company: company.trim(), notes: notes.trim(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       if (!res.ok) throw new Error("Failed");
       setStep(4);

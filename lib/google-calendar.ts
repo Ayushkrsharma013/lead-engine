@@ -119,9 +119,10 @@ export interface CalendarEventInput {
   description?: string;
   startDate: string; // "YYYY-MM-DD"
   startTime: string; // "HH:MM" (24h)
-  endTime?: string; // defaults to startTime + 30 min
+  endTime?: string;  // defaults to startTime + 30 min
   attendees?: { email: string; displayName?: string }[];
   location?: string;
+  timezone?: string; // IANA timezone, e.g. "Asia/Kolkata"
 }
 
 export interface CalendarEventResult {
@@ -151,8 +152,8 @@ export async function createCalendarEvent(
   const body: Record<string, unknown> = {
     summary: event.summary,
     description: event.description || "",
-    start: { dateTime: startDateTime, timeZone: "America/Chicago" },
-    end: { dateTime: endDateTime, timeZone: "America/Chicago" },
+    start: { dateTime: startDateTime, timeZone: event.timezone || "Asia/Kolkata" },
+    end: { dateTime: endDateTime, timeZone: event.timezone || "Asia/Kolkata" },
     attendees: event.attendees?.map(a => ({
       email: a.email,
       displayName: a.displayName || "",
