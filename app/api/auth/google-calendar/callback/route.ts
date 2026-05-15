@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { exchangeCodeForTokens } from "@/lib/google-calendar";
 
 function getBaseUrl() {
+  // Prefer the stable custom domain over per-deploy Vercel URL
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  return "http://localhost:3000";
 }
 
 export async function GET(req: Request) {
