@@ -43,7 +43,7 @@ export function Navbar() {
         }}
       >
         <div
-          className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#00d4ff]/15 to-transparent transition-opacity duration-500"
+          className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#E8A840]/15 to-transparent transition-opacity duration-500"
           style={{ opacity: scrolled ? 1 : 0 }}
         />
 
@@ -63,7 +63,7 @@ export function Navbar() {
             />
             <span className="text-[15px] font-semibold tracking-tight">
               <span className="text-white">Prospecting</span>
-              <span className="text-[#00d4ff]">OS</span>
+              <span className="text-[#E8A840]">OS</span>
             </span>
           </Link>
 
@@ -95,7 +95,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
             <Link
               href="/book"
-              className="text-sm font-semibold px-5 py-2 rounded-full bg-[#00d4ff] text-[#04040a] hover:bg-[#00d4ff]/90 transition-all duration-200 hover:shadow-[0_0_24px_rgba(0,212,255,0.25)]"
+              className="text-sm font-semibold px-5 py-2 rounded-full bg-[#E8A840] text-[#04040a] hover:bg-[#E8A840]/90 transition-all duration-200 hover:shadow-[0_0_24px_rgba(232,168,64,0.25)]"
             >
               Talk to Us
             </Link>
@@ -179,7 +179,7 @@ export function Navbar() {
             <Link
               href="/book"
               onClick={() => setOpen(false)}
-              className="w-full max-w-xs text-center py-3.5 rounded-2xl bg-[#00d4ff] text-[#04040a] font-semibold text-[15px] hover:bg-[#00d4ff]/90 transition-all"
+              className="w-full max-w-xs text-center py-3.5 rounded-2xl bg-[#E8A840] text-[#04040a] font-semibold text-[15px] hover:bg-[#E8A840]/90 transition-all"
             >
               Talk to Us
             </Link>
