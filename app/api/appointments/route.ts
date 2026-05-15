@@ -123,45 +123,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // Daily max check
-    const { count, error: countError } = await supabase
+    // Fetch existing bookings for this date (for daily max + buffer + double-booking)
+    const { data: existingToday } = await supabase
       .from("appointments")
-      .select("*", { count: "exact", head: true })
+      .select("time, notes")
       .eq("date", date);
 
-    if (countError) {
-      if (countError.message.includes("Could not find") || countError.code === "42P01") {
-        console.warn("[appointments] table not found — skipping daily max check");
-      } else {
-        console.error("[appointments] count query failed:", countError.message);
-      }
-    }
+    // Daily max check (skip cancelled bookings via notes fallback marker)
+    const activeBookings = (existingToday || []).filter((ex: any) => {
+      if (ex.notes && String(ex.notes).startsWith("[CANCELLED]")) return false;
+      return true;
+    });
 
-    if (count !== null && count >= MAX_BOOKINGS_PER_DAY) {
+    if (activeBookings.length >= MAX_BOOKINGS_PER_DAY) {
       return NextResponse.json(
         { error: "This date is fully booked. Please choose another day." },
         { status: 400 }
       );
     }
 
-    // Buffer time and double-booking check
-    const { data: existingToday, error: existingErr } = await supabase
-      .from("appointments")
-      .select("time")
-      .eq("date", date);
-
-    // Try to query with new columns; fall back to base columns if schema is old
-    const existingWithMeta = existingErr ? null : existingToday;
-
-    if (existingToday) {
+    if (activeBookings.length > 0) {
       const newStart = startMinutes;
       const newEnd = startMinutes + duration;
       const bufferStart = newStart - APPOINTMENT_BUFFER_MINUTES;
       const bufferEnd = newEnd + APPOINTMENT_BUFFER_MINUTES;
 
-      for (const existing of existingToday) {
+      for (const existing of activeBookings) {
         const existingStart = timeToMinutes(existing.time);
-        const existingDuration = (existing as any).duration || 30;
+        const ex = existing as any;
+        const existingDuration = ex.duration || 30;
         const existingEnd = existingStart + existingDuration;
 
         // Exact double-booking
