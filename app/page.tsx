@@ -240,6 +240,14 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
 
+  /* ─── ROI money canvas ─────────────────────────────────────────────────── */
+  const roiCanvasRef = useRef<HTMLCanvasElement>(null);
+  const roiParticlesRef = useRef<
+    { x: number; y: number; char: string; fontSize: number; speedY: number; speedX: number; opacity: number; life: number }[]
+  >([]);
+  const roiStarsRef = useRef<{ x: number; y: number; trail: { x: number; y: number; char: string }[]; phase: number }[]>([]);
+  const roiPopupsRef = useRef<{ x: number; y: number; particles: { x: number; y: number; vx: number; vy: number; char: string; life: number }[] }[]>([]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -284,6 +292,164 @@ export default function LandingPage() {
     raf = requestAnimationFrame(animate);
 
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+
+  /* ─── ROI money canvas animation ───────────────────────────────────────── */
+  const MONEY_CHARS = "$ € ¥ ₹ ¢ £ ₿ 💰 💵 💎 ⚡ ✨ █ ▓ ▒ ░".split(" ");
+  useEffect(() => {
+    const canvas = roiCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const section = document.getElementById("roi");
+    if (!section) return;
+
+    const resize = () => {
+      const r = section.getBoundingClientRect();
+      canvas.width = r.width;
+      canvas.height = r.height;
+      canvas.style.width = r.width + "px";
+      canvas.style.height = r.height + "px";
+      canvas.style.left = r.left + "px";
+      canvas.style.top = "0px";
+    };
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(section);
+    window.addEventListener("scroll", resize, { passive: true });
+    resize();
+
+    // Init floating money particles
+    if (roiParticlesRef.current.length === 0) {
+      for (let i = 0; i < 30; i++) {
+        roiParticlesRef.current.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          char: MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)],
+          fontSize: 12 + Math.random() * 16,
+          speedY: 0.15 + Math.random() * 0.45,
+          speedX: (Math.random() - 0.5) * 0.3,
+          opacity: 0.08 + Math.random() * 0.18,
+          life: 1,
+        });
+      }
+    }
+
+    // Init shooting stars
+    if (roiStarsRef.current.length === 0) {
+      for (let i = 0; i < 3; i++) {
+        roiStarsRef.current.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height * 0.5,
+          trail: [],
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    let raf: number;
+    let lastPopup = 0;
+    const animate = (ts: number) => {
+      const isDark = document.documentElement.getAttribute("data-theme") !== "light";
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!isDark) { raf = requestAnimationFrame(animate); return; }
+
+      ctx.font = '14px "JetBrains Mono", monospace';
+      ctx.textAlign = "center";
+
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Floating money particles
+      for (const p of roiParticlesRef.current) {
+        ctx.fillStyle = `rgba(0, 212, 255, ${p.opacity})`;
+        ctx.font = `${p.fontSize}px "JetBrains Mono", monospace`;
+        ctx.fillText(p.char, p.x, p.y);
+        p.y -= p.speedY;
+        p.x += p.speedX + Math.sin(p.y * 0.01) * 0.2;
+        if (p.y < -30) { p.y = h + 30; p.x = Math.random() * w; p.char = MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)]; }
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+      }
+
+      // Shooting stars
+      for (const star of roiStarsRef.current) {
+        star.phase += 0.008;
+        star.x += 2.5;
+        star.y += 1.2;
+        if (star.x > w + 60 || star.y > h + 60) {
+          star.x = -60;
+          star.y = Math.random() * h * 0.5;
+          star.trail = [];
+        }
+        // Trail
+        star.trail.push({ x: star.x, y: star.y, char: MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)] });
+        if (star.trail.length > 18) star.trail.shift();
+        // Draw trail
+        for (let i = 0; i < star.trail.length; i++) {
+          const t = star.trail[i];
+          const alpha = (i / star.trail.length) * 0.55;
+          ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+          ctx.font = `${10 + (i / star.trail.length) * 10}px "JetBrains Mono", monospace`;
+          ctx.fillText(t.char, t.x, t.y);
+        }
+        // Head
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.font = '18px "JetBrains Mono", monospace';
+        ctx.fillText("✦", star.x, star.y);
+      }
+
+      // Popup bursts
+      if (ts - lastPopup > 2200 + Math.random() * 3000) {
+        lastPopup = ts;
+        const px = w * 0.3 + Math.random() * w * 0.4;
+        const py = h * 0.2 + Math.random() * h * 0.5;
+        const burst: { x: number; y: number; vx: number; vy: number; char: string; life: number }[] = [];
+        for (let i = 0; i < 14; i++) {
+          const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.3;
+          const speed = 1.5 + Math.random() * 3;
+          burst.push({
+            x: px, y: py,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            char: MONEY_CHARS[Math.floor(Math.random() * MONEY_CHARS.length)],
+            life: 1,
+          });
+        }
+        roiPopupsRef.current.push({ x: px, y: py, particles: burst });
+      }
+
+      // Animate popups
+      for (const pop of roiPopupsRef.current) {
+        for (const p of pop.particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.04; // gravity
+          p.life -= 0.015;
+          if (p.life > 0) {
+            ctx.fillStyle = `rgba(255, 200, 50, ${p.life * 0.75})`;
+            ctx.font = `${12 + p.life * 12}px "JetBrains Mono", monospace`;
+            ctx.fillText(p.char, p.x, p.y);
+          }
+        }
+      }
+      roiPopupsRef.current = roiPopupsRef.current.filter(pop => pop.particles.some(p => p.life > 0));
+
+      // Glow pulse on ROI card
+      const pulse = Math.sin(ts * 0.002) * 0.5 + 0.5;
+      ctx.fillStyle = `rgba(0, 212, 255, ${pulse * 0.04})`;
+      ctx.fillRect(0, 0, w, h);
+
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener("scroll", resize);
+    };
   }, []);
 
   /* ─── Custom cursor ────────────────────────────────────────────────────── */
@@ -338,7 +504,7 @@ export default function LandingPage() {
       <nav className="navbar" style={{ boxShadow: navShadow ? "0 1px 8px rgba(0,0,0,0.15)" : "none" }}>
         <div className="container">
           <a href="#" className="nav-logo" onClick={e => smoothScroll(e as never, "#")}>
-            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width="28" height="28" style={{ borderRadius: 8 }} />
             Prospecting <span className="accent">OS</span>
           </a>
           <ul className="nav-links">
@@ -382,7 +548,7 @@ export default function LandingPage() {
         <div className="container">
           <div className="hero-content">
             <div className="hero-badge">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+              <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width="16" height="16" style={{ borderRadius: 4 }} />
               AI-Powered B2B Prospecting
             </div>
             <h1>
@@ -526,8 +692,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ ROI ══════════ */}
-      <section className="section" id="roi" style={{ background: "var(--bg-secondary)" }}>
-        <div className="container">
+      <section className="section" id="roi" style={{ background: "var(--bg-secondary)", position: "relative", overflow: "hidden" }}>
+        <canvas ref={roiCanvasRef} className="roi-ascii-canvas" />
+        <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <div className="roi-grid">
             <div className="roi-text reveal">
               <div className="section-eyebrow">// ROI Calculator</div>
@@ -591,13 +758,57 @@ export default function LandingPage() {
       {/* ══════════ Premium Chat Widget — Pros Bot ══════════ */}
       <div className="chat-widget">
         <button className="chat-trigger" onClick={() => setChatOpen(o => !o)} aria-label="Open chat">
-          <Sparkles size={22} />
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="chat3d-grad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#00d4ff" />
+                <stop offset="1" stopColor="#0088cc" />
+              </linearGradient>
+              <linearGradient id="chat3d-shine" x1="6" y1="4" x2="16" y2="12" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#ffffff" stopOpacity="0.3" />
+                <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+              </linearGradient>
+              <filter id="chat3d-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.4" />
+              </filter>
+            </defs>
+            {/* 3D bottom face (depth) */}
+            <path d="M4 13.5C4 12.5 5 11 6.5 10.5L19.5 10.5C21 11 22 12.5 22 13.5V14.5C22 15.5 21 17 19.5 17.5L6.5 17.5C5 17 4 15.5 4 14.5V13.5Z" fill="#005577" />
+            {/* Main bubble */}
+            <rect x="3" y="2" width="19" height="14" rx="4" fill="url(#chat3d-grad)" filter="url(#chat3d-shadow)" />
+            {/* Shine */}
+            <rect x="3" y="2" width="19" height="8" rx="4" fill="url(#chat3d-shine)" />
+            {/* Bubble tail */}
+            <path d="M8 16L5 22L11 16H8Z" fill="url(#chat3d-grad)" />
+            {/* 3 dots */}
+            <circle cx="9" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
+            <circle cx="12.5" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
+            <circle cx="16" cy="9" r="1.3" fill="#00d4ff" opacity="0.5" />
+          </svg>
           <span className="pulse-ring" />
         </button>
         <div className={`chat-window${chatOpen ? " open" : ""}`}>
           <div className="chat-header">
             <div className="chat-header-logo">
-              <Sparkles size={18} />
+              <svg width="22" height="22" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="chat3d-h-grad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#00d4ff" />
+                    <stop offset="1" stopColor="#0088cc" />
+                  </linearGradient>
+                  <linearGradient id="chat3d-h-shine" x1="6" y1="4" x2="16" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ffffff" stopOpacity="0.3" />
+                    <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M4 13.5C4 12.5 5 11 6.5 10.5L19.5 10.5C21 11 22 12.5 22 13.5V14.5C22 15.5 21 17 19.5 17.5L6.5 17.5C5 17 4 15.5 4 14.5V13.5Z" fill="#005577" />
+                <rect x="3" y="2" width="19" height="14" rx="4" fill="url(#chat3d-h-grad)" />
+                <rect x="3" y="2" width="19" height="8" rx="4" fill="url(#chat3d-h-shine)" />
+                <path d="M8 16L5 22L11 16H8Z" fill="url(#chat3d-h-grad)" />
+                <circle cx="9" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
+                <circle cx="12.5" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
+                <circle cx="16" cy="9" r="1.3" fill="#00d4ff" opacity="0.5" />
+              </svg>
             </div>
             <div className="chat-header-info">
               <div className="chat-title">Pros Bot</div>
