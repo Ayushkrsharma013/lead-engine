@@ -6,7 +6,7 @@ import {
   UserPlus, Mail, ArrowRight, Plus, Download, Target, Sparkles,
   CalendarCheck, Activity, PhoneCall, Trophy, Clock, Building2,
 } from "lucide-react";
-import type { Appointment } from "@/app/api/appointments/route";
+import type { Appointment } from "@/lib/types";
 import Link from "next/link";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer,

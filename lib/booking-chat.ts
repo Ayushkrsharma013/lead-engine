@@ -2,9 +2,11 @@
 
 export type BookingStep =
   | "idle"
+  | "collecting_type"
   | "collecting_name"
   | "collecting_company"
   | "collecting_email"
+  | "collecting_phone"
   | "collecting_datetime"
   | "confirming"
   | "done";
@@ -13,6 +15,8 @@ export interface BookingData {
   name: string;
   company: string;
   email: string;
+  type?: string;
+  phone?: string;
   date: string;
   time: string;
 }
@@ -56,11 +60,11 @@ export function getNextStep(
     case "idle": {
       if (isBookingQuery(input)) {
         return {
-          step: "collecting_name",
+          step: "collecting_type",
           data,
           botMessage: {
-            text: "Awesome — let's get your demo booked! First, what's your full name?",
-            quickReplies: [],
+            text: "Let's book your demo! First, what type of meeting are you looking for?",
+            quickReplies: getTypeQuickReplies(),
           },
         };
       }
@@ -71,6 +75,39 @@ export function getNextStep(
         botMessage: {
           text: getGeneralResponse(input),
           quickReplies: ["How it works", "Pricing", "Book a Demo", "Go-live time"],
+        },
+      };
+    }
+
+    /* ─── Collect meeting type ────────────────────────────────────────── */
+    case "collecting_type": {
+      const lower = input.toLowerCase();
+      let meetingType = "";
+      if (lower.includes("discovery") || lower.includes("quick") || lower.includes("intro"))
+        meetingType = "discovery";
+      else if (lower.includes("demo") || lower.includes("walkthrough") || lower.includes("platform"))
+        meetingType = "demo";
+      else if (lower.includes("technical") || lower.includes("deep dive") || lower.includes("architecture"))
+        meetingType = "technical";
+      else if (lower.includes("strategy") || lower.includes("consulting") || lower.includes("icp"))
+        meetingType = "strategy";
+      else {
+        return {
+          step: "collecting_type",
+          data,
+          botMessage: {
+            text: "I didn't catch that. What type of meeting are you looking for?",
+            quickReplies: getTypeQuickReplies(),
+          },
+        };
+      }
+      const next = { ...data, type: meetingType };
+      return {
+        step: "collecting_name",
+        data: next,
+        botMessage: {
+          text: `Great choice! A ${meetingType} session works perfectly. Now, what's your full name?`,
+          quickReplies: [],
         },
       };
     }
@@ -114,6 +151,20 @@ export function getNextStep(
       }
       const next = { ...data, email: input };
       return {
+        step: "collecting_phone",
+        data: next,
+        botMessage: {
+          text: "Thanks! And your phone number? (optional — type it or say \"skip\")",
+          quickReplies: ["Skip"],
+        },
+      };
+    }
+
+    /* ─── Collect phone ─────────────────────────────────────────────── */
+    case "collecting_phone": {
+      const skip = input.toLowerCase() === "skip";
+      const next = { ...data, phone: skip ? "" : input };
+      return {
         step: "collecting_datetime",
         data: next,
         botMessage: {
@@ -146,7 +197,7 @@ export function getNextStep(
         step: "confirming",
         data: next,
         botMessage: {
-          text: `Here's a quick summary:\n\n• **Name:** ${next.name}\n• **Company:** ${next.company}\n• **Email:** ${next.email}\n• **When:** ${next.date} at ${next.time}\n\nEverything look good?`,
+          text: `Here's a quick summary:\n\n• **Name:** ${next.name}\n• **Company:** ${next.company}\n• **Email:** ${next.email}\n• **Type:** ${next.type || "demo"}\n${next.phone ? `• **Phone:** ${next.phone}\n` : ""}• **When:** ${next.date} at ${next.time}\n\nEverything look good?`,
           quickReplies: ["Yes, confirm", "No, change something"],
         },
       };
@@ -166,11 +217,11 @@ export function getNextStep(
       }
       // Restart
       return {
-        step: "collecting_name",
+        step: "collecting_type",
         data: {},
         botMessage: {
-          text: "No problem — let's start over. What's your full name?",
-          quickReplies: [],
+          text: "No problem — let's start over. What type of meeting are you looking for?",
+          quickReplies: getTypeQuickReplies(),
         },
       };
     }
@@ -209,6 +260,15 @@ function getGeneralResponse(msg: string): string {
   if (m.includes("explore") || m.includes("platform"))
     return "You're on the platform right now! Scroll up to see how Prospecting OS finds 500+ scored leads every month — or check out the pricing section.";
   return "I'm Pros Bot — your AI assistant. Ask me about:\n\n• How the platform works\n• Pricing plans\n• Go-live timelines\n\nOr say **\"Book a Demo\"** and I'll get you scheduled!";
+}
+
+export function getTypeQuickReplies(): string[] {
+  return [
+    "Discovery Call (15 min)",
+    "Product Demo (30 min)",
+    "Technical Deep-Dive (45 min)",
+    "Strategy Session (60 min)",
+  ];
 }
 
 export function getTimeQuickReplies(): string[] {

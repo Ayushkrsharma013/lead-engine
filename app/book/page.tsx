@@ -5,9 +5,10 @@ import Link from "next/link";
 import {
   Calendar, Clock, User, Mail, Building2, MessageSquare,
   ArrowLeft, ArrowRight, CheckCircle, Zap, ChevronLeft, ChevronRight,
-  Sparkles,
+  Sparkles, Search, Monitor, Code, Compass, Phone,
 } from "lucide-react";
 import ProsBotPanel from "@/components/ProsBotPanel";
+import { MEETING_TYPES, type MeetingType } from "@/lib/types";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -21,6 +22,20 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 const CONFETTI_COLORS = ["#e8420a","#ff6b35","#ffd700","#22c55e","#3b82f6","#a855f7","#ec4899","#f97316"];
+
+const MEETING_ICONS: Record<MeetingType, typeof Search> = {
+  discovery: Search,
+  demo: Monitor,
+  technical: Code,
+  strategy: Compass,
+};
+
+const MEETING_ACCENT_COLORS: Record<MeetingType, string> = {
+  discovery: "#3b82f6",
+  demo: "#e8420a",
+  technical: "#a855f7",
+  strategy: "#22c55e",
+};
 
 // Deterministic distribution via golden ratio — no hydration mismatch
 const φ = 1.6180339887;
@@ -89,6 +104,11 @@ function isPastDay(year: number, month: number, day: number) {
   return check < today;
 }
 
+function isWeekend(year: number, month: number, day: number) {
+  const d = new Date(year, month, day).getDay();
+  return d === 0 || d === 6;
+}
+
 function formatDate(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -98,7 +118,8 @@ function formatDate(year: number, month: number, day: number) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function BookPage() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [meetingType, setMeetingType] = useState<MeetingType>("demo");
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -106,23 +127,30 @@ export default function BookPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [slotsLoading, setSlotsLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
 
   // Form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [company, setCompany] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
   const refreshBookedSlots = useCallback(() => {
+    setSlotsLoading(true);
     fetch("/prospecting-os/api/appointments")
       .then(r => r.json())
       .then((data: Array<{ date: string; time: string }>) => {
         setBookedSlots(new Set(data.map(a => `${a.date}|${a.time}`)));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSlotsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -133,17 +161,32 @@ export default function BookPage() {
     refreshBookedSlots();
   }, [refreshBookedSlots]);
 
+  // Inject Turnstile script
+  useEffect(() => {
+    if (!turnstileSiteKey) return;
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+    return () => {
+      const existing = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
+      if (existing) document.head.removeChild(existing);
+    };
+  }, [turnstileSiteKey]);
+
   // Auto-redirect from confirmation after 3 seconds + countdown
   useEffect(() => {
-    if (step !== 4) return;
+    if (step !== 5) return;
     setCountdown(3);
     const interval = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
     const timeout = setTimeout(() => {
       refreshBookedSlots();
       setStep(1);
+      setMeetingType("demo");
       setSelectedDate(null);
       setSelectedTime(null);
-      setName(""); setEmail(""); setCompany(""); setNotes(""); setError("");
+      setName(""); setEmail(""); setCompany(""); setNotes(""); setPhone(""); setError("");
     }, 3000);
     return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [step, refreshBookedSlots]);
@@ -169,13 +212,13 @@ export default function BookPage() {
   }, [viewMonth, canGoNext]);
 
   const selectDate = useCallback((year: number, month: number, day: number) => {
-    if (isPastDay(year, month, day)) return;
+    if (isPastDay(year, month, day) || isWeekend(year, month, day)) return;
     setSelectedDate(formatDate(year, month, day));
     setSelectedTime(null);
   }, []);
 
   const confirmDateTime = useCallback(() => {
-    if (selectedDate && selectedTime) setStep(3);
+    if (selectedDate && selectedTime) setStep(4);
   }, [selectedDate, selectedTime]);
 
   const submit = useCallback(async () => {
@@ -183,6 +226,7 @@ export default function BookPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Please enter a valid email."); return; }
     setError("");
     setSubmitting(true);
+    const turnstileToken = typeof window !== "undefined" && (window as any).turnstile?.getResponse?.() || "";
     try {
       const res = await fetch("/prospecting-os/api/appointments", {
         method: "POST",
@@ -190,7 +234,11 @@ export default function BookPage() {
         body: JSON.stringify({
           date: selectedDate, time: selectedTime, name: name.trim(),
           email: email.trim(), company: company.trim(), notes: notes.trim(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          phone: phone.trim(),
+          type: meetingType,
+          duration: MEETING_TYPES[meetingType].duration,
+          timezone: userTimezone,
+          turnstileToken,
         }),
       });
       if (res.status === 409) {
@@ -203,12 +251,12 @@ export default function BookPage() {
       if (selectedDate && selectedTime) {
         setBookedSlots(prev => { const next = new Set(prev); next.add(`${selectedDate}|${selectedTime}`); return next; });
       }
-      setStep(4);
+      setStep(5);
     } catch {
       setError("Something went wrong. Please try again.");
     }
     setSubmitting(false);
-  }, [name, email, company, notes, selectedDate, selectedTime]);
+  }, [name, email, company, notes, phone, selectedDate, selectedTime, meetingType, userTimezone]);
 
   /* ─── Render ──────────────────────────────────────────────────────────── */
   return (
@@ -226,7 +274,7 @@ export default function BookPage() {
       "--success": "#22c55e", "--success-bg": "rgba(34,197,94,0.1)",
     } as React.CSSProperties}>
 
-      <Confetti active={step === 4} />
+      <Confetti active={step === 5} />
 
       {/* ══════ Nav ══════ */}
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
@@ -260,13 +308,16 @@ export default function BookPage() {
 
             <span style={{ color: "var(--border)" }}>|</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 1 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 1 ? "#fff" : "var(--text-tertiary)" }}>1</span>
-            <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Date</span>
+            <span style={{ color: step >= 1 ? "var(--text-primary)" : undefined }}>Type</span>
             <span style={{ color: "var(--text-tertiary)" }}>→</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 2 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 2 ? "#fff" : "var(--text-tertiary)" }}>2</span>
-            <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Time</span>
+            <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Date</span>
             <span style={{ color: "var(--text-tertiary)" }}>→</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 3 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 3 ? "#fff" : "var(--text-tertiary)" }}>3</span>
-            <span style={{ color: step >= 3 ? "var(--text-primary)" : undefined }}>Details</span>
+            <span style={{ color: step >= 3 ? "var(--text-primary)" : undefined }}>Time</span>
+            <span style={{ color: "var(--text-tertiary)" }}>→</span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 4 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 4 ? "#fff" : "var(--text-tertiary)" }}>4</span>
+            <span style={{ color: step >= 4 ? "var(--text-primary)" : undefined }}>Details</span>
           </div>
         </div>
       </nav>
@@ -276,8 +327,8 @@ export default function BookPage() {
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 h-full">
           <div className="flex-1 min-w-0 overflow-y-auto">
 
-        {step === 4 ? (
-          /* ══════════════════════ STEP 4 — Confirmation ════════════════ */
+        {step === 5 ? (
+          /* ══════════════════════ STEP 5 — Confirmation ════════════════ */
           <div className="text-center py-12 animate-scale-in">
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)" }}>
               <CheckCircle size={40} style={{ color: "var(--success, #22c55e)" }} />
@@ -294,6 +345,12 @@ export default function BookPage() {
               <div className="flex items-center gap-3">
                 <Clock size={18} style={{ color: "var(--accent, #e8420a)" }} />
                 <span className="font-semibold">{selectedTime}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
+                <span className="font-semibold">
+                  {MEETING_TYPES[meetingType].label} &mdash; {MEETING_TYPES[meetingType].duration} min
+                </span>
               </div>
             </div>
 
@@ -328,9 +385,74 @@ export default function BookPage() {
               </p>
             </div>
 
-            {/* ══════════════════════ STEP 1 — Date Picker ══════════════ */}
+            {/* ══════════════════════ STEP 1 — Meeting Type ════════════ */}
             {step === 1 && (
               <div className="animate-fade-up">
+                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                  <h2 className="text-base font-extrabold tracking-tight mb-1">Choose Your Meeting Type</h2>
+                  <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Select the type of session that best fits your needs.</p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {(Object.keys(MEETING_TYPES) as MeetingType[]).map(type => {
+                      const Icon = MEETING_ICONS[type];
+                      const isSelected = meetingType === type;
+                      const accentColor = MEETING_ACCENT_COLORS[type];
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setMeetingType(type)}
+                          className="rounded-xl p-4 text-left transition-all cursor-pointer"
+                          style={{
+                            background: isSelected ? "rgba(232,66,10,0.06)" : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${isSelected ? accentColor : "var(--border-card, rgba(255,255,255,0.06))"}`,
+                            outline: "none",
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center"
+                              style={{
+                                background: isSelected ? `${accentColor}22` : "rgba(255,255,255,0.04)",
+                                color: isSelected ? accentColor : "var(--text-secondary)",
+                              }}
+                            >
+                              <Icon size={16} />
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-tertiary)" }}>
+                              {MEETING_TYPES[type].duration} min
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-bold tracking-tight mb-0.5" style={{ color: "var(--text-primary)" }}>
+                            {MEETING_TYPES[type].label}
+                          </h3>
+                          <p className="text-[11px] leading-snug" style={{ color: "var(--text-tertiary)" }}>
+                            {MEETING_TYPES[type].description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setStep(2)}
+                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all"
+                  style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
+                >
+                  Continue with {MEETING_TYPES[meetingType].label}
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* ══════════════════════ STEP 2 — Date Picker ══════════════ */}
+            {step === 2 && (
+              <div className="animate-fade-up">
+                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                  <ArrowLeft size={14} /> Back to meeting type
+                </button>
+
                 <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
                   {/* Month nav */}
                   <div className="flex items-center justify-between mb-3">
@@ -362,20 +484,25 @@ export default function BookPage() {
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                       const day = i + 1;
                       const past = isPastDay(viewYear, viewMonth, day);
+                      const weekend = isWeekend(viewYear, viewMonth, day);
+                      const disabled = past || weekend;
                       const dateStr = formatDate(viewYear, viewMonth, day);
                       const isSelected = selectedDate === dateStr;
                       return (
                         <button
                           key={day}
-                          disabled={past}
+                          disabled={disabled}
                           onClick={() => selectDate(viewYear, viewMonth, day)}
                           className={classNames(
                             "h-10 rounded-xl text-sm font-semibold transition-all",
-                            past && "opacity-20 cursor-not-allowed",
-                            !past && !isSelected && "hover:bg-white/5 cursor-pointer",
+                            disabled && "cursor-not-allowed",
+                            !disabled && !isSelected && "hover:bg-white/5 cursor-pointer",
                             isSelected && "text-white cursor-pointer",
                           )}
-                          style={isSelected ? { background: "var(--accent, #e8420a)" } : { color: "var(--text-primary, #f5f4f1)" }}
+                          style={{
+                            ...(isSelected ? { background: "var(--accent, #e8420a)" } : { color: "var(--text-primary, #f5f4f1)" }),
+                            ...(disabled ? { opacity: weekend ? 0.15 : 0.2 } : {}),
+                          }}
                         >
                           {day}
                         </button>
@@ -386,7 +513,7 @@ export default function BookPage() {
 
                 <button
                   disabled={!selectedDate}
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: selectedDate ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedDate ? "#fff" : "var(--text-tertiary)" }}
                 >
@@ -396,65 +523,83 @@ export default function BookPage() {
               </div>
             )}
 
-            {/* ══════════════════════ STEP 2 — Time Slots ══════════════ */}
-            {step === 2 && (
+            {/* ══════════════════════ STEP 3 — Time Slots ══════════════ */}
+            {step === 3 && (
               <div className="animate-fade-up">
-                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
                   <ArrowLeft size={14} /> {selectedDate}
                 </button>
 
-                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
-                  <div className="grid grid-cols-3 gap-2.5 mb-4">
-                    {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
-                      const isSel = selectedTime === t;
-                      const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
-                      return (
-                        <button
-                          key={t}
-                          disabled={isBooked}
-                          onClick={() => !isBooked && setSelectedTime(t)}
-                          className="h-10 rounded-xl text-sm font-semibold transition-all border"
-                          style={{
-                            background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
-                            color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                            borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
-                            cursor: isBooked ? "not-allowed" : "pointer",
-                            opacity: isBooked ? 0.4 : 1,
-                            textDecoration: isBooked ? "line-through" : "none",
-                          }}
-                        >
-                          {t}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Timezone display */}
+                <div className="flex items-center gap-1.5 mb-3" style={{ color: "var(--text-tertiary)" }}>
+                  <Clock size={12} />
+                  <span className="text-xs">Times shown in {userTimezone}</span>
+                </div>
 
-                  <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
-                      const isSel = selectedTime === t;
-                      const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
-                      return (
-                        <button
-                          key={t}
-                          disabled={isBooked}
-                          onClick={() => !isBooked && setSelectedTime(t)}
-                          className="h-10 rounded-xl text-sm font-semibold transition-all border"
-                          style={{
-                            background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
-                            color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                            borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
-                            cursor: isBooked ? "not-allowed" : "pointer",
-                            opacity: isBooked ? 0.4 : 1,
-                            textDecoration: isBooked ? "line-through" : "none",
-                          }}
-                        >
-                          {t}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                  {slotsLoading ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
+                      <div className="grid grid-cols-3 gap-2.5 mb-4">
+                        {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
+                          const isSel = selectedTime === t;
+                          const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
+                          return (
+                            <button
+                              key={t}
+                              disabled={isBooked}
+                              onClick={() => !isBooked && setSelectedTime(t)}
+                              className="h-10 rounded-xl text-sm font-semibold transition-all border"
+                              style={{
+                                background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                                color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                                borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                                cursor: isBooked ? "not-allowed" : "pointer",
+                                opacity: isBooked ? 0.4 : 1,
+                                textDecoration: isBooked ? "line-through" : "none",
+                              }}
+                            >
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
+                          const isSel = selectedTime === t;
+                          const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
+                          return (
+                            <button
+                              key={t}
+                              disabled={isBooked}
+                              onClick={() => !isBooked && setSelectedTime(t)}
+                              className="h-10 rounded-xl text-sm font-semibold transition-all border"
+                              style={{
+                                background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                                color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                                borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                                cursor: isBooked ? "not-allowed" : "pointer",
+                                opacity: isBooked ? 0.4 : 1,
+                                textDecoration: isBooked ? "line-through" : "none",
+                              }}
+                            >
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <button
@@ -469,10 +614,10 @@ export default function BookPage() {
               </div>
             )}
 
-            {/* ══════════════════════ STEP 3 — Booking Form ════════════ */}
-            {step === 3 && (
+            {/* ══════════════════════ STEP 4 — Booking Form ════════════ */}
+            {step === 4 && (
               <div className="animate-fade-up">
-                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                <button onClick={() => setStep(3)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
                   <ArrowLeft size={14} /> {selectedDate} at {selectedTime}
                 </button>
 
@@ -503,6 +648,22 @@ export default function BookPage() {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="you@company.com"
+                      className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
+                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                    />
+                  </div>
+                  {/* Phone */}
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                      <Phone size={12} /> Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="+1 (555) 123-4567"
                       className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
                       style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
                       onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
@@ -541,6 +702,11 @@ export default function BookPage() {
                       onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
                     />
                   </div>
+
+                  {/* Turnstile CAPTCHA */}
+                  {turnstileSiteKey && (
+                    <div className="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+                  )}
 
                   {error && (
                     <p className="text-xs font-medium" style={{ color: "var(--accent, #e8420a)" }}>{error}</p>

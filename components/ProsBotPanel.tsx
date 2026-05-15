@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Sparkles, X, Calendar, ArrowRight, CheckCircle2, ChevronUp, ChevronDown } from "lucide-react";
 import {
   type BookingStep, type BookingData, type BotMessage,
-  initialBookingState, getNextStep, getTimeQuickReplies,
+  initialBookingState, getNextStep, getTimeQuickReplies, getTypeQuickReplies,
 } from "@/lib/booking-chat";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
@@ -35,9 +35,9 @@ export default function ProsBotPanel({ embedded, bookedSlots }: Props) {
   const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
-      text: "Hi! I'm <strong style=\"color:var(--accent,#e8420a);font-weight:600\">Pros Bot</strong>. I can book your demo right here — just say <strong style=\"color:var(--accent,#e8420a);font-weight:600\">\"Book a Demo\"</strong> or answer my questions!",
+      text: "Hi! I'm <strong style=\"color:var(--accent,#e8420a);font-weight:600\">Pros Bot</strong>. Let's book your demo! First, what type of meeting are you looking for?",
       type: "bot",
-      quickReplies: ["Book a Demo", "How it works", "Pricing"],
+      quickReplies: getTypeQuickReplies(),
     },
   ]);
   const [input, setInput] = useState("");
@@ -93,7 +93,11 @@ export default function ProsBotPanel({ embedded, bookedSlots }: Props) {
         body: JSON.stringify({
           name: result.data.name, email: result.data.email,
           company: result.data.company, date: result.data.date,
-          time: result.data.time, notes: "Booked via Pros Bot panel",
+          time: result.data.time,
+          type: result.data.type || "demo",
+          phone: result.data.phone || "",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          notes: "Booked via Pros Bot panel",
         }),
       }).catch(() => {});
     }

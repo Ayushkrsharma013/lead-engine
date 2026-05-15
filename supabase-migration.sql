@@ -22,6 +22,13 @@ CREATE TABLE IF NOT EXISTS appointments (
   email TEXT NOT NULL,
   company TEXT DEFAULT '',
   notes TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  type TEXT DEFAULT 'demo',
+  duration INTEGER DEFAULT 30,
+  status TEXT DEFAULT 'confirmed',
+  timezone TEXT DEFAULT 'Asia/Kolkata',
+  calendar_link TEXT,
+  updated_at TIMESTAMPTZ DEFAULT now(),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -33,12 +40,22 @@ CREATE TABLE IF NOT EXISTS email_captures (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 7. RLS policies for appointments (allow public insert/select)
-ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon_insert_appointments" ON appointments FOR INSERT WITH CHECK (true);
-CREATE POLICY "anon_select_appointments" ON appointments FOR SELECT USING (true);
+-- 7. Add new columns to existing appointments table (if it already exists)
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'demo';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS duration INTEGER DEFAULT 30;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'confirmed';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'Asia/Kolkata';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS calendar_link TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
--- 8. RLS policies for email_captures (allow public insert)
+-- 8. RLS policies for appointments (allow public insert/select/update)
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "anon_insert_appointments" ON appointments FOR INSERT WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS "anon_select_appointments" ON appointments FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "anon_update_appointments" ON appointments FOR UPDATE USING (true) WITH CHECK (true);
+
+-- 9. RLS policies for email_captures (allow public insert)
 ALTER TABLE email_captures ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_insert_email_captures" ON email_captures FOR INSERT WITH CHECK (true);
 CREATE POLICY "anon_select_email_captures" ON email_captures FOR SELECT USING (true);

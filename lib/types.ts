@@ -162,6 +162,54 @@ export interface MergeResult {
   rejected: number;
 }
 
+// ─── Appointments ──────────────────────────────────────────────────────────
+
+export type MeetingType = "discovery" | "demo" | "technical" | "strategy";
+export type AppointmentStatus = "confirmed" | "cancelled" | "rescheduled" | "completed";
+
+export const MEETING_TYPES: Record<MeetingType, { label: string; duration: number; description: string }> = {
+  discovery: { label: "Discovery Call", duration: 15, description: "Quick intro to see if we're a fit" },
+  demo: { label: "Product Demo", duration: 30, description: "Full platform walkthrough with your use case" },
+  technical: { label: "Technical Deep-Dive", duration: 45, description: "Architecture, integrations, and security" },
+  strategy: { label: "Strategy Session", duration: 60, description: "Custom ICP + pipeline design workshop" },
+};
+
+export interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  notes?: string;
+  type: MeetingType;
+  duration: number;
+  status: AppointmentStatus;
+  timezone: string;
+  calendarLink?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppointmentInput {
+  date: string;
+  time: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  notes?: string;
+  type: MeetingType;
+  timezone: string;
+}
+
+export const APPOINTMENT_BUFFER_MINUTES = 15;
+export const MAX_BOOKINGS_PER_DAY = 8;
+export const BUSINESS_HOURS_START = 9;
+export const BUSINESS_HOURS_END = 17;
+export const WEEKEND_DAYS = [0, 6];
+
 export interface AgentMessage {
   id: string;
   role: "user" | "agent";
