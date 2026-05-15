@@ -21,6 +21,9 @@ import {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const FULL_TEXT = "Your Pipeline on Autopilot.";
+const HERO_PREFIX = "Your Pipeline on ";
+const HERO_HIGHLIGHT = "Autopilot.";
+const HERO_SPLIT_AT = HERO_PREFIX.length;
 const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789+-*/=<>{}[]()&|!?@#$%^&*;:,.~`".split("");
 
 const FAQ_ITEMS = [
@@ -607,7 +610,17 @@ export default function LandingPage() {
               AI-Powered B2B Prospecting
             </div>
             <h1>
-              <span className="typewriter-text">{typewriterText}</span>
+              <span className="typewriter-text hero-heading-main">
+                {typewriterText.length <= HERO_SPLIT_AT
+                  ? typewriterText
+                  : typewriterText.slice(0, HERO_SPLIT_AT)
+                }
+              </span>
+              {typewriterText.length > HERO_SPLIT_AT && (
+                <span className="typewriter-text hero-heading-gradient">
+                  {typewriterText.slice(HERO_SPLIT_AT)}
+                </span>
+              )}
               <span className="typewriter-cursor">|</span>
             </h1>
             <p className="hero-subtitle">500+ qualified leads/month. Zero manual research. One AI system that finds, scores, and delivers your ideal clients — while you sleep.</p>

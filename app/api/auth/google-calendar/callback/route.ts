@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { exchangeCodeForTokens } from "@/lib/google-calendar";
 
-const BASE_URL =
-  process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+function getBaseUrl() {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const redirectUri = `${BASE_URL}/api/auth/google-calendar/callback`;
+  const redirectUri = `${getBaseUrl()}/prospecting-os/api/auth/google-calendar/callback`;
   const result = await exchangeCodeForTokens(code, redirectUri);
 
   if (result.error) {

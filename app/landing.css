@@ -415,6 +415,25 @@
 .landing-page .typewriter-text {
   display: inline;
 }
+.landing-page .hero-heading-main {
+  font-family: var(--font-serif-italic);
+  font-weight: 400;
+  font-style: italic;
+}
+.landing-page .hero-heading-gradient {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  background: linear-gradient(135deg, #E8A840 0%, #F5D078 40%, #FFB347 70%, #E8A840 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: hero-gradient-shift 3s ease-in-out infinite;
+}
+@keyframes hero-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
 .landing-page .typewriter-cursor {
   display: inline-block;
   color: var(--accent);
