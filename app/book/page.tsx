@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   Calendar, Clock, User, Mail, Building2, MessageSquare,
   ArrowLeft, ArrowRight, CheckCircle, Zap, ChevronLeft, ChevronRight,
-  Sparkles, MessageCircle,
 } from "lucide-react";
-import ProsBotPanel from "@/components/ProsBotPanel";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -58,6 +56,7 @@ export default function BookPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
 
   // Form
   const [name, setName] = useState("");
@@ -66,6 +65,13 @@ export default function BookPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/prospecting-os/api/auth/google-calendar/status")
+      .then(r => r.json())
+      .then(d => setCalendarConnected(d.connected))
+      .catch(() => setCalendarConnected(false));
+  }, []);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
@@ -103,7 +109,7 @@ export default function BookPage() {
     setError("");
     setSubmitting(true);
     try {
-      const res = await fetch("/api/appointments", {
+      const res = await fetch("/prospecting-os/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: selectedDate, time: selectedTime, name: name.trim(), email: email.trim(), company: company.trim(), notes: notes.trim() }),
@@ -131,23 +137,37 @@ export default function BookPage() {
       "--badge-bg": "rgba(232,66,10,0.12)", "--badge-text": "#ff8a5c",
       "--success": "#22c55e", "--success-bg": "rgba(34,197,94,0.1)",
     } as React.CSSProperties}>
+
       {/* ══════ Nav ══════ */}
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight no-underline" style={{ color: "var(--text-primary, #f5f4f1)" }}>
             <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
             Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
           </a>
           <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--text-tertiary, #7a7875)" }}>
-            <Link
-              href="/api/auth/google-calendar"
-              title="Connect Google Calendar to get notifications for new bookings"
-              className="flex items-center gap-1.5 text-[11px] font-medium transition-colors hover:opacity-80 no-underline"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              <Calendar size={13} />
-              <span className="hidden sm:inline">Connect Calendar</span>
-            </Link>
+
+            {/* Calendar status indicator */}
+            {calendarConnected === true ? (
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "#22c55e" }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#22c55e" }} />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: "#22c55e" }} />
+                </span>
+                <span className="hidden sm:inline">Calendar Connected</span>
+              </span>
+            ) : calendarConnected === false ? (
+              <Link
+                href="/api/auth/google-calendar"
+                title="Connect Google Calendar to get notifications for new bookings"
+                className="flex items-center gap-1.5 text-[11px] font-medium transition-opacity hover:opacity-80 no-underline"
+                style={{ color: "var(--text-tertiary)" }}
+              >
+                <Calendar size={13} />
+                <span className="hidden sm:inline">Connect Calendar</span>
+              </Link>
+            ) : null}
+
             <span style={{ color: "var(--border)" }}>|</span>
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: step >= 1 ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: step >= 1 ? "#fff" : "var(--text-tertiary)" }}>1</span>
             <span style={{ color: step >= 2 ? "var(--text-primary)" : undefined }}>Date</span>
@@ -161,10 +181,9 @@ export default function BookPage() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-3 lg:py-4 flex-1 min-h-0 overflow-hidden w-full">
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 h-full">
-          {/* Left — Booking Form */}
-          <div className="flex-1 min-w-0 overflow-y-auto">
+      {/* ══════ Main ══════ */}
+      <div className="max-w-2xl mx-auto px-6 py-4 lg:py-6 flex-1 min-h-0 overflow-y-auto w-full">
+
         {step === 4 ? (
           /* ══════════════════════ STEP 4 — Confirmation ════════════════ */
           <div className="text-center py-12 animate-scale-in">
@@ -192,7 +211,7 @@ export default function BookPage() {
         ) : (
           <>
             {/* ══════ Header ══════ */}
-            <div className="text-center mb-3">
+            <div className="text-center mb-4">
               <div className="inline-flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-widest mb-2 px-3 py-1.5 rounded-full" style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))", color: "var(--badge-text, #ff8a5c)" }}>
                 Book a Demo
               </div>
@@ -279,7 +298,7 @@ export default function BookPage() {
 
                 <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
                   <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
-                  <div className="grid grid-cols-3 gap-2.5 mb-4">
+                  <div className="grid grid-cols-4 gap-2.5 mb-4">
                     {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
                       const isSel = selectedTime === t;
                       return (
@@ -300,7 +319,7 @@ export default function BookPage() {
                   </div>
 
                   <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
-                  <div className="grid grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-4 gap-2.5">
                     {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
                       const isSel = selectedTime === t;
                       return (
@@ -427,25 +446,6 @@ export default function BookPage() {
             )}
           </>
         )}
-          </div>
-
-          {/* Right — Pros Bot Conversational Agent */}
-          <div className="hidden lg:flex lg:flex-col w-80 xl:w-96 flex-shrink-0 h-full min-h-0">
-            <div className="mb-2 flex items-center gap-2 px-1 flex-shrink-0">
-              <Sparkles size={16} style={{ color: "var(--accent, #e8420a)" }} />
-              <span className="text-sm font-bold tracking-tight">Book via Chat</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--badge-bg)", color: "var(--badge-text)" }}>AI</span>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ProsBotPanel embedded />
-            </div>
-          </div>
-
-          {/* Mobile — slide-up chat toggle */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
-            <ProsBotPanel embedded />
-          </div>
-        </div>
       </div>
     </div>
   );
