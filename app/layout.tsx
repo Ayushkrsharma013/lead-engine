@@ -4,22 +4,24 @@ import "./landing.css";
 import { AppProvider } from "@/lib/AppContext";
 import { Shell } from "@/components/Shell";
 
+const basePath = "/prospecting-os";
+
 export const metadata: Metadata = {
   title: "Prospecting OS — AI-Powered B2B Prospecting Engine",
   description: "500+ qualified leads/month. Zero manual research. One AI system that finds, scores, and delivers your ideal clients — while you sleep.",
   icons: {
     icon: [
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.ico", sizes: "48x48" },
+      { url: `${basePath}/favicon-16x16.png`, sizes: "16x16", type: "image/png" },
+      { url: `${basePath}/favicon-32x32.png`, sizes: "32x32", type: "image/png" },
+      { url: `${basePath}/favicon.ico`, sizes: "48x48" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [{ url: `${basePath}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" }],
     other: [
-      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: `${basePath}/android-chrome-192x192.png`, sizes: "192x192", type: "image/png" },
+      { url: `${basePath}/android-chrome-512x512.png`, sizes: "512x512", type: "image/png" },
     ],
   },
-  manifest: "/site.webmanifest",
+  manifest: `${basePath}/site.webmanifest`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
