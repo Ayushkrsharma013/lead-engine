@@ -813,56 +813,20 @@ export default function LandingPage() {
       {/* ══════════ Premium Chat Widget — Pros Bot ══════════ */}
       <div className="chat-widget">
         <button className="chat-trigger" onClick={() => setChatOpen(o => !o)} aria-label="Open chat">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="chat3d-grad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#00d4ff" />
-                <stop offset="1" stopColor="#0088cc" />
-              </linearGradient>
-              <linearGradient id="chat3d-shine" x1="6" y1="4" x2="16" y2="12" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ffffff" stopOpacity="0.3" />
-                <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-              </linearGradient>
-              <filter id="chat3d-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.4" />
-              </filter>
-            </defs>
-            {/* 3D bottom face (depth) */}
-            <path d="M4 13.5C4 12.5 5 11 6.5 10.5L19.5 10.5C21 11 22 12.5 22 13.5V14.5C22 15.5 21 17 19.5 17.5L6.5 17.5C5 17 4 15.5 4 14.5V13.5Z" fill="#005577" />
-            {/* Main bubble */}
-            <rect x="3" y="2" width="19" height="14" rx="4" fill="url(#chat3d-grad)" filter="url(#chat3d-shadow)" />
-            {/* Shine */}
-            <rect x="3" y="2" width="19" height="8" rx="4" fill="url(#chat3d-shine)" />
-            {/* Bubble tail */}
-            <path d="M8 16L5 22L11 16H8Z" fill="url(#chat3d-grad)" />
-            {/* 3 dots */}
-            <circle cx="9" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
-            <circle cx="12.5" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
-            <circle cx="16" cy="9" r="1.3" fill="#00d4ff" opacity="0.5" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <line x1="8" y1="9" x2="16" y2="9" />
+            <line x1="8" y1="13" x2="13" y2="13" />
           </svg>
           <span className="pulse-ring" />
         </button>
         <div className={`chat-window${chatOpen ? " open" : ""}`}>
           <div className="chat-header">
             <div className="chat-header-logo">
-              <svg width="22" height="22" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="chat3d-h-grad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#00d4ff" />
-                    <stop offset="1" stopColor="#0088cc" />
-                  </linearGradient>
-                  <linearGradient id="chat3d-h-shine" x1="6" y1="4" x2="16" y2="12" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ffffff" stopOpacity="0.3" />
-                    <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M4 13.5C4 12.5 5 11 6.5 10.5L19.5 10.5C21 11 22 12.5 22 13.5V14.5C22 15.5 21 17 19.5 17.5L6.5 17.5C5 17 4 15.5 4 14.5V13.5Z" fill="#005577" />
-                <rect x="3" y="2" width="19" height="14" rx="4" fill="url(#chat3d-h-grad)" />
-                <rect x="3" y="2" width="19" height="8" rx="4" fill="url(#chat3d-h-shine)" />
-                <path d="M8 16L5 22L11 16H8Z" fill="url(#chat3d-h-grad)" />
-                <circle cx="9" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
-                <circle cx="12.5" cy="9" r="1.3" fill="#ffffff" opacity="0.9" />
-                <circle cx="16" cy="9" r="1.3" fill="#00d4ff" opacity="0.5" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <line x1="8" y1="9" x2="16" y2="9" />
+                <line x1="8" y1="13" x2="13" y2="13" />
               </svg>
             </div>
             <div className="chat-header-info">
