@@ -6,7 +6,11 @@ import {
   Users, Clock, Link2, Trophy, AlertTriangle, Copy, ChevronDown, ChevronUp,
   Zap, Play, Terminal,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import type { OOStatus, OOPipelineStats } from "@/lib/openoutreach";
+
+// basePath prefix required for client-side fetch in Next.js with basePath set
+const BASE = "/prospecting-os";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -219,11 +223,11 @@ export default function OutreachPage() {
   const [syncing, setSyncing] = useState(false);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // Ping OpenOutreach status
+  // Ping OpenOutreach status via API route (basePath-prefixed)
   const checkStatus = useCallback(async () => {
     setStatusLoading(true);
     try {
-      const res = await fetch("/api/outreach/status");
+      const res = await fetch(`${BASE}/api/outreach/status`);
       const data = await res.json() as OOStatus;
       setOoStatus(data);
     } catch {
@@ -233,22 +237,28 @@ export default function OutreachPage() {
     }
   }, []);
 
-  // Load OO-tagged leads from Supabase for stats
+  // Load OO-tagged leads directly from Supabase anon client
   const loadStats = useCallback(async () => {
     try {
-      const [leadsRes, campaignsRes] = await Promise.all([
-        fetch("/api/leads?source=linkedin&tag=openoutreach"),
-        fetch("/api/leads?source=linkedin&tag=openoutreach"),
-      ]);
-      // Use Supabase leads with openoutreach tag to build pipeline stats
-      const allRes = await fetch("/api/leads/openoutreach-stats");
-      if (allRes.ok) {
-        const data = await allRes.json() as { stats: OOPipelineStats; campaigns: CampaignRow[] };
-        setStats(data.stats);
-        setCampaigns(data.campaigns ?? []);
-      }
+      const { data: ooLeads } = await supabase
+        .from("leads")
+        .select("status, kanban_column, tags")
+        .contains("tags", ["openoutreach"]);
+
+      if (!ooLeads || ooLeads.length === 0) return;
+
+      const s: OOPipelineStats = {
+        qualified:      ooLeads.filter(l => l.status === "new").length,
+        readyToConnect: 0,
+        pending:        ooLeads.filter(l => l.status === "contacted").length,
+        connected:      ooLeads.filter(l => l.status === "replied").length,
+        completed:      ooLeads.filter(l => l.status === "hot" || l.status === "meeting").length,
+        failed:         ooLeads.filter(l => l.status === "lost").length,
+        total:          ooLeads.length,
+      };
+      setStats(s);
     } catch {
-      // stats will remain null — handled in UI
+      // stats remain null — handled in UI
     }
   }, []);
 
