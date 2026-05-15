@@ -7,17 +7,17 @@
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 :root {
-  --bg:            #020308;
-  --bg-grain:      #04050C;
-  --surface:       #080A14;
-  --surface-2:     #0C0E1A;
-  --surface-elev:  #111320;
-  --line:          rgba(130,150,210,.07);
-  --line-strong:   rgba(130,150,210,.14);
-  --ink:           #E8EAF2;
-  --ink-2:         #B0B6C8;
-  --ink-3:         #7E849E;
-  --ink-4:         #555B70;
+  --bg:            #000000;
+  --bg-grain:      #030303;
+  --surface:       #0A0A0A;
+  --surface-2:     #0E0E0E;
+  --surface-elev:  #141414;
+  --line:          rgba(255,255,255,.06);
+  --line-strong:   rgba(255,255,255,.12);
+  --ink:           #EBEBEB;
+  --ink-2:         #B0B0B0;
+  --ink-3:         #808080;
+  --ink-4:         #555555;
   --accent:        #00d4ff;
   --accent-soft:   rgba(0,212,255,.12);
   --accent-ink:    #33DDFF;
@@ -27,11 +27,11 @@
   --negative-soft: rgba(224,96,96,.12);
   --info:          #6BAADD;
   --info-soft:     rgba(107,170,221,.12);
-  --shadow-sm:     0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md:     0 4px 12px rgba(0,0,0,0.45);
-  --shadow-lg:     0 12px 32px rgba(0,0,0,0.55);
-  --sidebar-bg:    #010206;
-  --sidebar-border:rgba(130,150,210,.05);
+  --shadow-sm:     0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.55);
+  --shadow-lg:     0 12px 32px rgba(0,0,0,0.65);
+  --sidebar-bg:    #000000;
+  --sidebar-border:rgba(255,255,255,.05);
 }
 
 [data-theme="light"] {
