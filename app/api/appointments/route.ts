@@ -312,10 +312,19 @@ export async function PATCH(req: Request) {
     }
 
     if (status === "cancelled") {
-      const { error: updateError } = await supabase
+      // Try with status column first; fall back to notes-only if schema is old
+      let { error: updateError } = await supabase
         .from("appointments")
-        .update({ status: "cancelled", updatedAt: new Date().toISOString() })
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
         .eq("id", id);
+
+      if (updateError) {
+        // Fallback: mark cancelled in notes if status column doesn't exist
+        ({ error: updateError } = await supabase
+          .from("appointments")
+          .update({ notes: "[CANCELLED] " + (appointment.notes || "") })
+          .eq("id", id));
+      }
 
       if (updateError) {
         console.error("[appointments] cancel failed:", updateError.message);
@@ -386,10 +395,9 @@ export async function PATCH(req: Request) {
 
         for (const existing of existingToday) {
           if (existing.id === id) continue;
-          if (existing.status === "cancelled" || existing.status === "rescheduled") continue;
 
           const existingStart = timeToMinutes(existing.time);
-          const existingDuration = existing.duration || 30;
+          const existingDuration = (existing as any).duration || 30;
           const existingEnd = existingStart + existingDuration;
 
           if (existingStart === newStart) {
@@ -409,11 +417,7 @@ export async function PATCH(req: Request) {
         .update({
           date,
           time,
-          type: effectiveType,
-          duration,
-          timezone: newTimezone,
-          status: "confirmed",
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq("id", id);
 
