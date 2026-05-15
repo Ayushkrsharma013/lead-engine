@@ -27,38 +27,61 @@ const HERO_HIGHLIGHT = "500+ Scored Leads. Delivered Every Morning.";
 const HERO_SPLIT_AT = HERO_PREFIX.length;
 const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789+-*/=<>{}[]()&|!?@#$%^&*;:,.~`".split("");
 
-const FAQ_ITEMS = [
+const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   {
     q: "Do I need a LinkedIn Sales Navigator subscription?",
     a: "Yes — LinkedIn Sales Navigator is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.",
+    cat: "setup",
   },
   {
     q: "How long does it take to go live?",
-    a: "Basic plan: 4–6 hours from payment to live pipeline. Pro plan: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Advanced plan: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
+    a: "DIY Setup: 4–6 hours from payment to live pipeline. Managed Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Managed Scale: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
+    cat: "setup",
   },
   {
     q: "What industries does AI B2B lead generation work for?",
     a: "Prospecting OS works for any B2B business whose ideal clients are active on LinkedIn. It has been deployed for SaaS companies, digital agencies, management consultancies, professional services firms, and recruitment agencies in the US, UK, Australia, Singapore, Canada, and India. If your target buyer has a LinkedIn profile, the system works.",
+    cat: "results",
   },
   {
     q: "Will automated LinkedIn prospecting get my domain blacklisted?",
-    a: "No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Advanced plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.",
+    a: "No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Managed Scale plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.",
+    cat: "results",
   },
   {
     q: "What is the performance guarantee?",
-    a: "On the Pro plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked.",
+    a: "On the Managed Growth plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked.",
+    cat: "setup",
   },
   {
-    q: "Can I upgrade from Basic to Pro later?",
-    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Pro and Advanced features are activated on your existing n8n workflow. You only pay the difference in plan cost from the upgrade date.",
+    q: "Can I upgrade from DIY Setup to Managed Growth later?",
+    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Managed Growth features are activated on your existing n8n workflow. You only pay the difference in plan cost from the upgrade date.",
+    cat: "setup",
   },
   {
     q: "What is an AI SDR and how is it different from hiring a human SDR?",
-    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Pro plan at $3,500/month — running 24/7, with no sick days, no training ramp, and no turnover.",
+    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Managed Growth plan at $3,500/month — running 24/7, with no sick days, no training ramp, and no turnover.",
+    cat: "results",
   },
   {
     q: "Does Prospecting OS integrate with HubSpot or other CRMs?",
-    a: "Yes, on the Advanced plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.",
+    a: "Yes, on the Managed Scale plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.",
+    cat: "results",
+  },
+  {
+    q: "Does this work for clients outside the US and UK?",
+    a: "Yes — Sales Navigator is global. We've run pipelines targeting APAC, EMEA, and LATAM. The ICP scoring and icebreaker generation work regardless of geography. The only constraint is that your target clients need a LinkedIn presence.",
+    cat: "results",
+  },
+  {
+    q: "Who owns the lead data?",
+    a: "You do. All leads are delivered to your own Google Sheet — we never store, sell, or access your lead data outside of the active pipeline run. For Managed Growth and Scale plans, your data lives in your workspace, not ours.",
+    cat: "results",
+  },
+  {
+    q: "Can I see a sample output before buying?",
+    a: "Yes — book a demo call and we'll walk you through a live run on 50 contacts from your ICP. You'll see the scoring logic, a real icebreaker output, and the Slack delivery format before you commit.",
+    cat: "results",
   },
 ];
 
@@ -148,6 +171,13 @@ export default function LandingPage() {
 
   /* ─── FAQ ──────────────────────────────────────────────────────────────── */
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [faqFilter, setFaqFilter] = useState<"all" | "setup" | "results">("all");
+
+  /* ─── ROI Calculator sliders ────────────────────────────────────────────── */
+  const [roiHours, setRoiHours] = useState(15);
+  const [roiRate, setRoiRate] = useState(75);
+  const [roiMeetings, setRoiMeetings] = useState(5);
+  const [roiDeal, setRoiDeal] = useState(8000);
 
   /* ─── Booking state machine ───────────────────────────────────────────── */
   const [bookingStep, setBookingStep] = useState<BookingStep>("idle");
@@ -575,6 +605,17 @@ export default function LandingPage() {
     };
   }, []);
 
+  /* ─── ROI computed values ──────────────────────────────────────────────── */
+  const sliderBg = (val: number, min: number, max: number) => {
+    const pct = ((val - min) / (max - min)) * 100;
+    return `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`;
+  };
+  const roiMonthlyCost = Math.max(0, Math.round(roiHours * 4.33 * roiRate));
+  const roiManualLeads = Math.max(0, Math.round(roiMeetings * 4.33 * 12));
+  const roiRevenue = Math.max(0, Math.round(500 * 0.03 * roiDeal - roiMonthlyCost));
+  const roiMultiple = Math.max(0, (500 * 0.03 * roiDeal) / 3500).toFixed(1);
+  const filteredFaqItems = faqFilter === "all" ? FAQ_ITEMS : FAQ_ITEMS.filter(item => item.cat === faqFilter);
+
   /* ─── Render ───────────────────────────────────────────────────────────── */
   return (
     <div className="landing-page" role="main" aria-label="Prospecting OS — AI B2B Lead Generation Landing Page">
@@ -694,135 +735,379 @@ export default function LandingPage() {
       <section className="section" id="how-it-works" aria-label="How Prospecting OS works — 5-step AI lead generation pipeline">
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow" aria-label="How Prospecting OS automates B2B lead generation">HOW IT WORKS</div>
-            <h2 className="section-title">How Prospecting OS Finds, Scores &amp; Delivers Your Best B2B Leads</h2>
-            <p className="section-subtext">Every morning, fresh decision-maker leads land in your Slack or Telegram — AI-scored, enriched, and ready to contact.</p>
+            <div className="section-eyebrow">// How It Works</div>
+            <h2 className="section-title">From zero to pipeline in 5 steps</h2>
+            <p className="section-subtext">Every morning, fresh scored leads land where you work. No manual input. No missed targets.</p>
           </div>
-          <div className="how-grid">
-            {[
-              { Icon: Globe, title: "Source", desc: "LinkedIn Sales Navigator pulls your Ideal Customer Profile (ICP) — industry, job title, company size, geography — automatically, every morning." },
-              { Icon: Filter, title: "Filter", desc: "The AI filter removes non-decision-makers. Only founders, C-suite, VPs, and Directors advance — no noise, no junior contacts." },
-              { Icon: FileText, title: "Score", desc: "Gemini AI scores every lead 1–10 against your ICP. Leads scoring below 7 are discarded. You only see high-intent, qualified prospects." },
-              { Icon: PenLine, title: "Enrich", desc: "Each lead is enriched with company context, recent news, and a unique AI-written icebreaker — ready for cold outreach." },
-              { Icon: Bell, title: "Deliver", desc: "Scored, enriched leads land in your Telegram, Slack, or CRM every morning. No spreadsheet hunting. No manual research. Just pipeline." },
-            ].map((item, i) => (
-              <div key={i} className="how-card reveal">
-                <span className="how-icon"><item.Icon size={32} strokeWidth={1.5} /></span>
-                <h4>{item.title}</h4>
-                <p>
-                  {item.desc}
-                  {i === 2 && (
-                    <>{" "}<a href="#pricing" aria-label="See Prospecting OS pricing plans" style={{ color: "var(--accent)", fontSize: "0.85em" }}>See pricing →</a></>
-                  )}
-                </p>
+          <div className="how-stepper">
+
+            <div className="how-step reveal" style={{ transitionDelay: "0.05s" }}>
+              <div className="how-step-left">
+                <div className="how-step-circle">1</div>
+                <div className="how-step-line" />
               </div>
-            ))}
+              <div className="how-step-body">
+                <span className="how-step-badge">SALES NAVIGATOR</span>
+                <h4 className="how-step-title">Pull your ICP from LinkedIn</h4>
+                <p className="how-step-desc">Sales Navigator runs a saved search for your exact ICP every morning — by title, industry, company size, geography. Results export automatically into the pipeline. No CSV uploads, no manual browsing.</p>
+                <div className="how-step-sample">
+                  <span className="sample-key">Search:</span> &quot;Head of Marketing&quot; · SaaS · 51–200 · US<br />
+                  <span className="sample-arrow">→</span> 847 results pulled · 06:00 AM daily
+                </div>
+              </div>
+            </div>
+
+            <div className="how-step reveal" style={{ transitionDelay: "0.15s" }}>
+              <div className="how-step-left">
+                <div className="how-step-circle">2</div>
+                <div className="how-step-line" />
+              </div>
+              <div className="how-step-body">
+                <span className="how-step-badge">AI FILTER</span>
+                <h4 className="how-step-title">Strip out the noise — only decision makers pass</h4>
+                <p className="how-step-desc">AI cross-checks each profile against your ICP rules. Individual contributors, students, job-seekers, and duplicate contacts are removed automatically. Only founders, VPs, and C-suite in your target segment advance.</p>
+                <div className="how-step-sample">
+                  <span className="sample-no">&#10007;</span> Filtered out: 612 (IC roles, irrelevant industries)<br />
+                  <span className="sample-yes">&#10003;</span> Passed: 235 decision-makers advancing to scoring
+                </div>
+              </div>
+            </div>
+
+            <div className="how-step reveal" style={{ transitionDelay: "0.25s" }}>
+              <div className="how-step-left">
+                <div className="how-step-circle">3</div>
+                <div className="how-step-line" />
+              </div>
+              <div className="how-step-body">
+                <span className="how-step-badge">GEMINI AI</span>
+                <h4 className="how-step-title">Every lead scored 1–10 with reasoning</h4>
+                <p className="how-step-desc">Gemini AI scores each lead against your ICP with a written justification — not just a number. You see exactly why a lead scored 8.5 vs 4.2. Only leads scoring 7+ advance to enrichment. You never touch a cold lead again.</p>
+                <div className="how-step-sample">
+                  Alex M. · VP Marketing · Acme SaaS · 120 emp<br />
+                  <span style={{ color: "var(--accent)", fontWeight: 700 }}>Score: 8.5 / 10</span><br />
+                  <span className="sample-key">Reason:</span> &quot;Exact ICP match — SaaS, growth stage, US-based, active on LinkedIn, budget signals&quot;
+                </div>
+              </div>
+            </div>
+
+            <div className="how-step reveal" style={{ transitionDelay: "0.35s" }}>
+              <div className="how-step-left">
+                <div className="how-step-circle">4</div>
+                <div className="how-step-line" />
+              </div>
+              <div className="how-step-body">
+                <span className="how-step-badge">AUTO ENRICH</span>
+                <h4 className="how-step-title">Company data + a personalized icebreaker</h4>
+                <p className="how-step-desc">Each qualified lead is enriched with company news, recent LinkedIn posts, funding events, and tech stack data. Gemini then writes a unique, context-specific icebreaker for that lead — not a template. No two icebreakers are the same.</p>
+                <div className="how-step-sample">
+                  <span className="sample-key">Icebreaker generated:</span><br />
+                  &quot;Saw your post about scaling your CS team post-Series B — congrats on the funding. We built a support automation for a similar-stage company that cut ticket volume 70%...&quot;
+                </div>
+              </div>
+            </div>
+
+            <div className="how-step reveal" style={{ transitionDelay: "0.45s" }}>
+              <div className="how-step-left">
+                <div className="how-step-circle">5</div>
+              </div>
+              <div className="how-step-body">
+                <span className="how-step-badge">AUTO DELIVER</span>
+                <h4 className="how-step-title">Hot leads delivered where you work</h4>
+                <p className="how-step-desc">Qualified, scored, enriched leads with icebreakers arrive in your Slack channel, Telegram, or directly into HubSpot/Google Sheets — every morning by 8 AM. Reply directly, copy the icebreaker, close the deal.</p>
+                <div className="how-step-sample">
+                  <span style={{ color: "var(--success)", fontWeight: 700 }}>NEW HOT LEAD</span> · Score 8.5<br />
+                  Alex M. · VP Marketing · Acme SaaS<br />
+                  <span className="sample-link">View full profile</span> · <span className="sample-link">Copy icebreaker</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
       {/* ══════════ Pricing ══════════ */}
-      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — Basic, Pro, and Advanced" style={{ background: "var(--bg-secondary)" }}>
+      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — DIY Setup, Managed Growth, Managed Scale" style={{ background: "var(--bg-secondary)" }}>
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow">PRICING</div>
-            <h2 className="section-title">AI B2B Lead Generation Pricing — From Self-Serve Setup to Full AI SDR</h2>
-            <p className="section-subtext">From self-serve AI scoring to a fully managed AI SDR. Every plan includes Gemini AI scoring and Sales Navigator integration.</p>
+            <div className="section-eyebrow">// Pricing</div>
+            <h2 className="section-title">Your AI SDR. A fraction of the cost.</h2>
+            <p className="section-subtext" style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>
+              An in-house SDR costs $4,000–6,000/month and delivers 50 leads. We deliver 500+ scored leads — already enriched and ready to send.
+            </p>
           </div>
+
+          <div className="guarantee-banner reveal">
+            <span className="guarantee-dot" />
+            Zero-risk guarantee — less than 50 qualified leads in month 1? Month 2 is on us.
+          </div>
+
           <div className="pricing-grid">
-            {/* Basic */}
+            {/* DIY Setup */}
             <div className="pricing-card reveal">
-              <h3>Basic</h3>
-              <div className="price">$2,500</div>
-              <span className="price-period">ONE-TIME SETUP</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>Perfect for founders and solo consultants ready to automate prospecting.</p>
+              <div className="pricing-plan-badge">ONE-TIME</div>
+              <h3>DIY Setup</h3>
+              <div className="price">$1,500</div>
+              <span className="price-period">one-time setup fee</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>We build and hand over the full n8n workflow. You run it yourself with your own API keys and Sales Navigator.</p>
               <ul className="pricing-features">
-                {["Full n8n workflow", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1 week support"].map((f, i) => <li key={i}>{f}</li>)}
+                <li>Full n8n workflow built for you</li>
+                <li>Sales Navigator integration configured</li>
+                <li>Gemini AI scoring (7+ filter)</li>
+                <li>Google Sheets dashboard</li>
+                <li>Telegram alerts configured</li>
+                <li>1-week email support post-handover</li>
+                <li className="pricing-feature-no">No AI icebreakers</li>
+                <li className="pricing-feature-no">No ongoing management</li>
               </ul>
-              <button className="btn-secondary" aria-label="Set up your AI B2B lead generation pipeline for $2,500 one-time" onClick={openChat}>Get Your Pipeline Set Up <ArrowRight size={14} style={{ display: "inline" }} /></button>
+              <a href="/book" className="btn-secondary" style={{ textDecoration: "none" }} aria-label="Get the DIY Setup workflow — $1,500 one-time">Get the Workflow</a>
             </div>
-            {/* Pro (Popular) */}
+
+            {/* Managed Growth — Featured */}
             <div className="pricing-card popular reveal">
               <div className="popular-badge">MOST POPULAR</div>
-              <h3>Pro</h3>
+              <h3>Managed Growth</h3>
               <div className="price">$3,500</div>
-              <span className="price-period">PER MONTH</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>The most popular choice for B2B agencies running active outbound campaigns.</p>
+              <span className="price-period">per month</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Fully managed pipeline. We run everything — scraping, scoring, enrichment, and delivery. You just reply to hot leads.</p>
               <ul className="pricing-features">
-                {["Everything in Basic", "AI icebreaker per lead", "Company enrichment", "Daily Slack digest", "Duplicate check", "Monthly ICP refinement", "Dedicated Slack channel"].map((f, i) => <li key={i}>{f}</li>)}
+                <li>Everything in DIY Setup, plus:</li>
+                <li>AI icebreaker per lead (unique, not templated)</li>
+                <li>Company &amp; LinkedIn enrichment</li>
+                <li>Daily Slack digest with hot leads</li>
+                <li>Duplicate suppression across batches</li>
+                <li>Monthly ICP refinement call</li>
+                <li>Dedicated Slack channel with us</li>
+                <li>500+ leads/month, 7+ score threshold</li>
               </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Book a free strategy call to start the Pro AI prospecting plan">Book a Free Strategy Call <ArrowRight size={14} style={{ display: "inline" }} /></Link>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Managed Growth AI prospecting">Book a Demo</Link>
             </div>
-            {/* Advanced */}
+
+            {/* Managed Scale */}
             <div className="pricing-card reveal">
-              <h3>Advanced</h3>
-              <div className="price">$10K+</div>
-              <span className="price-period">PER MONTH</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>Full-stack AI SDR for scaling sales teams replacing or supplementing human reps.</p>
+              <div className="pricing-plan-badge">ENTERPRISE</div>
+              <h3>Managed Scale</h3>
+              <div className="price">$12,500</div>
+              <span className="price-period">per month</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Full AI outbound engine. Auto-sends cold emails, detects replies, syncs with your CRM, and A/B tests messaging — all autonomous.</p>
               <ul className="pricing-features">
-                {["Everything in Pro", "Auto cold email sending", "3-touch follow-up", "AI reply detection", "HubSpot CRM sync", "A/B testing", "Weekly reports"].map((f, i) => <li key={i}>{f}</li>)}
+                <li>Everything in Managed Growth, plus:</li>
+                <li>Automated cold email sending (warmed domain)</li>
+                <li>3-touch follow-up sequences</li>
+                <li>AI reply detection &amp; routing</li>
+                <li>HubSpot / Salesforce CRM sync</li>
+                <li>A/B message testing</li>
+                <li>Weekly performance report</li>
+                <li>Dedicated AI strategist (monthly call)</li>
               </ul>
-              <button className="btn-secondary" aria-label="Contact Prospecting OS about the Advanced AI SDR plan" onClick={openChat}>Talk to the Team <ArrowRight size={14} style={{ display: "inline" }} /></button>
+              <button className="btn-secondary" onClick={openChat} aria-label="Talk to us about the Managed Scale AI SDR plan">Talk to Us</button>
             </div>
           </div>
-          <div className="guarantee-badge reveal">
-            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
-            Performance guarantee: If the Pro plan doesn&apos;t deliver 50+ qualified leads in your first month, month 2 is completely free. We&apos;ll also refine your ICP at no cost.{" "}
-            <a href="#pricing" aria-label="View Prospecting OS Pro plan pricing" style={{ color: "var(--accent)" }}>View Pro plan →</a>
-          </div>
+
+          <p className="pricing-disclaimer">All plans billed in USD. Setup fees non-refundable. Monthly plans cancel anytime with 14-day notice.</p>
         </div>
       </section>
 
-      {/* ══════════ Testimonials ══════════ */}
-      <section className="section">
+      {/* ══════════ Results / Social Proof ══════════ */}
+      <section className="section" id="social-proof" aria-label="Prospecting OS results — metrics and early access feedback">
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow">SOCIAL PROOF</div>
-            <h2 className="section-title">What B2B Teams Say About Prospecting OS</h2>
+            <div className="section-eyebrow">// Results</div>
+            <h2 className="section-title">What the system delivers</h2>
           </div>
-          <div className="testimonials-grid">
+
+          {/* Live metrics bar */}
+          <div className="metrics-bar">
             {[
-              { quote: "We were spending 15+ hours per week on manual LinkedIn prospecting. After setting up Prospecting OS, we receive 200+ AI-scored leads every Monday morning — with icebreakers ready to send. Our SDR now focuses only on closing.", initials: "AK", name: "Alex Kendall", role: "VP Sales, SaaS Co. · Austin, TX" },
-              { quote: "The AI-generated icebreakers are frighteningly accurate. Our cold email reply rate jumped from 2% to 11% in month one. That's 5x more conversations from the same list size.", initials: "MR", name: "Maria Rodriguez", role: "Founder, GrowthLab · London, UK" },
-              { quote: "I was skeptical — AI lead gen tools usually deliver junk. Prospecting OS is different. Every lead arrives with company context, a score, and a ready-to-use opener. We booked 3 discovery calls in the first week.", initials: "JP", name: "James Park", role: "CEO, TechVentures · Singapore" },
-            ].map((t, i) => (
-              <div key={i} className="testimonial-card reveal" role="img" aria-label={`Testimonial from ${t.name}, ${t.role}`}>
-                <p className="quote">&ldquo;{t.quote}&rdquo;</p>
-                <div className="testimonial-author">
-                  <div className="author-avatar">{t.initials}</div>
-                  <div className="author-info"><strong>{t.name}</strong>{t.role}</div>
-                </div>
+              { num: "500+", label: "leads scored per active client/month" },
+              { num: "8.5", label: "average ICP match score (out of 10)" },
+              { num: "~4hrs", label: "average time to go live" },
+              { num: "97%", label: "reduction in manual prospecting time" },
+            ].map((stat, i) => (
+              <div key={i} className="metric-card reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
+                <div className="metric-number">{stat.num}</div>
+                <div className="metric-label">{stat.label}</div>
               </div>
             ))}
           </div>
-          <p className="sr-only">
-            Client testimonials represent individual results. B2B lead generation outcomes vary based on ICP specificity, industry, and outreach strategy. Prospecting OS guarantees a minimum of 50 qualified leads in month 1 on the Pro plan or month 2 is free.
-          </p>
+
+          {/* Beta feedback strip */}
+          <div className="beta-feedback-section">
+            <div className="beta-feedback-label reveal">EARLY ACCESS FEEDBACK</div>
+            <div className="testimonials-grid">
+
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.05s" }}>
+                <p className="quote">
+                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>We ran this</em>
+                  {" "}on 300 LinkedIn contacts from our saved search. 47 scored 7+. We&apos;d been manually reviewing 300 contacts over 2 days. This did it in 40 minutes and the icebreakers were actually good.
+                </p>
+                <div className="testimonial-author">
+                  <div className="author-avatar beta-avatar">BU</div>
+                  <div className="author-info">
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — B2B SaaS, Austin TX · Tested May 2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.15s" }}>
+                <p className="quote">
+                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>The scoring with reasoning</em>
+                  {" "}was the thing I didn&apos;t expect. It&apos;s not just a number — it told me why this person was a 4 vs why that one was an 8. Changed how I think about ICP.
+                </p>
+                <div className="testimonial-author">
+                  <div className="author-avatar beta-avatar">GA</div>
+                  <div className="author-info">
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — Growth agency, London UK · Tested April 2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.25s" }}>
+                <p className="quote">
+                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>Icebreaker quality</em>
+                  {" "}surprised me. I&apos;ve used Clay, Apollo outreach, all of them. These felt like I wrote them after 10 minutes of research on each person. Because the system actually did.
+                </p>
+                <div className="testimonial-author">
+                  <div className="author-avatar beta-avatar">CF</div>
+                  <div className="author-info">
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — Consulting firm, Singapore · Tested May 2026</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="beta-cta-row reveal">
+            <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Want to be in the next cohort?</p>
+            <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for Beta Access</Link>
+          </div>
         </div>
       </section>
 
-      {/* ══════════ ROI ══════════ */}
-      <section className="section" id="roi" aria-label="ROI calculator — AI prospecting vs human SDR cost comparison" style={{ background: "var(--bg-secondary)", position: "relative", overflow: "hidden" }}>
+      {/* ══════════ ROI Calculator ══════════ */}
+      <section className="section" id="roi" aria-label="ROI calculator — calculate your AI prospecting return" style={{ background: "var(--bg-secondary)", position: "relative", overflow: "hidden" }}>
         <canvas ref={roiCanvasRef} className="roi-ascii-canvas" />
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
-          <div className="roi-grid">
-            <div className="roi-text reveal">
-              <div className="section-eyebrow">ROI</div>
-              <h3>Calculate Your ROI: AI Prospecting vs. Human SDR</h3>
-              <p>
-                A human SDR costs $4,000–$6,000/month in salary alone, and typically delivers 40–60 leads per month. Prospecting OS delivers <strong>500+ AI-scored, enriched leads</strong> on the Pro plan at $3,500/month — a 10x output improvement at lower cost, with zero management overhead.{" "}
-                <a href="#pricing" aria-label="View Prospecting OS Pro plan pricing" style={{ color: "var(--accent)" }}>View Pro plan →</a>
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// ROI Calculator</div>
+            <h2 className="section-title">The math doesn&apos;t lie</h2>
+            <p className="section-subtext" style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>
+              Tell us how your team prospects today. We&apos;ll show you exactly what you&apos;re leaving on the table.
+            </p>
+          </div>
+          <div className="roi-calc-grid">
+
+            {/* Left — sliders */}
+            <div className="roi-sliders-col reveal">
+
+              <div className="roi-slider-card">
+                <div className="roi-slider-label-row">
+                  <label>Hours/week spent on manual prospecting</label>
+                  <span>{roiHours} hrs/week</span>
+                </div>
+                <input type="range" min={2} max={40} step={1} value={roiHours}
+                  onChange={e => setRoiHours(Number(e.target.value))}
+                  className="roi-slider-input"
+                  style={{ background: sliderBg(roiHours, 2, 40) }}
+                  aria-label="Hours per week on manual prospecting"
+                />
+              </div>
+
+              <div className="roi-slider-card">
+                <div className="roi-slider-label-row">
+                  <label>Your hourly rate (or team cost)</label>
+                  <span>${roiRate}/hr</span>
+                </div>
+                <input type="range" min={25} max={300} step={25} value={roiRate}
+                  onChange={e => setRoiRate(Number(e.target.value))}
+                  className="roi-slider-input"
+                  style={{ background: sliderBg(roiRate, 25, 300) }}
+                  aria-label="Hourly rate"
+                />
+              </div>
+
+              <div className="roi-slider-card">
+                <div className="roi-slider-label-row">
+                  <label>Meetings booked per week (current)</label>
+                  <span>{roiMeetings} meetings/week</span>
+                </div>
+                <input type="range" min={1} max={30} step={1} value={roiMeetings}
+                  onChange={e => setRoiMeetings(Number(e.target.value))}
+                  className="roi-slider-input"
+                  style={{ background: sliderBg(roiMeetings, 1, 30) }}
+                  aria-label="Meetings booked per week"
+                />
+              </div>
+
+              <div className="roi-slider-card">
+                <div className="roi-slider-label-row">
+                  <label>Average deal value</label>
+                  <span>${roiDeal.toLocaleString()}</span>
+                </div>
+                <input type="range" min={1000} max={50000} step={1000} value={roiDeal}
+                  onChange={e => setRoiDeal(Number(e.target.value))}
+                  className="roi-slider-input"
+                  style={{ background: sliderBg(roiDeal, 1000, 50000) }}
+                  aria-label="Average deal value"
+                />
+              </div>
+
+            </div>
+
+            {/* Right — live output */}
+            <div className="roi-output-card reveal">
+              <div className="roi-output-header">YOUR CURRENT STATE</div>
+
+              <div className="roi-output-row">
+                <span className="roi-output-label">Monthly cost of manual prospecting</span>
+                <span key={roiMonthlyCost} className="roi-output-value roi-value-animated">
+                  ${roiMonthlyCost.toLocaleString()} / month
+                </span>
+                <span className="roi-output-sub">{Math.round(roiHours * 4.33)} hrs/month &times; ${roiRate}/hr</span>
+              </div>
+
+              <div className="roi-output-row">
+                <span className="roi-output-label">Leads researched manually per month</span>
+                <span key={roiManualLeads} className="roi-output-value roi-value-animated">
+                  ~{roiManualLeads.toLocaleString()} leads/month
+                </span>
+                <span className="roi-output-sub">at your current booking rate</span>
+              </div>
+
+              <div className="roi-output-divider">
+                <span>WITH PROSPECTING OS</span>
+              </div>
+
+              <div className="roi-output-row">
+                <span className="roi-output-label">AI-scored leads delivered</span>
+                <span className="roi-output-value" style={{ color: "var(--accent)" }}>500+ / month</span>
+                <span className="roi-output-sub">all 7+ ICP score, enriched, icebreaker included</span>
+              </div>
+
+              <div className="roi-output-row">
+                <span className="roi-output-label">Additional revenue opportunity/month</span>
+                <span key={roiRevenue} className="roi-output-value roi-value-animated" style={{ color: "var(--success)" }}>
+                  ${roiRevenue.toLocaleString()} / month
+                </span>
+                <span className="roi-output-sub">at 3% close rate on 500 scored leads</span>
+              </div>
+
+              <div className="roi-output-multiple">
+                <span className="roi-output-label">ROI vs Managed Growth plan ($3,500/mo)</span>
+                <span key={roiMultiple} className="roi-multiple-number roi-value-animated">{roiMultiple}x</span>
+                <span className="roi-output-sub">return on investment</span>
+              </div>
+
+              <Link href="/book" className="btn-primary roi-output-cta" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)", width: "100%", justifyContent: "center" }}>
+                Book a Demo — See Your Custom Pipeline
+              </Link>
+
+              <p className="roi-output-disclaimer">
+                Revenue projections are estimates based on industry-average close rates. Actual results vary by ICP, offer, and outreach quality.
               </p>
             </div>
-            <div className="roi-calc-card reveal">
-              <div className="roi-row"><span className="label">AI-scored leads/month</span><span className="value">200+</span></div>
-              <div className="roi-row"><span className="label">Average B2B close rate</span><span className="value">2–5%</span></div>
-              <div className="roi-row"><span className="label">Estimated new clients/month</span><span className="value">4–10</span></div>
-              <div className="roi-row"><span className="label">Average project/contract value</span><span className="value">$5K–$15K</span></div>
-              <div className="roi-row"><span className="label">Estimated monthly revenue generated</span><span className="value">$20K–$150K</span></div>
-              <div className="roi-row"><span className="label">Prospecting OS Pro plan cost</span><span className="value">$3,500/mo</span></div>
-              <div className="roi-highlight"><span>Estimated minimum ROI on Pro plan</span><span>5.7x — 42x</span></div>
-            </div>
+
           </div>
         </div>
       </section>
@@ -832,40 +1117,106 @@ export default function LandingPage() {
         <div className="container">
           <div className="section-header reveal">
             <div className="section-eyebrow">// FAQ</div>
-            <h2 className="section-title">Frequently Asked Questions About AI B2B Lead Generation</h2>
+            <h2 className="section-title">Got questions? We&apos;ve got answers.</h2>
+            <p className="section-subtext">Everything you need to know before committing a dollar.</p>
           </div>
-          <div className="faq-list">
-            {FAQ_ITEMS.map((item, i) => (
-              <div key={i} className={`faq-item reveal${openFaq === i ? " open" : ""}`}>
-                <button className="faq-question" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  {item.q}
-                  <span className="faq-icon">+</span>
-                </button>
-                <div className="faq-answer">
-                  <p>
-                    {item.a}
-                    {i === 4 && (
-                      <>{" "}<a href="#pricing" aria-label="See all Prospecting OS pricing tiers" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
-                    )}
-                  </p>
-                </div>
-              </div>
+
+          {/* Category filter pills */}
+          <div className="faq-filter-pills reveal">
+            {(["all", "setup", "results"] as const).map(cat => (
+              <button
+                key={cat}
+                className={`faq-filter-pill${faqFilter === cat ? " active" : ""}`}
+                onClick={() => { setFaqFilter(cat); setOpenFaq(null); }}
+              >
+                {cat === "all" ? "All" : cat === "setup" ? "Setup & Pricing" : "Results & Data"}
+              </button>
             ))}
+          </div>
+
+          <div className="faq-list reveal">
+            {filteredFaqItems.map((item) => {
+              const idx = FAQ_ITEMS.indexOf(item);
+              const isOpen = openFaq === idx;
+              return (
+                <div key={idx} className={`faq-item${isOpen ? " open" : ""}`}>
+                  <button className="faq-question" onClick={() => setOpenFaq(isOpen ? null : idx)}>
+                    {item.q}
+                    <span className="faq-icon-circle" aria-hidden="true">{isOpen ? "×" : "+"}</span>
+                  </button>
+                  <div className={`faq-answer-wrapper${isOpen ? " open" : ""}`}>
+                    <p className="faq-answer-text">
+                      {item.a}
+                      {idx === 4 && (
+                        <>{" "}<a href="#pricing" aria-label="Compare Prospecting OS pricing plans" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ══════════ Final CTA ══════════ */}
-      <section className="final-cta">
-        <div className="container reveal">
-          <h2>Stop Hunting. Start Closing.</h2>
-          <p>Your ideal clients are on LinkedIn right now. Let AI find them, score them, and deliver them — every single day.</p>
-          <div className="cta-group">
-            <button className="btn-primary" onClick={openChat}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-              Chat With Us Now
-            </button>
-            <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")}>See Pricing <ArrowRight size={14} style={{ display: "inline" }} /></a>
+      {/* ══════════ Bottom CTA ══════════ */}
+      <section className="bottom-cta-section" id="cta" aria-label="Book a demo — start your AI prospecting pipeline">
+        <div className="container">
+          <div className="reveal" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+
+            {/* Live counter pill */}
+            <div className="cta-live-pill">
+              <span className="cta-live-dot" />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--success)" }}>
+                LIVE &nbsp;·&nbsp; {counter} leads scored this week
+              </span>
+            </div>
+
+            {/* Heading */}
+            <h2 className="cta-heading">
+              <span className="cta-heading-line1">Stop hunting.</span>
+              <span className="hero-heading-gradient cta-heading-line2">Start closing.</span>
+            </h2>
+
+            {/* Body copy */}
+            <p className="cta-body">
+              Your ideal clients are on LinkedIn right now — 500+ of them, every week. Our AI finds them, scores them against your ICP, writes their icebreaker, and drops them in your Slack before your morning coffee.
+            </p>
+
+            {/* CTA buttons */}
+            <div className="cta-group" style={{ marginBottom: 32 }}>
+              <Link
+                href="/book"
+                className="btn-primary"
+                style={{ textDecoration: "none", padding: "16px 36px", fontSize: "1rem", boxShadow: "0 0 32px var(--accent-glow)" }}
+                aria-label="Book a free demo — see your custom AI prospecting pipeline"
+              >
+                Book a Free Demo
+              </Link>
+              <a
+                href="#how-it-works"
+                className="btn-ghost"
+                onClick={e => smoothScroll(e, "#how-it-works")}
+                style={{ padding: "16px 28px", fontSize: "1rem" }}
+              >
+                See how it works
+              </a>
+            </div>
+
+            {/* Trust signals */}
+            <div className="cta-trust-signals">
+              <span className="cta-trust-item"><span className="cta-trust-check">&#10003;</span> No contract — cancel anytime</span>
+              <span className="cta-trust-item"><span className="cta-trust-check">&#10003;</span> Results in 4 hours or less</span>
+              <span className="cta-trust-item"><span className="cta-trust-check">&#10003;</span> 50 leads guaranteed in month 1</span>
+            </div>
+
+            {/* Chat nudge */}
+            <p className="cta-chat-line">
+              Not ready to book?{" "}
+              <button className="cta-chat-link" onClick={openChat}>Chat with Pros Bot →</button>
+              {" "}— it answers everything.
+            </p>
+
           </div>
         </div>
       </section>
