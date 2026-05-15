@@ -51,6 +51,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
+    // Prevent double-booking — check slot first
+    const { data: existing } = await supabase
+      .from("appointments")
+      .select("id")
+      .eq("date", date)
+      .eq("time", time)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "This time slot is already booked. Please choose another time." },
+        { status: 409 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("appointments")
       .insert({

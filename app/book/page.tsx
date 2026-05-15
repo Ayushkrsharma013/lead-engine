@@ -20,8 +20,54 @@ const TIME_SLOTS = [
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
+const CONFETTI_COLORS = ["#e8420a","#ff6b35","#ffd700","#22c55e","#3b82f6","#a855f7","#ec4899","#f97316"];
+
+// Deterministic distribution via golden ratio — no hydration mismatch
+const φ = 1.6180339887;
+const CONFETTI_PIECES = Array.from({ length: 60 }, (_, i) => ({
+  id: i,
+  left: (i * φ * 100) % 100,
+  delay: (i * 0.0416) % 2.5,
+  duration: 2.5 + (i * 0.0333) % 2,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  width: 6 + (i % 8),
+  height: 8 + (i % 7),
+}));
+
 function classNames(...classes: (string | false | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+/* ─── Confetti overlay ───────────────────────────────────────────────────── */
+
+function Confetti({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 200, overflow: "hidden" }}>
+      <style>{`
+        @keyframes confetti-fall {
+          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          80%  { opacity: 0.9; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+      `}</style>
+      {CONFETTI_PIECES.map(p => (
+        <div
+          key={p.id}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: `${p.left}%`,
+            width: p.width,
+            height: p.height,
+            background: p.color,
+            borderRadius: 2,
+            animation: `confetti-fall ${p.duration}s ${p.delay}s ease-in forwards`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -59,6 +105,8 @@ export default function BookPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [countdown, setCountdown] = useState(3);
 
   // Form
   const [name, setName] = useState("");
@@ -68,12 +116,37 @@ export default function BookPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const refreshBookedSlots = useCallback(() => {
+    fetch("/prospecting-os/api/appointments")
+      .then(r => r.json())
+      .then((data: Array<{ date: string; time: string }>) => {
+        setBookedSlots(new Set(data.map(a => `${a.date}|${a.time}`)));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch("/prospecting-os/api/auth/google-calendar/status")
       .then(r => r.json())
       .then(d => setCalendarConnected(d.connected))
       .catch(() => setCalendarConnected(false));
-  }, []);
+    refreshBookedSlots();
+  }, [refreshBookedSlots]);
+
+  // Auto-redirect from confirmation after 3 seconds + countdown
+  useEffect(() => {
+    if (step !== 4) return;
+    setCountdown(3);
+    const interval = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+    const timeout = setTimeout(() => {
+      refreshBookedSlots();
+      setStep(1);
+      setSelectedDate(null);
+      setSelectedTime(null);
+      setName(""); setEmail(""); setCompany(""); setNotes(""); setError("");
+    }, 3000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [step, refreshBookedSlots]);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
@@ -114,9 +187,22 @@ export default function BookPage() {
       const res = await fetch("/prospecting-os/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, time: selectedTime, name: name.trim(), email: email.trim(), company: company.trim(), notes: notes.trim(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+        body: JSON.stringify({
+          date: selectedDate, time: selectedTime, name: name.trim(),
+          email: email.trim(), company: company.trim(), notes: notes.trim(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
+      if (res.status === 409) {
+        const body = await res.json();
+        setError(body.error || "This time slot is already booked. Please choose another.");
+        setSubmitting(false);
+        return;
+      }
       if (!res.ok) throw new Error("Failed");
+      if (selectedDate && selectedTime) {
+        setBookedSlots(prev => { const next = new Set(prev); next.add(`${selectedDate}|${selectedTime}`); return next; });
+      }
       setStep(4);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -139,6 +225,8 @@ export default function BookPage() {
       "--badge-bg": "rgba(232,66,10,0.12)", "--badge-text": "#ff8a5c",
       "--success": "#22c55e", "--success-bg": "rgba(34,197,94,0.1)",
     } as React.CSSProperties}>
+
+      <Confetti active={step === 4} />
 
       {/* ══════ Nav ══════ */}
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
@@ -194,11 +282,11 @@ export default function BookPage() {
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)" }}>
               <CheckCircle size={40} style={{ color: "var(--success, #22c55e)" }} />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight mb-3">You&apos;re Booked</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight mb-3">You&apos;re Booked!</h1>
             <p className="text-base mb-8" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
               A confirmation has been sent to <strong style={{ color: "var(--text-primary, #f5f4f1)" }}>{email}</strong>.
             </p>
-            <div className="inline-flex flex-col gap-3 p-6 rounded-xl mb-8 text-left" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+            <div className="inline-flex flex-col gap-3 p-6 rounded-xl mb-6 text-left" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
               <div className="flex items-center gap-3">
                 <Calendar size={18} style={{ color: "var(--accent, #e8420a)" }} />
                 <span className="font-semibold">{selectedDate}</span>
@@ -208,6 +296,21 @@ export default function BookPage() {
                 <span className="font-semibold">{selectedTime}</span>
               </div>
             </div>
+
+            {/* Countdown + progress bar */}
+            <p className="text-sm mb-3" style={{ color: "var(--text-tertiary)" }}>
+              Returning to booking page in{" "}
+              <span style={{ color: "var(--accent)", fontWeight: 700 }}>{countdown}</span>s&hellip;
+            </p>
+            <div style={{ width: 160, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 999, margin: "0 auto 28px" }}>
+              <div style={{
+                height: "100%", borderRadius: 999,
+                background: "var(--accent, #e8420a)",
+                width: `${((3 - countdown) / 3) * 100}%`,
+                transition: "width 1s linear",
+              }} />
+            </div>
+
             <a href="/" className="inline-flex items-center gap-2 font-semibold text-sm px-6 py-3 rounded-full transition-all no-underline" style={{ background: "var(--accent, #e8420a)", color: "#fff" }}>
               Back to Home <ArrowRight size={14} />
             </a>
@@ -305,15 +408,20 @@ export default function BookPage() {
                   <div className="grid grid-cols-3 gap-2.5 mb-4">
                     {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
                       const isSel = selectedTime === t;
+                      const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
                       return (
                         <button
                           key={t}
-                          onClick={() => setSelectedTime(t)}
-                          className="h-10 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
+                          disabled={isBooked}
+                          onClick={() => !isBooked && setSelectedTime(t)}
+                          className="h-10 rounded-xl text-sm font-semibold transition-all border"
                           style={{
-                            background: isSel ? "var(--accent, #e8420a)" : "transparent",
-                            color: isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                            borderColor: isSel ? "var(--accent, #e8420a)" : "var(--border, rgba(255,255,255,0.08))",
+                            background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                            color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                            borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                            cursor: isBooked ? "not-allowed" : "pointer",
+                            opacity: isBooked ? 0.4 : 1,
+                            textDecoration: isBooked ? "line-through" : "none",
                           }}
                         >
                           {t}
@@ -326,15 +434,20 @@ export default function BookPage() {
                   <div className="grid grid-cols-3 gap-2.5">
                     {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
                       const isSel = selectedTime === t;
+                      const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
                       return (
                         <button
                           key={t}
-                          onClick={() => setSelectedTime(t)}
-                          className="h-10 rounded-xl text-sm font-semibold transition-all border cursor-pointer"
+                          disabled={isBooked}
+                          onClick={() => !isBooked && setSelectedTime(t)}
+                          className="h-10 rounded-xl text-sm font-semibold transition-all border"
                           style={{
-                            background: isSel ? "var(--accent, #e8420a)" : "transparent",
-                            color: isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                            borderColor: isSel ? "var(--accent, #e8420a)" : "var(--border, rgba(255,255,255,0.08))",
+                            background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                            color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                            borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                            cursor: isBooked ? "not-allowed" : "pointer",
+                            opacity: isBooked ? 0.4 : 1,
+                            textDecoration: isBooked ? "line-through" : "none",
                           }}
                         >
                           {t}
@@ -460,13 +573,13 @@ export default function BookPage() {
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--badge-bg)", color: "var(--badge-text)" }}>AI</span>
             </div>
             <div className="flex-1 min-h-0">
-              <ProsBotPanel embedded />
+              <ProsBotPanel embedded bookedSlots={bookedSlots} />
             </div>
           </div>
 
           {/* Mobile — slide-up chat toggle */}
           <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
-            <ProsBotPanel embedded />
+            <ProsBotPanel embedded bookedSlots={bookedSlots} />
           </div>
         </div>
       </div>

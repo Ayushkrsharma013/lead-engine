@@ -211,7 +211,7 @@ function getGeneralResponse(msg: string): string {
   return "I'm Pros Bot — your AI assistant. Ask me about:\n\n• How the platform works\n• Pricing plans\n• Go-live timelines\n\nOr say **\"Book a Demo\"** and I'll get you scheduled!";
 }
 
-function getTimeQuickReplies(): string[] {
+export function getTimeQuickReplies(): string[] {
   return [
     "Tomorrow 10:00 AM",
     "Tomorrow 2:00 PM",

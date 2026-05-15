@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Sparkles, X, Calendar, ArrowRight, CheckCircle2, ChevronUp, ChevronDown } from "lucide-react";
 import {
   type BookingStep, type BookingData, type BotMessage,
-  initialBookingState, getNextStep,
+  initialBookingState, getNextStep, getTimeQuickReplies,
 } from "@/lib/booking-chat";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
@@ -27,10 +27,11 @@ function formatMsg(text: string): string {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
-  embedded?: boolean; // when embedded, hide close/minimize
+  embedded?: boolean;
+  bookedSlots?: Set<string>;
 }
 
-export default function ProsBotPanel({ embedded }: Props) {
+export default function ProsBotPanel({ embedded, bookedSlots }: Props) {
   const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
@@ -63,11 +64,30 @@ export default function ProsBotPanel({ embedded }: Props) {
     }
 
     const result = getNextStep(bookingRef.current.step, bookingRef.current.data, text);
+
+    // Check for double-booking when transitioning to confirming
+    if (
+      result.step === "confirming" &&
+      result.data.date && result.data.time &&
+      result.data.date !== "Flexible" && result.data.time !== "Flexible" &&
+      bookedSlots?.has(`${result.data.date}|${result.data.time}`)
+    ) {
+      bookingRef.current = { step: "collecting_datetime", data: { ...result.data, date: undefined, time: undefined } };
+      setTimeout(() => {
+        setTyping(false);
+        addBot({
+          text: `That slot (**${result.data.date} at ${result.data.time}**) is already taken. Please pick a different time.`,
+          quickReplies: getTimeQuickReplies(),
+        });
+      }, 700 + Math.random() * 600);
+      return;
+    }
+
     bookingRef.current = { step: result.step, data: result.data };
 
     // Persist completed bookings
     if (result.step === "done" && result.data.email) {
-      fetch("/api/appointments", {
+      fetch("/prospecting-os/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -82,7 +102,7 @@ export default function ProsBotPanel({ embedded }: Props) {
       setTyping(false);
       addBot(result.botMessage, result.step === "done");
     }, 700 + Math.random() * 600);
-  }, [addUser, addBot]);
+  }, [addUser, addBot, bookedSlots]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
