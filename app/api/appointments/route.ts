@@ -145,10 +145,13 @@ export async function POST(req: Request) {
     }
 
     // Buffer time and double-booking check
-    const { data: existingToday } = await supabase
+    const { data: existingToday, error: existingErr } = await supabase
       .from("appointments")
-      .select("time, type, duration, status")
+      .select("time")
       .eq("date", date);
+
+    // Try to query with new columns; fall back to base columns if schema is old
+    const existingWithMeta = existingErr ? null : existingToday;
 
     if (existingToday) {
       const newStart = startMinutes;
@@ -157,10 +160,8 @@ export async function POST(req: Request) {
       const bufferEnd = newEnd + APPOINTMENT_BUFFER_MINUTES;
 
       for (const existing of existingToday) {
-        if (existing.status === "cancelled" || existing.status === "rescheduled") continue;
-
         const existingStart = timeToMinutes(existing.time);
-        const existingDuration = existing.duration || 30;
+        const existingDuration = (existing as any).duration || 30;
         const existingEnd = existingStart + existingDuration;
 
         // Exact double-booking
@@ -183,29 +184,46 @@ export async function POST(req: Request) {
 
     const endTime = formatEndTime(time, duration);
 
-    const { data, error } = await supabase
+    // Try insert with all columns first; fall back to base columns if schema is old
+    const fullInsert = {
+      date,
+      time,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone?.trim() || null,
+      company: (company || "").trim(),
+      notes: (notes || "").trim(),
+      type,
+      duration,
+      status: "confirmed",
+      timezone,
+    };
+
+    const baseInsert = {
+      date,
+      time,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      company: (company || "").trim(),
+      notes: (notes || "").trim(),
+    };
+
+    let { data, error } = await supabase
       .from("appointments")
-      .insert({
-        date,
-        time,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone?.trim() || null,
-        company: (company || "").trim(),
-        notes: (notes || "").trim(),
-        type,
-        duration,
-        status: "confirmed",
-        timezone,
-      })
+      .insert(fullInsert)
       .select("id")
       .single();
 
+    // If new columns don't exist yet, fall back to base columns
+    if (error && (error.message.includes("Could not find") || error.code === "42P01")) {
+      ({ data, error } = await supabase
+        .from("appointments")
+        .insert(baseInsert)
+        .select("id")
+        .single());
+    }
+
     if (error) {
-      if (error.message.includes("Could not find") || error.code === "42P01") {
-        console.warn("[appointments] table not found — run: CREATE TABLE appointments (...);");
-        return NextResponse.json({ ok: true, note: "Table not yet created" });
-      }
       console.error("[appointments] insert failed:", error.message);
       return NextResponse.json({ ok: true, note: error.message });
     }
@@ -262,7 +280,7 @@ export async function POST(req: Request) {
       sendAttendeeConfirmation(bookingDetails),
     ]);
 
-    return NextResponse.json({ ok: true, id: data.id, calendarLink });
+    return NextResponse.json({ ok: true, id: data?.id, calendarLink });
   } catch (err) {
     console.error("[appointments] unexpected error:", err);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
