@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Settings2, Sparkles,
+  ChevronLeft, ChevronRight, Settings2, Sparkles, Send,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -37,6 +37,12 @@ const NAV_GROUPS: { label: string; items: NavItemDef[] }[] = [
       { module: "kanban",    label: "Kanban Pipeline",  icon: KanbanSquare,  href: "/kanban" },
       { module: "analytics", label: "Analytics",         icon: BarChart2,     href: "/analytics" },
       { module: "clients",   label: "Client Manager",   icon: Briefcase,     href: "/clients" },
+    ],
+  },
+  {
+    label: "Outreach",
+    items: [
+      { module: "outreach", label: "LinkedIn Outreach", icon: Send, href: "/outreach" },
     ],
   },
 ];

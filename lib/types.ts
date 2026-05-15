@@ -153,7 +153,7 @@ export interface Notification {
 }
 
 export type ModuleName = "dashboard" | "leads" | "message-lab" | "scorer"
-  | "sequences" | "kanban" | "analytics" | "clients";
+  | "sequences" | "kanban" | "analytics" | "clients" | "outreach";
 
 export interface MergeResult {
   stored: Lead[];

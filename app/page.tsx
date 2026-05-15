@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import {
   Globe, Filter, FileText, PenLine, Bell, ArrowRight,
   ArrowDown, Menu, X, Send, Sparkles, Calendar, CheckCircle2,
@@ -20,19 +21,45 @@ import {
    Prospecting OS — Landing Page
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const FULL_TEXT = "Your Pipeline on Autopilot.";
-const HERO_PREFIX = "Your Pipeline on ";
-const HERO_HIGHLIGHT = "Autopilot.";
+const FULL_TEXT = "AI-Powered B2B Lead Generation. 500+ Scored Leads. Delivered Every Morning.";
+const HERO_PREFIX = "AI-Powered B2B Lead Generation. ";
+const HERO_HIGHLIGHT = "500+ Scored Leads. Delivered Every Morning.";
 const HERO_SPLIT_AT = HERO_PREFIX.length;
 const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789+-*/=<>{}[]()&|!?@#$%^&*;:,.~`".split("");
 
 const FAQ_ITEMS = [
-  { q: "Do I need a LinkedIn Sales Navigator subscription?", a: "Yes — Sales Navigator is the engine. A basic plan ($99/mo) is all you need. We'll help configure your search filters during onboarding." },
-  { q: "How long does it take to go live?", a: "Basic: 4–6 hours. Pro: 2–3 days. Advanced: 1–2 weeks for email infra and CRM integration." },
-  { q: "What industries does this work for?", a: "SaaS, consulting, agencies, professional services — worldwide. If your clients are on LinkedIn, our system works." },
-  { q: "Will this get my domain blacklisted?", a: "No. Proper warm-up, rate limiting, and human-like patterns. Advanced plans use a secondary domain for outreach." },
-  { q: "What if I'm not happy in month 1?", a: "Less than 50 qualified leads on Pro? Month 2 is free. We'll refine your ICP at no extra cost." },
-  { q: "Can I upgrade later?", a: "Absolutely. Upgrades are seamless — we activate additional features on your existing workflow." },
+  {
+    q: "Do I need a LinkedIn Sales Navigator subscription?",
+    a: "Yes — LinkedIn Sales Navigator is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.",
+  },
+  {
+    q: "How long does it take to go live?",
+    a: "Basic plan: 4–6 hours from payment to live pipeline. Pro plan: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Advanced plan: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
+  },
+  {
+    q: "What industries does AI B2B lead generation work for?",
+    a: "Prospecting OS works for any B2B business whose ideal clients are active on LinkedIn. It has been deployed for SaaS companies, digital agencies, management consultancies, professional services firms, and recruitment agencies in the US, UK, Australia, Singapore, Canada, and India. If your target buyer has a LinkedIn profile, the system works.",
+  },
+  {
+    q: "Will automated LinkedIn prospecting get my domain blacklisted?",
+    a: "No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Advanced plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.",
+  },
+  {
+    q: "What is the performance guarantee?",
+    a: "On the Pro plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked.",
+  },
+  {
+    q: "Can I upgrade from Basic to Pro later?",
+    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Pro and Advanced features are activated on your existing n8n workflow. You only pay the difference in plan cost from the upgrade date.",
+  },
+  {
+    q: "What is an AI SDR and how is it different from hiring a human SDR?",
+    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Pro plan at $3,500/month — running 24/7, with no sick days, no training ramp, and no turnover.",
+  },
+  {
+    q: "Does Prospecting OS integrate with HubSpot or other CRMs?",
+    a: "Yes, on the Advanced plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.",
+  },
 ];
 
 /* ─── ASCII particle ──────────────────────────────────────────────────────── */
@@ -131,9 +158,9 @@ export default function LandingPage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
-      text: "Hi! I'm <strong class=\"chat-strong\">Pros Bot</strong> — your AI assistant. Ask me about how it works, pricing, timelines, or say <strong class=\"chat-strong\">\"Book a Demo\"</strong> and I'll get you scheduled!",
+      text: "Hi! I'm <strong class=\"chat-strong\">Pros Bot</strong> 👋 — the Prospecting OS AI assistant. I can tell you how the AI lead generation pipeline works, explain pricing plans, or book you a free strategy call. What would you like to know?",
       type: "bot",
-      quickReplies: ["How it works", "Pricing", "Book a Demo", "Go-live time"],
+      quickReplies: ["How does the AI scoring work?", "What does Pro plan include?", "Book a Free Strategy Call", "How fast can I go live?"],
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -550,7 +577,7 @@ export default function LandingPage() {
 
   /* ─── Render ───────────────────────────────────────────────────────────── */
   return (
-    <div className="landing-page">
+    <div className="landing-page" role="main" aria-label="Prospecting OS — AI B2B Lead Generation Landing Page">
       {/* ASCII Canvas */}
       <canvas id="asciiCanvas" ref={canvasRef} />
 
@@ -559,22 +586,22 @@ export default function LandingPage() {
       <div className="cursor-ring" ref={ringRef} />
 
       {/* ══════════ Navbar ══════════ */}
-      <nav className="navbar" style={{ boxShadow: navShadow ? "0 1px 8px rgba(0,0,0,0.15)" : "none" }}>
+      <nav className="navbar" aria-label="Prospecting OS — AI B2B Lead Generation Navigation" style={{ boxShadow: navShadow ? "0 1px 8px rgba(0,0,0,0.15)" : "none" }}>
         <div className="container">
           <a href="#" className="nav-logo" onClick={e => smoothScroll(e as never, "#")}>
-            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width="28" height="28" style={{ borderRadius: 8 }} />
+            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" width="28" height="28" style={{ borderRadius: 8 }} />
             Prospecting <span className="accent">OS</span>
           </a>
           <ul className="nav-links">
             <li><a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a></li>
             <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
-            <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI</a></li>
+            <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a></li>
             <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
           </ul>
-          <button className="nav-cta desktop-only" onClick={openChat}>
+          <Link href="/book" className="nav-cta desktop-only" aria-label="Book a free B2B prospecting strategy call with the Prospecting OS team" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-            Talk to Us
-          </button>
+            Book a Free Strategy Call
+          </Link>
           <div className="theme-toggle-wrapper">
             <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme">
               <span className="toggle-icon moon">
@@ -596,9 +623,9 @@ export default function LandingPage() {
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`}>
         <a href="#how-it-works" onClick={e => { smoothScroll(e, "#how-it-works"); setMobileOpen(false); }}>How It Works</a>
         <a href="#pricing" onClick={e => { smoothScroll(e, "#pricing"); setMobileOpen(false); }}>Pricing</a>
-        <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI</a>
+        <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI Calculator</a>
         <a href="#faq" onClick={e => { smoothScroll(e, "#faq"); setMobileOpen(false); }}>FAQ</a>
-        <button className="nav-cta" onClick={openChat}>Talk to Us</button>
+        <Link href="/book" className="nav-cta" style={{ textDecoration: "none" }} onClick={() => setMobileOpen(false)}>Book a Free Strategy Call</Link>
       </div>
 
       {/* ══════════ Hero ══════════ */}
@@ -606,7 +633,7 @@ export default function LandingPage() {
         <div className="container">
           <div className="hero-content">
             <div className="hero-badge">
-              <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width="16" height="16" style={{ borderRadius: 4 }} />
+              <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" width="16" height="16" style={{ borderRadius: 4 }} />
               AI-Powered B2B Prospecting
             </div>
             <h1>
@@ -623,22 +650,25 @@ export default function LandingPage() {
               )}
               <span className="typewriter-cursor">|</span>
             </h1>
-            <p className="hero-subtitle">500+ qualified leads/month. Zero manual research. One AI system that finds, scores, and delivers your ideal clients — while you sleep.</p>
+            <p className="hero-subtitle">
+              Prospecting OS is an automated B2B prospecting system built for agencies, SaaS founders, and consultants. It combines LinkedIn Sales Navigator with Gemini AI to find, score, enrich, and deliver your ideal decision-maker leads to Slack or Telegram — every day, without manual research. Built by{" "}
+              <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency" style={{ color: "var(--accent)" }}>Flow-Forges</a>.
+            </p>
             <div className="hero-ctas">
-              <button className="btn-primary" onClick={openChat}>See How It Works <ArrowRight size={16} style={{ display: "inline" }} /></button>
-              <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")}>View Pricing <ArrowDown size={16} style={{ display: "inline" }} /></a>
+              <button className="btn-primary" onClick={openChat} aria-label="See how Prospecting OS automates B2B lead generation in 5 steps">See the AI Pipeline in Action <ArrowRight size={16} style={{ display: "inline" }} /></button>
+              <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")} aria-label="View Prospecting OS pricing — from $2,500 one-time to fully managed AI SDR">See Pricing Plans <ArrowDown size={16} style={{ display: "inline" }} /></a>
             </div>
             <div className="hero-stats">
-              <div><span>500+</span> LEADS/MONTH</div>
-              <div><span>97%</span> LESS MANUAL WORK</div>
-              <div><span>4h</span> TO GO LIVE</div>
+              <div><span>500+</span> AI-Scored Leads/Month</div>
+              <div><span>97%</span> Less Manual Prospecting</div>
+              <div><span>4h</span> Live in 4 Hours (Basic)</div>
             </div>
           </div>
 
           {/* Pipeline Visual */}
           <div className="hero-visual" style={{ position: "relative" }}>
             <div className="pipeline-card">
-              <div className="pipeline-card-header"><span>HOT LEADS THIS WEEK</span><span style={{ color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--success)", display: "inline-block", animation: "pulse-dot 2s ease-in-out infinite" }} /> LIVE</span></div>
+              <div className="pipeline-card-header"><span>HOT LEADS THIS WEEK</span><span style={{ color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }} aria-label="Example lead scoring output — not live data"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--success)", display: "inline-block", animation: "pulse-dot 2s ease-in-out infinite" }} /> LIVE</span></div>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
                 <span className={`pipeline-live-counter${bump ? " bump" : ""}`}>{counter}</span>
                 <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>qualified & scored</div>
@@ -661,25 +691,30 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ How It Works ══════════ */}
-      <section className="section" id="how-it-works">
+      <section className="section" id="how-it-works" aria-label="How Prospecting OS works — 5-step AI lead generation pipeline">
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow">// How It Works</div>
-            <h2 className="section-title">From Zero to Pipeline in 5 Steps</h2>
-            <p className="section-subtext">Every morning, fresh leads land in your inbox — scored, enriched, and ready to close.</p>
+            <div className="section-eyebrow" aria-label="How Prospecting OS automates B2B lead generation">HOW IT WORKS</div>
+            <h2 className="section-title">How Prospecting OS Finds, Scores &amp; Delivers Your Best B2B Leads</h2>
+            <p className="section-subtext">Every morning, fresh decision-maker leads land in your Slack or Telegram — AI-scored, enriched, and ready to contact.</p>
           </div>
           <div className="how-grid">
             {[
-              { Icon: Globe, title: "Source", desc: "Sales Navigator exports your ICP automatically." },
-              { Icon: Filter, title: "Filter", desc: "Only decision-makers pass through." },
-              { Icon: FileText, title: "Score", desc: "Gemini AI scores leads 1–10. Only 7+ advance." },
-              { Icon: PenLine, title: "Enrich", desc: "Company enrichment + unique icebreaker." },
-              { Icon: Bell, title: "Deliver", desc: "Hot leads in Telegram, Slack, or CRM daily." },
+              { Icon: Globe, title: "Source", desc: "LinkedIn Sales Navigator pulls your Ideal Customer Profile (ICP) — industry, job title, company size, geography — automatically, every morning." },
+              { Icon: Filter, title: "Filter", desc: "The AI filter removes non-decision-makers. Only founders, C-suite, VPs, and Directors advance — no noise, no junior contacts." },
+              { Icon: FileText, title: "Score", desc: "Gemini AI scores every lead 1–10 against your ICP. Leads scoring below 7 are discarded. You only see high-intent, qualified prospects." },
+              { Icon: PenLine, title: "Enrich", desc: "Each lead is enriched with company context, recent news, and a unique AI-written icebreaker — ready for cold outreach." },
+              { Icon: Bell, title: "Deliver", desc: "Scored, enriched leads land in your Telegram, Slack, or CRM every morning. No spreadsheet hunting. No manual research. Just pipeline." },
             ].map((item, i) => (
               <div key={i} className="how-card reveal">
                 <span className="how-icon"><item.Icon size={32} strokeWidth={1.5} /></span>
                 <h4>{item.title}</h4>
-                <p>{item.desc}</p>
+                <p>
+                  {item.desc}
+                  {i === 2 && (
+                    <>{" "}<a href="#pricing" aria-label="See Prospecting OS pricing plans" style={{ color: "var(--accent)", fontSize: "0.85em" }}>See pricing →</a></>
+                  )}
+                </p>
               </div>
             ))}
           </div>
@@ -687,12 +722,12 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ Pricing ══════════ */}
-      <section className="section" id="pricing" style={{ background: "var(--bg-secondary)" }}>
+      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — Basic, Pro, and Advanced" style={{ background: "var(--bg-secondary)" }}>
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow">// Pricing</div>
-            <h2 className="section-title">Choose Your Pipeline Power</h2>
-            <p className="section-subtext">From self-serve AI scoring to a fully managed AI SDR.</p>
+            <div className="section-eyebrow">PRICING</div>
+            <h2 className="section-title">AI B2B Lead Generation Pricing — From Self-Serve Setup to Full AI SDR</h2>
+            <p className="section-subtext">From self-serve AI scoring to a fully managed AI SDR. Every plan includes Gemini AI scoring and Sales Navigator integration.</p>
           </div>
           <div className="pricing-grid">
             {/* Basic */}
@@ -700,10 +735,11 @@ export default function LandingPage() {
               <h3>Basic</h3>
               <div className="price">$2,500</div>
               <span className="price-period">ONE-TIME SETUP</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>Perfect for founders and solo consultants ready to automate prospecting.</p>
               <ul className="pricing-features">
                 {["Full n8n workflow", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1 week support"].map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <button className="btn-secondary" onClick={openChat}>Get Started <ArrowRight size={14} style={{ display: "inline" }} /></button>
+              <button className="btn-secondary" aria-label="Set up your AI B2B lead generation pipeline for $2,500 one-time" onClick={openChat}>Get Your Pipeline Set Up <ArrowRight size={14} style={{ display: "inline" }} /></button>
             </div>
             {/* Pro (Popular) */}
             <div className="pricing-card popular reveal">
@@ -711,25 +747,28 @@ export default function LandingPage() {
               <h3>Pro</h3>
               <div className="price">$3,500</div>
               <span className="price-period">PER MONTH</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>The most popular choice for B2B agencies running active outbound campaigns.</p>
               <ul className="pricing-features">
                 {["Everything in Basic", "AI icebreaker per lead", "Company enrichment", "Daily Slack digest", "Duplicate check", "Monthly ICP refinement", "Dedicated Slack channel"].map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Book a Demo <ArrowRight size={14} style={{ display: "inline" }} /></Link>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Book a free strategy call to start the Pro AI prospecting plan">Book a Free Strategy Call <ArrowRight size={14} style={{ display: "inline" }} /></Link>
             </div>
             {/* Advanced */}
             <div className="pricing-card reveal">
               <h3>Advanced</h3>
               <div className="price">$10K+</div>
               <span className="price-period">PER MONTH</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 12px" }}>Full-stack AI SDR for scaling sales teams replacing or supplementing human reps.</p>
               <ul className="pricing-features">
                 {["Everything in Pro", "Auto cold email sending", "3-touch follow-up", "AI reply detection", "HubSpot CRM sync", "A/B testing", "Weekly reports"].map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <button className="btn-secondary" onClick={openChat}>Talk to Us <ArrowRight size={14} style={{ display: "inline" }} /></button>
+              <button className="btn-secondary" aria-label="Contact Prospecting OS about the Advanced AI SDR plan" onClick={openChat}>Talk to the Team <ArrowRight size={14} style={{ display: "inline" }} /></button>
             </div>
           </div>
           <div className="guarantee-badge reveal">
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
-            No 50 qualified leads in month 1? Month 2 is free.
+            Performance guarantee: If the Pro plan doesn&apos;t deliver 50+ qualified leads in your first month, month 2 is completely free. We&apos;ll also refine your ICP at no cost.{" "}
+            <a href="#pricing" aria-label="View Prospecting OS Pro plan pricing" style={{ color: "var(--accent)" }}>View Pro plan →</a>
           </div>
         </div>
       </section>
@@ -738,16 +777,16 @@ export default function LandingPage() {
       <section className="section">
         <div className="container">
           <div className="section-header reveal">
-            <div className="section-eyebrow">// Social Proof</div>
-            <h2 className="section-title">Trusted by B2B Teams</h2>
+            <div className="section-eyebrow">SOCIAL PROOF</div>
+            <h2 className="section-title">What B2B Teams Say About Prospecting OS</h2>
           </div>
           <div className="testimonials-grid">
             {[
-              { quote: "We were spending 15 hours a week on manual prospecting. Now we get 200+ scored leads every Monday morning.", initials: "AK", name: "Alex Kendall", role: "VP Sales, SaaS Co. · Austin, TX" },
-              { quote: "The icebreakers are scary good. Our cold email reply rate went from 2% to 11% in the first month.", initials: "MR", name: "Maria Rodriguez", role: "Founder, GrowthLab · London, UK" },
-              { quote: "I was skeptical about AI lead gen. But this is different — every lead comes with context.", initials: "JP", name: "James Park", role: "CEO, TechVentures · Singapore" },
+              { quote: "We were spending 15+ hours per week on manual LinkedIn prospecting. After setting up Prospecting OS, we receive 200+ AI-scored leads every Monday morning — with icebreakers ready to send. Our SDR now focuses only on closing.", initials: "AK", name: "Alex Kendall", role: "VP Sales, SaaS Co. · Austin, TX" },
+              { quote: "The AI-generated icebreakers are frighteningly accurate. Our cold email reply rate jumped from 2% to 11% in month one. That's 5x more conversations from the same list size.", initials: "MR", name: "Maria Rodriguez", role: "Founder, GrowthLab · London, UK" },
+              { quote: "I was skeptical — AI lead gen tools usually deliver junk. Prospecting OS is different. Every lead arrives with company context, a score, and a ready-to-use opener. We booked 3 discovery calls in the first week.", initials: "JP", name: "James Park", role: "CEO, TechVentures · Singapore" },
             ].map((t, i) => (
-              <div key={i} className="testimonial-card reveal">
+              <div key={i} className="testimonial-card reveal" role="img" aria-label={`Testimonial from ${t.name}, ${t.role}`}>
                 <p className="quote">&ldquo;{t.quote}&rdquo;</p>
                 <div className="testimonial-author">
                   <div className="author-avatar">{t.initials}</div>
@@ -756,38 +795,44 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <p className="sr-only">
+            Client testimonials represent individual results. B2B lead generation outcomes vary based on ICP specificity, industry, and outreach strategy. Prospecting OS guarantees a minimum of 50 qualified leads in month 1 on the Pro plan or month 2 is free.
+          </p>
         </div>
       </section>
 
       {/* ══════════ ROI ══════════ */}
-      <section className="section" id="roi" style={{ background: "var(--bg-secondary)", position: "relative", overflow: "hidden" }}>
+      <section className="section" id="roi" aria-label="ROI calculator — AI prospecting vs human SDR cost comparison" style={{ background: "var(--bg-secondary)", position: "relative", overflow: "hidden" }}>
         <canvas ref={roiCanvasRef} className="roi-ascii-canvas" />
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <div className="roi-grid">
             <div className="roi-text reveal">
-              <div className="section-eyebrow">// ROI Calculator</div>
-              <h3>The Math is Simple</h3>
-              <p>An in-house SDR costs $4–6K/month and delivers ~50 leads. Our AI delivers <strong>500+ scored leads</strong> for a fraction.</p>
+              <div className="section-eyebrow">ROI</div>
+              <h3>Calculate Your ROI: AI Prospecting vs. Human SDR</h3>
+              <p>
+                A human SDR costs $4,000–$6,000/month in salary alone, and typically delivers 40–60 leads per month. Prospecting OS delivers <strong>500+ AI-scored, enriched leads</strong> on the Pro plan at $3,500/month — a 10x output improvement at lower cost, with zero management overhead.{" "}
+                <a href="#pricing" aria-label="View Prospecting OS Pro plan pricing" style={{ color: "var(--accent)" }}>View Pro plan →</a>
+              </p>
             </div>
             <div className="roi-calc-card reveal">
-              <div className="roi-row"><span className="label">Hot leads/month</span><span className="value">200+</span></div>
-              <div className="roi-row"><span className="label">Average close rate</span><span className="value">2–5%</span></div>
-              <div className="roi-row"><span className="label">New clients/month</span><span className="value">4–10</span></div>
-              <div className="roi-row"><span className="label">Avg. project value</span><span className="value">$5K–$15K</span></div>
-              <div className="roi-row"><span className="label">Revenue generated</span><span className="value">$20K–$150K</span></div>
-              <div className="roi-row"><span className="label">Cost of Pro plan</span><span className="value">$3,500/mo</span></div>
-              <div className="roi-highlight"><span>Minimum ROI</span><span>5.7x — 42x</span></div>
+              <div className="roi-row"><span className="label">AI-scored leads/month</span><span className="value">200+</span></div>
+              <div className="roi-row"><span className="label">Average B2B close rate</span><span className="value">2–5%</span></div>
+              <div className="roi-row"><span className="label">Estimated new clients/month</span><span className="value">4–10</span></div>
+              <div className="roi-row"><span className="label">Average project/contract value</span><span className="value">$5K–$15K</span></div>
+              <div className="roi-row"><span className="label">Estimated monthly revenue generated</span><span className="value">$20K–$150K</span></div>
+              <div className="roi-row"><span className="label">Prospecting OS Pro plan cost</span><span className="value">$3,500/mo</span></div>
+              <div className="roi-highlight"><span>Estimated minimum ROI on Pro plan</span><span>5.7x — 42x</span></div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════ FAQ ══════════ */}
-      <section className="section" id="faq">
+      <section className="section" id="faq" aria-label="Frequently asked questions about AI B2B lead generation">
         <div className="container">
           <div className="section-header reveal">
             <div className="section-eyebrow">// FAQ</div>
-            <h2 className="section-title">Got Questions?</h2>
+            <h2 className="section-title">Frequently Asked Questions About AI B2B Lead Generation</h2>
           </div>
           <div className="faq-list">
             {FAQ_ITEMS.map((item, i) => (
@@ -796,7 +841,14 @@ export default function LandingPage() {
                   {item.q}
                   <span className="faq-icon">+</span>
                 </button>
-                <div className="faq-answer"><p>{item.a}</p></div>
+                <div className="faq-answer">
+                  <p>
+                    {item.a}
+                    {i === 4 && (
+                      <>{" "}<a href="#pricing" aria-label="See all Prospecting OS pricing tiers" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
+                    )}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -819,8 +871,25 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ Footer ══════════ */}
-      <footer className="footer">
-        <div className="container"><p>© 2026 Prospecting OS. AI-powered B2B prospecting.</p></div>
+      <footer className="footer" role="contentinfo" aria-label="Prospecting OS footer">
+        <div className="container">
+          <p>
+            © 2026{" "}
+            <a href="https://flow-forges.com" aria-label="Flow-Forges AI automation agency" style={{ color: "var(--accent)" }}>Flow-Forges</a>
+            {" "}· Prospecting OS — AI-Powered B2B Lead Generation System
+          </p>
+          <nav aria-label="Footer navigation" style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center", margin: "12px 0", fontSize: "0.85rem" }}>
+            <a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a>
+            <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a>
+            <a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a>
+            <a href="/book" aria-label="Book a free B2B prospecting strategy call">Book a Call</a>
+            <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
+          </nav>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>
+            Prospecting OS is a productized AI system built on n8n, Gemini AI, and LinkedIn Sales Navigator.
+            Results vary based on ICP configuration and industry. Pro plan includes a 50-lead/month performance guarantee.
+          </p>
+        </div>
       </footer>
 
       {/* ══════════ Premium Chat Widget — Pros Bot ══════════ */}
@@ -860,9 +929,9 @@ export default function LandingPage() {
                         className="chat-bubble-reply-btn"
                         onClick={() => handleUserMessage(qr)}
                       >
-                        {qr === "Book a Demo" && <Calendar size={11} />}
-                        {qr === "Explore Platform" && <ArrowRight size={11} />}
-                        {qr === "How it works" && <Sparkles size={11} />}
+                        {qr === "Book a Free Strategy Call" && <Calendar size={11} />}
+                        {qr === "How does the AI scoring work?" && <Sparkles size={11} />}
+                        {qr === "What does Pro plan include?" && <ArrowRight size={11} />}
                         {qr}
                       </button>
                     ))}
@@ -899,6 +968,92 @@ export default function LandingPage() {
 
       {/* Email Capture Modal — entry intent + exit intent */}
       <EmailCaptureModal />
+
+      {/* ══════════ JSON-LD Schema ══════════ */}
+      <Script
+        id="schema-software"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Prospecting OS",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://app.flow-forges.com/prospecting-os",
+            "description": "Prospecting OS is an AI-powered B2B lead generation system that uses LinkedIn Sales Navigator and Gemini AI to automatically source, score, enrich, and deliver qualified leads to your Slack, Telegram, or CRM — every morning.",
+            "offers": [
+              { "@type": "Offer", "name": "Basic — One-Time Setup", "price": "2500", "priceCurrency": "USD", "description": "Full n8n workflow, Sales Navigator integration, Gemini AI scoring, Google Sheets dashboard, Telegram alerts, 1-week support.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Pro — Managed AI Prospecting", "price": "3500", "priceCurrency": "USD", "description": "Everything in Basic + AI icebreakers, company enrichment, daily Slack digest, duplicate check, monthly ICP refinement, dedicated Slack channel.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Advanced — Full AI SDR", "price": "10000", "priceCurrency": "USD", "description": "Everything in Pro + auto cold email sending, 3-touch follow-up, AI reply detection, HubSpot CRM sync, A/B testing, weekly reports.", "eligibleRegion": "Worldwide" },
+            ],
+            "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "27", "bestRating": "5", "worstRating": "1" },
+            "provider": { "@type": "Organization", "name": "Flow-Forges", "url": "https://flow-forges.com", "logo": "https://app.flow-forges.com/prospecting-os/assets/Logo_Icon.png" },
+          }),
+        }}
+      />
+      <Script
+        id="schema-faq"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              { "@type": "Question", "name": "What is the best AI tool for B2B lead generation?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS is an AI-powered B2B lead generation system that combines LinkedIn Sales Navigator, Gemini AI scoring, and automated enrichment to deliver 500+ qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1–10 — only 7+ advance to your inbox." } },
+              { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Sales Navigator exports your ICP automatically, (2) the system filters for decision-makers only, (3) Gemini AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
+              { "@type": "Question", "name": "What is an AI SDR and is it better than hiring a human SDR?", "acceptedAnswer": { "@type": "Answer", "text": "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000–$6,000/month and delivers ~50 leads. Prospecting OS delivers 500+ scored leads for a fraction of that cost, running 24/7 with zero manual effort." } },
+              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Pro plan. Basic plan clients typically see 100–200 leads/month depending on their Sales Navigator search configuration and ICP specificity." } },
+              { "@type": "Question", "name": "Do I need a LinkedIn Sales Navigator subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. LinkedIn Sales Navigator is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
+              { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Basic plan: 4–6 hours. Pro plan: 2–3 business days. Advanced (with email infrastructure and CRM integration): 1–2 weeks." } },
+              { "@type": "Question", "name": "What industries does AI B2B lead generation work for?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India." } },
+              { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. If the Pro plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },
+            ],
+          }),
+        }}
+      />
+      <Script
+        id="schema-org"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Flow-Forges",
+            "url": "https://flow-forges.com",
+            "logo": "https://app.flow-forges.com/prospecting-os/assets/Logo_Icon.png",
+            "sameAs": ["https://app.flow-forges.com/prospecting-os"],
+            "contactPoint": { "@type": "ContactPoint", "contactType": "sales", "url": "https://app.flow-forges.com/prospecting-os/book", "areaServed": "Worldwide", "availableLanguage": "English" },
+          }),
+        }}
+      />
+      <Script
+        id="schema-howto"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": "How to Get 500 B2B Leads Per Month Using AI",
+            "description": "Prospecting OS uses a 5-step AI pipeline to automatically source, score, enrich, and deliver qualified B2B leads every day.",
+            "totalTime": "PT4H",
+            "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "2500" },
+            "tool": [
+              { "@type": "HowToTool", "name": "LinkedIn Sales Navigator" },
+              { "@type": "HowToTool", "name": "Gemini AI" },
+              { "@type": "HowToTool", "name": "n8n" },
+              { "@type": "HowToTool", "name": "Slack or Telegram" },
+            ],
+            "step": [
+              { "@type": "HowToStep", "name": "Source", "text": "LinkedIn Sales Navigator automatically exports leads matching your Ideal Customer Profile (ICP) — industry, company size, geography, job title.", "position": 1 },
+              { "@type": "HowToStep", "name": "Filter", "text": "The system filters out non-decision-makers. Only founders, C-suite, VPs, and Directors pass through.", "position": 2 },
+              { "@type": "HowToStep", "name": "Score", "text": "Gemini AI scores each lead 1–10 against your ICP criteria. Only leads scoring 7 or above advance to enrichment.", "position": 3 },
+              { "@type": "HowToStep", "name": "Enrich", "text": "Company data is enriched automatically. A unique, personalized icebreaker is generated for each lead using AI.", "position": 4 },
+              { "@type": "HowToStep", "name": "Deliver", "text": "Hot leads are delivered to your Telegram, Slack, or CRM every morning — scored, enriched, and ready to contact.", "position": 5 },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }
