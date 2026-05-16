@@ -866,6 +866,9 @@ export default function LandingPage() {
                 <li className="pricing-feature-no">No ongoing management</li>
               </ul>
               <Link href="/book" className="btn-secondary" style={{ textDecoration: "none" }} aria-label="Get the DIY Setup workflow — $1,500 one-time">Get the Workflow</Link>
+              <Link href="/tools/icebreaker-generator" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
+                Or generate a free icebreaker →
+              </Link>
             </div>
 
             {/* Managed Growth — Featured */}
@@ -886,6 +889,9 @@ export default function LandingPage() {
                 <li>500+ leads/month, 7+ score threshold</li>
               </ul>
               <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Managed Growth AI prospecting">Book a Demo</Link>
+              <Link href="/tools/free-audit" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
+                Or try our free pipeline audit first →
+              </Link>
             </div>
 
             {/* Managed Scale */}
@@ -1260,6 +1266,45 @@ export default function LandingPage() {
               {" "}— it answers everything.
             </p>
 
+            {/* Free tools strip */}
+            <div style={{ marginTop: 40, borderTop: "1px solid var(--border)", paddingTop: 32, width: "100%", maxWidth: 640 }}>
+              <p style={{ fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", marginBottom: 16 }}>
+                // Try before you buy — free tools
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <Link
+                  href="/tools/free-audit"
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "flex-start",
+                    background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                    borderRadius: 12, padding: "16px 20px", textDecoration: "none",
+                    flex: "1 1 220px", maxWidth: 260, transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.4)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                >
+                  <span style={{ fontSize: "0.68rem", fontFamily: "var(--font-mono)", color: "var(--accent)", letterSpacing: "0.1em", marginBottom: 6 }}>LM-04</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Free Pipeline Audit</span>
+                  <span style={{ fontSize: "0.76rem", color: "var(--text-tertiary)", lineHeight: 1.5 }}>50 leads scored + icebreakers in 24h. No card.</span>
+                </Link>
+                <Link
+                  href="/tools/icebreaker-generator"
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "flex-start",
+                    background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                    borderRadius: 12, padding: "16px 20px", textDecoration: "none",
+                    flex: "1 1 220px", maxWidth: 260, transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.4)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                >
+                  <span style={{ fontSize: "0.68rem", fontFamily: "var(--font-mono)", color: "var(--accent)", letterSpacing: "0.1em", marginBottom: 6 }}>LM-03</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>AI Icebreaker Generator</span>
+                  <span style={{ fontSize: "0.76rem", color: "var(--text-tertiary)", lineHeight: 1.5 }}>3 free Gemini icebreakers. No signup.</span>
+                </Link>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -1277,6 +1322,8 @@ export default function LandingPage() {
             <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a>
             <a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a>
             <Link href="/book" aria-label="Book a free B2B prospecting strategy call">Book a Call</Link>
+            <Link href="/tools/free-audit">Free Pipeline Audit</Link>
+            <Link href="/tools/icebreaker-generator">AI Icebreaker</Link>
             <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
           </nav>
           <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>

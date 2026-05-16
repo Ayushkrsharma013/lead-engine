@@ -739,6 +739,33 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 ---
 
+### 2026-05-16 (Evening) — Lead Magnet Tools: Free Pipeline Audit + AI Icebreaker Generator
+
+**LM-04 — Free Pipeline Audit (`/tools/free-audit`):**
+- `app/tools/free-audit/page.tsx` — public marketing page: hero with animated availability badge, 3 deliverable cards with staggered entrance, audit form, sample Google Sheet output table mockup, bottom CTA to /book
+- `components/tools/AuditForm.tsx` — 'use client', 7-field form (name, email, company, website, team size, weekly hours, current tool, ICP description, CSV upload), AnimatePresence success/error states, file drag-to-upload zone
+- `app/api/tools/audit-request/route.ts` — multipart/form-data handler: 5/week cap check, 30-day email dedupe, CSV base64 encode, Supabase insert into `audit_requests`, Resend confirmation email, Telegram notify
+
+**LM-03 — AI Icebreaker Generator (`/tools/icebreaker-generator`):**
+- `app/tools/icebreaker-generator/page.tsx` — public marketing page: hero, generator tool, 3-step how-it-works, upgrade CTA
+- `components/tools/IcebreakerGenerator.tsx` — 'use client', split input/output layout, tone selector (professional/conversational/direct), 3-gen localStorage limit with progress bar, AnimatePresence states (idle/generating/done/limit/error), copy-to-clipboard
+- `app/api/tools/icebreaker/route.ts` — server-side Gemini 2.0 Flash call (GEMINI_API_KEY env var), IP-based rate limit (3/day) via `tool_rate_limits` table, structured prompt with tone guidance
+
+**New DB tables (applied to `lead-engine` production project `tbsqpnqzpbnilifhwvgr`):**
+- `audit_requests` — stores full audit submissions with RLS (public INSERT, admin-only SELECT/UPDATE)
+- `tool_rate_limits` — IP-based rate log for public tools (no RLS, service role only)
+
+**Middleware:** Added `/tools` to `publicRoutes` — all `/tools/*` pages are public, no auth required
+
+**lib/notify.ts:** Added `notifyTelegram(message: string)` generic helper for raw text Telegram messages
+
+**Required new env var (add to Vercel lead-engine project):**
+- `GEMINI_API_KEY` — server-side key for icebreaker API route (NOT NEXT_PUBLIC)
+
+**Build:** 0 TypeScript errors, 65/65 pages compiled (63 previous + 2 new tool pages + 2 new API routes)
+
+---
+
 ## Roadmap — What's Left
 
 ### Immediate (external configuration)
@@ -749,6 +776,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 | 2 | Configure Resend inbound webhook domain | Resend dashboard → point to `/api/inbound-email` |
 | 3 | Set CRON_SECRET env var | Vercel (optional, secures cron endpoint) |
 | 4 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) |
+| 5 | Add GEMINI_API_KEY env var | Vercel lead-engine project (required for /api/tools/icebreaker) |
 
 ### Future enhancements (not yet planned)
 

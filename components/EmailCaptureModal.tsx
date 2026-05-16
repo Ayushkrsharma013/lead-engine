@@ -96,7 +96,7 @@ export default function EmailCaptureModal({ openDelayMs = ENTRY_DELAY_MS }: Prop
 
     // Try sending to the API
     try {
-      await fetch("/api/leads/capture", {
+      await fetch("/prospecting-os/api/leads/capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmed }),
