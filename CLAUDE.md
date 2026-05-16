@@ -8,8 +8,10 @@ Project context and conventions for AI-assisted development.
 
 ## What this project is
 
-**Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, and the Anthropic API.  
-It provides 11 integrated modules for lead management, AI-powered messaging, ICP scoring, outreach sequences, kanban pipeline, analytics, client management, booking, outreach execution, and admin dashboard.
+**Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, Resend, and the Gemini API.  
+It provides 11 integrated modules for lead management, AI-powered messaging, ICP scoring, automated outreach sequences, kanban pipeline, analytics, client management, booking, outreach execution, and admin dashboard.
+
+All Tier 1 (auth/payments/onboarding), Tier 2 (sequence execution/reply tracking/A/B testing), and Tier 3 (rate limiting/error tracking/business analytics) are complete.
 
 The **root route `/`** is a marketing landing page (Prospecting OS) with a separate layout — no sidebar, no admin chrome.  
 The **app routes** (`/leads`, `/dashboard`, etc.) use the full Shell layout with Sidebar + TopBar.
@@ -61,8 +63,11 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | Icons | lucide-react ^0.400.0 (outline variants only, 16-18px; no emoji characters) |
 | Charts | recharts (Analytics module) |
 | Drag & Drop | @hello-pangea/dnd (Kanban module) |
-| AI | Anthropic API — called from browser (Message Lab + Scorer) |
+| AI | Gemini 2.5 Flash — called from browser (Message Lab + Scorer + A/B variants) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
+| Email | Resend HTTP API — sequence dispatch + booking notifications + inbound webhooks |
+| Scheduling | Vercel Cron Jobs — sequence runner every 5 min (`vercel.json`) |
+| Error tracking | `lib/error-tracking.ts` — Supabase error_logs table + optional Sentry |
 | Google Drive | Google Identity Services (GIS) — client-side OAuth |
 | Browser testing | agent-browser CLI (Vercel) — screenshots gitignored |
 | Deploy | Vercel (auto-deploys on push to `main`) |
@@ -76,6 +81,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 lead-engine/
 ├── middleware.ts                 # Auth middleware — protects admin routes, sets x-user-* headers
 ├── next.config.mjs               # basePath: '/prospecting-os', assetPrefix
+├── vercel.json                   # Cron: */5 min sequence runner at /api/cron/sequence-runner
 ├── supabase-migration.sql        # Full DB schema + RLS policies + auth columns
 ├── .env.example                  # All required environment variables
 ├── .mcp.json                     # MCP servers: ruflo + supabase
@@ -111,7 +117,14 @@ lead-engine/
 │       ├── stripe/webhook/route.ts  # POST — Stripe event handler
 │       ├── auth/google-calendar/   # Google Calendar OAuth (connect/status/callback)
 │       ├── outreach/               # OpenOutreach status/sync endpoints
-│       └── agent/telegram/route.ts # Telegram bot webhook
+│       ├── agent/telegram/route.ts # Telegram bot webhook
+│       ├── cron/sequence-runner/   # GET — Vercel Cron: processes due sequence steps
+│       ├── sequence/launch/        # POST — launch sequence for assigned leads
+│       ├── sequence/cancel/        # POST — pause/cancel sequence executions
+│       ├── inbound-email/          # POST — Resend inbound webhook (reply tracking)
+│       └── analytics/
+│           ├── business/           # GET — MRR, churn rate, conversion stats
+│           └── variant-stats/      # GET — A/B variant reply rate comparison
 ├── components/
 │   ├── Shell.tsx               # Marketing vs admin layout router
 │   ├── Navbar.tsx              # Landing navbar (scroll-aware glass morphism)
@@ -145,6 +158,10 @@ lead-engine/
 │   ├── google-calendar.ts      # Server-side Google Calendar API + OAuth
 │   ├── google-drive.ts         # Client-side Google Drive upload (GIS OAuth)
 │   ├── openoutreach.ts         # OpenOutreach data model mapper
+│   ├── sequence-engine.ts      # Core: template resolution, launch, cron processor, reply tracking
+│   ├── resend.ts               # Reusable Resend HTTP client (sendEmail)
+│   ├── rate-limit.ts           # Per-user daily scrape/email caps + X-RateLimit headers
+│   ├── error-tracking.ts       # captureError → Supabase error_logs + optional Sentry
 │   ├── portal-auth.tsx         # Client portal auth context
 │   ├── api-auth.ts             # Legacy Bearer token validation
 │   ├── nav.ts                  # Landing nav items (Features, Pricing, FAQ)
@@ -192,6 +209,22 @@ interface Sequence {
 interface SequenceStep {
   day: number; channel: "linkedin"|"email"; type: string;
   template: string; active: boolean;
+  variants?: string[];               // A/B test alternative templates
+}
+
+interface SequenceExecution {
+  id: string; sequenceId: string; leadId: string;
+  currentStep: number; variant: string;
+  status: "active"|"paused"|"completed"|"cancelled";
+  startedAt: string; lastActionAt: string;
+}
+
+interface SequenceMessage {
+  id: string; executionId: string; leadId: string;
+  stepIndex: number; channel: "email"|"linkedin";
+  subject: string; body: string;
+  status: "sent"|"failed"|"bounced"|"skipped"|"replied";
+  resendId?: string; variant?: string;
 }
 
 interface Campaign {
@@ -231,6 +264,9 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 | `lead_activity_log` | `id UUID PK`, user_id, type, text, lead_id | Lead-specific activity |
 | `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Public insert RLS policy |
 | `appointments` | `id UUID PK`, date TEXT, time TEXT, name TEXT, email TEXT, company TEXT, notes TEXT, created_at | Public insert RLS policy |
+| `sequence_executions` | `id UUID PK`, sequence_id FK, lead_id FK, current_step, status, variant, started_at, last_action_at | RLS enabled (user-scoped). Tracks each lead per sequence run |
+| `sequence_messages` | `id UUID PK`, execution_id FK, lead_id, step_index, channel, subject, body, status, resend_id, variant | RLS enabled (user-scoped). Outbound message log |
+| `error_logs` | `id UUID PK`, message, stack, source, url, user_id, metadata, created_at | RLS enabled (super_admin only) |
 
 ### Data access layer (`lib/db.ts`)
 
@@ -265,6 +301,26 @@ updateClient(id, updates) → Promise<Client>
 // Activity Log
 getActivityLog(limit?) → Promise<ActivityLogEntry[]>
 logActivity(entry) → Promise<void>
+
+// Sequence Executions
+getSequenceExecutions(sequenceId?) → Promise<SequenceExecution[]>
+getDueExecutions() → Promise<SequenceExecution[]>
+createSequenceExecutions(rows) → Promise<SequenceExecution[]>
+updateSequenceExecution(id, updates) → Promise<SequenceExecution>
+
+// Sequence Messages
+getSequenceMessages(executionId?) → Promise<SequenceMessage[]>
+insertSequenceMessage(msg) → Promise<SequenceMessage>
+findSequenceMessageByResendId(resendId) → Promise<SequenceMessage | null>
+updateSequenceMessageStatus(id, status) → Promise<void>
+hasRecentMessages(minutesAgo?) → Promise<boolean>  // cron overlap lock
+
+// Leads (extended)
+findLeadByEmail(email) → Promise<Lead | null>
+batchUpdateLeadKanban(leadIds, column, status) → Promise<void>
+
+// Analytics
+getVariantStats(sequenceId) → Promise<VariantStat[]>
 ```
 
 ---
@@ -359,11 +415,11 @@ text-accent-blue → var(--accent-blue)
 | `/book` | Appointment Scheduling | Multi-step booking flow |
 | `/leads` | Lead Intelligence | Filter sidebar, leads table, agent run, CSV/Drive export |
 | `/dashboard` | Command Center | Stats, activity feed, campaigns |
-| `/message-lab` | AI Message Lab | Claude API, typewriter, message types |
+| `/message-lab` | AI Message Lab | Gemini-powered generation, A/B variant mode, typewriter |
 | `/scorer` | Lead Scorer | ICP criteria, SVG score ring |
-| `/sequences` | Sequence Builder | Timeline DnD, Supabase CRUD |
-| `/kanban` | Kanban Pipeline | 7 columns, DnD, detail panel |
-| `/analytics` | Analytics | 4 recharts, date filters |
+| `/sequences` | Sequence Builder | Timeline DnD, Launch/Pause/Cancel, execution status, A/B variant editor, variant stats |
+| `/kanban` | Kanban Pipeline | 7 columns, DnD, detail panel, auto-moves on send/reply |
+| `/analytics` | Analytics | 4 recharts, date filters, variant stats endpoint |
 | `/clients` | Client Manager | CRUD, reports |
 | `/portal` | Client Portal | Login, leads, billing |
 
@@ -392,8 +448,10 @@ text-accent-blue → var(--accent-blue)
 | `GOOGLE_CALENDAR_REFRESH_TOKEN` | Vercel + `.env.local` | Optional — Google Calendar refresh token |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Vercel + `.env.local` | Optional — Cloudflare Turnstile CAPTCHA |
 | `NEXT_PUBLIC_SITE_URL` | Vercel + `.env.local` | Canonical URL for Stripe redirects + OAuth |
+| `CRON_SECRET` | Vercel + `.env.local` | Optional — bearer token to secure cron endpoints |
+| `SENTRY_DSN` | Vercel + `.env.local` | Optional — Sentry DSN for error forwarding |
 
-The Anthropic API key is entered by the user in the UI and stored ONLY in React Context memory. Google Drive Client ID is stored in `localStorage`.
+The Gemini API key is entered by the user in the UI and stored in localStorage. Anthropic/Claude API key is stored ONLY in React Context memory. Google Drive Client ID is stored in `localStorage`.
 
 ---
 
@@ -424,77 +482,82 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 ## Session History & Accomplishments
 
-### 2026-05-16 — Booking System Full Upgrade + Tier 1 (Auth/Payments/Onboarding)
+### 2026-05-16 (Morning) — Booking System Full Upgrade + Tier 1 (Auth/Payments/Onboarding)
 
-**Booking system (14 features added)**:
-- Meeting type selection (discovery/demo/technical/strategy with durations)
-- Weekend blocking in calendar + API validation
-- 15-min buffer between bookings + 8/day max cap
-- Cloudflare Turnstile CAPTCHA (graceful degradation)
-- Attendee confirmation email (Resend) + cancellation email
-- Admin dashboard at `/book/admin` (stats, filters, cancel/reschedule)
-- Phone field, timezone display, loading skeletons
-- Pros Bot extended to 9 states (type + phone collection)
-- Business hours validation (9:00-17:00)
-- Google Calendar event creation with attendee invites
-- Telegram + Email admin notifications on new bookings
-- Full E2E QA suite passed (all API tests, production verified)
+**Booking system (14 features)**: Meeting types, weekend blocking, 15-min buffer, 8/day cap, Turnstile CAPTCHA, confirmation/cancellation emails (Resend), admin dashboard, phone/timezone fields, Google Calendar integration, Telegram notifications, full E2E QA.
 
-**Auth system (Phase 1)**:
-- `middleware.ts` — protects all admin routes, sets x-user-* headers
-- `lib/supabase/server.ts` — SSR Supabase client (cookie-based)
-- `lib/supabase/client.ts` — browser client for login/signup
-- `lib/auth.ts` — getUserFromHeaders, requireAuth, getSession, requireAuthApi
-- `app/login/page.tsx` — email/password login with redirect support
-- `app/signup/page.tsx` — signup → redirects to onboarding
-- `components/auth/LogoutButton.tsx`
-- `Shell.tsx` — added `/login`, `/signup`, `/onboarding` to marketing routes
+**Auth (Phase 1)**: middleware.ts with SSR cookies, login/signup pages, LogoutButton, x-user-* headers.
 
-**Stripe payments (Phase 2)**:
-- `lib/stripe.ts` — SDK init + 3 plan definitions
-- `app/api/stripe/checkout/route.ts` — creates Stripe Checkout sessions
-- `app/api/stripe/webhook/route.ts` — handles subscription lifecycle events
-- Webhook updates `profiles` table (subscription_status, stripe_customer_id, plan)
+**Stripe (Phase 2)**: Checkout sessions, webhook handler, 3 plan definitions, profiles subscription fields.
 
-**Onboarding wizard (Phase 3)**:
-- `app/onboarding/page.tsx` — 4-step wizard with progress bar
-- `lib/onboarding.ts` — state machine + ICP option lists
-- Steps: Welcome → ICP Setup (multi-select chips) → API Keys → Plan & Pay
-- Skip option at every step
+**Onboarding (Phase 3)**: 4-step wizard (Welcome → ICP → API Keys → Plan & Pay), skip option.
 
-**Database changes (pending migration)**:
-- `profiles` table: added subscription_status, stripe_customer_id, plan, onboarding_complete, icp_preferences (JSONB), apify_key
-- `leads`, `messages`, `sequences`, `campaigns`: added user_id column + RLS policies
-- `appointments`: added phone, type, duration, status, timezone, calendar_link, updated_at
+**Files**: 25+ files, ~3,200+ lines, 0 TS errors.
 
-**Supabase MCP**: Configured in `.mcp.json` + auto-approved in `.claude/settings.json`
+### 2026-05-16 (Afternoon) — Tier 2: Product Completeness + Tier 3: Scale
 
-**Total files created/modified**: 25+ files, ~3,200+ lines, 0 TypeScript errors
+**Tier 2.1 — Automated Sequence Execution Engine** (`8a48435`):
+- `lib/sequence-engine.ts` — template resolution with `{{variables}}`, launchSequence, processDueSteps cron handler
+- `lib/resend.ts` — reusable Resend HTTP client (sendEmail + HTML builder)
+- `app/api/cron/sequence-runner/` — Vercel Cron endpoint (every 5 min)
+- `app/api/sequence/launch/` + `cancel/` — launch/pause/cancel sequence executions
+- `vercel.json` — `*/5 * * * *` cron schedule
+- `app/sequences/page.tsx` — Launch button, execution status per lead, pause/cancel controls
+- New DB tables: `sequence_executions`, `sequence_messages` (RLS enabled)
+- Auto-moves kanban to "Contacted" on first send
+- Duplicate prevention, cron overlap lock, 3x retry on Resend failure
+
+**Tier 2.2 — Email Inbound Reply Tracking** (`62e0bcf`):
+- `app/api/inbound-email/` — parses Resend webhook, extracts email from From header
+- `processInboundReply()` — matches lead by email, matches sequence_message by resend_id
+- Auto-updates kanban to "Replied" on reply, logs activity with reply preview
+- Added `findLeadByEmail`, `findSequenceMessageByResendId`, `updateSequenceMessageStatus` to db.ts
+- Schema: added 'replied' to sequence_messages.status CHECK constraint
+
+**Tier 2.3 — A/B Testing for Messages** (`f5b2cbf`):
+- SequenceStep gets `variants?: string[]` — alternative templates per step
+- SequenceExecution gets `variant` field — round-robin A/B/C assignment on launch
+- Variant-aware template resolution in processDueSteps
+- `app/api/analytics/variant-stats/` — reply rate per variant
+- `app/sequences/page.tsx` — collapsible variant editor per step, variant stats panel
+- `app/message-lab/page.tsx` — "Generate A/B Test" button creates 2 Gemini variants
+- Schema: added variant column to sequence_executions
+
+**Tier 3 — Rate Limiting, Error Tracking, Business Analytics** (`e91e1a3`):
+- `lib/rate-limit.ts` — daily scrape cap (500/day) + email cap (200/day), X-RateLimit headers
+- Applied to leads API POST with per-user session extraction
+- `lib/error-tracking.ts` — captureError → error_logs table + optional Sentry forwarding
+- `app/api/analytics/business/` — MRR, churn rate, lead conversion, plan distribution
+- `app/dashboard/page.tsx` — Business Overview widget (4 stat cards)
+- New DB table: `error_logs` (RLS: super_admin only)
+
+**Database migrations executed** (via Supabase MCP):
+- `profiles`: added subscription_status, stripe_customer_id, plan, onboarding_complete, icp_preferences, apify_key
+- RLS enabled on pricing_tiers + quote_requests
+- Fixed profiles super_admin policy (was reading insecure user_metadata from JWT)
+
+**Total Tier 2+3**: 6 commits, 25 files, +1,564 lines, 0 TypeScript errors.
 
 ---
 
-## Roadmap — What's Next
+## Roadmap — What's Left
 
-### Tier 2: Product Completeness (next priority)
+### Immediate (external configuration)
 
-| # | Feature | Why | Effort |
-|---|---------|-----|--------|
-| 1 | **Automated sequence execution** | Sequences are built but never sent. Core value prop incomplete. | Large |
-| 2 | **Email inbox/reply tracking** | Kanban is fully manual. Auto-update lead status on reply. | Large |
-| 3 | **CRM integrations** (HubSpot/Salesforce) | Unlocks enterprise deals at $12.5K/mo tier. | Medium |
-| 4 | **A/B testing for messages** | Claude generates one variant. Test and optimize reply rates. | Medium |
+| # | Action | Where |
+|---|--------|-------|
+| 1 | Set Stripe environment variables | Vercel project settings |
+| 2 | Create Stripe products/prices | Stripe dashboard |
+| 3 | Enable leaked password protection | Supabase Auth dashboard |
+| 4 | Configure Resend inbound webhook domain | Resend dashboard → point to `/api/inbound-email` |
+| 5 | Set CRON_SECRET env var | Vercel (optional, secures cron endpoint) |
+| 6 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) |
 
-### Tier 3: Scale & Operations
+### Future enhancements (not yet planned)
 
-| # | Feature | Why | Effort |
-|---|---------|-----|--------|
-| 5 | **Error monitoring** (Sentry) | Blind to production crashes. | Small |
-| 6 | **Business analytics** (MRR, churn, conversion) | Running a SaaS blind. | Medium |
-| 7 | **Rate limiting & abuse protection** | One user could rack up $$$ in Apify costs. | Small |
-| 8 | **Supabase migration execution** | Run `supabase-migration.sql` via Supabase MCP to add auth columns. | Small |
-
-### Immediate next action
-1. Run `supabase-migration.sql` via Supabase MCP (`execute_sql`) once MCP server is connected
-2. Set Stripe environment variables in Vercel
-3. Create Stripe products/prices in Stripe dashboard
-4. Test full signup → onboarding → payment → dashboard flow end-to-end
+- CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
+- OpenOutreach sequence integration — connect LinkedIn steps to the engine
+- Email open/bounce tracking via Resend webhooks
+- Automated winner selection in A/B testing
+- Client portal billing history
+- Multi-currency MRR tracking
