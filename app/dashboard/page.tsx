@@ -320,6 +320,22 @@ export default function DashboardPage() {
   const activeCampaigns = campaigns.filter(c => c.status !== "complete");
   const recentActivity = (activityLog as ActivityLogEntry[]).slice(0, 10);
 
+  // Business analytics
+  const [bizStats, setBizStats] = useState<{
+    mrr: number; activeSubscribers: number; churnedCount: number; churnRate: number;
+    totalLeads: number; leadsWon: number; conversionRate: number;
+    plans: Record<string, number>;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/prospecting-os/api/analytics/business")
+      .then(r => r.json())
+      .then(d => { if (!d.error) setBizStats(d); })
+      .catch(() => {});
+  }, []);
+
+  const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [apptsLoading, setApptsLoading] = useState(true);
 
@@ -402,6 +418,16 @@ export default function DashboardPage() {
             }
           />
         </div>
+
+        {/* ── Business Overview ── */}
+        {bizStats && (
+          <div className="grid grid-cols-4 gap-3">
+            <StatBox label="MRR" value={formatCurrency(bizStats.mrr)} sub={`${bizStats.activeSubscribers} active subscribers`} color="var(--accent-green)" />
+            <StatBox label="Churn Rate" value={`${bizStats.churnRate}%`} sub={`${bizStats.activeSubscribers} active · ${bizStats.churnedCount || 0} churned`} color={bizStats.churnRate > 20 ? "var(--negative)" : "var(--accent-green)"} />
+            <StatBox label="Conversion" value={`${bizStats.conversionRate}%`} sub={`${bizStats.leadsWon} won of ${bizStats.totalLeads} leads`} color="var(--accent-blue)" />
+            <StatBox label="Plans" value={Object.keys(bizStats.plans).length.toString()} sub={Object.entries(bizStats.plans).map(([k, v]) => `${k}: ${v}`).join(" · ")} color="var(--accent-purple)" />
+          </div>
+        )}
 
         {/* ── Row 2: Source Donut + Activity + Campaigns ── */}
         <div className="grid grid-cols-[240px_1fr_340px] gap-4">
@@ -717,5 +743,24 @@ export default function DashboardPage() {
 
       </div>
     </>
+  );
+}
+
+function StatBox({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
+  return (
+    <div
+      className="rounded-xl p-4 flex flex-col gap-1"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
+      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+        {label}
+      </span>
+      <span className="text-xl font-bold tabular-nums" style={{ color }}>
+        {value}
+      </span>
+      <span className="text-[10px]" style={{ color: "var(--muted)" }}>
+        {sub}
+      </span>
+    </div>
   );
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiAuth } from "@/lib/api-auth";
+import { checkLeadScrapeLimit, setRateLimitHeaders } from "@/lib/rate-limit";
+import { createServerClient } from "@supabase/ssr";
 
 export const maxDuration = 300;
 
@@ -64,6 +66,28 @@ function validateFields(body: Record<string, unknown>): string | null {
 export async function POST(req: NextRequest) {
   const authError = validateApiAuth(req);
   if (authError) return authError;
+
+  // Rate limit: get user from session
+  let userId = "anonymous";
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll: () => req.cookies.getAll(), setAll: () => {} } }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) userId = user.id;
+  } catch { /* anonymous */ }
+
+  const rateLimit = await checkLeadScrapeLimit(userId);
+  const headers = new Headers();
+  setRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: `Daily scrape limit reached (${rateLimit.used}/${rateLimit.limit}). Resets at ${rateLimit.resetAt}.` },
+      { status: 429, headers }
+    );
+  }
 
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
