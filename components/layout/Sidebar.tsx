@@ -182,7 +182,8 @@ function SectionHeader({
 
   return (
     <button
-      onClick={onToggle}
+      type="button"
+      onClick={(e) => { e.preventDefault(); onToggle(); }}
       className="w-full flex items-center justify-between rounded-lg group transition-colors duration-150"
       style={{
         height: 30,
