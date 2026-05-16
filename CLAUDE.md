@@ -749,7 +749,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 **LM-03 — AI Icebreaker Generator (`/tools/icebreaker-generator`):**
 - `app/tools/icebreaker-generator/page.tsx` — public marketing page: hero, generator tool, 3-step how-it-works, upgrade CTA
 - `components/tools/IcebreakerGenerator.tsx` — 'use client', split input/output layout, tone selector (professional/conversational/direct), 3-gen localStorage limit with progress bar, AnimatePresence states (idle/generating/done/limit/error), copy-to-clipboard
-- `app/api/tools/icebreaker/route.ts` — server-side Gemini 2.0 Flash call (GEMINI_API_KEY env var), IP-based rate limit (3/day) via `tool_rate_limits` table, structured prompt with tone guidance
+- `app/api/tools/icebreaker/route.ts` — server-side Gemini 2.5 Flash call (GEMINI_API_KEY env var), IP-based rate limit (3/day) via `tool_rate_limits` table, structured prompt with tone guidance
 
 **New DB tables (applied to `lead-engine` production project `tbsqpnqzpbnilifhwvgr`):**
 - `audit_requests` — stores full audit submissions with RLS (public INSERT, admin-only SELECT/UPDATE)
@@ -766,6 +766,35 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 ---
 
+### 2026-05-16 (Evening) — QA, Bug Fixes, Live Verification
+
+**Email capture modal fix:**
+- `components/EmailCaptureModal.tsx` — Fixed API URL from `/api/leads/capture` → `/prospecting-os/api/leads/capture` (was 404ing due to missing basePath prefix)
+- `app/landing.css` — Added `@keyframes scale-in` + `.animate-scale-in` class (was referenced but missing, modal card entrance was invisible)
+
+**Shell routing fix:**
+- `components/Shell.tsx` — Added `/tools` to both `MARKETING_ROUTES` and `CLEAN_ROUTES` arrays. Tool pages were showing the full admin sidebar/chrome instead of the bare landing-page layout.
+
+**Gemini model fix (3 commits):**
+- Changed `gemini-2.0-flash` → `gemini-2.5-flash` — the GEMINI_API_KEY on Vercel only has access to 2.5 (500 error root cause)
+- Gemini 2.5 Flash has "thinking" mode ON by default — `parts[0]` is a reasoning part (`thought: true`), `parts[1]` is the actual response. Reading `parts[0]` returned truncated reasoning ("Your recent post on building..."). Fix: set `thinkingConfig: { thinkingBudget: 0 }` in `generationConfig` to disable thinking, and added `parts.find(p => !p.thought) ?? parts[0]` fallback in response parsing.
+- Bumped `maxOutputTokens` from 120 → 200 to ensure full sentences
+
+**IMPORTANT — Gemini 2.5 Flash gotchas (lead-engine specific):**
+- Always use `gemini-2.5-flash` model (not 2.0 — key restricted)
+- Always set `thinkingConfig: { thinkingBudget: 0 }` when you want fast non-thinking responses
+- Always extract response text with: `parts.find(p => !p.thought) ?? parts[0]` (not just `parts[0]`)
+
+**Live QA results (all PASS):**
+- `/tools/free-audit` — No sidebar, correct layout, hero + deliverables + form + sample table + CTA all rendered
+- `/tools/icebreaker-generator` — No sidebar, correct layout, form + output panel + tone selector all rendered
+- Icebreaker API E2E: Generated *"Marcus, congrats on HubSpot's Series C and the ambitious EMEA AE expansion—that's huge! I can only imagine the pressure to fill 40 new roles efficiently."* — full sentence, on-brand, contextual
+- Usage counter decrements (3 → 2 remaining), Copy/Generate-another buttons appear post-generation
+
+**Commits:** 5 commits this sub-session (modal fix, model fix, thinking-mode fix + Shell fix + CLAUDE.md)
+
+---
+
 ## Roadmap — What's Left
 
 ### Immediate (external configuration)
@@ -776,7 +805,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 | 2 | Configure Resend inbound webhook domain | Resend dashboard → point to `/api/inbound-email` |
 | 3 | Set CRON_SECRET env var | Vercel (optional, secures cron endpoint) |
 | 4 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) |
-| 5 | Add GEMINI_API_KEY env var | Vercel lead-engine project (required for /api/tools/icebreaker) |
+| 5 | ~~Add GEMINI_API_KEY env var~~ | ~~Vercel lead-engine project~~ — **DONE, confirmed working** |
 
 ### Future enhancements (not yet planned)
 
