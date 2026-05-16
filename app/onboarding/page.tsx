@@ -54,14 +54,27 @@ export default function OnboardingPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/prospecting-os/api/stripe/checkout", {
+      // Save onboarding data + set subscription to pending_payment
+      // Finance Agent picks this up via cron and alerts Telegram
+      const res = await fetch("/prospecting-os/api/onboarding/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planKey: selectedPlan }),
+        body: JSON.stringify({
+          name,
+          icp,
+          apifyKey,
+          anthropicKey,
+          plan: selectedPlan,
+          subscriptionStatus: "pending_payment",
+          onboardingComplete: true,
+        }),
       });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else setError(data.error || "Failed to start checkout");
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (data.ok) {
+        router.push("/prospecting-os/dashboard?checkout=manual");
+      } else {
+        setError(data.error || "Failed to save. Please try again.");
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     }
@@ -285,7 +298,7 @@ export default function OnboardingPage() {
         {step === "plan" && (
           <div>
             <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Choose Your Plan</h1>
-            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>All plans include a 7-day free trial. Cancel anytime.</p>
+            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>Payment via Xflow Pay. Our team will send an invoice and activate your plan within 24 hours.</p>
 
             <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
               {Object.entries(PLANS_DATA).map(([key, plan]) => {
@@ -331,7 +344,7 @@ export default function OnboardingPage() {
               opacity: loading ? 0.7 : 1, marginBottom: 16,
             }}>
               {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <CreditCard size={16} />}
-              {loading ? "Redirecting to Stripe..." : "Subscribe & Start Prospecting"}
+              {loading ? "Saving..." : "Request Manual Payment"}
             </button>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
