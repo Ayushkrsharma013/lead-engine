@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import {
-  Save, Trash2, GripVertical, Plus, Users, Copy, Check,
+  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
 import { saveSequence as saveSeq, deleteSequence as delSeq } from "@/lib/db";
-import type { SequenceStep, Sequence } from "@/lib/types";
+import type { SequenceStep, Sequence, SequenceExecution } from "@/lib/types";
 
 const DEFAULT_STEPS: SequenceStep[] = [
   { day: 0, channel: "linkedin", type: "Connection Request", template: "Hi {{first_name}}, I came across your profile while researching {{industry}} leaders and was impressed by your work at {{company}}. Would love to connect.", active: true },
@@ -46,6 +46,10 @@ export default function SequencesPage() {
   const [showAssign, setShowAssign] = useState(false);
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [executions, setExecutions] = useState<SequenceExecution[]>([]);
+  const [launching, setLaunching] = useState(false);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [pausing, setPausing] = useState<string | null>(null);
 
   const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
     dispatch({ type: "SET_TOAST", payload: { msg, type } });
@@ -57,6 +61,7 @@ export default function SequencesPage() {
     setSteps(seq.steps);
     setEditingId(seq.id);
     setAssignedIds(seq.assignedLeadIds || []);
+    fetchExecutions(seq.id);
   };
 
   const resetForm = () => {
@@ -64,6 +69,73 @@ export default function SequencesPage() {
     setSteps(DEFAULT_STEPS.map(s => ({ ...s })));
     setEditingId(null);
     setAssignedIds([]);
+    setExecutions([]);
+  };
+
+  const fetchExecutions = async (sequenceId: string) => {
+    try {
+      const { getSequenceExecutions } = await import("@/lib/db");
+      const exs = await getSequenceExecutions(sequenceId);
+      setExecutions(exs);
+    } catch { setExecutions([]); }
+  };
+
+  const handleLaunch = async () => {
+    const seqId = editingId;
+    if (!seqId) { showToast("Save the sequence first", "warn"); return; }
+
+    setLaunching(true);
+    try {
+      const res = await fetch("/prospecting-os/api/sequence/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sequenceId: seqId }),
+      });
+      const data = await res.json() as { executions?: SequenceExecution[]; alreadyRunning?: number; error?: string };
+      if (data.error) { showToast(data.error, "error"); return; }
+      const exs = data.executions;
+      const count = exs?.length || 0;
+      const already = data.alreadyRunning ? ` (${data.alreadyRunning} already running)` : "";
+      showToast(`Launched for ${count} leads${already}`);
+      if (exs && exs.length > 0) setExecutions(prev => [...prev, ...exs]);
+    } catch { showToast("Failed to launch", "error"); }
+    setLaunching(false);
+  };
+
+  const handleCancelExec = async (executionId?: string) => {
+    setCancelling(executionId || "all");
+    try {
+      const body: Record<string, string> = { action: "cancel" };
+      if (executionId) body.executionId = executionId;
+      else body.sequenceId = editingId || "";
+
+      const res = await fetch("/prospecting-os/api/sequence/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (data.error) { showToast(data.error, "error"); return; }
+      showToast(executionId ? "Execution cancelled" : "All executions cancelled");
+      if (editingId) fetchExecutions(editingId);
+    } catch { showToast("Failed to cancel", "error"); }
+    setCancelling(null);
+  };
+
+  const handlePause = async (executionId: string) => {
+    setPausing(executionId);
+    try {
+      const res = await fetch("/prospecting-os/api/sequence/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ executionId, action: "pause" }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (data.error) { showToast(data.error, "error"); return; }
+      showToast("Execution paused");
+      setExecutions(prev => prev.map(e => e.id === executionId ? { ...e, status: "paused" as const } : e));
+    } catch { showToast("Failed to pause", "error"); }
+    setPausing(null);
   };
 
   const handleSave = async () => {
@@ -178,6 +250,18 @@ export default function SequencesPage() {
               >
                 <Save size={14} /> Save
               </button>
+              <button
+                onClick={handleLaunch}
+                disabled={launching || !editingId}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40"
+                style={{
+                  background: "linear-gradient(90deg, rgba(0,212,255,0.14), rgba(0,212,255,0.08))",
+                  color: "var(--accent-blue)",
+                  border: "1px solid rgba(0,212,255,0.22)",
+                }}
+              >
+                <Play size={14} /> {launching ? "Launching..." : "Launch"}
+              </button>
               <div className="relative">
                 <button
                   onClick={() => setShowAssign(!showAssign)}
@@ -241,6 +325,80 @@ export default function SequencesPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Execution Status ── */}
+          {editingId && executions.length > 0 && (
+            <div
+              className="rounded-xl p-4"
+              style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                  Execution Status
+                </h3>
+                <button
+                  onClick={() => handleCancelExec()}
+                  disabled={cancelling === "all"}
+                  className="text-[10px] px-2 py-1 rounded-md font-medium transition-all duration-200"
+                  style={{ background: "rgba(212,148,132,0.10)", color: "var(--negative)", border: "1px solid rgba(212,148,132,0.18)" }}
+                >
+                  {cancelling === "all" ? "Cancelling..." : "Cancel All"}
+                </button>
+              </div>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {executions.map(exec => {
+                  const lead = leads.find(l => l.id === exec.leadId);
+                  return (
+                    <div
+                      key={exec.id}
+                      className="flex items-center justify-between px-3 py-1.5 rounded-lg text-[11px]"
+                      style={{ background: "var(--surface-2)" }}
+                    >
+                      <span style={{ color: "var(--ink-2)" }}>
+                        {lead?.name || exec.leadId} — Step {exec.currentStep + 1}/{steps.filter(s => s.active).length}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                          style={{
+                            background: exec.status === "active" ? "rgba(0,255,136,0.10)"
+                              : exec.status === "paused" ? "rgba(245,158,11,0.10)"
+                              : exec.status === "completed" ? "rgba(0,212,255,0.10)"
+                              : "rgba(107,107,128,0.10)",
+                            color: exec.status === "active" ? "var(--accent-green)"
+                              : exec.status === "paused" ? "#f59e0b"
+                              : exec.status === "completed" ? "var(--accent-blue)"
+                              : "var(--muted)",
+                          }}
+                        >
+                          {exec.status}
+                        </span>
+                        {exec.status === "active" && (
+                          <button
+                            onClick={() => handlePause(exec.id)}
+                            disabled={pausing === exec.id}
+                            className="text-[10px] px-1.5 py-0.5 rounded transition-all"
+                            style={{ color: "var(--ink-3)" }}
+                          >
+                            {pausing === exec.id ? "..." : "Pause"}
+                          </button>
+                        )}
+                        {exec.status !== "cancelled" && (
+                          <button
+                            onClick={() => handleCancelExec(exec.id)}
+                            className="text-[10px] px-1.5 py-0.5 rounded transition-all"
+                            style={{ color: "var(--ink-4)" }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── Steps Timeline ── */}
           <div className="space-y-0">

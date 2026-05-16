@@ -117,6 +117,31 @@ export interface Sequence {
   updatedAt?: string;
 }
 
+export interface SequenceExecution {
+  id: string;
+  sequenceId: string;
+  leadId: string;
+  currentStep: number;
+  status: "active" | "paused" | "completed" | "cancelled";
+  startedAt: string;
+  lastActionAt: string;
+  createdAt?: string;
+}
+
+export interface SequenceMessage {
+  id: string;
+  executionId: string;
+  leadId: string;
+  stepIndex: number;
+  channel: "email" | "linkedin";
+  subject: string;
+  body: string;
+  status: "sent" | "failed" | "bounced" | "skipped";
+  resendId?: string;
+  variant?: string;
+  createdAt?: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;

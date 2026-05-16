@@ -4,6 +4,7 @@ import { sanitizeLead } from "./storage";
 import type {
   Lead, Message, Sequence, Campaign, Client,
   ActivityLogEntry, MergeResult, Stats,
+  SequenceExecution, SequenceMessage,
 } from "./types";
 
 // ─── Transform helpers (snake_case ↔ camelCase) ────────────────────────────────
@@ -118,6 +119,35 @@ function activityFromDB(row: Record<string, unknown>): ActivityLogEntry {
     type: String(row.type || "notification") as ActivityLogEntry["type"],
     text: String(row.text || ""),
     leadId: row.lead_id ? String(row.lead_id) : undefined,
+    createdAt: row.created_at ? String(row.created_at) : undefined,
+  };
+}
+
+function sequenceExecutionFromDB(row: Record<string, unknown>): SequenceExecution {
+  return {
+    id: String(row.id || ""),
+    sequenceId: String(row.sequence_id || ""),
+    leadId: String(row.lead_id || ""),
+    currentStep: Number(row.current_step ?? 0),
+    status: String(row.status || "active") as SequenceExecution["status"],
+    startedAt: row.started_at ? String(row.started_at) : new Date().toISOString(),
+    lastActionAt: row.last_action_at ? String(row.last_action_at) : new Date().toISOString(),
+    createdAt: row.created_at ? String(row.created_at) : undefined,
+  };
+}
+
+function sequenceMessageFromDB(row: Record<string, unknown>): SequenceMessage {
+  return {
+    id: String(row.id || ""),
+    executionId: String(row.execution_id || ""),
+    leadId: String(row.lead_id || ""),
+    stepIndex: Number(row.step_index ?? 0),
+    channel: String(row.channel || "email") as SequenceMessage["channel"],
+    subject: String(row.subject || ""),
+    body: String(row.body || ""),
+    status: String(row.status || "sent") as SequenceMessage["status"],
+    resendId: row.resend_id ? String(row.resend_id) : undefined,
+    variant: row.variant ? String(row.variant) : undefined,
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
@@ -363,5 +393,106 @@ export async function logActivity(entry: Omit<ActivityLogEntry, "id" | "createdA
       text: entry.text,
       lead_id: entry.leadId || null,
     });
+  if (error) throw error;
+}
+
+// ─── Sequence Executions ──────────────────────────────────────────────────────
+
+export async function getSequenceExecutions(sequenceId?: string): Promise<SequenceExecution[]> {
+  let q = supabase.from("sequence_executions").select("*").order("created_at", { ascending: false });
+  if (sequenceId) q = q.eq("sequence_id", sequenceId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data || []).map(sequenceExecutionFromDB);
+}
+
+export async function getDueExecutions(): Promise<SequenceExecution[]> {
+  const { data, error } = await supabase
+    .from("sequence_executions")
+    .select("*")
+    .eq("status", "active")
+    .order("last_action_at", { ascending: true });
+  if (error) throw error;
+  return (data || []).map(sequenceExecutionFromDB);
+}
+
+export async function createSequenceExecutions(
+  rows: Array<{
+    sequence_id: string;
+    lead_id: string;
+    status: string;
+    user_id?: string;
+  }>
+): Promise<SequenceExecution[]> {
+  const { data, error } = await supabase
+    .from("sequence_executions")
+    .insert(rows)
+    .select();
+  if (error) throw error;
+  return (data || []).map(sequenceExecutionFromDB);
+}
+
+export async function updateSequenceExecution(
+  id: string,
+  updates: { current_step?: number; status?: string; last_action_at?: string }
+): Promise<SequenceExecution> {
+  const { data, error } = await supabase
+    .from("sequence_executions")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return sequenceExecutionFromDB(data as unknown as Record<string, unknown>);
+}
+
+// ─── Sequence Messages ────────────────────────────────────────────────────────
+
+export async function getSequenceMessages(executionId?: string): Promise<SequenceMessage[]> {
+  let q = supabase.from("sequence_messages").select("*").order("created_at", { ascending: false });
+  if (executionId) q = q.eq("execution_id", executionId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data || []).map(sequenceMessageFromDB);
+}
+
+export async function insertSequenceMessage(
+  msg: Omit<SequenceMessage, "id" | "createdAt">
+): Promise<SequenceMessage> {
+  const { data, error } = await supabase
+    .from("sequence_messages")
+    .insert({
+      execution_id: msg.executionId,
+      lead_id: msg.leadId,
+      step_index: msg.stepIndex,
+      channel: msg.channel,
+      subject: msg.subject,
+      body: msg.body,
+      status: msg.status,
+      resend_id: msg.resendId,
+      variant: msg.variant,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return sequenceMessageFromDB(data as unknown as Record<string, unknown>);
+}
+
+export async function hasRecentMessages(minutesAgo: number = 4): Promise<boolean> {
+  const cutoff = new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
+  const { count, error } = await supabase
+    .from("sequence_messages")
+    .select("*", { count: "exact", head: true })
+    .gt("created_at", cutoff);
+  if (error) return false;
+  return (count ?? 0) > 0;
+}
+
+export async function batchUpdateLeadKanban(leadIds: string[], column: string, status: string): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("leads")
+    .update({ kanban_column: column, status: status, last_touched: now, updated_at: now })
+    .in("id", leadIds);
   if (error) throw error;
 }

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/prospecting-os/api/cron/sequence-runner",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
