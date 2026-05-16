@@ -31,7 +31,7 @@ function SignUpForm() {
 
     if (authError) { setError(authError.message); setSubmitting(false); return; }
 
-    router.push("/prospecting-os/onboarding");
+    router.push("/onboarding");
     router.refresh();
   };
 
@@ -93,7 +93,7 @@ function SignUpForm() {
 
         <p className="text-center text-[13px] mt-6" style={{ color: "var(--ink-3)" }}>
           Already have an account?{" "}
-          <Link href="/prospecting-os/login" className="font-semibold transition-opacity hover:opacity-80" style={{ color: "var(--accent-ink)" }}>
+          <Link href="/login" className="font-semibold transition-opacity hover:opacity-80" style={{ color: "var(--accent-ink)" }}>
             Sign in
           </Link>
         </p>
@@ -126,7 +126,7 @@ export default function SignUpPage() {
         style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid var(--sidebar-border)" }}
       >
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/prospecting-os" className="flex items-center gap-2.5 no-underline">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
             <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" className="w-7 h-7 rounded-lg" />
             <span className="font-bold text-[15px] tracking-[-0.02em]" style={{ color: "var(--ink)" }}>
               Prospecting<span style={{ color: "var(--accent)" }}>OS</span>

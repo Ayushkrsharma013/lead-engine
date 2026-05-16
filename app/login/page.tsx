@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/prospecting-os/dashboard";
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,7 +79,7 @@ function LoginForm() {
 
         <p className="text-center text-[13px] mt-6" style={{ color: "var(--ink-3)" }}>
           Don&apos;t have an account?{" "}
-          <Link href="/prospecting-os/signup" className="font-semibold transition-opacity hover:opacity-80" style={{ color: "var(--accent-ink)" }}>
+          <Link href="/signup" className="font-semibold transition-opacity hover:opacity-80" style={{ color: "var(--accent-ink)" }}>
             Create one
           </Link>
         </p>
@@ -112,7 +112,7 @@ export default function LoginPage() {
         style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid var(--sidebar-border)" }}
       >
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/prospecting-os" className="flex items-center gap-2.5 no-underline">
+          <Link href="/" className="flex items-center gap-2.5 no-underline">
             <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" className="w-7 h-7 rounded-lg" />
             <span className="font-bold text-[15px] tracking-[-0.02em]" style={{ color: "var(--ink)" }}>
               Prospecting<span style={{ color: "var(--accent)" }}>OS</span>

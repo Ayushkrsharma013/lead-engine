@@ -100,7 +100,7 @@ export default function ClientBillingPage() {
         <p className="text-[12px] mb-2" style={{ color: "var(--ink-3)" }}>
           To upgrade or cancel your plan, contact your account manager.
         </p>
-        <a href="/prospecting-os/book" className="inline-flex items-center gap-1.5 text-[13px] font-medium"
+        <a href="/book" className="inline-flex items-center gap-1.5 text-[13px] font-medium"
           style={{ color: "var(--accent-ink)" }}>
           Book a call <ExternalLink size={12} />
         </a>

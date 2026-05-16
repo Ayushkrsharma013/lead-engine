@@ -77,7 +77,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
       }}>
         {/* Logo + Plan badge */}
         <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
-          <Link href="/prospecting-os/client-portal" className="flex items-center gap-2.5 no-underline">
+          <Link href="/client-portal" className="flex items-center gap-2.5 no-underline">
             <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" className="w-7 h-7 rounded-lg" />
             <span className="font-bold text-[14px]" style={{ color: "var(--ink)" }}>
               Prospecting<span style={{ color: "var(--accent)" }}>OS</span>

@@ -26,7 +26,7 @@ export function PlanGate({ module, plan, children, role, planName = "Managed Gro
       <p className="text-[12px] mb-4" style={{ color: "var(--ink-3)" }}>
         This feature requires the {planName} plan.
       </p>
-      <a href="/prospecting-os/client-portal/billing"
+      <a href="/client-portal/billing"
         className="text-[13px] font-medium transition-opacity hover:opacity-80"
         style={{ color: "var(--accent-ink)" }}>
         View upgrade options →

@@ -97,7 +97,7 @@ export default function ClientPortalOverview() {
           style={{ background: "var(--accent)", color: "#000" }}>
           <Download size={13} /> Export CSV
         </button>
-        <a href="/prospecting-os/book"
+        <a href="/book"
           className="text-[12px] font-medium transition-opacity hover:opacity-80"
           style={{ color: "var(--ink-3)" }}>
           Need help? Book a call →
