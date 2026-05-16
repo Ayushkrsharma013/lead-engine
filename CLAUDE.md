@@ -622,6 +622,30 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 **Total session**: 8 commits, 28 files created, 8 modified, 0 TypeScript errors, 48/48 pages compiled, 18 new routes
 
+### 2026-05-16 (Night) — Landing Page Final Push
+
+**Bug fixes**:
+- H1 typewriter: initialized with `FULL_TEXT` for SSR/SEO (was empty string → blank headline for Googlebot). Briefly resets and replays animation on client mount
+- Footer `/book` links: converted `<a href="/book">` to `<Link href="/book">` for proper basePath auto-prefixing (was 404ing on multi-zone)
+
+**New sections**:
+- `// Free Sample` (id="sample") — email capture with industry selector, Resend sample report email with 5 AI-scored leads, AnimatePresence success state
+- `// Why Prospecting OS` (id="compare") — competitor comparison table: Prospecting OS vs In-house SDR, Apollo.io, Clay, Uplead across 10 features with "Best value" badge and staggered row reveals
+
+**New files**:
+- `components/landing/EmailCaptureForm.tsx` — 'use client', framer-motion AnimatePresence, industry dropdown, loading spinner, success/error states
+- `components/landing/ComparisonTable.tsx` — staggered row reveals (viewport trigger, 0.04s stagger), check/cross/warn indicators, "Best value" badge on Prospecting OS column
+- `components/landing/ScrollProgressBar.tsx` — useScroll + useSpring, fixed top 2px accent bar
+- `app/api/landing/email-capture/route.ts` — POST handler, dedup check, Resend email with 5 sample scored leads, Telegram notify
+
+**Framer Motion additions**:
+- Scroll progress bar (useScroll, useSpring) fixed at page top
+- Email capture form: AnimatePresence mode="wait" for idle→loading→success transitions
+- Competitor table: motion.tr staggered whileInView row reveals, spring hover on CTA button
+- Landing page now imports EmailCaptureForm, ComparisonTable, ScrollProgressBar
+
+**Build**: 0 TypeScript errors, 49/49 pages compiled (new API route added)
+
 ### 2026-05-16 (Morning) — Booking System Full Upgrade + Tier 1 (Auth/Payments/Onboarding)
 
 **Booking system (14 features)**: Meeting types, weekend blocking, 15-min buffer, 8/day cap, Turnstile CAPTCHA, confirmation/cancellation emails (Resend), admin dashboard, phone/timezone fields, Google Calendar integration, Telegram notifications, full E2E QA.
