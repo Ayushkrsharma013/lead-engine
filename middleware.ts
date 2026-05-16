@@ -25,6 +25,8 @@ export async function middleware(req: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  let role: string | null = null;
+
   if (user) {
     try {
       const { data: profile } = await supabase
@@ -41,12 +43,14 @@ export async function middleware(req: NextRequest) {
         if (profile.avatar_url) {
           res.headers.set("x-user-avatar", profile.avatar_url);
         }
+        role = profile.role || "user";
       }
     } catch {
       res.headers.set("x-user-id", user.id);
       res.headers.set("x-user-email", user.email || "");
       res.headers.set("x-user-name", user.user_metadata?.full_name || "");
       res.headers.set("x-user-role", user.user_metadata?.role || "user");
+      role = user.user_metadata?.role || "user";
     }
   }
 
@@ -75,18 +79,53 @@ export async function middleware(req: NextRequest) {
   const isApiRoute = normalizedPath.startsWith("/api/");
   const isPortalRoute = normalizedPath.startsWith("/portal/");
 
+  // ─── Role-based routing ──────────────────────────────────────────
+
+  if (user && role) {
+    const superAdminOnly = ["/admin", "/clients", "/outreach", "/settings"];
+    const clientPortalBase = "/client-portal";
+    const sharedAdmin = ["/dashboard", "/leads", "/message-lab", "/scorer", "/sequences", "/kanban", "/analytics"];
+    const adminAgentPaths = [...superAdminOnly, ...sharedAdmin];
+
+    const isSuperAdminPath = superAdminOnly.some(p =>
+      normalizedPath === p || normalizedPath.startsWith(p + "/")
+    );
+    const isAdminAgentPath = adminAgentPaths.some(p =>
+      normalizedPath === p || normalizedPath.startsWith(p + "/")
+    );
+    const isClientPortalPath = normalizedPath.startsWith(clientPortalBase);
+
+    if (role === "client") {
+      // Block access to super_admin areas — redirect to client portal
+      if (isSuperAdminPath || isAdminAgentPath) {
+        return NextResponse.redirect(new URL(basePath + "/client-portal", req.url));
+      }
+    }
+
+    if (role === "qa_agent") {
+      // Full access — no redirects. QA agent can visit any route.
+    }
+
+    // super_admin on client-portal is fine (they can view what clients see)
+  }
+
+  // ─── Public/auth route handling ──────────────────────────────────
+
   if (isPublicRoute || isStaticAsset || isApiRoute || isPortalRoute) {
     if (user && (normalizedPath === "/login" || normalizedPath === "/signup")) {
-      return NextResponse.redirect(new URL(basePath + "/dashboard", req.url));
+      // Route to appropriate destination based on role
+      const dest = role === "client" ? "/client-portal" : "/dashboard";
+      return NextResponse.redirect(new URL(basePath + dest, req.url));
     }
     return res;
   }
 
-  // Protect all other routes
+  // ─── Protect admin routes ─────────────────────────────────────────
+
   const protectedPrefixes = [
     "/dashboard", "/leads", "/message-lab", "/scorer",
     "/sequences", "/kanban", "/analytics", "/clients",
-    "/outreach", "/settings", "/agent",
+    "/outreach", "/settings", "/agent", "/admin", "/client-portal",
   ];
 
   const isProtected = protectedPrefixes.some((prefix) =>

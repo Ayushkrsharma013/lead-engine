@@ -1,8 +1,11 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { UserRole, PlanKey } from "./types";
+import { PLAN_MODULES } from "./types";
+import { NextRequest, NextResponse } from "next/server";
 
-export type Role = "super_admin" | "client" | "user";
+export type Role = UserRole;
 
 export interface AuthUser {
   id: string;
@@ -18,7 +21,7 @@ export interface AuthSession {
   expires: string;
 }
 
-const VALID_ROLES: Role[] = ["super_admin", "client", "user"];
+const VALID_ROLES: Role[] = ["super_admin", "client", "user", "qa_agent"];
 
 function isValidRole(role: string): role is Role {
   return VALID_ROLES.includes(role as Role);
@@ -122,4 +125,30 @@ export async function requireAuthApi(): Promise<AuthSession> {
 export async function signOut(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
+}
+
+// ─── RBAC helpers ───────────────────────────────────────────────
+
+export function isRole(headers: Headers, ...roles: UserRole[]): boolean {
+  const role = headers.get('x-user-role') as UserRole | null
+  return role !== null && roles.includes(role)
+}
+
+export function canAccessModule(plan: PlanKey | null, module: string): boolean {
+  if (!plan) return false
+  return PLAN_MODULES[plan]?.includes(module) ?? false
+}
+
+export async function requireRoleApi(
+  req: NextRequest,
+  ...roles: UserRole[]
+): Promise<Response | null> {
+  const h = await headers()
+  const userId = h.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = h.get('x-user-role') as UserRole
+  if (!roles.includes(role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  return null
 }

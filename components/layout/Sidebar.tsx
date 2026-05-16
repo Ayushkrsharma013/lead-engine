@@ -7,10 +7,11 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Settings2, Sparkles, Send, Bot,
+  ChevronLeft, ChevronRight, Settings2, Sparkles, Send, Bot, UserPlus,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
 import type { ModuleName } from "@/lib/types";
 
 type NavItemDef = { module: ModuleName; label: string; icon: LucideIcon; href: string };
@@ -67,6 +68,18 @@ export default function ProSidebar() {
 
   const [pillStyle, setPillStyle] = useState<{ top: number; height: number } | null>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
+
+  const [userRole, setUserRole] = useState<string>("user");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
+        if (data?.role) setUserRole(data.role as string);
+      });
+    });
+  }, []);
 
   const isActive = useCallback((href: string) => {
     if (href === "/leads") return pathname === "/leads";
@@ -195,6 +208,23 @@ export default function ProSidebar() {
                   <NavItem item={item} active={isActive(item.href)} collapsed={collapsed} />
                 </div>
               ))}
+              {/* Users link — super_admin only */}
+              {group.label === "Operations" && userRole === "super_admin" && (
+                <div
+                  onMouseEnter={e => {
+                    if (!collapsed) return;
+                    setHoveredItem("Users");
+                    setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top);
+                  }}
+                  onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
+                >
+                  <NavItem
+                    item={{ module: "agent" as ModuleName, label: "Users", icon: UserPlus, href: "/admin/users" }}
+                    active={isActive("/admin/users")}
+                    collapsed={collapsed}
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}

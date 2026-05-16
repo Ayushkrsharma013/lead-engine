@@ -24,6 +24,55 @@ Base path: `/prospecting-os` (multi-zone under `app.flow-forges.com`)
 
 ---
 
+## RBAC System
+
+### Roles
+| Role | Access | Default Destination |
+|---|---|---|
+| `super_admin` | Everything — all 11 modules + `/admin/*` + `/client-portal/*` | `/dashboard` |
+| `client` | Client portal only — plan-gated modules | `/client-portal` |
+| `qa_agent` | Both surfaces, no restrictions, bypasses PlanGate | `/dashboard` or `/client-portal` |
+| `user` | None yet — redirects to login | `/login` |
+
+### Role-based middleware routing
+- **client** users are redirected away from `/dashboard`, `/leads`, `/message-lab`, `/scorer`, `/sequences`, `/kanban`, `/analytics`, `/clients`, `/outreach`, `/settings`, `/admin/*` → redirected to `/client-portal`
+- **qa_agent** users have full access to both admin and client surfaces — no restrictions
+- **super_admin** users have full access — can also view client portal to see what clients see
+- Unauthenticated users → redirected to `/login?redirect=<original-path>`
+
+### Plan module gating (PLAN_MODULES in lib/types.ts)
+| Module | DIY Setup | Managed Growth | Managed Scale |
+|---|---|---|---|
+| Overview | ✓ | ✓ | ✓ |
+| Leads (view) | ✓ | ✓ | ✓ |
+| Leads (full) | ✗ | ✓ | ✓ |
+| Icebreakers | ✗ | ✓ | ✓ |
+| Analytics | ✗ | ✓ | ✓ |
+| A/B Analytics | ✗ | ✗ | ✓ |
+| Sequences | ✗ | ✗ | ✓ |
+| CRM Sync | ✗ | ✗ | ✓ |
+| Slack Digest | ✗ | ✓ | ✓ |
+| Billing | ✓ | ✓ | ✓ |
+| Settings | ✗ | ✓ | ✓ |
+
+### Key RBAC files
+- `lib/types.ts` — UserRole, PlanKey, PLAN_MODULES, UserProfile, ClientWorkspace, QASession
+- `lib/auth.ts` — Server-side: isRole, requireRoleApi, requireAuth, signOut
+- `lib/plan-gate.ts` — Client-safe: canAccessModule (no server imports)
+- `middleware.ts` — Role-based routing (client → /client-portal, qa_agent → both surfaces)
+- `app/admin/users/` — User Management Panel (super_admin only)
+- `app/client-portal/` — Client Portal (client + qa_agent + super_admin)
+- `components/client-portal/PlanGate.tsx` — Plan-gated module wrapper (qa_agent bypasses)
+- `app/api/admin/users/` — User CRUD API (super_admin writes, qa_agent reads)
+- `app/api/client-portal/` — Client-scoped API (user_id scoping on all queries)
+
+### QA Agent credential
+- Email: qa@flow-forges.com (created post-deploy via `POST /api/admin/users`)
+- Role: qa_agent — bypasses all PlanGate checks, accesses both surfaces
+- Used by: tests/scenarios/rbac.sh QA test suite
+
+---
+
 ## Shared Database Architecture
 
 Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
@@ -107,7 +156,21 @@ lead-engine/
 │   ├── clients/page.tsx         # Client Manager (agency mode CRUD)
 │   ├── outreach/page.tsx        # LinkedIn Outreach (OpenOutreach sync)
 │   ├── settings/page.tsx        # Settings (API keys, sources, preferences)
-│   ├── portal/                  # Client portal (login, dashboard, leads, billing)
+│   ├── portal/                  # Legacy client portal (login, dashboard, leads, billing)
+│   ├── admin/
+│   │   └── users/
+│   │       ├── page.tsx          # User management — table, filters, create modal
+│   │       └── [id]/page.tsx     # Single user detail — profile, plan, activity, QA tabs
+│   ├── client-portal/
+│   │   ├── layout.tsx            # Separate layout (no admin sidebar)
+│   │   ├── page.tsx              # Overview — plan-gated, stats + hot leads
+│   │   ├── leads/page.tsx        # Lead report viewer (read-only, score filters, CSV export)
+│   │   ├── icebreakers/page.tsx  # Icebreaker viewer (Growth+)
+│   │   ├── analytics/page.tsx    # Status breakdown + industry bars (Growth+)
+│   │   ├── sequences/page.tsx    # Sequences running for client (Scale only)
+│   │   ├── slack/page.tsx        # Slack digest config (Growth+)
+│   │   ├── billing/page.tsx      # Plan details, payment ref, upgrade CTA
+│   │   └── settings/page.tsx     # ICP preferences, score thresholds
 │   └── api/
 │       ├── leads/route.ts       # POST — Apify scraping proxy
 │       ├── leads/import/route.ts  # POST — import past Apify runs
@@ -120,12 +183,23 @@ lead-engine/
 │       ├── sequence/launch/        # POST — launch sequence for assigned leads
 │       ├── sequence/cancel/        # POST — pause/cancel sequence executions
 │       ├── inbound-email/          # POST — Resend inbound webhook (reply tracking)
+│       ├── admin/users/
+│       │   ├── route.ts               # GET list + POST create (super_admin only)
+│       │   ├── [id]/route.ts          # GET/PATCH/DELETE single user
+│       │   ├── [id]/activate/route.ts # POST — manually activate client plan
+│       │   └── [id]/impersonate/route.ts # POST — generate impersonation magic link
+│       ├── client-portal/
+│       │   ├── me/route.ts            # GET current client's profile + workspace + modules
+│       │   ├── leads/route.ts         # GET client's leads (scoped by user_id)
+│       │   └── icebreakers/route.ts   # GET client's icebreaker-enriched leads
 │       └── analytics/
 │           ├── business/           # GET — MRR, churn rate, conversion stats
 │           └── variant-stats/      # GET — A/B variant reply rate comparison
 ├── components/
-│   ├── Shell.tsx               # Marketing vs admin layout router
+│   ├── Shell.tsx               # Marketing vs admin layout router (client-portal uses own layout)
 │   ├── Navbar.tsx              # Landing navbar (scroll-aware glass morphism, auth-aware Sign In/Dashboard links)
+│   ├── client-portal/
+│   │   └── PlanGate.tsx        # Plan-gated module wrapper (qa_agent bypasses)
 │   ├── ProsBotPanel.tsx        # Conversational booking chatbot (9-state machine)
 │   ├── AgentPanel.tsx          # Right sidebar AI assistant (Gemini-powered)
 │   ├── EmailCaptureModal.tsx   # Exit-intent email capture modal
@@ -150,6 +224,8 @@ lead-engine/
 │   ├── filters.ts              # Client-side lead filtering + sorting
 │   ├── AppContext.tsx           # Global state: leads, messages, sequences, campaigns, clients
 │   ├── stripe.ts               # PLANS definitions, PlanKey type (billing via Xflow Pay)
+│   ├── xflow.ts                 # Payment reference generator + plan amount helpers
+│   ├── plan-gate.ts             # Client-safe canAccessModule (no server imports)
 │   ├── notify.ts               # Telegram + Resend email notifications (5 functions)
 │   ├── booking-chat.ts         # ProsBot conversational state machine (9 steps)
 │   ├── onboarding.ts           # Onboarding state machine, ICP option lists
@@ -472,6 +548,49 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 ---
 
 ## Session History & Accomplishments
+
+### 2026-05-16 (Evening) — RBAC System (Role-Based Access Control)
+
+**Phase 1 — Database + Middleware Foundation**:
+- `supabase/migrations/20260516120000_rbac_system.sql` — Added `qa_agent` role, new profile columns (plan_activated_at, plan_expires_at, modules_allowed, created_by, is_active, last_login_at, notes), client_workspaces table, qa_sessions table, updated RLS policies
+- `lib/types.ts` — Added UserRole, PlanKey, PLAN_MODULES, UserProfile, ClientWorkspace, QASession types
+- `lib/auth.ts` — Extended Role type with qa_agent, added isRole, canAccessModule, requireRoleApi helpers
+- `lib/plan-gate.ts` — Client-safe canAccessModule (no server imports — separate from auth.ts)
+- `lib/xflow.ts` — Payment reference generator (generatePaymentRef, getPlanAmount, getPlanInterval)
+- `middleware.ts` — Role-based routing: client → /client-portal, qa_agent → both surfaces, super_admin → full access
+
+**Phase 2 — User Management Panel (/admin/users)**:
+- `app/api/admin/users/route.ts` — GET list + POST create (with invite email + magic link)
+- `app/api/admin/users/[id]/route.ts` — GET/PATCH/DELETE single user (soft delete)
+- `app/api/admin/users/[id]/activate/route.ts` — POST activate plan (reuses finance-agent)
+- `app/api/admin/users/[id]/impersonate/route.ts` — POST generate impersonation magic link
+- `app/admin/users/page.tsx` — Full admin page: stat cards, role/status filters, users table, create user modal, activate/impersonate/deactivate actions
+- `app/admin/users/[id]/page.tsx` — Single user detail: 4 tabs (Profile, Plan & Billing, Activity, QA)
+- `components/layout/Sidebar.tsx` — Added Users link (super_admin only, with role detection)
+
+**Phase 3 — Client Portal (/client-portal)**:
+- `app/client-portal/layout.tsx` — Separate layout (no admin sidebar), plan badge, QA mode indicator
+- `app/client-portal/page.tsx` — Plan-gated overview: stat cards, hot leads preview, CSV export
+- `app/client-portal/leads/page.tsx` — Read-only lead table, score filters, pagination, CSV export
+- `app/client-portal/icebreakers/page.tsx` — Icebreaker viewer (PlanGate: Growth+), expandable messages
+- `app/client-portal/analytics/page.tsx` — Status breakdown + industry bars (PlanGate: Growth+)
+- `app/client-portal/sequences/page.tsx` — Sequence viewer (PlanGate: Scale only)
+- `app/client-portal/slack/page.tsx` — Slack webhook config (PlanGate: Growth+)
+- `app/client-portal/billing/page.tsx` — Plan details, payment ref copy, upgrade CTA
+- `app/client-portal/settings/page.tsx` — ICP preferences: industry chips, min score slider
+- `app/api/client-portal/me/route.ts` — GET profile + workspace + allowed modules
+- `app/api/client-portal/leads/route.ts` — GET leads scoped by user_id (pagination, score filter)
+- `app/api/client-portal/icebreakers/route.ts` — GET enriched leads with icebreaker messages
+- `components/client-portal/PlanGate.tsx` — Client component PlanGate (uses plan-gate.ts, not auth.ts)
+- `components/Shell.tsx` — Client-portal routes excluded from admin chrome
+
+**Phase 4 — QA Agent + Tests**:
+- `tests/scenarios/rbac.sh` — 10 RBAC boundary tests (redirects, API gating, public routes)
+- QA agent credential: qa@flow-forges.com (created post-deploy via admin API)
+- qa_agent role added to VALID_ROLES and middleware routing
+- QA agent bypasses all PlanGate checks, accesses both admin + client surfaces
+
+**Files**: 25 files created, 4 modified, 0 TypeScript errors, 48/48 pages compiled
 
 ### 2026-05-16 (Morning) — Booking System Full Upgrade + Tier 1 (Auth/Payments/Onboarding)
 

@@ -243,3 +243,81 @@ export interface AgentMessage {
   text: string;
   ts: string;
 }
+
+// ─── RBAC types ───────────────────────────────────────────────
+
+export type UserRole = 'super_admin' | 'client' | 'user' | 'qa_agent'
+
+export type PlanKey = 'diy' | 'growth' | 'scale'
+
+export const PLAN_MODULES: Record<PlanKey, string[]> = {
+  diy: [
+    'overview',
+    'leads-view',
+    'billing',
+  ],
+  growth: [
+    'overview',
+    'leads-view',
+    'leads-full',
+    'icebreakers',
+    'analytics',
+    'slack-digest',
+    'billing',
+    'settings',
+  ],
+  scale: [
+    'overview',
+    'leads-view',
+    'leads-full',
+    'icebreakers',
+    'analytics',
+    'analytics-ab',
+    'slack-digest',
+    'crm-sync',
+    'sequences',
+    'weekly-report',
+    'billing',
+    'settings',
+  ],
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  role: UserRole
+  plan: PlanKey | null
+  subscription_status: 'pending_payment' | 'active' | 'cancelled' | null
+  display_name: string | null
+  avatar_url: string | null
+  is_active: boolean
+  created_at: string
+  created_by: string | null
+  last_login_at: string | null
+  notes: string | null
+  subscription_activated_at: string | null
+  payment_ref: string | null
+  onboarding_complete: boolean
+}
+
+export interface ClientWorkspace {
+  id: string
+  client_user_id: string
+  plan: PlanKey
+  icp_config: Record<string, unknown>
+  leads_count: number
+  last_sync_at: string | null
+  slack_webhook: string | null
+  settings: Record<string, unknown>
+  created_at: string
+}
+
+export interface QASession {
+  id: string
+  surface: 'super_admin' | 'client_portal'
+  test_suite: string
+  status: 'running' | 'passed' | 'failed'
+  results: Record<string, unknown>
+  started_at: string
+  ended_at: string | null
+}

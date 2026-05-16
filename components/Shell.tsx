@@ -36,11 +36,15 @@ function LoadingScreen() {
 }
 
 const MARKETING_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding"];
+const CLEAN_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/client-portal"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { state } = useApp();
   const pathname = usePathname();
-  const isMarketing = MARKETING_ROUTES.includes(pathname);
+  const isMarketing = CLEAN_ROUTES.some(route => {
+    if (route === "/" && pathname === "/") return true;
+    return pathname === route || pathname.startsWith(route + "/");
+  });
 
   // Landing page — clean layout, no admin chrome
   if (isMarketing) {
