@@ -496,3 +496,34 @@ export async function batchUpdateLeadKanban(leadIds: string[], column: string, s
     .in("id", leadIds);
   if (error) throw error;
 }
+
+export async function findLeadByEmail(email: string): Promise<Lead | null> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .ilike("email", email)
+    .maybeSingle();
+  if (error || !data) return null;
+  return leadFromDB(data);
+}
+
+export async function findSequenceMessageByResendId(resendId: string): Promise<SequenceMessage | null> {
+  const { data, error } = await supabase
+    .from("sequence_messages")
+    .select("*")
+    .eq("resend_id", resendId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return sequenceMessageFromDB(data as unknown as Record<string, unknown>);
+}
+
+export async function updateSequenceMessageStatus(
+  id: string,
+  status: SequenceMessage["status"]
+): Promise<void> {
+  const { error } = await supabase
+    .from("sequence_messages")
+    .update({ status })
+    .eq("id", id);
+  if (error) throw error;
+}

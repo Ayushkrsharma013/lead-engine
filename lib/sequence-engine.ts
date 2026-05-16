@@ -5,6 +5,9 @@ import {
   insertSequenceMessage,
   getSequences,
   batchUpdateLeadKanban,
+  findLeadByEmail,
+  findSequenceMessageByResendId,
+  updateSequenceMessageStatus,
   logActivity,
 } from "./db";
 import { sendEmail, buildProspectingEmailHtml } from "./resend";
@@ -277,4 +280,67 @@ export async function processDueSteps(): Promise<CronResult> {
   const processed = executions.length;
   console.log(`[sequence-engine] Processed ${processed} — sent=${sent} skipped=${skipped} failed=${failed}`);
   return { processed, sent, skipped, failed, locked: false };
+}
+
+// ─── Inbound Reply Processing ─────────────────────────────────────────────────
+
+export interface InboundReplyResult {
+  matched: boolean;
+  leadId?: string;
+  leadName?: string;
+  messageMatched: boolean;
+  action: string;
+}
+
+export async function processInboundReply(params: {
+  fromEmail: string;
+  subject: string;
+  bodyText: string;
+  inReplyTo?: string;
+}): Promise<InboundReplyResult> {
+  const { fromEmail, subject, bodyText, inReplyTo } = params;
+
+  // 1. Match lead by email
+  const lead = await findLeadByEmail(fromEmail);
+  if (!lead) {
+    console.log(`[inbound] No lead found for email: ${fromEmail}`);
+    return { matched: false, messageMatched: false, action: "no_lead_match" };
+  }
+
+  // 2. Try to match the sequence message by Resend ID in In-Reply-To header
+  let messageMatched = false;
+  if (inReplyTo) {
+    const msg = await findSequenceMessageByResendId(inReplyTo);
+    if (msg) {
+      await updateSequenceMessageStatus(msg.id, "replied");
+      messageMatched = true;
+    }
+  }
+
+  // 3. Update lead kanban status
+  try {
+    await batchUpdateLeadKanban([lead.id], "Replied", "replied");
+  } catch (err) {
+    console.warn("[inbound] Kanban update failed:", err);
+  }
+
+  // 4. Log activity
+  const preview = bodyText.length > 200 ? bodyText.slice(0, 200) + "..." : bodyText;
+  try {
+    await logActivity({
+      type: "message_sent",
+      text: `${lead.name} replied: "${preview}"`,
+      leadId: lead.id,
+    });
+  } catch (err) {
+    console.warn("[inbound] Activity log failed:", err);
+  }
+
+  return {
+    matched: true,
+    leadId: lead.id,
+    leadName: lead.name,
+    messageMatched,
+    action: messageMatched ? "lead_matched_message_updated" : "lead_matched_no_message",
+  };
 }
