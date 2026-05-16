@@ -679,8 +679,8 @@ export default function LandingPage() {
         <div className="container">
           <div className="hero-content">
             <div className="hero-badge">
-              <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" width="16" height="16" style={{ borderRadius: 4 }} />
-              AI-Powered B2B Prospecting
+              <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width="14" height="14" style={{ borderRadius: 3 }} />
+              AI Lead Generation
             </div>
             <h1>
               <span className="typewriter-text hero-heading-main">
@@ -697,17 +697,17 @@ export default function LandingPage() {
               <span className="typewriter-cursor">|</span>
             </h1>
             <p className="hero-subtitle">
-              Prospecting OS is an automated B2B prospecting system built for agencies, SaaS founders, and consultants. It combines LinkedIn Sales Navigator with Gemini AI to find, score, enrich, and deliver your ideal decision-maker leads to Slack or Telegram — every day, without manual research. Built by{" "}
-              <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency" style={{ color: "var(--accent)" }}>Flow-Forges</a>.
+              LinkedIn Sales Navigator + Gemini AI — find, score, enrich, and deliver 500+ qualified B2B leads to your Slack or Telegram every morning. No manual research. Built by{" "}
+              <a href="https://flow-forges.com" aria-label="Flow-Forges" style={{ color: "var(--accent)", fontWeight: 500 }}>Flow-Forges</a>.
             </p>
             <div className="hero-ctas">
               <button className="btn-primary" onClick={openChat} aria-label="See how Prospecting OS automates B2B lead generation in 5 steps">See the AI Pipeline in Action <ArrowRight size={16} style={{ display: "inline" }} /></button>
               <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")} aria-label="View Prospecting OS pricing — from $2,500 one-time to fully managed AI SDR">See Pricing Plans <ArrowDown size={16} style={{ display: "inline" }} /></a>
             </div>
             <div className="hero-stats">
-              <div><span>500+</span> AI-Scored Leads/Month</div>
-              <div><span>97%</span> Less Manual Prospecting</div>
-              <div><span>4h</span> Live in 4 Hours (Basic)</div>
+              <div><span>500+</span> scored leads/month</div>
+              <div><span>97%</span> less manual work</div>
+              <div><span>4h</span> to go live</div>
             </div>
           </div>
 
@@ -720,11 +720,11 @@ export default function LandingPage() {
                 <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>qualified & scored</div>
               </div>
               <div className="pipeline-steps">
-                <div className="pipeline-step"><span className="step-num">1</span><span className="step-label">Source Leads (Sales Navigator)</span><span className="step-badge live">LIVE</span></div>
-                <div className="pipeline-step"><span className="step-num">2</span><span className="step-label">Filter Decision Makers</span><span className="step-badge ai">AI</span></div>
-                <div className="pipeline-step"><span className="step-num">3</span><span className="step-label">Score & Qualify (1–10)</span><span className="step-badge ai">AI</span></div>
-                <div className="pipeline-step"><span className="step-num">4</span><span className="step-label">Personalize Icebreaker</span><span className="step-badge ai">AI</span></div>
-                <div className="pipeline-step"><span className="step-num">5</span><span className="step-label">Alert & Deliver</span><span className="step-badge auto">AUTO</span></div>
+                <div className="pipeline-step"><span className="step-num">1</span>Source leads</div>
+                <div className="pipeline-step"><span className="step-num">2</span>Filter decision makers</div>
+                <div className="pipeline-step"><span className="step-num">3</span>AI score & qualify</div>
+                <div className="pipeline-step"><span className="step-num">4</span>Personalize icebreaker</div>
+                <div className="pipeline-step"><span className="step-num">5</span>Alert & deliver</div>
               </div>
             </div>
             <div className="floating-alert">
