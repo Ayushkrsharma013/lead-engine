@@ -69,8 +69,9 @@ Write the icebreaker:`
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.85,
-          maxOutputTokens: 120,
+          maxOutputTokens: 200,
           topP: 0.9,
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     }
@@ -82,9 +83,11 @@ Write the icebreaker:`
   }
 
   const geminiData = await geminiRes.json() as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    candidates?: Array<{ content?: { parts?: Array<{ thought?: boolean; text?: string }> } }>
   }
-  const icebreaker = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+  const parts = geminiData.candidates?.[0]?.content?.parts ?? []
+  const textPart = parts.find(p => !p.thought) ?? parts[0]
+  const icebreaker = textPart?.text?.trim()
 
   if (!icebreaker) {
     return NextResponse.json({ error: 'No output from AI. Try again.' }, { status: 500 })
