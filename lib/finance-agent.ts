@@ -210,50 +210,42 @@ async function generateFollowUpEmail(
   planName: string,
   daysAgo: number
 ): Promise<{ subject: string; preview: string; html: string }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      subject: `Still interested in Prospecting OS?`,
-      preview: `Hi there — just checking in on your Prospecting OS payment request from ${daysAgo} days ago.`,
-      html: `<p>Hi there,</p>
-      <p>Just checking in — your payment request for the <strong>${planName}</strong> plan is still active.
-      If you have questions or need the bank details resent, just reply here.</p>
-      <p>Best,<br>Ayush<br>Prospecting OS</p>`,
-    };
-  }
+  const fallback = {
+    subject: `Still interested in Prospecting OS?`,
+    preview: `Hi there — just checking in on your Prospecting OS payment request from ${daysAgo} days ago.`,
+    html: `<p>Hi there,</p>
+    <p>Just checking in — your payment request for the <strong>${planName}</strong> plan is still active.
+    If you have questions or need the bank details resent, just reply here.</p>
+    <p>Best,<br>Ayush<br>Prospecting OS</p>`,
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return fallback;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: `You are a concise, professional B2B sales assistant for Prospecting OS, an AI lead generation platform. Write short, warm, non-pushy follow-up emails. Return ONLY a JSON object with keys: subject (string), preview (string — first 2 sentences), html (full email HTML body, dark themed, inline styles only). No markdown.` }],
+          },
+          contents: [{
+            parts: [{ text: `Write a follow-up email for a prospect who requested payment info ${daysAgo} days ago but hasn't paid yet. Plan: ${planName}. Their email: ${clientEmail}. Be warm, brief (3 sentences max), mention the payment reference is still active, offer to answer questions. Sign off as "Ayush, Prospecting OS".` }],
+          }],
+          generationConfig: { maxOutputTokens: 600 },
+        }),
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 600,
-        system: `You are a concise, professional B2B sales assistant for Prospecting OS, an AI lead generation platform. Write short, warm, non-pushy follow-up emails. Return ONLY a JSON object with keys: subject (string), preview (string — first 2 sentences), html (full email HTML body, dark themed, inline styles only).`,
-        messages: [{
-          role: "user",
-          content: `Write a follow-up email for a prospect who requested payment info ${daysAgo} days ago but hasn't paid yet. Plan: ${planName}. Their email: ${clientEmail}. Be warm, brief (3 sentences max), mention the payment reference is still active, offer to answer questions. Sign off as "Ayush, Prospecting OS".`,
-        }],
-      }),
-    });
+    );
 
-    const data = (await response.json()) as { content?: Array<{ text?: string }> };
-    const text = data.content?.[0]?.text ?? "";
+    const data = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     const clean = text.replace(/```json|```/g, "").trim();
     return JSON.parse(clean) as { subject: string; preview: string; html: string };
   } catch {
-    return {
-      subject: `Still interested in Prospecting OS?`,
-      preview: `Hi there — just checking in on your Prospecting OS payment request from ${daysAgo} days ago.`,
-      html: `<p>Hi there,</p>
-      <p>Just checking in — your payment request for the <strong>${planName}</strong> plan is still active.
-      If you have questions or need the bank details resent, just reply here.</p>
-      <p>Best,<br>Ayush<br>Prospecting OS</p>`,
-    };
+    return fallback;
   }
 }
 
@@ -397,32 +389,30 @@ async function generateMonthlyNarrative(
   pendingCount: number,
   date: Date,
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return `MRR is ${fmt(mrr)} with ${activeCount} active clients. ${pendingCount} pending payments need follow-up.`;
-  }
+  const fallback = `MRR is ${fmt(mrr)} with ${activeCount} active clients. ${pendingCount} pending payments need follow-up.`;
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return fallback;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "You are a concise financial analyst. Give a 2-sentence business insight based on the metrics. Be specific, actionable, and direct. No fluff." }],
+          },
+          contents: [{
+            parts: [{ text: `Month: ${date.toLocaleString("en-IN", { month: "long" })}. MRR: $${mrr}. Active clients: ${activeCount}. New this month: ${newCount}. Pending payment: ${pendingCount}. Give me 2 sentences of insight.` }],
+          }],
+          generationConfig: { maxOutputTokens: 200 },
+        }),
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 200,
-        system: "You are a concise financial analyst. Give a 2-sentence business insight based on the metrics. Be specific, actionable, and direct. No fluff.",
-        messages: [{
-          role: "user",
-          content: `Month: ${date.toLocaleString("en-IN", { month: "long" })}. MRR: $${mrr}. Active clients: ${activeCount}. New this month: ${newCount}. Pending payment: ${pendingCount}. Give me 2 sentences of insight.`,
-        }],
-      }),
-    });
-    const data = (await response.json()) as { content?: Array<{ text?: string }> };
-    return data.content?.[0]?.text ?? `MRR is ${fmt(mrr)} with ${activeCount} active clients.`;
+    );
+    const data = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? fallback;
   } catch {
-    return `MRR is ${fmt(mrr)} with ${activeCount} active clients. ${pendingCount} pending payments need follow-up.`;
+    return fallback;
   }
 }
