@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Key, Sparkles, Copy, BookmarkPlus, RefreshCw,
-  ChevronDown, Check, AlertCircle, Loader2,
+  ChevronDown, Check, AlertCircle, Loader2, FlaskConical,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -60,6 +60,8 @@ export default function MessageLabPage() {
   const [subject, setSubject] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [variantOutputs, setVariantOutputs] = useState<string[]>([]);
+  const [generatingVariants, setGeneratingVariants] = useState(false);
 
   const [history, setHistory] = useState<Message[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -139,6 +141,63 @@ Be direct, human, value-first. No buzzwords.` }],
       showToast(err instanceof Error ? err.message : "Error", "error");
     }
     setGenerating(false);
+  };
+
+  const handleGenerateVariants = async () => {
+    const key = getActiveApiKey();
+    if (!key) { setError("API key required — add your Gemini key above."); return; }
+    if (!selectedLead) { setError("Select a lead first."); return; }
+    setError("");
+    setGeneratingVariants(true);
+    setVariantOutputs([]);
+
+    // Generate 2 variants with different tone/approach
+    const variantPrompts = [
+      { label: "A (Direct + Value-first)", tone: "Direct" as Tone, instruction: "Be direct and value-first. Lead with a specific insight about their company." },
+      { label: "B (Consultative + Question-led)", tone: "Consultative" as Tone, instruction: "Be consultative. Ask a thought-provoking question about their industry or role." },
+    ];
+
+    try {
+      const results: string[] = [];
+      for (const vp of variantPrompts) {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: `You are an expert B2B sales copywriter. ${vp.instruction} Never use clichés. Be specific. Keep under 500 chars.` }],
+              },
+              contents: [{ parts: [{ text: buildPrompt(selectedLead, messageType, vp.tone, offer) }] }],
+              generationConfig: { maxOutputTokens: 500 },
+            }),
+          },
+        );
+
+        if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
+        const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        results.push(text);
+      }
+
+      setVariantOutputs(results);
+      // Save both as messages
+      for (const text of results) {
+        await addMessage({
+          leadId: selectedLead.id,
+          subject: messageType.replace(/_/g, " "),
+          body: text,
+          tone: "Professional",
+          messageType: messageType,
+        });
+      }
+      showToast("A/B variants generated and saved");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    }
+    setGeneratingVariants(false);
   };
 
   const typewriterText = (text: string) => {
@@ -378,6 +437,26 @@ Be direct, human, value-first. No buzzwords.` }],
                 <><Sparkles size={14} /> Generate with Gemini</>
               )}
             </button>
+
+            {/* A/B Test Button */}
+            <button
+              onClick={handleGenerateVariants}
+              disabled={generatingVariants || generating || !connected || !selectedLead}
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+              style={{
+                background: generatingVariants
+                  ? "rgba(124,58,237,0.08)"
+                  : "linear-gradient(90deg, rgba(124,58,237,0.14), rgba(124,58,237,0.06))",
+                color: "var(--accent-purple)",
+                border: "1px solid rgba(124,58,237,0.22)",
+              }}
+            >
+              {generatingVariants ? (
+                <><Loader2 size={14} className="animate-spin" /> Generating A/B variants…</>
+              ) : (
+                <><FlaskConical size={14} /> Generate A/B Test (2 variants)</>
+              )}
+            </button>
           </div>
         </div>
 
@@ -423,6 +502,35 @@ Be direct, human, value-first. No buzzwords.` }],
                 </p>
               )}
             </div>
+
+            {/* A/B Variant Outputs */}
+            {variantOutputs.length === 2 && (
+              <div className="rounded-xl p-5" style={{ background: "rgba(124,58,237,0.04)", border: "1px solid rgba(124,58,237,0.12)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+                <div className="flex items-center gap-1.5 mb-3">
+                  <FlaskConical size={12} style={{ color: "var(--accent-purple)" }} />
+                  <h3 className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--accent-purple)" }}>
+                    A/B Variants — copy these into Sequence Builder variant fields
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {variantOutputs.map((text, i) => (
+                    <div key={i} className="rounded-lg p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full mb-2 inline-block" style={{ background: "rgba(124,58,237,0.12)", color: "var(--accent-purple)" }}>
+                        Variant {String.fromCharCode(65 + i)}
+                      </span>
+                      <p className="text-[12px] whitespace-pre-wrap mt-1.5 leading-relaxed" style={{ color: "var(--ink-2)" }}>{text}</p>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(text); showToast(`Variant ${String.fromCharCode(65 + i)} copied`, "success"); }}
+                        className="mt-2 text-[10px] px-2 py-1 rounded-md font-medium transition-all"
+                        style={{ color: "var(--ink-3)", border: "1px solid var(--line)" }}
+                      >
+                        <Copy size={10} className="inline mr-1" /> Copy
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             {output && (

@@ -74,10 +74,17 @@ export async function launchSequence(sequenceId: string, userId?: string): Promi
     return { sequence, executions: [], alreadyRunning };
   }
 
-  const rows = newLeadIds.map(leadId => ({
+  // Round-robin variant assignment: A, B, C... based on step's variants array
+  const firstStep = sequence.steps[0];
+  const variantLabels = firstStep?.variants && firstStep.variants.length > 0
+    ? firstStep.variants.map((_, i) => String.fromCharCode(65 + i)) // A, B, C...
+    : ["A"];
+
+  const rows = newLeadIds.map((leadId, idx) => ({
     sequence_id: sequenceId,
     lead_id: leadId,
     status: "active",
+    variant: variantLabels[idx % variantLabels.length],
     user_id: userId || null,
   }));
 
@@ -92,6 +99,7 @@ export async function launchSequence(sequenceId: string, userId?: string): Promi
     leadId: String(r.lead_id),
     currentStep: Number(r.current_step ?? 0),
     status: String(r.status) as SequenceExecution["status"],
+    variant: String(r.variant || "A"),
     startedAt: String(r.started_at || new Date().toISOString()),
     lastActionAt: String(r.last_action_at || new Date().toISOString()),
     createdAt: String(r.created_at || ""),
@@ -196,6 +204,7 @@ export async function processDueSteps(): Promise<CronResult> {
         subject: step.type,
         body: step.template,
         status: "skipped",
+        variant: exec.variant,
       });
       const nextStep = exec.currentStep + 1;
       if (nextStep >= sequence.steps.length) {
@@ -212,14 +221,21 @@ export async function processDueSteps(): Promise<CronResult> {
     if (!leadRow) { skipped++; continue; }
     const lead = leadFromRow(leadRow);
 
+    // Pick template based on variant assignment
+    const variantIdx = exec.variant ? exec.variant.charCodeAt(0) - 65 : 0;
+    const variantTemplate = step.variants && step.variants.length > variantIdx
+      ? step.variants[variantIdx]
+      : null;
+    const template = variantTemplate || step.template;
+
     let subject = step.type;
-    let body = resolveTemplate(step.template, lead);
+    let body = resolveTemplate(template, lead);
 
     // Cold email has Subject: prefix in template
-    if (step.template.startsWith("Subject:")) {
-      const newlineIdx = step.template.indexOf("\n");
-      subject = resolveTemplate(step.template.slice(0, newlineIdx).replace("Subject:", "").trim(), lead);
-      body = resolveTemplate(step.template.slice(newlineIdx + 1), lead);
+    if (template.startsWith("Subject:")) {
+      const newlineIdx = template.indexOf("\n");
+      subject = resolveTemplate(template.slice(0, newlineIdx).replace("Subject:", "").trim(), lead);
+      body = resolveTemplate(template.slice(newlineIdx + 1), lead);
     }
 
     const html = buildProspectingEmailHtml({ leadName: lead.name, subject, body });
@@ -242,6 +258,7 @@ export async function processDueSteps(): Promise<CronResult> {
         body,
         status: "sent",
         resendId: result.resendId,
+        variant: exec.variant,
       });
       sent++;
       contactedLeadIds.push(exec.leadId);
@@ -254,6 +271,7 @@ export async function processDueSteps(): Promise<CronResult> {
         subject,
         body,
         status: "failed",
+        variant: exec.variant,
       });
       failed++;
     }

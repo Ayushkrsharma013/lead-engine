@@ -106,6 +106,7 @@ export interface SequenceStep {
   type: string;
   template: string;
   active: boolean;
+  variants?: string[];
 }
 
 export interface Sequence {
@@ -123,6 +124,7 @@ export interface SequenceExecution {
   leadId: string;
   currentStep: number;
   status: "active" | "paused" | "completed" | "cancelled";
+  variant: string;
   startedAt: string;
   lastActionAt: string;
   createdAt?: string;

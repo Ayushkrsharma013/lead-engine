@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play,
+  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -50,6 +50,8 @@ export default function SequencesPage() {
   const [launching, setLaunching] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [pausing, setPausing] = useState<string | null>(null);
+  const [variantOpen, setVariantOpen] = useState<Set<number>>(new Set());
+  const [variantStats, setVariantStats] = useState<Array<{ variant: string; sent: number; replied: number; replyRate: number }>>([]);
 
   const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
     dispatch({ type: "SET_TOAST", payload: { msg, type } });
@@ -78,6 +80,11 @@ export default function SequencesPage() {
       const exs = await getSequenceExecutions(sequenceId);
       setExecutions(exs);
     } catch { setExecutions([]); }
+    try {
+      const res = await fetch(`/prospecting-os/api/analytics/variant-stats?sequenceId=${sequenceId}`);
+      const data = await res.json() as { stats?: Array<{ variant: string; sent: number; replied: number; replyRate: number }> };
+      if (data.stats) setVariantStats(data.stats);
+    } catch { setVariantStats([]); }
   };
 
   const handleLaunch = async () => {
@@ -326,6 +333,43 @@ export default function SequencesPage() {
             </div>
           </div>
 
+          {/* ── Variant Stats ── */}
+          {variantStats.length > 0 && (
+            <div
+              className="rounded-xl p-4"
+              style={{ background: cardBg, border: "1px solid rgba(124,58,237,0.15)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}
+            >
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.14em] mb-3 select-none" style={{ color: "var(--accent-purple)", opacity: 0.8 }}>
+                <FlaskConical size={11} className="inline mr-1" />
+                A/B Variant Performance
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {variantStats.map(vs => (
+                  <div
+                    key={vs.variant}
+                    className="rounded-lg p-3 text-center"
+                    style={{
+                      background: vs.replyRate >= (variantStats.reduce((max, v) => v.replyRate > max ? v.replyRate : max, 0)) && vs.sent > 0
+                        ? "rgba(0,255,136,0.06)" : "var(--surface-2)",
+                      border: vs.replyRate >= (variantStats.reduce((max, v) => v.replyRate > max ? v.replyRate : max, 0)) && vs.sent > 0
+                        ? "1px solid rgba(0,255,136,0.18)" : "1px solid var(--line)",
+                    }}
+                  >
+                    <p className="text-[13px] font-bold" style={{ color: "var(--accent-purple)" }}>
+                      Variant {vs.variant}
+                    </p>
+                    <p className="text-[20px] font-bold mt-1 tabular-nums" style={{ color: "var(--ink)" }}>
+                      {vs.replyRate}%
+                    </p>
+                    <p className="text-[9px] mt-0.5" style={{ color: "var(--ink-4)" }}>
+                      {vs.replied}/{vs.sent} replies
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Execution Status ── */}
           {editingId && executions.length > 0 && (
             <div
@@ -548,6 +592,72 @@ export default function SequencesPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* A/B Variant Toggle */}
+                  <button
+                    onClick={() => setVariantOpen(prev => {
+                      const next = new Set(prev);
+                      next.has(idx) ? next.delete(idx) : next.add(idx);
+                      return next;
+                    })}
+                    className="flex items-center gap-1.5 mt-3 text-[10px] font-medium transition-all duration-200"
+                    style={{ color: step.variants?.length ? "var(--accent-purple)" : "var(--ink-4)" }}
+                  >
+                    <FlaskConical size={11} />
+                    A/B Variants {step.variants?.length ? `(${step.variants.length + 1} total)` : ""}
+                    {variantOpen.has(idx) ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                  </button>
+
+                  {variantOpen.has(idx) && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-[9px]" style={{ color: "var(--ink-4)" }}>
+                        Variants are assigned round-robin to leads on launch. Leave empty to use the main template for everyone (no A/B testing).
+                      </p>
+                      {(step.variants || [""]).map((variantText, vi) => (
+                        <div key={vi} className="space-y-1">
+                          <span className="text-[9px] font-bold" style={{ color: "var(--accent-purple)" }}>
+                            Variant {String.fromCharCode(66 + vi)} {/* B, C, D... */}
+                          </span>
+                          <textarea
+                            value={variantText}
+                            onChange={e => {
+                              const newVariants = [...(step.variants || [""])];
+                              newVariants[vi] = e.target.value;
+                              if (newVariants[vi].trim() === "" && vi === newVariants.length - 1) {
+                                // Remove empty last variant
+                                updateStep(idx, { variants: newVariants.slice(0, -1).filter(v => v.trim()) });
+                              } else {
+                                updateStep(idx, { variants: newVariants.filter(v => v.trim()) });
+                              }
+                            }}
+                            rows={2}
+                            className="w-full rounded-lg px-3 py-2 text-[12px] outline-none transition-all duration-200 resize-y font-mono"
+                            style={{
+                              color: "var(--ink)", background: "var(--surface-2)",
+                              border: "1px solid var(--line)",
+                            }}
+                            onFocus={e => (e.currentTarget as HTMLTextAreaElement).style.borderColor = "var(--accent-purple)"}
+                            onBlur={e => (e.currentTarget as HTMLTextAreaElement).style.borderColor = "var(--line)"}
+                            placeholder={`Alternative template for variant ${String.fromCharCode(66 + vi)}...`}
+                          />
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const newVariants = [...(step.variants || [""]), ""];
+                          updateStep(idx, { variants: newVariants });
+                        }}
+                        className="text-[10px] px-2 py-1 rounded-md font-medium transition-all duration-200"
+                        style={{
+                          background: "rgba(124,58,237,0.06)",
+                          border: "1px solid rgba(124,58,237,0.15)",
+                          color: "var(--accent-purple)",
+                        }}
+                      >
+                        + Add Variant
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

@@ -130,6 +130,7 @@ function sequenceExecutionFromDB(row: Record<string, unknown>): SequenceExecutio
     leadId: String(row.lead_id || ""),
     currentStep: Number(row.current_step ?? 0),
     status: String(row.status || "active") as SequenceExecution["status"],
+    variant: String(row.variant || "A"),
     startedAt: row.started_at ? String(row.started_at) : new Date().toISOString(),
     lastActionAt: row.last_action_at ? String(row.last_action_at) : new Date().toISOString(),
     createdAt: row.created_at ? String(row.created_at) : undefined,
@@ -526,4 +527,36 @@ export async function updateSequenceMessageStatus(
     .update({ status })
     .eq("id", id);
   if (error) throw error;
+}
+
+export interface VariantStat {
+  variant: string;
+  sent: number;
+  replied: number;
+  replyRate: number;
+}
+
+export async function getVariantStats(sequenceId: string): Promise<VariantStat[]> {
+  const { data, error } = await supabase
+    .from("sequence_messages")
+    .select("variant, status")
+    .not("variant", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  const groups: Record<string, { sent: number; replied: number }> = {};
+  for (const row of data as Array<{ variant: string; status: string }>) {
+    const v = row.variant || "unknown";
+    if (!groups[v]) groups[v] = { sent: 0, replied: 0 };
+    groups[v].sent++;
+    if (row.status === "replied") groups[v].replied++;
+  }
+
+  return Object.entries(groups).map(([variant, counts]) => ({
+    variant,
+    sent: counts.sent,
+    replied: counts.replied,
+    replyRate: counts.sent > 0 ? Math.round((counts.replied / counts.sent) * 100) : 0,
+  }));
 }
