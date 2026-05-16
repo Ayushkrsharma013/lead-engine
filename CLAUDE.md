@@ -57,7 +57,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | Fonts | Landing: Cabinet Grotesk + JetBrains Mono + Instrument Serif. App: Geist + Geist Mono |
 | Database | Supabase (Postgres) — shared with FlowForges |
 | Auth | Supabase SSR (`@supabase/ssr`) — cookie-based, mirrors mark1 middleware pattern |
-| Payments | Stripe Checkout + webhooks — subscription management |
+| Payments | Xflow Pay — manual activation via Finance Agent |
 | State | React Context + useReducer (`lib/AppContext.tsx`) |
 | Realtime | Supabase Realtime on leads table |
 | Icons | lucide-react ^0.400.0 (outline variants only, 16-18px; no emoji characters) |
@@ -85,7 +85,7 @@ lead-engine/
 ├── supabase-migration.sql        # Full DB schema + RLS policies + auth columns
 ├── .env.example                  # All required environment variables
 ├── .mcp.json                     # MCP servers: ruflo + supabase
-├── package.json                  # Dependencies including @supabase/ssr, stripe
+├── package.json                  # Dependencies including @supabase/ssr, recharts
 ├── app/
 │   ├── layout.tsx              # Root layout — AppProvider + Shell + font imports
 │   ├── page.tsx                # Marketing landing page (3 tiers, ROI calculator, ProsBot)
@@ -113,8 +113,6 @@ lead-engine/
 │       ├── leads/import/route.ts  # POST — import past Apify runs
 │       ├── leads/capture/route.ts # POST — email capture
 │       ├── appointments/route.ts  # GET/POST/PATCH — booking CRUD with validation
-│       ├── stripe/checkout/route.ts # POST — create Stripe Checkout session
-│       ├── stripe/webhook/route.ts  # POST — Stripe event handler
 │       ├── auth/google-calendar/   # Google Calendar OAuth (connect/status/callback)
 │       ├── outreach/               # OpenOutreach status/sync endpoints
 │       ├── agent/telegram/route.ts # Telegram bot webhook
@@ -151,7 +149,7 @@ lead-engine/
 │   ├── storage.ts              # validateLead, sanitizeLead, generateCSV, stableLeadId
 │   ├── filters.ts              # Client-side lead filtering + sorting
 │   ├── AppContext.tsx           # Global state: leads, messages, sequences, campaigns, clients
-│   ├── stripe.ts               # Stripe SDK init, PLANS definitions, pricing constants
+│   ├── stripe.ts               # PLANS definitions, PlanKey type (billing via Xflow Pay)
 │   ├── notify.ts               # Telegram + Resend email notifications (5 functions)
 │   ├── booking-chat.ts         # ProsBot conversational state machine (9 steps)
 │   ├── onboarding.ts           # Onboarding state machine, ICP option lists
@@ -437,17 +435,11 @@ text-accent-blue → var(--accent-blue)
 | `NOTIFY_EMAIL` | Vercel + `.env.local` | Admin email for booking notifications |
 | `TELEGRAM_BOT_TOKEN` | Vercel + `.env.local` | Optional — Telegram booking alerts |
 | `TELEGRAM_CHAT_ID` | Vercel + `.env.local` | Optional — Telegram chat for booking alerts |
-| `STRIPE_SECRET_KEY` | Vercel + `.env.local` | Stripe server-side key |
-| `STRIPE_WEBHOOK_SECRET` | Vercel + `.env.local` | Stripe webhook signing secret |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Vercel + `.env.local` | Stripe client-side key |
-| `STRIPE_PRICE_DIY` | Vercel + `.env.local` | Stripe Price ID for DIY Setup ($1,500) |
-| `STRIPE_PRICE_GROWTH` | Vercel + `.env.local` | Stripe Price ID for Managed Growth ($3,500/mo) |
-| `STRIPE_PRICE_SCALE` | Vercel + `.env.local` | Stripe Price ID for Managed Scale ($12,500/mo) |
 | `GOOGLE_CLIENT_ID` | Vercel + `.env.local` | Optional — Google Calendar OAuth |
 | `GOOGLE_CLIENT_SECRET` | Vercel + `.env.local` | Optional — Google Calendar OAuth |
 | `GOOGLE_CALENDAR_REFRESH_TOKEN` | Vercel + `.env.local` | Optional — Google Calendar refresh token |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Vercel + `.env.local` | Optional — Cloudflare Turnstile CAPTCHA |
-| `NEXT_PUBLIC_SITE_URL` | Vercel + `.env.local` | Canonical URL for Stripe redirects + OAuth |
+| `NEXT_PUBLIC_SITE_URL` | Vercel + `.env.local` | Canonical URL for OAuth callbacks |
 | `CRON_SECRET` | Vercel + `.env.local` | Optional — bearer token to secure cron endpoints |
 | `SENTRY_DSN` | Vercel + `.env.local` | Optional — Sentry DSN for error forwarding |
 
@@ -473,7 +465,6 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 - **Build command**: `npm run build`
 - **Required env vars on Vercel**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APIFY_API_KEY`
 - **Auth env vars**: `NEXT_PUBLIC_SITE_URL` (for redirect URLs)
-- **Stripe env vars**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_DIY`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE`
 - **Email/notify env vars**: `RESEND_API_KEY`, `NOTIFY_EMAIL`, `TELEGRAM_BOT_TOKEN` (optional), `TELEGRAM_CHAT_ID` (optional)
 - **Google Calendar env vars**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALENDAR_REFRESH_TOKEN` (optional)
 - **CAPTCHA env var**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (optional — Cloudflare Turnstile)
@@ -488,7 +479,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 **Auth (Phase 1)**: middleware.ts with SSR cookies, login/signup pages, LogoutButton, x-user-* headers.
 
-**Stripe (Phase 2)**: Checkout sessions, webhook handler, 3 plan definitions, profiles subscription fields.
+**Payments (Phase 2)**: Xflow Pay integration, 3 plan definitions, manual activation via Finance Agent.
 
 **Onboarding (Phase 3)**: 4-step wizard (Welcome → ICP → API Keys → Plan & Pay), skip option.
 
@@ -532,7 +523,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 - New DB table: `error_logs` (RLS: super_admin only)
 
 **Database migrations executed** (via Supabase MCP):
-- `profiles`: added subscription_status, stripe_customer_id, plan, onboarding_complete, icp_preferences, apify_key
+- `profiles`: added subscription_status, plan, onboarding_complete, icp_preferences, apify_key, payment_ref, payment_method, subscription_activated_at, xflow_transaction_id
 - RLS enabled on pricing_tiers + quote_requests
 - Fixed profiles super_admin policy (was reading insecure user_metadata from JWT)
 
@@ -546,12 +537,10 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 | # | Action | Where |
 |---|--------|-------|
-| 1 | Set Stripe environment variables | Vercel project settings |
-| 2 | Create Stripe products/prices | Stripe dashboard |
-| 3 | Enable leaked password protection | Supabase Auth dashboard |
-| 4 | Configure Resend inbound webhook domain | Resend dashboard → point to `/api/inbound-email` |
-| 5 | Set CRON_SECRET env var | Vercel (optional, secures cron endpoint) |
-| 6 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) |
+| 1 | Enable leaked password protection | Supabase Auth dashboard |
+| 2 | Configure Resend inbound webhook domain | Resend dashboard → point to `/api/inbound-email` |
+| 3 | Set CRON_SECRET env var | Vercel (optional, secures cron endpoint) |
+| 4 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) |
 
 ### Future enhancements (not yet planned)
 
