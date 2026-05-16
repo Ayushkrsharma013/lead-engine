@@ -69,6 +69,7 @@ export async function middleware(req: NextRequest) {
     "/login",
     "/signup",
     "/onboarding",
+    "/checkout",
     "/tools",
   ];
 

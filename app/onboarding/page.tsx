@@ -71,7 +71,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (data.ok) {
-        router.push("/prospecting-os/dashboard?checkout=manual");
+        router.push("/prospecting-os/checkout");
       } else {
         setError(data.error || "Failed to save. Please try again.");
       }
