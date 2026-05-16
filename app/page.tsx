@@ -210,49 +210,38 @@ export default function LandingPage() {
     setChatMessages(prev => [...prev, { text, type: "user" }]);
   }, []);
 
-  const handleUserMessage = useCallback((text: string) => {
+  const handleUserMessage = useCallback(async (text: string) => {
     addUserMessage(text);
     setTyping(true);
 
-    // Reset to idle if user types "reset" or starts over
-    const clean = text.toLowerCase().trim();
-    if (clean === "reset" || clean === "start over") {
-      bookingRef.current = { step: "idle", data: {} };
-      setBookingStep("idle");
-      setBookingData({});
-    }
+    // Build conversation history for AI context (last 8 messages)
+    const history = chatMessages.concat([{ text, type: "user" as const }]).slice(-8).map(m => ({
+      role: m.type === "bot" ? "model" : "user",
+      text: m.text.replace(/<[^>]*>/g, ""), // strip HTML tags
+    }));
 
-    const current = bookingRef.current;
-    const result = getNextStep(current.step, current.data, text);
+    try {
+      const res = await fetch("/prospecting-os/api/chat/bot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = await res.json();
+      const reply = data.text || "I'm having trouble thinking right now. Try again?";
 
-    // Update ref + state
-    bookingRef.current = { step: result.step, data: result.data };
-    setBookingStep(result.step);
-    setBookingData(result.data);
+      // Check if bot suggests booking
+      const isBookingSuggestion = /book.*call|free.*demo|strategy.*call|BOOK_DEMO/i.test(reply);
+      const quickReplies = isBookingSuggestion
+        ? ["Book a Free Strategy Call", "Tell me about pricing", "How does scoring work?"]
+        : undefined;
 
-    // If booking completed, try to persist
-    if (result.step === "done" && result.data.email) {
-      try {
-        fetch("/api/appointments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: result.data.name,
-            email: result.data.email,
-            company: result.data.company,
-            date: result.data.date,
-            time: result.data.time,
-            notes: "Booked via Pros Bot chat",
-          }),
-        });
-      } catch { /* non-critical */ }
-    }
-
-    setTimeout(() => {
       setTyping(false);
-      addBotMessage(result.botMessage, result.step === "done");
-    }, 700 + Math.random() * 600);
-  }, [addUserMessage, addBotMessage]);
+      addBotMessage({ text: reply, quickReplies }, false);
+    } catch {
+      setTyping(false);
+      addBotMessage({ text: "I'm having trouble connecting. Try again in a moment.", quickReplies: ["How does it work?", "What are the plans?", "Book a Free Strategy Call"] }, false);
+    }
+  }, [addUserMessage, addBotMessage, chatMessages]);
 
   useEffect(() => {
     chatMessagesRef.current?.scrollTo({ top: chatMessagesRef.current.scrollHeight, behavior: "smooth" });
@@ -640,7 +629,7 @@ export default function LandingPage() {
           </a>
           <ul className="nav-links">
             <li><a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a></li>
-            <li><Link href="/pricing">Pricing</Link></li>
+            <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
             <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a></li>
             <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
           </ul>
@@ -668,7 +657,7 @@ export default function LandingPage() {
       {/* Mobile Menu */}
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`}>
         <a href="#how-it-works" onClick={e => { smoothScroll(e, "#how-it-works"); setMobileOpen(false); }}>How It Works</a>
-        <Link href="/pricing" onClick={() => setMobileOpen(false)}>Pricing</Link>
+        <a href="#pricing" onClick={e => { smoothScroll(e, "#pricing"); setMobileOpen(false); }}>Pricing</a>
         <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI Calculator</a>
         <a href="#faq" onClick={e => { smoothScroll(e, "#faq"); setMobileOpen(false); }}>FAQ</a>
         <Link href="/book" className="nav-cta" style={{ textDecoration: "none" }} onClick={() => setMobileOpen(false)}>Book a Free Strategy Call</Link>
@@ -1368,7 +1357,7 @@ export default function LandingPage() {
                       <button
                         key={j}
                         className="chat-bubble-reply-btn"
-                        onClick={() => handleUserMessage(qr)}
+                        onClick={() => { if (qr === "Book a Free Strategy Call") { window.location.href = "/prospecting-os/book"; } else { handleUserMessage(qr); } }}
                       >
                         {qr === "Book a Free Strategy Call" && <Calendar size={11} />}
                         {qr === "How does the AI scoring work?" && <Sparkles size={11} />}
