@@ -7,7 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
-  ChevronLeft, ChevronRight, Settings2, Sparkles, Send,
+  ChevronLeft, ChevronRight, Settings2, Sparkles, Send, Bot,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -43,6 +43,12 @@ const NAV_GROUPS: { label: string; items: NavItemDef[] }[] = [
     label: "Outreach",
     items: [
       { module: "outreach", label: "LinkedIn Outreach", icon: Send, href: "/outreach" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
     ],
   },
 ];
