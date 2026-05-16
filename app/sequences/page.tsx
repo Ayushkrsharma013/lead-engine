@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp,
+  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp, Zap,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -107,6 +107,19 @@ export default function SequencesPage() {
       if (exs && exs.length > 0) setExecutions(prev => [...prev, ...exs]);
     } catch { showToast("Failed to launch", "error"); }
     setLaunching(false);
+  };
+
+  const [runningEngine, setRunningEngine] = useState(false);
+  const handleRunEngine = async () => {
+    setRunningEngine(true);
+    try {
+      const res = await fetch("/prospecting-os/api/cron/sequence-runner");
+      const data = await res.json() as { processed?: number; sent?: number; skipped?: number; failed?: number; locked?: boolean };
+      if (data.locked) { showToast("Engine is already running — wait a moment", "warn"); return; }
+      showToast(`Sent: ${data.sent || 0} · Skipped: ${data.skipped || 0} · Failed: ${data.failed || 0}`);
+      if (editingId) fetchExecutions(editingId);
+    } catch { showToast("Engine run failed", "error"); }
+    setRunningEngine(false);
   };
 
   const handleCancelExec = async (executionId?: string) => {
@@ -268,6 +281,18 @@ export default function SequencesPage() {
                 }}
               >
                 <Play size={14} /> {launching ? "Launching..." : "Launch"}
+              </button>
+              <button
+                onClick={handleRunEngine}
+                disabled={runningEngine}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-40"
+                style={{
+                  background: "linear-gradient(90deg, rgba(0,255,136,0.10), rgba(0,255,136,0.05))",
+                  color: "var(--accent-green)",
+                  border: "1px solid rgba(0,255,136,0.18)",
+                }}
+              >
+                <Zap size={14} /> {runningEngine ? "Running..." : "Run Engine"}
               </button>
               <div className="relative">
                 <button

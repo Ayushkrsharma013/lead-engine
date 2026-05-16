@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/prospecting-os/api/cron/sequence-runner",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/prospecting-os/api/agent/finance/cron",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
