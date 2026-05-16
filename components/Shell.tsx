@@ -35,7 +35,7 @@ function LoadingScreen() {
   );
 }
 
-const MARKETING_ROUTES = ["/", "/book"];
+const MARKETING_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { state } = useApp();

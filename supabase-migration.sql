@@ -59,3 +59,30 @@ CREATE POLICY IF NOT EXISTS "anon_update_appointments" ON appointments FOR UPDAT
 ALTER TABLE email_captures ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_insert_email_captures" ON email_captures FOR INSERT WITH CHECK (true);
 CREATE POLICY "anon_select_email_captures" ON email_captures FOR SELECT USING (true);
+
+-- 10. Auth migration — profiles table enhancements for Tier 1 (shared with mark1)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS icp_preferences JSONB DEFAULT '{}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS apify_key TEXT;
+
+-- 11. Add user_id to data tables for RLS-based data isolation
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE sequences ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+
+-- 12. RLS policies for data tables (user-scoped)
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "user_leads" ON leads FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "user_messages" ON messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE sequences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "user_sequences" ON sequences FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "user_campaigns" ON campaigns FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
