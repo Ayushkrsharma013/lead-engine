@@ -8,6 +8,9 @@ import {
   ArrowDown, Menu, X, Send, Sparkles, Calendar, CheckCircle2,
 } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
+import { EmailCaptureForm } from "@/components/landing/EmailCaptureForm";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
+import { ScrollProgressBar } from "@/components/landing/ScrollProgressBar";
 import {
   type BookingStep,
   type BookingData,
@@ -134,9 +137,10 @@ export default function LandingPage() {
   }, [theme]);
 
   /* ─── Typewriter ───────────────────────────────────────────────────────── */
-  const [typewriterText, setTypewriterText] = useState("");
+  const [typewriterText, setTypewriterText] = useState(FULL_TEXT);
 
   useEffect(() => {
+    setTypewriterText("");
     let i = 0;
     const timer = setInterval(() => {
       if (i < FULL_TEXT.length) {
@@ -619,6 +623,7 @@ export default function LandingPage() {
   /* ─── Render ───────────────────────────────────────────────────────────── */
   return (
     <div className="landing-page" role="main" aria-label="Prospecting OS — AI B2B Lead Generation Landing Page">
+      <ScrollProgressBar />
       {/* ASCII Canvas */}
       <canvas id="asciiCanvas" ref={canvasRef} />
 
@@ -860,7 +865,7 @@ export default function LandingPage() {
                 <li className="pricing-feature-no">No AI icebreakers</li>
                 <li className="pricing-feature-no">No ongoing management</li>
               </ul>
-              <a href="/book" className="btn-secondary" style={{ textDecoration: "none" }} aria-label="Get the DIY Setup workflow — $1,500 one-time">Get the Workflow</a>
+              <Link href="/book" className="btn-secondary" style={{ textDecoration: "none" }} aria-label="Get the DIY Setup workflow — $1,500 one-time">Get the Workflow</Link>
             </div>
 
             {/* Managed Growth — Featured */}
@@ -905,6 +910,24 @@ export default function LandingPage() {
           </div>
 
           <p className="pricing-disclaimer">All plans billed in USD. Setup fees non-refundable. Monthly plans cancel anytime with 14-day notice.</p>
+        </div>
+      </section>
+
+      {/* ── COMPETITOR COMPARISON ─────────────────────────────────── */}
+      <section id="compare" className="section" style={{ background: 'var(--bg-primary)' }}>
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// Why Prospecting OS</div>
+            <h2 className="section-title">
+              The only option that{' '}
+              <em style={{ fontFamily: 'var(--font-serif-italic)', fontStyle: 'italic', fontWeight: 400 }}>thinks</em>{' '}
+              before it delivers.
+            </h2>
+            <p className="section-subtext">
+              Other tools give you lists. We give you scored, enriched, icebreaker-ready leads — every morning.
+            </p>
+          </div>
+          <ComparisonTable />
         </div>
       </section>
 
@@ -982,6 +1005,26 @@ export default function LandingPage() {
             <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Want to be in the next cohort?</p>
             <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for Beta Access</Link>
           </div>
+        </div>
+      </section>
+
+      {/* ── EMAIL CAPTURE — GET YOUR SAMPLE ──────────────────────── */}
+      <section id="sample" className="section" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="container">
+          <div className="section-header reveal">
+            <div className="section-eyebrow">// Free Sample</div>
+            <h2 className="section-title">
+              See exactly what you{"'"}d receive.{' '}
+              <em style={{ fontFamily: 'var(--font-serif-italic)', fontStyle: 'italic', fontWeight: 400 }}>Before you pay.</em>
+            </h2>
+            <p className="section-subtext">
+              Enter your email and industry — we{"'"}ll send you 5 real AI-scored leads with icebreakers for your niche. No card. No demo call required.
+            </p>
+          </div>
+          <EmailCaptureForm />
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, textAlign: 'center', marginTop: 16 }}>
+            No spam. One email. Unsubscribe anytime.
+          </p>
         </div>
       </section>
 
@@ -1233,7 +1276,7 @@ export default function LandingPage() {
             <a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a>
             <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a>
             <a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a>
-            <a href="/book" aria-label="Book a free B2B prospecting strategy call">Book a Call</a>
+            <Link href="/book" aria-label="Book a free B2B prospecting strategy call">Book a Call</Link>
             <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
           </nav>
           <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>
