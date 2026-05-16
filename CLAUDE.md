@@ -14,9 +14,11 @@ It provides 11 integrated modules for lead management, AI-powered messaging, ICP
 All Tier 1 (auth/payments/onboarding), Tier 2 (sequence execution/reply tracking/A/B testing), and Tier 3 (rate limiting/error tracking/business analytics) are complete.
 
 The **root route `/`** is a marketing landing page (Prospecting OS) with a separate layout — no sidebar, no admin chrome.  
-The **app routes** (`/leads`, `/dashboard`, etc.) use the full Shell layout with Sidebar + TopBar.
+The **app routes** (`/leads`, `/dashboard`, etc.) use the full Shell layout with ProSidebar + TopBar.
 **Auth routes** (`/login`, `/signup`, `/onboarding`) use marketing layout (no sidebar).
-**Protected routes** are gated by middleware — unauthenticated users redirect to `/login`.
+**Client portal** (`/client-portal/*`) uses its own layout with a slim client sidebar (no admin chrome, plan-gated modules).
+**Admin routes** (`/admin/*`) use the full Shell layout (super_admin only).
+**Protected routes** are gated by middleware — unauthenticated users redirect to `/login`. Role-based redirects: client → /client-portal.
 
 Repo: `github.com/Ayushkrsharma013/lead-engine`  
 Live: deployed via Vercel from the `main` branch  
@@ -76,8 +78,11 @@ Base path: `/prospecting-os` (multi-zone under `app.flow-forges.com`)
 ## Shared Database Architecture
 
 Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
-- **Project**: `mark1-flowforges` (`otxifqcvgmxoxemmgbjd`), region ap-south-1
+- **Project**: `mark1-flowforges` (`otxifqcvgmxoxemmgbjd`), region ap-south-1 — local development
+- **Production**: `lead-engine` (`tbsqpnqzpbnilifhwvgr`), region us-east-1 — Vercel deployment
 - **Tables shared**: `leads`, `messages`, `sequences`, `campaigns`, `clients`, `activity_log`, `lead_activity_log`, `appointments`, `email_captures`
+- **RBAC tables**: `profiles`, `client_workspaces`, `qa_sessions`, `finance_agent_log` (on both projects)
+- **Important**: When creating users or applying migrations, ensure you target the correct project. Vercel env uses `lead-engine` project keys.
 
 ### Why shared?
 - FlowForges AI employees (Atlas, Echo, etc.) read and manage leads from the same pool
@@ -112,6 +117,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | Icons | lucide-react ^0.400.0 (outline variants only, 16-18px; no emoji characters) |
 | Charts | recharts (Analytics module) |
 | Drag & Drop | @hello-pangea/dnd (Kanban module) |
+| Animations | framer-motion (sidebar collapsible sections, active pill, hover effects) |
 | AI | Gemini 2.5 Flash — called from browser (Message Lab + Scorer + A/B variants) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
 | Email | Resend HTTP API — sequence dispatch + booking notifications + inbound webhooks |
@@ -223,9 +229,9 @@ lead-engine/
 │   ├── storage.ts              # validateLead, sanitizeLead, generateCSV, stableLeadId
 │   ├── filters.ts              # Client-side lead filtering + sorting
 │   ├── AppContext.tsx           # Global state: leads, messages, sequences, campaigns, clients
-│   ├── stripe.ts               # PLANS definitions, PlanKey type (billing via Xflow Pay)
-│   ├── xflow.ts                 # Payment reference generator + plan amount helpers
-│   ├── plan-gate.ts             # Client-safe canAccessModule (no server imports)
+│   ├── stripe.ts               # PLANS definitions, PlanKey type (diy/growth/scale)
+│   ├── xflow.ts                 # Payment reference generator (generatePaymentRef)
+│   ├── plan-gate.ts             # Client-safe canAccessModule — no server imports
 │   ├── notify.ts               # Telegram + Resend email notifications (5 functions)
 │   ├── booking-chat.ts         # ProsBot conversational state machine (9 steps)
 │   ├── onboarding.ts           # Onboarding state machine, ICP option lists
@@ -341,6 +347,10 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 | `sequence_executions` | `id UUID PK`, sequence_id FK, lead_id FK, current_step, status, variant, started_at, last_action_at | RLS enabled (user-scoped). Tracks each lead per sequence run |
 | `sequence_messages` | `id UUID PK`, execution_id FK, lead_id, step_index, channel, subject, body, status, resend_id, variant | RLS enabled (user-scoped). Outbound message log |
 | `error_logs` | `id UUID PK`, message, stack, source, url, user_id, metadata, created_at | RLS enabled (super_admin only) |
+| `profiles` | `id UUID PK REFERENCES auth.users`, email, full_name, display_name, avatar_url, role, subscription_status, plan, onboarding_complete, icp_preferences JSONB, apify_key, payment_ref, payment_method, subscription_activated_at, xflow_transaction_id, is_active, last_login_at, notes, created_by | RLS enabled (self + super_admin) |
+| `client_workspaces` | `id UUID PK`, client_user_id FK, plan, icp_config JSONB, leads_count, last_sync_at, slack_webhook, settings JSONB | RLS enabled (self + super_admin + qa_agent) |
+| `qa_sessions` | `id UUID PK`, surface, test_suite, status, results JSONB, started_at, ended_at, triggered_by FK | RLS enabled (super_admin + qa_agent only) |
+| `finance_agent_log` | `id UUID PK`, event_type, profile_id FK, payload JSONB, telegram_msg_id, status, created_at, updated_at | RLS enabled |
 
 ### Data access layer (`lib/db.ts`)
 
@@ -549,48 +559,68 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 ## Session History & Accomplishments
 
-### 2026-05-16 (Evening) — RBAC System (Role-Based Access Control)
+### 2026-05-16 (Evening) — RBAC System + Auth Bug Fixes + Sidebar Redesign
 
-**Phase 1 — Database + Middleware Foundation**:
-- `supabase/migrations/20260516120000_rbac_system.sql` — Added `qa_agent` role, new profile columns (plan_activated_at, plan_expires_at, modules_allowed, created_by, is_active, last_login_at, notes), client_workspaces table, qa_sessions table, updated RLS policies
-- `lib/types.ts` — Added UserRole, PlanKey, PLAN_MODULES, UserProfile, ClientWorkspace, QASession types
+**RBAC Phase 1 — Database + Middleware Foundation**:
+- `supabase/migrations/20260516120000_rbac_system.sql` (applied to both `mark1-flowforges` and `lead-engine` projects) — Added `qa_agent` role, new profile columns (plan_activated_at, plan_expires_at, modules_allowed, created_by, is_active, last_login_at, notes), client_workspaces table, qa_sessions table, finance_agent_log, updated RLS policies
+- `lib/types.ts` — Added UserRole, PlanKey, PLAN_MODULES (diy/growth/scale with module gates), UserProfile, ClientWorkspace, QASession types
 - `lib/auth.ts` — Extended Role type with qa_agent, added isRole, canAccessModule, requireRoleApi helpers
-- `lib/plan-gate.ts` — Client-safe canAccessModule (no server imports — separate from auth.ts)
+- `lib/plan-gate.ts` — Client-safe canAccessModule (no server imports — separate from auth.ts to avoid Next.js server/client conflicts)
 - `lib/xflow.ts` — Payment reference generator (generatePaymentRef, getPlanAmount, getPlanInterval)
-- `middleware.ts` — Role-based routing: client → /client-portal, qa_agent → both surfaces, super_admin → full access
+- `middleware.ts` — Role-based routing: client → /client-portal, qa_agent → both surfaces, super_admin → full access. Added /admin and /client-portal to protected prefixes.
 
-**Phase 2 — User Management Panel (/admin/users)**:
-- `app/api/admin/users/route.ts` — GET list + POST create (with invite email + magic link)
-- `app/api/admin/users/[id]/route.ts` — GET/PATCH/DELETE single user (soft delete)
-- `app/api/admin/users/[id]/activate/route.ts` — POST activate plan (reuses finance-agent)
-- `app/api/admin/users/[id]/impersonate/route.ts` — POST generate impersonation magic link
-- `app/admin/users/page.tsx` — Full admin page: stat cards, role/status filters, users table, create user modal, activate/impersonate/deactivate actions
-- `app/admin/users/[id]/page.tsx` — Single user detail: 4 tabs (Profile, Plan & Billing, Activity, QA)
-- `components/layout/Sidebar.tsx` — Added Users link (super_admin only, with role detection)
+**RBAC Phase 2 — User Management Panel (/admin/users)**:
+- `app/api/admin/users/route.ts` — GET list (super_admin + qa_agent) + POST create with invite email + magic link (super_admin only)
+- `app/api/admin/users/[id]/route.ts` — GET/PATCH/DELETE single user (soft delete — sets is_active=false, never deletes auth user)
+- `app/api/admin/users/[id]/activate/route.ts` — POST activate plan (reuses jobActivateProfile from finance-agent)
+- `app/api/admin/users/[id]/impersonate/route.ts` — POST generate impersonation magic link (audit logged)
+- `app/admin/users/page.tsx` — Full admin page: MRR/total/active/pending stat cards, role/status filter pills, search, users table with avatar+role+plan+status columns, per-row actions menu (View/Edit, Activate Plan, Impersonate, Deactivate), Create User modal with invite toggle
+- `app/admin/users/[id]/page.tsx` — Single user detail: header with avatar+role+status badges, 4 tabs (Profile edit, Plan & Billing, Activity log, QA sessions)
+- `components/layout/Sidebar.tsx` — Users link in Operations section (super_admin only, role detected via Supabase)
 
-**Phase 3 — Client Portal (/client-portal)**:
-- `app/client-portal/layout.tsx` — Separate layout (no admin sidebar), plan badge, QA mode indicator
-- `app/client-portal/page.tsx` — Plan-gated overview: stat cards, hot leads preview, CSV export
-- `app/client-portal/leads/page.tsx` — Read-only lead table, score filters, pagination, CSV export
-- `app/client-portal/icebreakers/page.tsx` — Icebreaker viewer (PlanGate: Growth+), expandable messages
-- `app/client-portal/analytics/page.tsx` — Status breakdown + industry bars (PlanGate: Growth+)
-- `app/client-portal/sequences/page.tsx` — Sequence viewer (PlanGate: Scale only)
-- `app/client-portal/slack/page.tsx` — Slack webhook config (PlanGate: Growth+)
-- `app/client-portal/billing/page.tsx` — Plan details, payment ref copy, upgrade CTA
-- `app/client-portal/settings/page.tsx` — ICP preferences: industry chips, min score slider
-- `app/api/client-portal/me/route.ts` — GET profile + workspace + allowed modules
-- `app/api/client-portal/leads/route.ts` — GET leads scoped by user_id (pagination, score filter)
-- `app/api/client-portal/icebreakers/route.ts` — GET enriched leads with icebreaker messages
-- `components/client-portal/PlanGate.tsx` — Client component PlanGate (uses plan-gate.ts, not auth.ts)
-- `components/Shell.tsx` — Client-portal routes excluded from admin chrome
+**RBAC Phase 3 — Client Portal (/client-portal)**:
+- `app/client-portal/layout.tsx` — Separate layout from admin Shell: slim sidebar with plan badge, module-gated nav items, QA mode indicator, logout button
+- `app/client-portal/page.tsx` — Plan-gated overview: stat cards (total/hot/avg score/contacted), CSV export, hot leads preview table
+- `app/client-portal/leads/page.tsx` — Read-only lead table, score threshold filter (All/40+/60+/80+), pagination, CSV export
+- `app/client-portal/icebreakers/page.tsx` — Icebreaker viewer (PlanGate: Growth+), expandable message cards with tone badges
+- `app/client-portal/analytics/page.tsx` — Status breakdown grid + industry distribution bars (PlanGate: Growth+)
+- `app/client-portal/sequences/page.tsx` — Sequence viewer placeholder (PlanGate: Scale only)
+- `app/client-portal/slack/page.tsx` — Slack webhook config with save button (PlanGate: Growth+)
+- `app/client-portal/billing/page.tsx` — Plan details card, payment ref with copy button, upgrade CTA link
+- `app/client-portal/settings/page.tsx` — ICP preferences: industry chip selector, min score slider
+- `app/api/client-portal/me/route.ts` — GET profile + workspace + computed allowed modules (qa_agent gets all)
+- `app/api/client-portal/leads/route.ts` — GET leads scoped by user_id (pagination, score_min filter, sort)
+- `app/api/client-portal/icebreakers/route.ts` — GET enriched leads (score 60+) with associated messages grouped by lead
+- `components/client-portal/PlanGate.tsx` — Client-safe PlanGate wrapper (imports from plan-gate.ts, not auth.ts). Shows upgrade prompt for restricted modules. qa_agent bypasses all gates.
+- `components/Shell.tsx` — Client-portal routes excluded from admin chrome (clean layout without ProSidebar)
 
-**Phase 4 — QA Agent + Tests**:
-- `tests/scenarios/rbac.sh` — 10 RBAC boundary tests (redirects, API gating, public routes)
-- QA agent credential: qa@flow-forges.com (created post-deploy via admin API)
-- qa_agent role added to VALID_ROLES and middleware routing
-- QA agent bypasses all PlanGate checks, accesses both admin + client surfaces
+**RBAC Phase 4 — QA Agent + Tests**:
+- `tests/scenarios/rbac.sh` — 10 RBAC boundary tests (unauth redirects, public routes, API gating)
+- QA agent credential: qa@flow-forges.com (role: qa_agent, bypasses all PlanGate checks, accesses both surfaces)
+- qa_agent role added to VALID_ROLES, middleware routing, and PlanGate bypass
 
-**Files**: 25 files created, 4 modified, 0 TypeScript errors, 48/48 pages compiled
+**Auth Bug Fixes — Login/Redirect Issues**:
+- `lib/supabase/client.ts` — Strips `/rest/v1` from NEXT_PUBLIC_SUPABASE_URL before creating browser client. Was causing auth calls to hit `/rest/v1/auth/v1/token` (broken).
+- `middleware.ts` — Strips `/rest/v1` from Supabase URL for createServerClient. Same root cause as browser client — getUser() returned null even with valid cookies.
+- `lib/supabase/server.ts` — Strips `/rest/v1` from URL for SSR server client. Same fix across all three client types.
+- Fixed double basePath: all `<Link href="/prospecting-os/...">` changed to `<Link href="/...">` (Next.js auto-prepends basePath). Affected login, signup, onboarding nav logos, client-portal links, PlanGate links.
+- Fixed `router.push("/prospecting-os/...")` in login/signup to use basePath-relative paths.
+- Created users + profiles + RBAC tables on production `lead-engine` Supabase project (`tbsqpnqzpbnilifhwvgr`) — local `.env.local` pointed to different project (`mark1-flowforges`).
+
+**Sidebar Redesign — FlowOS-Style Premium Animations**:
+- Installed framer-motion for `motion.div`, `AnimatePresence`, `layoutId` animations
+- Collapsible category sections with animated chevron rotation (ChevronDown rotates 180° via framer-motion)
+- `layoutId="sidebar-active-pill"` — smooth pill transitions between active items using brass/gold gradient
+- Hover overlays: gradient from left + right-edge brass accent bar on inactive items
+- AnimatePresence on all expand/collapse transitions (section children, logo text, tooltips, button labels)
+- Better categorization: Overview (Dashboard, Lead Intelligence), AI Studio (Message Lab, Lead Scorer), Pipeline (Sequence Builder, Kanban, Analytics, Client Manager), Outreach (LinkedIn Outreach), Operations (Finance Agent, Users for super_admin)
+- Users link only rendered when role === "super_admin" (dynamically injected into Operations section)
+
+**Credentials**:
+- Super admin: ayushkumarsharma013@gmail.com / Pro2026!Secure
+- QA agent: qa@flow-forges.com / QA2026!Secure
+
+**Total session**: 8 commits, 28 files created, 8 modified, 0 TypeScript errors, 48/48 pages compiled, 18 new routes
 
 ### 2026-05-16 (Morning) — Booking System Full Upgrade + Tier 1 (Auth/Payments/Onboarding)
 
