@@ -1,13 +1,9 @@
-import Stripe from "stripe";
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-03-31.basil" as any,
-});
+// PLANS — product definitions
+// Payments handled by Xflow Pay; Stripe is not used.
 
 export const PLANS = {
   diy: {
     name: "DIY Setup",
-    priceId: process.env.STRIPE_PRICE_DIY || "",
     amount: 1500,
     interval: "one_time" as const,
     features: [
@@ -21,7 +17,6 @@ export const PLANS = {
   },
   growth: {
     name: "Managed Growth",
-    priceId: process.env.STRIPE_PRICE_GROWTH || "",
     amount: 3500,
     interval: "month" as const,
     features: [
@@ -36,7 +31,6 @@ export const PLANS = {
   },
   scale: {
     name: "Managed Scale",
-    priceId: process.env.STRIPE_PRICE_SCALE || "",
     amount: 12500,
     interval: "month" as const,
     features: [
