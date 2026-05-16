@@ -1,11 +1,92 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 
 const INDUSTRIES = [
   'SaaS', 'Digital Agency', 'E-commerce', 'Consulting',
   'Recruitment', 'Professional Services', 'FinTech', 'HealthTech', 'Other'
 ]
+
+function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', minWidth: 180 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', padding: '14px 20px',
+          background: 'var(--bg-card)', border: `1px solid ${open ? 'rgba(232,66,10,0.5)' : 'var(--border)'}`,
+          borderRadius: 9999, color: value ? 'var(--text-primary)' : 'var(--text-tertiary)',
+          fontSize: 14, fontFamily: 'Cabinet Grotesk, Geist, sans-serif',
+          outline: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {value || 'Your industry'}
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+          style={{ display: 'flex' }}
+        >
+          <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 50,
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 16, padding: 6,
+              boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            {INDUSTRIES.map((ind, i) => (
+              <motion.button
+                key={ind}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.2 }}
+                onClick={() => { onChange(ind); setOpen(false) }}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '10px 14px',
+                  background: value === ind ? 'rgba(232,66,10,0.08)' : 'transparent',
+                  borderRadius: 10, border: 'none',
+                  color: value === ind ? 'var(--accent)' : 'var(--text-secondary)',
+                  fontSize: 14, fontWeight: value === ind ? 600 : 400,
+                  fontFamily: 'Cabinet Grotesk, Geist, sans-serif',
+                  cursor: 'pointer',
+                  transition: 'background 0.12s, color 0.12s',
+                }}
+              >
+                {ind}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 export function EmailCaptureForm() {
   const [email, setEmail] = useState('')
@@ -80,20 +161,7 @@ export function EmailCaptureForm() {
               onFocus={e => (e.target.style.borderColor = 'rgba(232,66,10,0.5)')}
               onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
-            <select
-              value={industry}
-              onChange={e => setIndustry(e.target.value)}
-              style={{
-                padding: '14px 20px', background: 'var(--bg-card)',
-                border: '1px solid var(--border)', borderRadius: 9999,
-                color: industry ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                fontSize: 14, fontFamily: 'Cabinet Grotesk, Geist, sans-serif',
-                outline: 'none', cursor: 'pointer', minWidth: 160,
-              }}
-            >
-              <option value="">Your industry</option>
-              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-            </select>
+            <IndustryDropdown value={industry} onChange={setIndustry} />
           </div>
 
           <motion.button

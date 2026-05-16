@@ -29,7 +29,7 @@ export function ComparisonTable() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      style={{ overflowX: 'auto' }}
+      style={{ overflowX: 'auto', paddingTop: 16 }}
     >
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
         <thead>
