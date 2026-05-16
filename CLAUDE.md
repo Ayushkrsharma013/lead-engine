@@ -66,7 +66,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | AI | Gemini 2.5 Flash — called from browser (Message Lab + Scorer + A/B variants) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
 | Email | Resend HTTP API — sequence dispatch + booking notifications + inbound webhooks |
-| Scheduling | Vercel Cron Jobs — sequence runner every 5 min (`vercel.json`) |
+| Scheduling | Vercel Cron Jobs — sequence runner daily at 8 AM (`vercel.json`) |
 | Error tracking | `lib/error-tracking.ts` — Supabase error_logs table + optional Sentry |
 | Google Drive | Google Identity Services (GIS) — client-side OAuth |
 | Browser testing | agent-browser CLI (Vercel) — screenshots gitignored |
@@ -81,7 +81,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 lead-engine/
 ├── middleware.ts                 # Auth middleware — protects admin routes, sets x-user-* headers
 ├── next.config.mjs               # basePath: '/prospecting-os', assetPrefix
-├── vercel.json                   # Cron: */5 min sequence runner at /api/cron/sequence-runner
+├── vercel.json                   # Cron: daily sequence runner (8 AM) + finance agent (9 AM)
 ├── supabase-migration.sql        # Full DB schema + RLS policies + auth columns
 ├── .env.example                  # All required environment variables
 ├── .mcp.json                     # MCP servers: ruflo + supabase
@@ -99,7 +99,7 @@ lead-engine/
 │   │   └── admin/page.tsx       # Appointment manager (stats, filters, cancel)
 │   ├── dashboard/page.tsx       # Command Center (stats, charts, activity)
 │   ├── leads/page.tsx           # Lead Intelligence (scrape, filter, export)
-│   ├── message-lab/page.tsx     # AI Message Lab (Claude-generated outreach)
+│   ├── message-lab/page.tsx     # AI Message Lab (Gemini-generated outreach + A/B variants)
 │   ├── scorer/page.tsx          # AI Lead Scorer (ICP scoring ring)
 │   ├── sequences/page.tsx       # Sequence Builder (drag-and-drop timeline)
 │   ├── kanban/page.tsx          # Kanban Pipeline (7-column DnD board)
@@ -125,7 +125,7 @@ lead-engine/
 │           └── variant-stats/      # GET — A/B variant reply rate comparison
 ├── components/
 │   ├── Shell.tsx               # Marketing vs admin layout router
-│   ├── Navbar.tsx              # Landing navbar (scroll-aware glass morphism)
+│   ├── Navbar.tsx              # Landing navbar (scroll-aware glass morphism, auth-aware Sign In/Dashboard links)
 │   ├── ProsBotPanel.tsx        # Conversational booking chatbot (9-state machine)
 │   ├── AgentPanel.tsx          # Right sidebar AI assistant (Gemini-powered)
 │   ├── EmailCaptureModal.tsx   # Exit-intent email capture modal
@@ -443,7 +443,7 @@ text-accent-blue → var(--accent-blue)
 | `CRON_SECRET` | Vercel + `.env.local` | Optional — bearer token to secure cron endpoints |
 | `SENTRY_DSN` | Vercel + `.env.local` | Optional — Sentry DSN for error forwarding |
 
-The Gemini API key is entered by the user in the UI and stored in localStorage. Anthropic/Claude API key is stored ONLY in React Context memory. Google Drive Client ID is stored in `localStorage`.
+The Gemini API key is entered by the user in the UI and stored in localStorage. Google Drive Client ID is stored in `localStorage`.
 
 ---
 
@@ -490,9 +490,9 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 **Tier 2.1 — Automated Sequence Execution Engine** (`8a48435`):
 - `lib/sequence-engine.ts` — template resolution with `{{variables}}`, launchSequence, processDueSteps cron handler
 - `lib/resend.ts` — reusable Resend HTTP client (sendEmail + HTML builder)
-- `app/api/cron/sequence-runner/` — Vercel Cron endpoint (every 5 min)
+- `app/api/cron/sequence-runner/` — Vercel Cron endpoint (daily at 8 AM)
 - `app/api/sequence/launch/` + `cancel/` — launch/pause/cancel sequence executions
-- `vercel.json` — `*/5 * * * *` cron schedule
+- `vercel.json` — `0 8 * * *` sequence + `0 9 * * *` finance (Hobby tier daily)
 - `app/sequences/page.tsx` — Launch button, execution status per lead, pause/cancel controls
 - New DB tables: `sequence_executions`, `sequence_messages` (RLS enabled)
 - Auto-moves kanban to "Contacted" on first send
@@ -528,6 +528,41 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 - Fixed profiles super_admin policy (was reading insecure user_metadata from JWT)
 
 **Total Tier 2+3**: 6 commits, 25 files, +1,564 lines, 0 TypeScript errors.
+
+### 2026-05-16 (Evening) — Finance Agent, Stripe Removal, Auth Redesign, Deployment Fixes
+
+**Finance Agent** (`6375290`, `0d62666`):
+- Autonomous payment operations agent on Vercel Cron (daily at 9 AM)
+- 5 jobs: payment watcher, reminder escalation, 5-day follow-up, activation, monthly summary
+- Telegram bot with inline keyboard callbacks (Activate, Invoice Sent, Dismiss, etc.)
+- Web dashboard at `/agent/finance` (super_admin only, MRR chart, client tables, activity log)
+- Claude follow-up email drafts switched to Gemini (uses existing GEMINI_API_KEY)
+- Telegram webhook registered at `/api/agent/finance/callback`
+
+**Stripe Removal** (`e23b007`, `99c8f48`, `4749d01`):
+- Deleted Stripe checkout/webhook API routes — payments via Xflow Pay
+- `lib/stripe.ts` simplified to PLANS definitions only (no SDK dependency)
+- Onboarding Plan & Pay step wired to `/api/onboarding/save` with `pending_payment` status
+- Created `/api/onboarding/save` — saves profile data (name, ICP, API keys, plan, subscription status)
+- Finance Agent picks up pending_payment profiles via cron
+
+**Auth Pages Redesign** (`3d34760`, `efdc61a`):
+- Replaced `<Zap>` icons with `Logo_Icon.png` on login, signup, and onboarding nav
+- Brand-aligned glass-morphism cards using actual design tokens (--surface-2, --line, --accent)
+- Subtle brass radial glow matching `#E8A840` accent — no foreign colors
+- Glass input fields with accent focus rings
+
+**Navbar** (`3d34760`):
+- Auth-aware CTAs: "Sign In" for unauthenticated users, "Dashboard" for authenticated
+- Desktop + mobile both updated
+- Uses `createClient()` to check Supabase session
+
+**Deployment fixes** (`8d0c933`):
+- Vercel Hobby tier limits cron to daily — changed schedules to `0 8 * * *` + `0 9 * * *`
+- Added "Run Engine" button to Sequence Builder for on-demand execution
+- Production deploy passes clean (0 errors, 35 routes)
+
+**Total session**: 14 commits, 30+ files, 2,500+ lines, 0 TypeScript errors.
 
 ---
 
