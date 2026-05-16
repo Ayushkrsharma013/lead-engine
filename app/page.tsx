@@ -640,7 +640,7 @@ export default function LandingPage() {
           </a>
           <ul className="nav-links">
             <li><a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a></li>
-            <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
+            <li><Link href="/pricing">Pricing</Link></li>
             <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a></li>
             <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
           </ul>
@@ -668,7 +668,7 @@ export default function LandingPage() {
       {/* Mobile Menu */}
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`}>
         <a href="#how-it-works" onClick={e => { smoothScroll(e, "#how-it-works"); setMobileOpen(false); }}>How It Works</a>
-        <a href="#pricing" onClick={e => { smoothScroll(e, "#pricing"); setMobileOpen(false); }}>Pricing</a>
+        <Link href="/pricing" onClick={() => setMobileOpen(false)}>Pricing</Link>
         <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI Calculator</a>
         <a href="#faq" onClick={e => { smoothScroll(e, "#faq"); setMobileOpen(false); }}>FAQ</a>
         <Link href="/book" className="nav-cta" style={{ textDecoration: "none" }} onClick={() => setMobileOpen(false)}>Book a Free Strategy Call</Link>
@@ -1197,7 +1197,7 @@ export default function LandingPage() {
                     <p className="faq-answer-text">
                       {item.a}
                       {idx === 4 && (
-                        <>{" "}<a href="#pricing" aria-label="Compare Prospecting OS pricing plans" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
+                        <>{" "}<a href="/pricing" aria-label="Compare Prospecting OS pricing plans" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
                       )}
                     </p>
                   </div>
