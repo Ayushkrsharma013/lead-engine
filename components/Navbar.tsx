@@ -3,14 +3,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { landingNavItems } from "@/lib/nav";
+import { createClient } from "@/lib/supabase/client";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setAuthenticated(!!user);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
@@ -93,6 +102,21 @@ export function Navbar() {
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
+            {authenticated ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 text-sm font-semibold px-5 py-2 rounded-full bg-white/[0.06] text-white border border-white/[0.08] hover:bg-white/[0.10] transition-all duration-200"
+              >
+                <LayoutDashboard size={14} /> Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 text-sm font-medium px-5 py-2 rounded-full text-[#888899] hover:text-white hover:bg-white/[0.04] transition-all duration-200"
+              >
+                <LogIn size={14} /> Sign In
+              </Link>
+            )}
             <Link
               href="/book"
               className="text-sm font-semibold px-5 py-2 rounded-full bg-[#E8A840] text-[#04040a] hover:bg-[#E8A840]/90 transition-all duration-200 hover:shadow-[0_0_24px_rgba(232,168,64,0.25)]"
@@ -176,6 +200,23 @@ export function Navbar() {
               open ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}
           >
+            {authenticated ? (
+              <Link
+                href="/dashboard"
+                onClick={() => setOpen(false)}
+                className="w-full max-w-xs text-center py-3.5 rounded-2xl bg-white/[0.06] text-white border border-white/[0.08] font-semibold text-[15px]"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="w-full max-w-xs text-center py-3.5 rounded-2xl text-[#888899] font-medium text-[15px]"
+              >
+                Sign In
+              </Link>
+            )}
             <Link
               href="/book"
               onClick={() => setOpen(false)}

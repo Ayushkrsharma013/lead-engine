@@ -117,7 +117,7 @@ export default function OnboardingPage() {
       <nav style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${styles.border}`, position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/prospecting-os" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: styles.text, fontWeight: 800, fontSize: "1.1rem", letterSpacing: "-0.02em" }}>
-            <Zap size={18} style={{ color: styles.accent }} />
+            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" style={{ width: 20, height: 20, borderRadius: 4 }} />
             Prospecting<span style={{ color: styles.accent }}>OS</span>
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>

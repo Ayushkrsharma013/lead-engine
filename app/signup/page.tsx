@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Zap, User, Mail, Lock, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 function SignUpForm() {
@@ -52,35 +52,26 @@ function SignUpForm() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center px-4 py-8">
-      <div
-        className="w-full max-w-md rounded-2xl p-6 lg:p-8"
-        style={{
-          background: "var(--bg-card, #1a1917)",
-          border: "1px solid var(--border-card, rgba(255,255,255,0.06))",
-        }}
-      >
+    <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
+      <div className="w-full max-w-md rounded-2xl p-8 glass-card">
+        {/* Logo */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-            style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))" }}
-          >
-            <Zap size={22} style={{ color: "var(--accent, #e8420a)" }} />
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-tight mb-1" style={{ color: "var(--text-primary, #f5f4f1)" }}>
+          <img
+            src="/prospecting-os/assets/Logo_Icon.png"
+            alt="Prospecting OS"
+            className="w-14 h-14 rounded-xl mb-4"
+          />
+          <h1 className="text-2xl font-extrabold tracking-tight mb-1" style={{ color: "#f5f4f1" }}>
             Create Your Account
           </h1>
-          <p className="text-sm" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
-            Get started with ProspectingOS
+          <p className="text-sm" style={{ color: "#b0aeaa" }}>
+            Get started with ProspectingOS — powered by Xflow Pay
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label
-              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: "var(--text-tertiary, #7a7875)" }}
-            >
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#7a7875" }}>
               <User size={12} /> Full Name
             </label>
             <input
@@ -88,29 +79,13 @@ function SignUpForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="John Doe"
-              className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-              style={{
-                background: "var(--bg-input, #1a1a1a)",
-                border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                color: "var(--text-primary, #f5f4f1)",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent, #e8420a)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border, rgba(255,255,255,0.08))";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="w-full h-11 rounded-xl px-4 text-sm glass-input"
+              style={{ fontFamily: "inherit" }}
             />
           </div>
 
           <div>
-            <label
-              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: "var(--text-tertiary, #7a7875)" }}
-            >
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#7a7875" }}>
               <Mail size={12} /> Work Email
             </label>
             <input
@@ -118,29 +93,13 @@ function SignUpForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-              style={{
-                background: "var(--bg-input, #1a1a1a)",
-                border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                color: "var(--text-primary, #f5f4f1)",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent, #e8420a)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border, rgba(255,255,255,0.08))";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="w-full h-11 rounded-xl px-4 text-sm glass-input"
+              style={{ fontFamily: "inherit" }}
             />
           </div>
 
           <div>
-            <label
-              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: "var(--text-tertiary, #7a7875)" }}
-            >
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#7a7875" }}>
               <Lock size={12} /> Password
             </label>
             <input
@@ -148,26 +107,13 @@ function SignUpForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min. 8 characters"
-              className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-              style={{
-                background: "var(--bg-input, #1a1a1a)",
-                border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                color: "var(--text-primary, #f5f4f1)",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent, #e8420a)";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--border, rgba(255,255,255,0.08))";
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              className="w-full h-11 rounded-xl px-4 text-sm glass-input"
+              style={{ fontFamily: "inherit" }}
             />
           </div>
 
           {error && (
-            <p className="text-xs font-medium" style={{ color: "var(--accent, #e8420a)" }}>
+            <p className="text-xs font-medium" style={{ color: "#e8420a" }}>
               {error}
             </p>
           )}
@@ -175,8 +121,12 @@ function SignUpForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
+            className="w-full h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: "linear-gradient(135deg, #e8420a, #ff6b35)",
+              color: "#fff",
+              boxShadow: "0 4px 20px rgba(232,66,10,0.3)",
+            }}
           >
             {submitting ? (
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -188,13 +138,9 @@ function SignUpForm() {
           </button>
         </form>
 
-        <p className="text-center text-sm mt-6" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
+        <p className="text-center text-sm mt-6" style={{ color: "#b0aeaa" }}>
           Already have an account?{" "}
-          <Link
-            href="/prospecting-os/login"
-            className="font-semibold transition-opacity hover:opacity-80"
-            style={{ color: "var(--accent, #e8420a)" }}
-          >
+          <Link href="/prospecting-os/login" className="font-semibold transition-opacity hover:opacity-80" style={{ color: "#e8420a" }}>
             Sign in
           </Link>
         </p>
@@ -206,54 +152,35 @@ function SignUpForm() {
 export default function SignUpPage() {
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col galaxy-bg"
       style={{
-        background: "#0e0d0a",
+        background: "#08080c",
         color: "#f5f4f1",
         fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif",
-        "--bg-primary": "#0e0d0a",
-        "--bg-secondary": "#141310",
-        "--bg-card": "#1a1917",
-        "--bg-card-hover": "#1f1e1b",
-        "--bg-input": "#1a1a1a",
-        "--text-primary": "#f5f4f1",
-        "--text-secondary": "#b0aeaa",
-        "--text-tertiary": "#7a7875",
-        "--border": "rgba(255,255,255,0.08)",
-        "--border-card": "rgba(255,255,255,0.06)",
-        "--accent": "#e8420a",
-        "--accent-hover": "#ff6b35",
-        "--accent-glow": "rgba(232,66,10,0.3)",
-        "--accent-subtle": "rgba(232,66,10,0.08)",
-        "--badge-bg": "rgba(232,66,10,0.12)",
-        "--badge-text": "#ff8a5c",
-        "--success": "#22c55e",
-        "--success-bg": "rgba(34,197,94,0.1)",
-      } as React.CSSProperties}
+      }}
     >
+      {/* Nav */}
       <nav
-        className="flex-shrink-0 z-50"
-        style={{
-          background: "rgba(14,13,10,0.85)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))",
-        }}
+        className="flex-shrink-0 relative z-20"
+        style={{ background: "rgba(8,8,12,0.7)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center">
-          <a
-            href="/"
-            className="flex items-center gap-2 font-extrabold text-lg tracking-tight no-underline"
-            style={{ color: "var(--text-primary, #f5f4f1)" }}
-          >
-            <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
-            Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
-          </a>
+          <Link href="/prospecting-os" className="flex items-center gap-2.5 no-underline">
+            <img
+              src="/prospecting-os/assets/Logo_Icon.png"
+              alt="Prospecting OS"
+              className="w-7 h-7 rounded-lg"
+            />
+            <span className="font-extrabold text-lg tracking-tight" style={{ color: "#f5f4f1" }}>
+              Prospecting<span style={{ color: "#e8420a" }}>OS</span>
+            </span>
+          </Link>
         </div>
       </nav>
 
       <Suspense
         fallback={
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center relative z-10">
             <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
         }
