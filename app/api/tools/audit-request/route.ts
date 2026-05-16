@@ -64,9 +64,12 @@ export async function POST(req: NextRequest) {
     csvBase64 = Buffer.from(buffer).toString('base64')
   }
 
-  const { data: request, error: insertError } = await supabaseAdmin
+  const requestId = crypto.randomUUID()
+
+  const { error: insertError } = await supabaseAdmin
     .from('audit_requests')
     .insert({
+      id: requestId,
       name, email, company, website,
       team_size: teamSize,
       weekly_hours: weeklyHours,
@@ -76,13 +79,13 @@ export async function POST(req: NextRequest) {
       csv_data: csvBase64,
       status: 'pending',
     })
-    .select('id')
-    .single()
 
   if (insertError) {
     console.error('audit_requests insert error:', insertError)
     return NextResponse.json({ error: 'Database error. Please try again.' }, { status: 500 })
   }
+
+  const request = { id: requestId }
 
   await sendEmail({
     to: email,
