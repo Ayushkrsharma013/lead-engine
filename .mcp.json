@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "supabase": {
+      "type": "url",
+      "url": "https://mcp.supabase.com/mcp"
+    },
     "ruflo": {
       "command": "cmd",
       "args": [
