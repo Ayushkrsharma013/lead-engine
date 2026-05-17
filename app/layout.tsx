@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     "LinkedIn Sales Navigator automation",
     "automated cold outreach",
     "Gemini AI lead scoring",
-    "n8n lead generation",
+    "AI lead generation automation",
     "replace SDR with AI",
   ],
   openGraph: {

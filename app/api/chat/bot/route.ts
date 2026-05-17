@@ -10,10 +10,10 @@ Key facts about Prospecting OS:
 - 5-step AI pipeline: Source (LinkedIn Sales Navigator) → Filter (AI removes non-decision-makers) → Score (Gemini AI 1-10) → Enrich (company context + icebreaker) → Deliver (Slack/Telegram by 8 AM)
 - 500+ scored leads/month, 97% less manual work
 - 3 plans: DIY Setup ($1,500 one-time), Managed Growth ($3,500/mo — most popular), Managed Scale ($12,500/mo)
-- DIY: Get the full n8n workflow, run it yourself. Growth: Fully managed pipeline with icebreakers, daily Slack digest. Scale: Full AI SDR — auto emails, reply detection, CRM sync
+- DIY: Get the full Prospecting OS platform configured and handed over — run it yourself. Growth: Fully managed pipeline with icebreakers, daily Slack digest. Scale: Full AI SDR — auto emails, reply detection, CRM sync
 - Zero-risk: Less than 50 qualified leads in month 1 = month 2 free
 - Results in 4 hours for DIY, 2-3 days for Managed Growth
-- Built on n8n + Gemini AI + LinkedIn Sales Navigator
+- Built on Apify + Gemini AI + LinkedIn Sales Navigator + custom automation engine
 - Data never stored — delivered to YOUR Google Sheet
 - Performance guarantee on Managed Growth: 50 leads or month 2 free
 - Ideal for: B2B agencies, SaaS founders, consultants, recruitment firms

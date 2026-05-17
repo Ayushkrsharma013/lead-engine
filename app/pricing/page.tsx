@@ -130,7 +130,7 @@ export default function PricingPage() {
     },
     {
       q: "Can I start with DIY and add managed services later?",
-      a: "Absolutely. Many clients start with DIY Setup to validate their ICP, then upgrade to Managed Growth or Scale once they see the pipeline quality. The n8n workflow is the same — we just take over operations."
+      a: "Absolutely. Many clients start with DIY Setup to validate their ICP, then upgrade to Managed Growth or Scale once they see the pipeline quality. The Prospecting OS setup is the same — we just take over operations."
     },
   ];
 
@@ -215,8 +215,8 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <PlanCard
             planKey="diy" name="DIY Setup" amount={1500} interval="one_time"
-            features={["Full n8n workflow built for you", "Sales Navigator integration configured", "Gemini AI scoring (7+ filter)", "Google Sheets dashboard", "Telegram alerts configured", "1-week email support post-handover"]}
-            cta="Get the Workflow" href="/book"
+            features={["Prospecting OS platform configured for you", "Sales Navigator integration configured", "Gemini AI scoring (7+ filter)", "Google Sheets dashboard", "Telegram alerts configured", "1-week email support post-handover"]}
+            cta="Get Started" href="/book"
           />
           <PlanCard
             planKey="growth" name="Managed Growth" amount={3500} interval="month" popular

@@ -7,7 +7,7 @@ export const PLANS = {
     amount: 1500,
     interval: "one_time" as const,
     features: [
-      "Full n8n workflow built for you",
+      "Prospecting OS platform configured for you",
       "Sales Navigator integration configured",
       "Gemini AI scoring (7+ filter)",
       "Google Sheets dashboard",

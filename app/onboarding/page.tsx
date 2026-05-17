@@ -16,7 +16,7 @@ import {
 const PLANS_DATA: Record<string, { name: string; price: string; interval: string; features: string[]; popular?: boolean }> = {
   diy: {
     name: "DIY Setup", price: "$1,500", interval: "one-time",
-    features: ["Full n8n workflow", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1-week email support"],
+    features: ["Prospecting OS platform setup", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1-week email support"],
   },
   growth: {
     name: "Managed Growth", price: "$3,500", interval: "/month", popular: true,

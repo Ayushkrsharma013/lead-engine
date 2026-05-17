@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Zap, TrendingUp, Mail, CalendarCheck, Download, ArrowRight, ChevronRight, MessageSquare, GitBranch, BarChart3, Slack, Layers, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { Users, Zap, TrendingUp, Mail, CalendarCheck, Download, ArrowRight, ChevronRight, MessageSquare, GitBranch, BarChart3, Slack, Layers, CheckCircle2, Settings, Inbox } from "lucide-react";
 import type { UserProfile, PlanKey, ClientWorkspace } from "@/lib/types";
 
 const cardBg = "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))";
@@ -42,6 +43,34 @@ const FUNNEL_COLORS = [
   "var(--ink-4)",
 ];
 
+function PipelineInsight({ core }: { core: { total: number; hot: number; contacted: number; avgScore: number } }) {
+  if (core.total === 0) return null;
+  const hotRate = Math.round((core.hot / core.total) * 100);
+  const contactRate = Math.round((core.contacted / core.total) * 100);
+
+  let verdict = "";
+  let color = "var(--accent)";
+  if (hotRate >= 20) { verdict = `${hotRate}% of your leads are hot — strong ICP match.`; color = "var(--positive)"; }
+  else if (hotRate >= 10) { verdict = `${hotRate}% hot leads. ICP is working — room to refine.`; color = "var(--accent)"; }
+  else { verdict = "Hot lead rate is low. Your account manager will review the ICP on the next call."; color = "var(--info)"; }
+
+  return (
+    <div className="rounded-xl p-4 flex items-start gap-3" style={{
+      background: "linear-gradient(135deg, rgba(232,168,64,0.04), rgba(232,168,64,0.01))",
+      border: "1px solid rgba(232,168,64,0.10)",
+    }}>
+      <TrendingUp size={14} style={{ color, marginTop: 1, flexShrink: 0 }} />
+      <div>
+        <p className="text-[11px] font-semibold mb-0.5" style={{ color: "var(--ink)" }}>Pipeline Snapshot</p>
+        <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>{verdict}</p>
+        <p className="text-[10px] mt-1.5" style={{ color: "var(--ink-4)" }}>
+          {contactRate}% contacted &nbsp;·&nbsp; avg score {core.avgScore}/100 &nbsp;·&nbsp; {core.meetings} meeting{core.meetings !== 1 ? "s" : ""} booked
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function UpgradeCTA({ plan, total }: { plan: PlanKey; total: number }) {
   if (plan === "scale") return null;
 
@@ -69,13 +98,13 @@ function UpgradeCTA({ plan, total }: { plan: PlanKey; total: number }) {
             ))}
           </ul>
         </div>
-        <a
+        <Link
           href="/book"
           className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all shrink-0"
           style={{ background: "var(--accent)", color: "#000" }}
         >
           Upgrade <ArrowRight size={12} />
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -283,7 +312,7 @@ export default function ClientPortalOverview() {
       </div>
 
       {/* Core stat cards — all plans */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {([
           { label: "Total Leads", value: core.total.toLocaleString(), icon: Users, color: "var(--accent)" },
           { label: "Hot (80+)", value: String(core.hot), icon: Zap, color: "var(--negative)" },
@@ -311,10 +340,13 @@ export default function ClientPortalOverview() {
         >
           <Download size={13} /> Export CSV
         </button>
-        <a href="/book" className="text-[12px] font-medium transition-opacity hover:opacity-80" style={{ color: "var(--ink-3)" }}>
+        <Link href="/book" className="text-[12px] font-medium transition-opacity hover:opacity-80" style={{ color: "var(--ink-3)" }}>
           Need help? Book a call →
-        </a>
+        </Link>
       </div>
+
+      {/* Pipeline insight — all plans */}
+      <PipelineInsight core={core} />
 
       {/* Upgrade CTA — DIY only */}
       {plan === "diy" && <UpgradeCTA plan="diy" total={core.total} />}
@@ -341,13 +373,13 @@ export default function ClientPortalOverview() {
               </p>
             </div>
           </div>
-          <a
+          <Link
             href="/client-portal/slack"
             className="flex items-center gap-1 text-[11px] font-medium transition-opacity hover:opacity-80"
             style={{ color: "var(--accent)" }}
           >
             {slackConfigured ? "Manage" : "Set Up"} <ChevronRight size={12} />
-          </a>
+          </Link>
         </div>
       )}
 
@@ -368,13 +400,13 @@ export default function ClientPortalOverview() {
             <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
               {activeSequences > 0 ? `${activeSequences} sequence${activeSequences !== 1 ? "s" : ""} running for your leads` : "No sequences running yet"}
             </p>
-            <a
+            <Link
               href="/client-portal/sequences"
               className="inline-flex items-center gap-1 text-[11px] font-medium transition-opacity hover:opacity-80"
               style={{ color: "var(--accent)" }}
             >
               View sequences <ChevronRight size={12} />
-            </a>
+            </Link>
           </div>
           <ConversionFunnel data={conversionFunnel} />
         </div>
@@ -387,16 +419,16 @@ export default function ClientPortalOverview() {
             { label: "View Leads", href: "/client-portal/leads", icon: Users },
             { label: "Icebreakers", href: "/client-portal/icebreakers", icon: MessageSquare },
             { label: "Analytics", href: "/client-portal/analytics", icon: BarChart3 },
-            { label: "Settings", href: "/client-portal/settings", icon: ChevronRight },
+            { label: "Settings", href: "/client-portal/settings", icon: Settings },
           ].map(action => (
-            <a
+            <Link
               key={action.label}
               href={action.href}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-medium transition-all"
               style={{ background: "var(--surface-2)", color: "var(--ink-3)", border: "1px solid var(--line)" }}
             >
               <action.icon size={12} /> {action.label}
-            </a>
+            </Link>
           ))}
         </div>
       )}
@@ -445,7 +477,7 @@ export default function ClientPortalOverview() {
       {/* Empty state */}
       {core.total === 0 && (
         <div className="rounded-xl p-12 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <Download size={24} className="mx-auto mb-3" style={{ color: "var(--ink-4)" }} />
+          <Inbox size={24} className="mx-auto mb-3" style={{ color: "var(--ink-4)" }} />
           <p className="text-[14px] font-semibold mb-1" style={{ color: "var(--ink)" }}>No leads yet</p>
           <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
             Your leads will appear here once your account manager assigns them to your workspace.

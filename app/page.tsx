@@ -58,7 +58,7 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "Can I upgrade from DIY Setup to Managed Growth later?",
-    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Managed Growth features are activated on your existing n8n workflow. You only pay the difference in plan cost from the upgrade date.",
+    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Managed Growth features are activated on your existing Prospecting OS setup. You only pay the difference in plan cost from the upgrade date.",
     cat: "setup",
   },
   {
@@ -843,9 +843,9 @@ export default function LandingPage() {
               <h3>DIY Setup</h3>
               <div className="price">$1,500</div>
               <span className="price-period">one-time setup fee</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>We build and hand over the full n8n workflow. You run it yourself with your own API keys and Sales Navigator.</p>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>We configure and hand over the full Prospecting OS platform. You run it yourself with your own API keys and Sales Navigator.</p>
               <ul className="pricing-features">
-                <li>Full n8n workflow built for you</li>
+                <li>Prospecting OS platform configured for you</li>
                 <li>Sales Navigator integration configured</li>
                 <li>Gemini AI scoring (7+ filter)</li>
                 <li>Google Sheets dashboard</li>
@@ -1316,7 +1316,7 @@ export default function LandingPage() {
             <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
           </nav>
           <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>
-            Prospecting OS is a productized AI system built on n8n, Gemini AI, and LinkedIn Sales Navigator.
+            Prospecting OS is a productized AI system built on Apify, Gemini AI, and LinkedIn Sales Navigator.
             Results vary based on ICP configuration and industry. Pro plan includes a 50-lead/month performance guarantee.
           </p>
         </div>
@@ -1413,7 +1413,7 @@ export default function LandingPage() {
             "url": "https://app.flow-forges.com/prospecting-os",
             "description": "Prospecting OS is an AI-powered B2B lead generation system that uses LinkedIn Sales Navigator and Gemini AI to automatically source, score, enrich, and deliver qualified leads to your Slack, Telegram, or CRM — every morning.",
             "offers": [
-              { "@type": "Offer", "name": "Basic — One-Time Setup", "price": "2500", "priceCurrency": "USD", "description": "Full n8n workflow, Sales Navigator integration, Gemini AI scoring, Google Sheets dashboard, Telegram alerts, 1-week support.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Basic — One-Time Setup", "price": "1500", "priceCurrency": "USD", "description": "Prospecting OS platform configured, Sales Navigator integration, Gemini AI scoring, Google Sheets dashboard, Telegram alerts, 1-week support.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Pro — Managed AI Prospecting", "price": "3500", "priceCurrency": "USD", "description": "Everything in Basic + AI icebreakers, company enrichment, daily Slack digest, duplicate check, monthly ICP refinement, dedicated Slack channel.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Advanced — Full AI SDR", "price": "10000", "priceCurrency": "USD", "description": "Everything in Pro + auto cold email sending, 3-touch follow-up, AI reply detection, HubSpot CRM sync, A/B testing, weekly reports.", "eligibleRegion": "Worldwide" },
             ],
@@ -1471,7 +1471,7 @@ export default function LandingPage() {
             "tool": [
               { "@type": "HowToTool", "name": "LinkedIn Sales Navigator" },
               { "@type": "HowToTool", "name": "Gemini AI" },
-              { "@type": "HowToTool", "name": "n8n" },
+              { "@type": "HowToTool", "name": "Apify" },
               { "@type": "HowToTool", "name": "Slack or Telegram" },
             ],
             "step": [
