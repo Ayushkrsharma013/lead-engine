@@ -1,6 +1,7 @@
 // lib/agents/lead-scout.ts
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
+import { readKnowledge, readKnowledgeNumber, readKnowledgeList, writeKnowledge } from "./knowledge";
 
 const HOT_LEAD_THRESHOLD = 80;
 
@@ -29,14 +30,19 @@ const HIGH_VALUE_INDUSTRIES = new Set([
  * Compute a basic ICP score for a single lead row (snake_case DB columns).
  * Each criterion adds points; total is capped at 100.
  */
-function computeIcpScore(lead: {
-  email_status?: string;
-  linkedin?: string;
-  website?: string;
-  company_size?: string;
-  industry?: string;
-  title?: string;
-}): number {
+function computeIcpScore(
+  lead: {
+    email_status?: string;
+    linkedin?: string;
+    website?: string;
+    company_size?: string;
+    industry?: string;
+    title?: string;
+    source?: string;
+  },
+  topLeadSources: string[],
+  highPerfIndustries: string[]
+): number {
   let score = 0;
 
   // Has verified email: +20
@@ -51,12 +57,21 @@ function computeIcpScore(lead: {
   // Company size known (not empty): +10
   if (lead.company_size && lead.company_size.trim().length > 0) score += 10;
 
-  // Industry is Technology/Finance/Healthcare or similar: +10
+  // Industry is Technology/Finance/Healthcare or similar (from knowledge store or hardcoded): +10
+  const industriesToCheck =
+    highPerfIndustries.length > 0
+      ? new Set(highPerfIndustries.map((i) => i.toLowerCase().trim()))
+      : HIGH_VALUE_INDUSTRIES;
   if (
     lead.industry &&
-    HIGH_VALUE_INDUSTRIES.has(lead.industry.toLowerCase().trim())
+    industriesToCheck.has(lead.industry.toLowerCase().trim())
   ) {
     score += 10;
+  }
+
+  // Source is in top-performing sources (from knowledge store): +5
+  if (lead.source && topLeadSources.includes(lead.source.toLowerCase().trim())) {
+    score += 5;
   }
 
   // Has title (not empty): +5
@@ -75,12 +90,17 @@ export class LeadScoutAgent implements AgentModule {
     let safeActionsExecuted = 0;
 
     try {
+      // ── Knowledge store reads (shared coordination) ────────────────────────
+      const minScoreThreshold = await readKnowledgeNumber("min_score_threshold", 60).catch(() => 60);
+      const topLeadSources = await readKnowledgeList("top_lead_sources").catch(() => []);
+      const highPerfIndustries = await readKnowledgeList("high_perf_industries").catch(() => []);
+
       // ── Step 1: Score unscored leads ──────────────────────────────────────
       // Find leads where score is 0 or NULL
       const { data: unscoredLeads, error: unscoredError } = await supabaseAdmin
         .from("leads")
         .select(
-          "id, email_status, linkedin, website, company_size, industry, title, name, company"
+          "id, email_status, linkedin, website, company_size, industry, title, name, company, source"
         )
         .or("score.eq.0,score.is.null");
 
@@ -90,7 +110,7 @@ export class LeadScoutAgent implements AgentModule {
       let totalScore = 0;
 
       for (const lead of unscoredLeads || []) {
-        const score = computeIcpScore(lead);
+        const score = computeIcpScore(lead, topLeadSources, highPerfIndustries);
         if (score > 0) {
           scoreUpdates.push({ id: lead.id, score });
           totalScore += score;
@@ -116,10 +136,11 @@ export class LeadScoutAgent implements AgentModule {
         scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0;
 
       // ── Step 2: Detect hot leads ──────────────────────────────────────────
+      const hotThreshold = await readKnowledgeNumber("hot_lead_threshold", 80).catch(() => 80);
       const { data: hotLeads, error: hotError } = await supabaseAdmin
         .from("leads")
         .select("id, name, company, score")
-        .gte("score", HOT_LEAD_THRESHOLD)
+        .gte("score", hotThreshold)
         .eq("status", "new");
 
       if (hotError) throw hotError;
@@ -187,7 +208,7 @@ export class LeadScoutAgent implements AgentModule {
       const { count: hotCount, error: hotCountError } = await supabaseAdmin
         .from("leads")
         .select("*", { count: "exact", head: true })
-        .gte("score", HOT_LEAD_THRESHOLD);
+        .gte("score", hotThreshold);
 
       if (hotCountError) throw hotCountError;
 
@@ -196,7 +217,7 @@ export class LeadScoutAgent implements AgentModule {
           .from("leads")
           .select("*", { count: "exact", head: true })
           .eq("status", "new")
-          .gt("score", 60);
+          .gt("score", minScoreThreshold);
 
       if (needsAttentionError) throw needsAttentionError;
 
@@ -210,6 +231,11 @@ export class LeadScoutAgent implements AgentModule {
       parts.push(
         `Pipeline: ${totalLeads ?? 0} total, ${newToday ?? 0} added today, ${hotCount ?? 0} hot, ${needsAttention ?? 0} needing attention.`
       );
+
+      // ── Knowledge store writes (shared coordination) ─────────────────────
+      await writeKnowledge("hot_lead_threshold", hotThreshold, "lead-scout").catch(() => {});
+      await writeKnowledge("new_leads_today", newToday, "lead-scout").catch(() => {});
+      await writeKnowledge("total_hot_leads", hotLeads?.length ?? 0, "lead-scout").catch(() => {});
 
       return {
         outcome: "success",
