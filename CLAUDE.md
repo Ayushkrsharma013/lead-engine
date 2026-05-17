@@ -1026,30 +1026,63 @@ vercel.json                          — add 2 cron entries (7 AM run + 6 AM dig
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | DB migration — agents, agent_actions, agent_runs + RLS + 8 seed rows | Pending |
-| 2 | lib/agents/types.ts + lib/agents/tokens.ts | Pending |
-| 3 | lib/agents/dispatcher.ts (runAgentBatch) | Pending |
-| 4 | 7 stub agent modules in lib/agents/ | Pending |
-| 5 | Finance Watcher integration (writes to agent_runs) | Pending |
-| 6 | /api/agents/run cron endpoint | Pending |
-| 7 | lib/agents/resolver.ts + /api/agents/approve GET endpoint | Pending |
-| 8 | Telegram webhook callback_query handler | Pending |
-| 9 | /api/agents/digest daily email cron | Pending |
-| 10 | /admin/agents Full Mission Control UI | Pending |
-| 11 | Sidebar link + vercel.json + full build check | Pending |
+| 1 | DB migration — agents, agent_actions, agent_runs + RLS + 8 seed rows | **DONE** — `127f1e0` |
+| 2 | lib/agents/types.ts + lib/agents/tokens.ts | **DONE** — `1384ee0` |
+| 3 | lib/agents/dispatcher.ts (runAgentBatch) | **DONE** — `479761c` |
+| 4 | 7 stub agent modules in lib/agents/ | **DONE** — `14467ba` |
+| 5 | Finance Watcher integration (writes to agent_runs) | **DONE** — `2c0a58d` |
+| 6 | /api/agents/run cron endpoint | **DONE** — `0ca3e0b` |
+| 7 | lib/agents/resolver.ts + /api/agents/approve GET endpoint | **DONE** — `d6e5abc` |
+| 8 | Telegram webhook callback_query handler | **DONE** — `8be44bd` |
+| 9 | /api/agents/digest daily email cron | **DONE** — `383c6ec` |
+| 10 | /admin/agents Full Mission Control UI | **DONE** — `50b95ef` |
+| 11 | Sidebar link + vercel.json + full build check | **DONE** — `d3680f6` |
+
+### Phase 2 — All Agents Implemented (7-agent swarm)
+
+**Date:** 2026-05-17 — dispatched 7 parallel subagents, all completed within 3 minutes.
+
+| Agent | Commit | What it does |
+|---|---|---|
+| Data Janitor | `813d733` | Finds stale leads (>30d), flags duplicates, queues invalid email archives |
+| Lead Scout | `4a7e6b7` | Scores unscored leads, detects hot leads (score 80+), classifies new leads |
+| Outreach Agent | `44d6ef2` | Finds qualified leads (score 60+), detects follow-up needs, queues launch actions |
+| Pipeline Manager | `bbb6479` | Auto-advances contacted/replied leads, detects stuck leads (>14d), queues won/lost archives |
+| ICP Analyst | `a8dcd7a` | Conversion stats by industry/size/source, suggests ICP threshold adjustments, weekly trends |
+| Client Reporter | `0a48797` | Per-client weekly stats, queues report actions, flags at-risk clients (0 new leads) |
+| Message Coach | `db7fd90` | Reply rate analysis by variant, template improvement suggestions, stale template detection |
+
+All 8 agents enabled in production DB (`agents.enabled = true` on `tbsqpnqzpbnilifhwvgr`).
+Build: 0 errors, 59/59 pages.
+
+### Phase 2 task checklist
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Data Janitor — stale detection + dedup + invalid email cleanup | **DONE** |
+| 2 | Lead Scout — ICP scoring + hot lead detection + pipeline classification | **DONE** |
+| 3 | Outreach Agent — qualified leads + follow-up tracking + launch queuing | **DONE** |
+| 4 | Pipeline Manager — kanban auto-advance + stuck detection + archive queuing | **DONE** |
+| 5 | ICP Analyst — conversion analysis + industry scoring + threshold suggestions | **DONE** |
+| 6 | Client Reporter — per-client summaries + at-risk detection | **DONE** |
+| 7 | Message Coach — reply rate analysis + variant optimization + template health | **DONE** |
+| 8 | Enable all agents in production DB | **DONE** |
+| 9 | Update progress page + CLAUDE.md | **DONE** |
+
+---
 
 ### Agent roster
 
-| Agent | Slug | Schedule | Phase 1 Status |
+| Agent | Slug | Schedule | Status |
 |---|---|---|---|
-| Lead Scout | `lead-scout` | 7 AM daily | Stub — disabled |
-| Outreach Agent | `outreach-agent` | 8 AM daily | Stub — disabled |
-| Pipeline Manager | `pipeline-manager` | 9 AM daily | Stub — disabled |
-| ICP Analyst | `icp-analyst` | Sun 8 AM | Stub — disabled |
-| Client Reporter | `client-reporter` | Sun 8 AM | Stub — disabled |
-| Finance Watcher | `finance-watcher` | 9 AM daily | **Live — own cron** |
-| Data Janitor | `data-janitor` | 4 AM daily | Stub — disabled |
-| Message Coach | `message-coach` | 10 AM daily | Stub — disabled |
+| Data Janitor | `data-janitor` | 4 AM daily | **Live** — stale detection, dedup, invalid email cleanup |
+| Lead Scout | `lead-scout` | 7 AM daily | **Live** — ICP scoring, hot lead detection, pipeline classification |
+| Outreach Agent | `outreach-agent` | 8 AM daily | **Live** — qualified leads, follow-up tracking, launch queuing |
+| Pipeline Manager | `pipeline-manager` | 9 AM daily | **Live** — kanban auto-advance, stuck detection, archive queuing |
+| Finance Watcher | `finance-watcher` | 9 AM daily | **Live** — own cron, payment operations |
+| ICP Analyst | `icp-analyst` | Sun 8 AM | **Live** — conversion analysis, industry scoring, threshold suggestions |
+| Client Reporter | `client-reporter` | Sun 8 AM | **Live** — per-client weekly summaries, at-risk detection |
+| Message Coach | `message-coach` | 10 AM daily | **Live** — reply rate analysis, variant optimization, template health |
 
 ### Safe vs risky action classification
 
@@ -1077,8 +1110,9 @@ vercel.json                          — add 2 cron entries (7 AM run + 6 AM dig
 
 ---
 
-- CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
 ### Future enhancements (not yet planned)
+
+- CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
 
 - OpenOutreach sequence integration — connect LinkedIn steps to the engine
 - Email open/bounce tracking via Resend webhooks
