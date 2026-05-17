@@ -2,6 +2,7 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
 import type { Lead } from "@/lib/types";
+import { readKnowledge, readKnowledgeNumber, readKnowledgeRecord, writeKnowledge } from "./knowledge";
 
 const QUALIFIED_SCORE_THRESHOLD = 60;
 const HOT_SCORE_THRESHOLD = 80;
@@ -50,13 +51,23 @@ export class OutreachAgent implements AgentModule {
     let safeActionsExecuted = 0;
 
     try {
+      // ── Knowledge coordination reads ─────────────────────────────────────────
+      let bestTemplateIds: Record<string, unknown> = {};
+      let hotScoreThreshold = HOT_SCORE_THRESHOLD;
+      let minScoreThreshold = QUALIFIED_SCORE_THRESHOLD;
+      let lastTouchedThreshold = FOLLOW_UP_DAYS;
+      try { bestTemplateIds = await readKnowledgeRecord("best_template_ids"); } catch { /* ignore */ }
+      try { hotScoreThreshold = await readKnowledgeNumber("hot_lead_threshold", HOT_SCORE_THRESHOLD); } catch { /* ignore */ }
+      try { minScoreThreshold = await readKnowledgeNumber("min_score_threshold", QUALIFIED_SCORE_THRESHOLD); } catch { /* ignore */ }
+      try { lastTouchedThreshold = await readKnowledgeNumber("follow_up_window_days", FOLLOW_UP_DAYS); } catch { /* ignore */ }
+
       // ── Step 1: Find qualified leads ─────────────────────────────────────────
-      // Leads with score >= 60, status = 'new', kanban_column = 'New'
+      // Leads with score >= threshold, status = 'new', kanban_column = 'New'
       // These are ready for first contact.
       const { data: qualifiedRows, error: qualErr } = await supabaseAdmin
         .from("leads")
         .select("*")
-        .gte("score", QUALIFIED_SCORE_THRESHOLD)
+        .gte("score", minScoreThreshold)
         .eq("status", "new")
         .eq("kanban_column", "New");
 
@@ -67,7 +78,7 @@ export class OutreachAgent implements AgentModule {
       // ── Step 2: Find leads needing follow-up ─────────────────────────────────
       // Leads where status = 'contacted' AND last_touched is older than 3 days.
       const followUpCutoff = new Date(
-        Date.now() - FOLLOW_UP_DAYS * 86400000
+        Date.now() - lastTouchedThreshold * 86400000
       ).toISOString();
 
       const { data: followUpRows, error: followUpErr } = await supabaseAdmin
@@ -96,6 +107,7 @@ export class OutreachAgent implements AgentModule {
             leadName: lead.name,
             leadCompany: lead.company,
             score: lead.score,
+            bestTemplates: bestTemplateIds,
           },
           riskLevel: "medium",
         });
@@ -106,7 +118,7 @@ export class OutreachAgent implements AgentModule {
       const { data: hotRows, error: hotErr } = await supabaseAdmin
         .from("leads")
         .select("*")
-        .gte("score", HOT_SCORE_THRESHOLD)
+        .gte("score", hotScoreThreshold)
         .eq("status", "new")
         .eq("kanban_column", "New");
 
@@ -129,6 +141,7 @@ export class OutreachAgent implements AgentModule {
             leadCompany: lead.company,
             score: lead.score,
             priority: "hot",
+            bestTemplates: bestTemplateIds,
           },
           riskLevel: "medium",
         });
@@ -168,6 +181,11 @@ export class OutreachAgent implements AgentModule {
         .gte("created_at", oneDayAgo);
 
       if (manualMsgErr) throw manualMsgErr;
+
+      // ── Write findings to knowledge store ────────────────────────────────────
+      try { await writeKnowledge("qualified_lead_count", qualifiedLeads.length, "outreach-agent"); } catch { /* ignore */ }
+      try { await writeKnowledge("follow_up_count", followUpLeads.length, "outreach-agent"); } catch { /* ignore */ }
+      try { await writeKnowledge("follow_up_window_days", lastTouchedThreshold, "outreach-agent"); } catch { /* ignore */ }
 
       // ── Build summary ────────────────────────────────────────────────────────
       const qualifiedCount = qualifiedLeads.length;
