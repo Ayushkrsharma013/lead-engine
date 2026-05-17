@@ -1,14 +1,33 @@
 // app/admin/agents/page.tsx
 import { supabaseAdmin } from "@/lib/supabase";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 import type { AgentRow, AgentActionRow, AgentRunRow } from "@/lib/agents/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  // Auth check — super_admin only
-  const hdrs = await headers();
-  const role = hdrs.get("x-user-role");
+  // Auth check — verify super_admin via Supabase SSR
+  const cookieStore = await cookies();
+  const rawUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
+  const ssr = createServerClient(rawUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() { return cookieStore.getAll(); },
+      setAll() {},
+    },
+  });
+
+  const { data: { user } } = await ssr.auth.getUser();
+  let role = "user";
+  if (user) {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role || "user";
+  }
+
   if (role !== "super_admin") {
     return (
       <div style={{ padding: "40px", color: "#E06060", fontFamily: "monospace" }}>
