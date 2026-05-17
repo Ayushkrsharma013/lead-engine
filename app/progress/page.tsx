@@ -147,14 +147,14 @@ const AGENT_TASKS: AgentTask[] = [
 ];
 
 const AGENT_ROSTER: AgentRosterEntry[] = [
-  { agent: "Lead Scout", slug: "lead-scout", schedule: "7 AM daily", status: "stub" },
-  { agent: "Outreach Agent", slug: "outreach-agent", schedule: "8 AM daily", status: "stub" },
-  { agent: "Pipeline Manager", slug: "pipeline-manager", schedule: "9 AM daily", status: "stub" },
-  { agent: "ICP Analyst", slug: "icp-analyst", schedule: "Sun 8 AM", status: "stub" },
-  { agent: "Client Reporter", slug: "client-reporter", schedule: "Sun 8 AM", status: "stub" },
+  { agent: "Data Janitor", slug: "data-janitor", schedule: "4 AM daily", status: "live" },
+  { agent: "Lead Scout", slug: "lead-scout", schedule: "7 AM daily", status: "live" },
+  { agent: "Outreach Agent", slug: "outreach-agent", schedule: "8 AM daily", status: "live" },
+  { agent: "Pipeline Manager", slug: "pipeline-manager", schedule: "9 AM daily", status: "live" },
+  { agent: "ICP Analyst", slug: "icp-analyst", schedule: "Sun 8 AM", status: "live" },
+  { agent: "Client Reporter", slug: "client-reporter", schedule: "Sun 8 AM", status: "live" },
   { agent: "Finance Watcher", slug: "finance-watcher", schedule: "9 AM daily", status: "live" },
-  { agent: "Data Janitor", slug: "data-janitor", schedule: "4 AM daily", status: "stub" },
-  { agent: "Message Coach", slug: "message-coach", schedule: "10 AM daily", status: "stub" },
+  { agent: "Message Coach", slug: "message-coach", schedule: "10 AM daily", status: "live" },
 ];
 
 const RISK_CLASSIFICATION: RiskRule[] = [
