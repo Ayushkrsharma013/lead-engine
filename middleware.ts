@@ -31,13 +31,20 @@ export async function middleware(req: NextRequest) {
 
   if (user) {
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id, email, full_name, role, avatar_url")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (profile) {
+      if (profileError || !profile) {
+        // Profile query failed or no row — fall back to user metadata
+        requestHeaders.set("x-user-id", user.id);
+        requestHeaders.set("x-user-email", user.email || "");
+        requestHeaders.set("x-user-name", user.user_metadata?.full_name || "");
+        requestHeaders.set("x-user-role", user.user_metadata?.role || "user");
+        role = user.user_metadata?.role || "user";
+      } else {
         requestHeaders.set("x-user-id", profile.id);
         requestHeaders.set("x-user-email", profile.email || "");
         requestHeaders.set("x-user-name", profile.full_name || "");
