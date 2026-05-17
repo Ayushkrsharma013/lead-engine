@@ -106,7 +106,9 @@ export async function GET(req: Request) {
   if (action === "set") {
     const baseUrl = req.headers.get("host") || "";
     const protocol = baseUrl.includes("localhost") ? "http" : "https";
-    const webhookUrl = `${protocol}://${baseUrl}/api/agent/telegram`;
+    // Use NEXT_PUBLIC_SITE_URL for production, fallback to host header
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${baseUrl}`;
+    const webhookUrl = `${siteUrl}/prospecting-os/api/agent/telegram`;
 
     const res = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`,
