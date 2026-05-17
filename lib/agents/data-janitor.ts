@@ -1,6 +1,7 @@
 // lib/agents/data-janitor.ts
 import { supabaseAdmin } from "../supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
+import { writeKnowledge } from "./knowledge";
 
 function todayDateStr(): string {
   return new Date().toISOString().slice(0, 10); // "2026-05-17"
@@ -25,6 +26,7 @@ export class DataJanitorAgent implements AgentModule {
     const logLines: string[] = [];
     let outcome: "success" | "partial" = "success";
     const now = new Date().toISOString();
+    const duplicateDomainSet = new Set<string>();
 
     // ── 1. Stale leads (last_touched > 30 days or NULL) ───────────────────────
     try {
@@ -91,9 +93,11 @@ export class DataJanitorAgent implements AgentModule {
         let dupCount = 0;
         let groupCount = 0;
 
-        for (const [, group] of groups) {
+        for (const [email, group] of groups) {
           if (group.length <= 1) continue;
           groupCount++;
+          const domain = email.split("@")[1];
+          if (domain) duplicateDomainSet.add(domain);
 
           // Keep the one with highest score; tiebreak by most recent saved_at
           const keep = group.reduce((best, cur) => {
@@ -192,6 +196,11 @@ export class DataJanitorAgent implements AgentModule {
         }`
       );
     }
+
+    const duplicateDomains = Array.from(duplicateDomainSet);
+
+    try { await writeKnowledge("stale_window_days", 30, "data-janitor"); } catch { /* ignore */ }
+    try { await writeKnowledge("dup_email_domains", duplicateDomains, "data-janitor"); } catch { /* ignore */ }
 
     return {
       outcome,
