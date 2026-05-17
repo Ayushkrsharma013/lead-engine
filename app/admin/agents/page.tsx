@@ -57,9 +57,8 @@ export default function AgentCommandCenter() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/prospecting-os/api/admin/agents");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       setAgents(data.agents || []);
       setActions(data.actions || []);
       setRuns(data.runs || []);
