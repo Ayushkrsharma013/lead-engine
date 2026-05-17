@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Settings, Save } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
 const INDUSTRY_OPTIONS = [
@@ -45,14 +46,23 @@ export default function ClientSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    // Save ICP config to profiles
-    const res = await fetch(`/prospecting-os/api/admin/users/${profile?.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ modules_allowed: [] }), // we'd need an endpoint for workspace update
-    });
+    const client = createClient();
+    const { error } = await client
+      .from("client_workspaces")
+      .update({
+        icp_config: {
+          industries: targetIndustries,
+          locations: targetLocations,
+          minScore,
+        },
+      })
+      .eq("client_user_id", profile?.id);
     setSaving(false);
-    setToast("Preferences saved");
+    if (error) {
+      setToast("Failed to save preferences");
+    } else {
+      setToast("Preferences saved");
+    }
     setTimeout(() => setToast(""), 2500);
   };
 
