@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { processInboundReply } from "@/lib/sequence-engine";
+import { supabaseAdmin } from "@/lib/supabase";
+import { logActivity } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-// Resend inbound webhook — called when a lead replies to a sequence email.
+// Resend webhook handler — handles inbound replies + engagement events (open, click).
 // Resend uses Svix-compatible webhook signatures.
-// Verify the signature before processing the payload.
 
-interface ResendWebhookBody {
+interface ResendInboundBody {
+  type?: string;
   from?: string;
   to?: string;
   subject?: string;
@@ -16,6 +18,19 @@ interface ResendWebhookBody {
   html?: string;
   headers?: Record<string, string>;
 }
+
+interface ResendEngagementBody {
+  type: "email.opened" | "email.clicked" | "email.bounced" | "email.delivered" | "email.complained";
+  data: {
+    email_id?: string;
+    from?: string;
+    to?: string[];
+    subject?: string;
+    click?: { link?: string };
+  };
+}
+
+type ResendWebhookBody = ResendInboundBody | ResendEngagementBody;
 
 function extractEmail(fromHeader: string): string {
   const match = fromHeader.match(/<([^>]+)>/);
@@ -28,11 +43,7 @@ function stripBrackets(headerValue: string | undefined): string | undefined {
   return headerValue.replace(/^<|>$/g, "");
 }
 
-function verifyWebhookSignature(
-  body: string,
-  headers: Headers,
-  secret: string
-): boolean {
+function verifyWebhookSignature(body: string, headers: Headers, secret: string): boolean {
   const svixId = headers.get("svix-id");
   const svixTimestamp = headers.get("svix-timestamp");
   const svixSignature = headers.get("svix-signature");
@@ -44,7 +55,6 @@ function verifyWebhookSignature(
     const secretParts = secret.split("_");
     const rawSecret = secretParts[secretParts.length - 1];
 
-    // Resend secret format: whsec_<base64> — try with and without prefix
     for (const key of [rawSecret, secret]) {
       const hmac = createHmac("sha256", Buffer.from(key, "base64"));
       hmac.update(signedContent);
@@ -72,29 +82,106 @@ function verifyWebhookSignature(
 
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+  let body: ResendWebhookBody;
 
-  // Verify webhook signature if secret is configured
   if (webhookSecret) {
     const rawBody = await req.text();
     if (!verifyWebhookSignature(rawBody, req.headers, webhookSecret)) {
       return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
     }
-    // Re-parse the verified body
-    const body = JSON.parse(rawBody) as ResendWebhookBody;
-    return processReply(body);
+    body = JSON.parse(rawBody) as ResendWebhookBody;
+  } else {
+    try {
+      body = await req.json() as ResendWebhookBody;
+    } catch {
+      return NextResponse.json({ ok: false, error: "Cannot parse body" }, { status: 400 });
+    }
   }
 
-  // Fallback: no secret configured, process without verification
+  // Route by event type
+  const eventType = (body as ResendEngagementBody).type;
+
+  if (eventType === "email.opened" || eventType === "email.clicked") {
+    return processEngagementEvent(body as ResendEngagementBody);
+  }
+
+  if (eventType === "email.bounced") {
+    return processBounceEvent(body as ResendEngagementBody);
+  }
+
+  // Default: inbound reply (no type field)
+  return processReply(body as ResendInboundBody);
+}
+
+async function processEngagementEvent(body: ResendEngagementBody) {
   try {
-    const body = await req.json() as ResendWebhookBody;
-    return processReply(body);
-  } catch {
-    // Body already consumed — try to read again
-    return NextResponse.json({ ok: false, error: "Cannot parse body" }, { status: 400 });
+    const emailId = body.data?.email_id;
+    if (!emailId) return NextResponse.json({ ok: true, skipped: "no email_id" });
+
+    const isClick = body.type === "email.clicked";
+    const scoreBoost = isClick ? 5 : 3;
+    const eventLabel = isClick ? "clicked" : "opened";
+
+    // Find sequence message by resend_id
+    const { data: seqMsg } = await supabaseAdmin
+      .from("sequence_messages")
+      .select("id, lead_id")
+      .eq("resend_id", emailId)
+      .maybeSingle();
+
+    if (!seqMsg?.lead_id) return NextResponse.json({ ok: true, skipped: "no sequence message" });
+
+    // Boost lead score
+    const { data: lead } = await supabaseAdmin
+      .from("leads")
+      .select("id, name, score")
+      .eq("id", seqMsg.lead_id)
+      .maybeSingle();
+
+    if (!lead) return NextResponse.json({ ok: true, skipped: "lead not found" });
+
+    const currentScore = typeof lead.score === "number" ? lead.score : 0;
+    const newScore = Math.min(100, currentScore + scoreBoost);
+    if (newScore > currentScore) {
+      await supabaseAdmin
+        .from("leads")
+        .update({ score: newScore, last_touched: new Date().toISOString() })
+        .eq("id", lead.id);
+    }
+
+    await logActivity({
+      type: "notification",
+      text: `${lead.name || "Lead"} ${eventLabel} your email (+${scoreBoost} score)`,
+      leadId: lead.id,
+    });
+
+    console.log(`[inbound-email] ${body.type} for lead ${lead.id} — score ${currentScore}→${newScore}`);
+    return NextResponse.json({ ok: true, event: body.type, leadId: lead.id, newScore });
+  } catch (err) {
+    console.error("[inbound-email] Engagement event error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
 
-async function processReply(body: ResendWebhookBody) {
+async function processBounceEvent(body: ResendEngagementBody) {
+  try {
+    const emailId = body.data?.email_id;
+    if (!emailId) return NextResponse.json({ ok: true, skipped: "no email_id" });
+
+    // Update sequence_message to bounced
+    await supabaseAdmin
+      .from("sequence_messages")
+      .update({ status: "bounced" })
+      .eq("resend_id", emailId);
+
+    return NextResponse.json({ ok: true, event: "email.bounced" });
+  } catch (err) {
+    console.error("[inbound-email] Bounce event error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+async function processReply(body: ResendInboundBody) {
   try {
     const fromHeader = body.from || "";
     const fromEmail = extractEmail(fromHeader);

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Search, Play, Download, X, RotateCcw, ChevronRight,
   Sparkles, Database, HardDrive, CloudDownload, Flame, RefreshCw,
+  ListChecks, GitBranch, ChevronDown,
 } from "lucide-react";
 import SyncApifyModal from "@/components/SyncApifyModal";
 import NewScrapeModal from "@/components/NewScrapeModal";
@@ -205,6 +206,9 @@ export default function Home() {
   const [scoreTab, setScoreTab] = useState<ScoreTab>("all");
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [newScrapeOpen, setNewScrapeOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [bulkSeqOpen, setBulkSeqOpen] = useState(false);
+  const [sequences, setSequences] = useState<Array<{ id: string; name: string }>>([]);
 
   // Derived data
   const sourceLeads = tab === "latest" ? latestLeads : leads;
@@ -454,6 +458,49 @@ export default function Home() {
       showToast("Failed to update leads", "error");
     }
   }, [dispatch, showToast]);
+
+  // Bulk status change
+  const handleBulkStatus = useCallback(async (status: string) => {
+    if (!selected.length) return;
+    try {
+      const stored = await batchUpdateLeadStatus(selected, status as never);
+      dispatch({ type: "SET_LEADS", payload: stored });
+      dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
+      const newStats = await computeStatsFromLeads(stored);
+      dispatch({ type: "SET_STATS", payload: newStats });
+      showToast(`${selected.length} lead${selected.length > 1 ? "s" : ""} → ${status}`);
+    } catch {
+      showToast("Failed to update status", "error");
+    }
+    setBulkStatusOpen(false);
+  }, [selected, dispatch, showToast]);
+
+  // Bulk add to sequence
+  const handleBulkSequence = useCallback(async (sequenceId: string, sequenceName: string) => {
+    if (!selected.length) return;
+    try {
+      const res = await fetch("/prospecting-os/api/sequence/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sequenceId, leadIds: selected }),
+      });
+      if (!res.ok) throw new Error("Launch failed");
+      dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
+      showToast(`${selected.length} lead${selected.length > 1 ? "s" : ""} enrolled in "${sequenceName}"`);
+    } catch {
+      showToast("Failed to enroll in sequence", "error");
+    }
+    setBulkSeqOpen(false);
+  }, [selected, dispatch, showToast]);
+
+  // Load sequences when bulk sequence picker opens
+  useEffect(() => {
+    if (!bulkSeqOpen) return;
+    fetch("/prospecting-os/api/sequences")
+      .then(r => r.json())
+      .then((d: { sequences?: Array<{ id: string; name: string }> }) => setSequences(d.sequences || []))
+      .catch(() => {});
+  }, [bulkSeqOpen]);
 
   // Export CSV
   const getExportLeads = (ids?: string[]) =>
@@ -781,6 +828,84 @@ export default function Home() {
                 <Flame size={13} />
                 Hot ({selected.length})
               </button>
+            )}
+
+            {/* Bulk Status Change — visible when leads selected */}
+            {selected.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => { setBulkStatusOpen(o => !o); setBulkSeqOpen(false); }}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-all"
+                  style={{
+                    background: bulkStatusOpen ? "rgba(0,212,255,0.18)" : "rgba(0,212,255,0.08)",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(0,212,255,0.35)",
+                  }}
+                >
+                  <ListChecks size={13} />
+                  Status
+                  <ChevronDown size={11} style={{ transform: bulkStatusOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 150ms" }} />
+                </button>
+                {bulkStatusOpen && (
+                  <div
+                    className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
+                    style={{ minWidth: 140, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+                  >
+                    {(["new","contacted","replied","hot","meeting","won","lost"] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => handleBulkStatus(s)}
+                        className="w-full text-left px-3 py-2 text-xs capitalize transition-colors"
+                        style={{ color: "var(--text)" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bulk Add to Sequence — visible when leads selected */}
+            {selected.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => { setBulkSeqOpen(o => !o); setBulkStatusOpen(false); }}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-all"
+                  style={{
+                    background: bulkSeqOpen ? "rgba(124,58,237,0.18)" : "rgba(124,58,237,0.08)",
+                    color: "var(--info)",
+                    border: "1px solid rgba(124,58,237,0.35)",
+                  }}
+                >
+                  <GitBranch size={13} />
+                  Sequence
+                  <ChevronDown size={11} style={{ transform: bulkSeqOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 150ms" }} />
+                </button>
+                {bulkSeqOpen && (
+                  <div
+                    className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
+                    style={{ minWidth: 180, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+                  >
+                    {sequences.length === 0 ? (
+                      <p className="px-3 py-2 text-xs" style={{ color: "var(--muted)" }}>No sequences found</p>
+                    ) : sequences.map(seq => (
+                      <button
+                        key={seq.id}
+                        onClick={() => handleBulkSequence(seq.id, seq.name)}
+                        className="w-full text-left px-3 py-2 text-xs truncate transition-colors"
+                        style={{ color: "var(--text)", maxWidth: 220 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        {seq.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Export CSV */}

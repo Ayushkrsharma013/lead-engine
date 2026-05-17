@@ -141,6 +141,56 @@ export class MessageCoachAgent implements AgentModule {
         if (!worst || vp.replyRate < worst.replyRate) seqWorst.set(vp.sequenceId, vp);
       }
 
+      // ── 5b. Auto-select A/B winner (≥10 sends, winner 30%+ better) ─────────
+      const autoWinners: Array<{ sequenceId: string; sequenceName: string; variant: string; replyRate: number }> = [];
+
+      const seqIds = Array.from(new Set(variantPerfs.map(vp => vp.sequenceId)));
+      for (const seqId of seqIds) {
+        const seqVariants = variantPerfs
+          .filter(vp => vp.sequenceId === seqId && vp.sent >= 5)
+          .sort((a, b) => b.replyRate - a.replyRate);
+
+        if (seqVariants.length < 2) continue;
+
+        const totalSends = seqVariants.reduce((s, v) => s + v.sent, 0);
+        if (totalSends < 10) continue;
+
+        const [best, runnerUp] = seqVariants;
+        if (runnerUp.replyRate === 0) continue; // avoid divide-by-zero
+        const relativeImprovement = (best.replyRate - runnerUp.replyRate) / Math.max(1, runnerUp.replyRate);
+
+        if (relativeImprovement >= 0.30) {
+          const seqName = sequenceNames.get(seqId) || "Unknown";
+          autoWinners.push({ sequenceId: seqId, sequenceName: seqName, variant: best.variant, replyRate: best.replyRate });
+
+          // Persist winner to knowledge store
+          try {
+            await writeKnowledge(`ab_winner.${seqId}`, {
+              variant: best.variant,
+              replyRate: best.replyRate,
+              sends: best.sent,
+              selectedAt: new Date().toISOString(),
+              sequenceName: seqName,
+            }, "message-coach");
+          } catch { /* ignore */ }
+
+          actionsToQueue.push({
+            type: "high_performer_notice",
+            description: `A/B winner auto-selected for '${seqName}': variant ${best.variant} at ${best.replyRate}% reply rate vs runner-up ${runnerUp.variant} at ${runnerUp.replyRate}% (${Math.round(relativeImprovement * 100)}% improvement over ${totalSends} sends).`,
+            payload: {
+              sequenceId: seqId,
+              sequenceName: seqName,
+              winnerVariant: best.variant,
+              winnerReplyRate: best.replyRate,
+              runnerUpVariant: runnerUp.variant,
+              runnerUpReplyRate: runnerUp.replyRate,
+              totalSends,
+            },
+            riskLevel: "safe_notify",
+          });
+        }
+      }
+
       // ── 6. Queue variant improvement suggestions ─────────────────────────
       for (const vp of variantPerfs) {
         const best = seqBest.get(vp.sequenceId);
@@ -302,7 +352,9 @@ export class MessageCoachAgent implements AgentModule {
 
       log += `. ${variantImproveCount} improvement suggestions, ${staleCount} stale templates flagged`;
 
-      if (highPerformerNoticeCount > 0) {
+      if (autoWinners.length > 0) {
+        log += `, ${autoWinners.length} A/B winner(s) auto-selected`;
+      } else if (highPerformerNoticeCount > 0) {
         log += `, ${highPerformerNoticeCount} high performers noted`;
       }
 
