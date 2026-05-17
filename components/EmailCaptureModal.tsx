@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, X, Mail, ArrowRight, CheckCircle } from "lucide-react";
+import { X, Mail, ArrowRight, CheckCircle } from "lucide-react";
 
 const STORAGE_KEY = "prospectingos_email_capture";
 const ENTRY_DELAY_MS = 15000;
@@ -191,11 +191,13 @@ export default function EmailCaptureModal() {
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {/* Icon */}
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-                    style={{ background: "rgba(232,66,10,0.1)", border: "1px solid rgba(232,66,10,0.15)" }}>
-                    <Zap size={22} style={{ color: "var(--accent, #e8420a)" }} />
-                  </div>
+                  {/* Logo */}
+                  <img
+                    src="/prospecting-os/assets/Logo_Icon.png"
+                    alt="Prospecting OS"
+                    className="w-12 h-12 rounded-xl mb-5 object-contain"
+                    style={{ border: "1px solid rgba(232,66,10,0.15)" }}
+                  />
 
                   <h3 className="text-xl font-extrabold mb-2 tracking-tight"
                     style={{ fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif", color: "var(--text-primary, #f5f4f1)" }}>

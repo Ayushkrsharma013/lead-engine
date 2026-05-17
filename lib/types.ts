@@ -155,6 +155,7 @@ export interface Campaign {
 
 export interface Client {
   id: string;
+  userId?: string;
   name: string;
   company: string;
   industry: string;

@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
       portal_username: username,
       portal_password: tempPassword,
       plan: clientPlan,
+      user_id: userId,
     })
     .select()
     .single()
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest) {
     success: true,
     client: {
       id: clientData.id,
+      userId,
       name,
       company,
       industry,
@@ -137,4 +139,86 @@ export async function POST(req: NextRequest) {
       tempPassword,
     },
   })
+}
+
+export async function GET(req: NextRequest) {
+  const h = req.headers
+  const role = h.get('x-user-role')
+
+  if (role !== 'super_admin' && role !== 'qa_agent') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Fetch all clients
+  const { data: clients, error } = await supabaseAdmin
+    .from('clients')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // For each client, fetch lead stats via user_id
+  const enriched = await Promise.all((clients || []).map(async (c) => {
+    let leadCount = 0
+    let hotCount = 0
+    let contactedCount = 0
+    let meetingCount = 0
+    let activeSequences = 0
+    let totalPipelineValue = 0
+
+    if (c.user_id) {
+      const { count: lc } = await supabaseAdmin
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', c.user_id)
+
+      const { data: leads } = await supabaseAdmin
+        .from('leads')
+        .select('id, score, status')
+        .eq('user_id', c.user_id)
+
+      leadCount = lc || 0
+      hotCount = (leads || []).filter(l => l.score >= 80).length
+      contactedCount = (leads || []).filter(l => l.status === 'contacted' || l.status === 'replied').length
+      meetingCount = (leads || []).filter(l => l.status === 'meeting').length
+      totalPipelineValue = (leads || []).reduce((sum, l) => sum + (l.score || 0), 0)
+
+      // Active sequences for this client's leads
+      const leadIds = (leads || []).map(l => l.id)
+      if (leadIds.length > 0) {
+        const { count: seqCount } = await supabaseAdmin
+          .from('sequence_executions')
+          .select('*', { count: 'exact', head: true })
+          .in('lead_id', leadIds)
+          .eq('status', 'active')
+        activeSequences = seqCount || 0
+      }
+    }
+
+    return {
+      id: c.id,
+      userId: c.user_id,
+      name: c.name,
+      company: c.company,
+      industry: c.industry,
+      email: c.email,
+      plan: c.plan || 'diy',
+      status: c.status,
+      monthlyRetainer: c.monthly_retainer || 0,
+      portalUsername: c.portal_username,
+      createdAt: c.created_at,
+      stats: {
+        totalLeads: leadCount,
+        hotLeads: hotCount,
+        contacted: contactedCount,
+        meetings: meetingCount,
+        activeSequences,
+        totalPipelineValue,
+      },
+    }
+  }))
+
+  return NextResponse.json({ clients: enriched })
 }

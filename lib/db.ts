@@ -104,6 +104,7 @@ function campaignFromDB(row: Record<string, unknown>): Campaign {
 function clientFromDB(row: Record<string, unknown>): Client {
   return {
     id: String(row.id || ""),
+    userId: row.user_id ? String(row.user_id) : undefined,
     name: String(row.name || ""),
     company: String(row.company || ""),
     industry: String(row.industry || ""),
