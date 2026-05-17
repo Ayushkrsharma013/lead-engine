@@ -59,11 +59,11 @@ const MODULES: ModuleStatus[] = [
   // Tools
   { name: "Free Pipeline Audit", route: "/tools/free-audit", status: "live" },
   { name: "Icebreaker Generator", route: "/tools/icebreaker-generator", status: "live" },
-  // Legacy
-  { name: "Portal (Legacy)", route: "/portal", status: "legacy", notes: "Superseded by /client-portal" },
-  { name: "Portal Login (Legacy)", route: "/portal/login", status: "legacy" },
-  { name: "Portal Leads (Legacy)", route: "/portal/leads", status: "legacy" },
-  { name: "Portal Billing (Legacy)", route: "/portal/billing", status: "legacy", notes: "Superseded by /client-portal" },
+  // Legacy Portal (modernized — now uses API routes with supabaseAdmin)
+  { name: "Portal Dashboard", route: "/portal", status: "live", notes: "Modernized — fetches via /api/portal/stats + /api/portal/leads" },
+  { name: "Portal Login", route: "/portal/login", status: "live", notes: "bcrypt verify_portal_password RPC" },
+  { name: "Portal Leads", route: "/portal/leads", status: "live", notes: "Modernized — fetches via /api/portal/leads" },
+  { name: "Portal Billing", route: "/portal/billing", status: "live", notes: "Live finance_agent_log data" },
 ];
 
 const API_ROUTES: { name: string; route: string; status: "live" | "partial" }[] = [
@@ -87,6 +87,8 @@ const API_ROUTES: { name: string; route: string; status: "live" | "partial" }[] 
   { name: "Icebreaker API", route: "/api/tools/icebreaker", status: "live" },
   { name: "Audit Request API", route: "/api/tools/audit-request", status: "live" },
   { name: "ProBot Chat", route: "/api/chat/bot", status: "live" },
+  { name: "Portal Leads API", route: "/api/portal/leads", status: "live" },
+  { name: "Portal Stats API", route: "/api/portal/stats", status: "live" },
 ];
 
 const ROADMAP: RoadmapItem[] = [
