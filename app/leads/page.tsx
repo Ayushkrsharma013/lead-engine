@@ -3,8 +3,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Search, Play, Download, X, RotateCcw, ChevronRight,
-  Sparkles, Database, HardDrive, CloudDownload, Flame,
+  Sparkles, Database, HardDrive, CloudDownload, Flame, RefreshCw,
 } from "lucide-react";
+import SyncApifyModal from "@/components/SyncApifyModal";
 import type { Source, Lead, LogEntry, FilterState, SortField } from "@/lib/types";
 import { DEFAULT_FILTERS, DEFAULT_PAGINATION } from "@/lib/types";
 import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } from "@/lib/filters";
@@ -98,6 +99,7 @@ const LOG_STEPS: Record<string, Array<{ text: string; type: "info" | "success" |
   ],
 };
 type Tab = "all" | "latest";
+type ScoreTab = "all" | "hot" | "warm" | "cold";
 
 // ─── Agent Log ────────────────────────────────────────────────────────────────
 function AgentLog({ log, accent }: { log: LogEntry[]; accent: string }) {
@@ -199,10 +201,21 @@ export default function Home() {
     setTimeout(() => dispatch({ type: "SET_TOAST", payload: null }), 4000);
   }, [dispatch]);
 
+  const [scoreTab, setScoreTab] = useState<ScoreTab>("all");
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+
   // Derived data
   const sourceLeads = tab === "latest" ? latestLeads : leads;
-  const filtered = applyFilters(sourceLeads, filters);
+  const scoreFiltered = scoreTab === "hot" ? sourceLeads.filter(l => l.score >= 80)
+    : scoreTab === "warm" ? sourceLeads.filter(l => l.score >= 50 && l.score < 80)
+    : scoreTab === "cold" ? sourceLeads.filter(l => l.score < 50)
+    : sourceLeads;
+  const filtered = applyFilters(scoreFiltered, filters);
   const sorted = sortLeads(filtered, sort);
+
+  const hotCount = sourceLeads.filter(l => l.score >= 80).length;
+  const warmCount = sourceLeads.filter(l => l.score >= 50 && l.score < 80).length;
+  const coldCount = sourceLeads.filter(l => l.score < 50).length;
 
   // Sort toggle
   const handleSort = (field: SortField) => {
@@ -686,6 +699,34 @@ export default function Home() {
               Import
             </button>
 
+            {/* Sync History — historical Apify runs */}
+            <button
+              onClick={() => setSyncModalOpen(true)}
+              disabled={running}
+              title="Import leads from all past Apify runs"
+              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: "var(--surface-2)",
+                color: "var(--ink-3)",
+                border: "1px solid var(--line)",
+              }}
+              onMouseEnter={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.color = "var(--accent)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--line)";
+                }
+              }}
+            >
+              <RefreshCw size={13} />
+              Sync History
+            </button>
+
             {/* Move to Hot — visible when leads selected in Latest Run tab */}
             {tab === "latest" && selected.length > 0 && (
               <button
@@ -810,6 +851,55 @@ export default function Home() {
           {/* Stats bar */}
           <StatsBar {...stats} accent={accent} />
 
+          {/* Score tier tabs */}
+          <div
+            className="flex items-center gap-1 px-4 py-2 shrink-0"
+            style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
+          >
+            {([
+              { key: "all" as ScoreTab, label: "All Leads", count: sourceLeads.length },
+              { key: "hot" as ScoreTab, label: "Hot", count: hotCount, accent: "var(--negative)" },
+              { key: "warm" as ScoreTab, label: "Warm", count: warmCount, accent: "var(--accent)" },
+              { key: "cold" as ScoreTab, label: "Cold", count: coldCount, accent: "var(--ink-3)" },
+            ]).map(({ key, label, count, accent: tabAccent }) => {
+              const active = scoreTab === key;
+              const a = tabAccent || "var(--ink-3)";
+              return (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setScoreTab(key);
+                    dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
+                  }}
+                  className="flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium transition-all duration-150"
+                  style={active ? {
+                    background: `${a}14`,
+                    border: `1px solid ${a}30`,
+                    color: a,
+                  } : {
+                    border: "1px solid transparent",
+                    color: "var(--ink-3)",
+                  }}
+                >
+                  {key === "hot" && <Flame size={11} />}
+                  {label}
+                  <span
+                    className="text-[10px] px-1 py-0.5 rounded font-bold tabular-nums"
+                    style={active ? {
+                      background: `${a}20`,
+                      color: a,
+                    } : {
+                      background: "var(--surface-2)",
+                      color: "var(--ink-3)",
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Tab bar */}
           <div
             className="flex items-center gap-1.5 px-4 py-2 shrink-0"
@@ -923,6 +1013,18 @@ export default function Home() {
         fileName={driveFile}
         leadCount={driveLeads.length}
       />
+
+      {syncModalOpen && (
+        <SyncApifyModal
+          onClose={() => setSyncModalOpen(false)}
+          onSuccess={async () => {
+            const stored = await fetchLeadsFromDB();
+            dispatch({ type: "SET_LEADS", payload: stored });
+            const newStats = await computeStatsFromLeads(stored);
+            dispatch({ type: "SET_STATS", payload: newStats });
+          }}
+        />
+      )}
     </div>
   );
 }

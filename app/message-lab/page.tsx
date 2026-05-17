@@ -25,6 +25,24 @@ const cardBg = "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 10
 const cardBorder = "1px solid rgba(201,168,124,0.07)";
 const brass = "#C9A87C";
 
+function getScoreTier(score: number): { label: string; color: string; guidance: string } {
+  if (score >= 80) return {
+    label: "HOT",
+    color: "#ff6b35",
+    guidance: `This is a HOT lead (score: ${score}/100). They closely match your ICP. Use a confident, direct tone. Reference their specific role and company size. Push for a meeting.`,
+  };
+  if (score >= 50) return {
+    label: "WARM",
+    color: "#00d4ff",
+    guidance: `This is a WARM lead (score: ${score}/100). Good potential but needs nurturing. Use a value-first, curiosity-driven tone. Lead with a relevant insight before the ask.`,
+  };
+  return {
+    label: "COLD",
+    color: "#6b6b80",
+    guidance: `This is a COLD lead (score: ${score}/100). Low ICP match. Use a soft, non-pushy tone. Focus on education and relationship building. No hard CTA.`,
+  };
+}
+
 function buildPrompt(lead: Lead, type: MessageType, tone: Tone, offer: string): string {
   const base = `Write a ${type.replace(/_/g, " ")} with ${tone.toLowerCase()} tone for:
 Name: ${lead.name} | Title: ${lead.title}
@@ -99,6 +117,7 @@ export default function MessageLabPage() {
     setSubject("");
 
     try {
+      const scoreTier = getScoreTier(selectedLead.score);
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
@@ -109,10 +128,11 @@ export default function MessageLabPage() {
               parts: [{ text: `You are an expert B2B sales copywriter for LinkedIn + Email outreach specializing in SaaS, Founders, and Agencies.
 Never use "I hope this finds you well" or similar clichés.
 Always reference something specific about the person or company.
-Be direct, human, value-first. No buzzwords.` }],
+Be direct, human, value-first. No buzzwords.
+${scoreTier.guidance}` }],
             },
             contents: [{ parts: [{ text: buildPrompt(selectedLead, messageType, tone, offer) }] }],
-            generationConfig: { maxOutputTokens: 1000 },
+            generationConfig: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 300 },
           }),
         },
       );
@@ -124,8 +144,9 @@ Be direct, human, value-first. No buzzwords.` }],
         throw new Error(err.error?.message || `Gemini API error: ${res.status}`);
       }
 
-      const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> };
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const text = parts.find(p => !p.thought)?.text ?? parts[0]?.text ?? "";
 
       if (messageType === "cold_email") {
         try {
@@ -254,13 +275,80 @@ Be direct, human, value-first. No buzzwords.` }],
                 onBlur={e => (e.currentTarget as HTMLSelectElement).style.borderColor = "var(--line)"}
               >
                 <option value="">Choose a lead…</option>
-                {leads.map(l => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} — {l.title} @ {l.company} (Score: {l.score})
-                  </option>
-                ))}
+                {leads.map(l => {
+                  const tier = getScoreTier(l.score);
+                  return (
+                    <option key={l.id} value={l.id}>
+                      [{tier.label}] {l.name} — {l.title} @ {l.company} ({l.score})
+                    </option>
+                  );
+                })}
               </select>
             </div>
+
+            {/* Lead Intelligence Card */}
+            {selectedLead && (() => {
+              const tier = getScoreTier(selectedLead.score);
+              return (
+                <div
+                  className="rounded-lg p-3 flex items-center gap-3"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
+                >
+                  {/* Score ring */}
+                  <div className="shrink-0 relative w-12 h-12">
+                    <svg viewBox="0 0 48 48" className="w-12 h-12 -rotate-90">
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="var(--line)" strokeWidth="4" />
+                      <circle
+                        cx="24" cy="24" r="20" fill="none"
+                        stroke={tier.color}
+                        strokeWidth="4"
+                        strokeDasharray={`${(selectedLead.score / 100) * 125.7} 125.7`}
+                        strokeLinecap="round"
+                        style={{ filter: `drop-shadow(0 0 4px ${tier.color}60)` }}
+                      />
+                    </svg>
+                    <span
+                      className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums"
+                      style={{ color: tier.color }}
+                    >
+                      {selectedLead.score}
+                    </span>
+                  </div>
+
+                  {/* Lead info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold truncate" style={{ color: "var(--ink)" }}>{selectedLead.name}</p>
+                    <p className="text-[11px] truncate" style={{ color: "var(--ink-3)" }}>{selectedLead.title} @ {selectedLead.company}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: `${tier.color}18`, color: tier.color, border: `1px solid ${tier.color}30` }}
+                      >
+                        {tier.label}
+                      </span>
+                      {selectedLead.kanbanColumn && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "var(--line)", color: "var(--ink-3)" }}>
+                          {selectedLead.kanbanColumn}
+                        </span>
+                      )}
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: selectedLead.emailStatus === "verified"
+                            ? "rgba(0,255,136,0.1)" : selectedLead.emailStatus === "risky"
+                            ? "rgba(0,212,255,0.1)" : "rgba(107,107,128,0.1)",
+                          color: selectedLead.emailStatus === "verified"
+                            ? "var(--positive)" : selectedLead.emailStatus === "risky"
+                            ? "var(--accent)" : "var(--ink-3)",
+                        }}
+                      >
+                        {selectedLead.emailStatus}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Message Type */}
             <div>

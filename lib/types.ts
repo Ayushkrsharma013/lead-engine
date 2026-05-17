@@ -249,6 +249,22 @@ export interface AgentMessage {
   ts: string;
 }
 
+// ─── Apify Sync Log ─────────────────────────────────────────────────────────
+
+export interface ApifySyncLog {
+  id: string;
+  triggered_by?: string;
+  runs_processed: number;
+  leads_found: number;
+  leads_imported: number;
+  leads_skipped: number;
+  status: "pending" | "running" | "completed" | "failed";
+  error_log: string[];
+  started_at: string;
+  completed_at?: string;
+  created_at: string;
+}
+
 // ─── RBAC types ───────────────────────────────────────────────
 
 export type UserRole = 'super_admin' | 'client' | 'user' | 'qa_agent'

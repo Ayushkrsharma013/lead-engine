@@ -4,7 +4,7 @@ import { sanitizeLead } from "./storage";
 import type {
   Lead, Message, Sequence, Campaign, Client,
   ActivityLogEntry, MergeResult, Stats,
-  SequenceExecution, SequenceMessage,
+  SequenceExecution, SequenceMessage, ApifySyncLog,
 } from "./types";
 
 // ─── Transform helpers (snake_case ↔ camelCase) ────────────────────────────────
@@ -572,4 +572,71 @@ export async function getVariantStats(sequenceId: string): Promise<VariantStat[]
     replied: counts.replied,
     replyRate: counts.sent > 0 ? Math.round((counts.replied / counts.sent) * 100) : 0,
   }));
+}
+
+// ─── Apify Sync Log ──────────────────────────────────────────────────────────
+
+function syncLogFromDB(row: Record<string, unknown>): ApifySyncLog {
+  return {
+    id: String(row.id || ""),
+    triggered_by: row.triggered_by ? String(row.triggered_by) : undefined,
+    runs_processed: Number(row.runs_processed ?? 0),
+    leads_found: Number(row.leads_found ?? 0),
+    leads_imported: Number(row.leads_imported ?? 0),
+    leads_skipped: Number(row.leads_skipped ?? 0),
+    status: String(row.status || "pending") as ApifySyncLog["status"],
+    error_log: Array.isArray(row.error_log) ? (row.error_log as unknown[]).map(String) : [],
+    started_at: String(row.started_at || new Date().toISOString()),
+    completed_at: row.completed_at ? String(row.completed_at) : undefined,
+    created_at: String(row.created_at || new Date().toISOString()),
+  };
+}
+
+export async function insertApifySyncLog(entry: Partial<ApifySyncLog>): Promise<ApifySyncLog> {
+  const { data, error } = await supabase
+    .from("apify_sync_log")
+    .insert({
+      triggered_by: entry.triggered_by || null,
+      runs_processed: entry.runs_processed ?? 0,
+      leads_found: entry.leads_found ?? 0,
+      leads_imported: entry.leads_imported ?? 0,
+      leads_skipped: entry.leads_skipped ?? 0,
+      status: entry.status ?? "pending",
+      error_log: entry.error_log ?? [],
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return syncLogFromDB(data as unknown as Record<string, unknown>);
+}
+
+export async function updateApifySyncLog(id: string, updates: Partial<ApifySyncLog>): Promise<ApifySyncLog> {
+  const row: Record<string, unknown> = {};
+  if (updates.runs_processed !== undefined) row.runs_processed = updates.runs_processed;
+  if (updates.leads_found !== undefined) row.leads_found = updates.leads_found;
+  if (updates.leads_imported !== undefined) row.leads_imported = updates.leads_imported;
+  if (updates.leads_skipped !== undefined) row.leads_skipped = updates.leads_skipped;
+  if (updates.status !== undefined) row.status = updates.status;
+  if (updates.error_log !== undefined) row.error_log = updates.error_log;
+  if (updates.completed_at !== undefined) row.completed_at = updates.completed_at;
+
+  const { data, error } = await supabase
+    .from("apify_sync_log")
+    .update(row)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return syncLogFromDB(data as unknown as Record<string, unknown>);
+}
+
+export async function getLatestApifySyncLog(): Promise<ApifySyncLog | null> {
+  const { data, error } = await supabase
+    .from("apify_sync_log")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return syncLogFromDB(data as unknown as Record<string, unknown>);
 }
