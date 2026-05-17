@@ -162,14 +162,14 @@ lead-engine/
 │   ├── clients/page.tsx         # Client Manager (agency mode CRUD)
 │   ├── outreach/page.tsx        # LinkedIn Outreach (OpenOutreach sync)
 │   ├── settings/page.tsx        # Settings (API keys, sources, preferences)
-│   ├── portal/                  # Legacy client portal (login, dashboard, leads, billing)
 │   ├── admin/
 │   │   └── users/
 │   │       ├── page.tsx          # User management — table, filters, create modal
 │   │       └── [id]/page.tsx     # Single user detail — profile, plan, activity, QA tabs
 │   ├── client-portal/
-│   │   ├── layout.tsx            # Separate layout (no admin sidebar)
-│   │   ├── page.tsx              # Overview — plan-gated, stats + hot leads
+│   │   ├── layout.tsx            # Separate layout — clean pass-through for /login, sidebar for authenticated
+│   │   ├── page.tsx              # Plan-gated dashboard — DIY/Growth/Scale sections
+│   │   ├── login/page.tsx        # Public login page matching main /login design
 │   │   ├── leads/page.tsx        # Lead report viewer (read-only, score filters, CSV export)
 │   │   ├── icebreakers/page.tsx  # Icebreaker viewer (Growth+)
 │   │   ├── analytics/page.tsx    # Status breakdown + industry bars (Growth+)
@@ -194,8 +194,10 @@ lead-engine/
 │       │   ├── [id]/route.ts          # GET/PATCH/DELETE single user
 │       │   ├── [id]/activate/route.ts # POST — manually activate client plan
 │       │   └── [id]/impersonate/route.ts # POST — generate impersonation magic link
+│       ├── clients/route.ts          # POST — create client with auto credentials + email
 │       ├── client-portal/
-│       │   ├── me/route.ts            # GET current client's profile + workspace + modules
+│       │   ├── me/route.ts            # GET current client's profile + workspace + modules (SSR auth)
+│       │   ├── dashboard/route.ts     # GET plan-gated dashboard data (stats, breakdowns, funnel)
 │       │   ├── leads/route.ts         # GET client's leads (scoped by user_id)
 │       │   └── icebreakers/route.ts   # GET client's icebreaker-enriched leads
 │       └── analytics/
@@ -242,7 +244,6 @@ lead-engine/
 │   ├── resend.ts               # Reusable Resend HTTP client (sendEmail)
 │   ├── rate-limit.ts           # Per-user daily scrape/email caps + X-RateLimit headers
 │   ├── error-tracking.ts       # captureError → Supabase error_logs + optional Sentry
-│   ├── portal-auth.tsx         # Client portal auth context
 │   ├── api-auth.ts             # Legacy Bearer token validation
 │   ├── nav.ts                  # Landing nav items (Features, Pricing, FAQ)
 │   ├── seed.ts                 # Sample lead seeding for empty DB
@@ -314,7 +315,9 @@ interface Campaign {
 
 interface Client {
   id: string; name: string; company: string; industry: string;
-  monthlyRetainer: number; status: "active"|"inactive"; createdAt?: string;
+  monthlyRetainer: number; status: "active"|"inactive";
+  email?: string; portalUsername?: string; portalPassword?: string;
+  plan?: PlanKey; createdAt?: string;
 }
 
 interface ActivityLogEntry {
@@ -339,7 +342,7 @@ type ModuleName = "dashboard"|"leads"|"message-lab"|"scorer"|"sequences"|"kanban
 | `messages` | `id UUID PK`, lead_id FK, subject, body, tone, message_type | CASCADE delete |
 | `sequences` | `id UUID PK`, name, steps JSONB, assigned_lead_ids JSONB | — |
 | `campaigns` | `id UUID PK`, name, target_industry, status, lead_ids JSONB | — |
-| `clients` | `id UUID PK`, name, company, industry, monthly_retainer, status | — |
+| `clients` | `id UUID PK`, name, company, industry, monthly_retainer, status, email, portal_username, portal_password, plan | Email + auto-generated credentials + plan tier for client portal |
 | `activity_log` | `id UUID PK`, type, text, lead_id UUID | Ordered by created_at DESC |
 | `lead_activity_log` | `id UUID PK`, user_id, type, text, lead_id | Lead-specific activity |
 | `email_captures` | `id UUID PK`, email TEXT UNIQUE, source TEXT, created_at | Public insert RLS policy |
@@ -504,8 +507,9 @@ text-accent-blue → var(--accent-blue)
 | `/sequences` | Sequence Builder | Timeline DnD, Launch/Pause/Cancel, execution status, A/B variant editor, variant stats |
 | `/kanban` | Kanban Pipeline | 7 columns, DnD, detail panel, auto-moves on send/reply |
 | `/analytics` | Analytics | 4 recharts, date filters, variant stats endpoint |
-| `/clients` | Client Manager | CRUD, reports |
-| `/portal` | Client Portal | Login, leads, billing |
+| `/clients` | Client Manager | CRUD, email field, plan selector, auto-credentials via Resend |
+| `/client-portal` | Client Portal | Plan-gated dashboard, leads, icebreakers, analytics, sequences, slack, billing, settings |
+| `/client-portal/login` | Client Portal Login | Matches main /login design — glass card, Logo_Icon, Supabase SSR auth |
 
 ---
 
@@ -1205,14 +1209,56 @@ New DB columns added to `agents` table:
 - `supabase/migrations/20260517_phase4_guardrails.sql` — `agents.auto_approve_level` + `agents.consecutive_failures` columns (Phase 4 had no file)
 - Commit: `1c572a2` — repo migrations now fully in sync with production schema `tbsqpnqzpbnilifhwvgr`
 
-**Migration files in repo (5 total):**
+**Migration files in repo (6 total):**
 ```
 supabase/migrations/20260516200000_audit_requests.sql
 supabase/migrations/20260516200001_tool_rate_limits.sql
 supabase/migrations/20260517_agentic_workforce.sql
 supabase/migrations/20260517_phase3_knowledge_store.sql
 supabase/migrations/20260517_phase4_guardrails.sql
+supabase/migrations/20260517_add_client_portal_fields.sql
 ```
+
+---
+
+### 2026-05-17 — Unified Client Portal + Plan-Gated Dashboard + Client Manager Refinement
+
+**Client Portal Unification (`875f443`, `cd5be4e`):**
+- Removed legacy `/portal` module entirely — `app/portal/`, `app/api/portal/`, `lib/portal-auth.tsx` deleted
+- Created `/client-portal/login` — public login page matching main `/login` design (glass card, Logo_Icon, brass glow nav, Supabase SSR auth)
+- `/client-portal/layout.tsx` — renders clean children for login route, full sidebar for authenticated routes
+- Auth redirect for `/client-portal/*` → `/client-portal/login` (not `/login`)
+- Middleware: `/client-portal/login` is public; authenticated users on login page → redirect to appropriate destination
+- Fixed layout redirect loop — layout no longer wraps login page with auth check
+
+**Client Manager Refinement (`9c08baa`):**
+- "Add Client" modal: added **Email ID** field (required, `type="email"`), **Subscription Plan** selector (DIY/Growth/Scale)
+- Client creation via `POST /api/clients` — creates Supabase auth user + profile (role=client) + client record + client_workspace
+- Auto-generates 12-char temporary password, generates username from company name
+- Sends welcome email via Resend (`sendClientCredentialsEmail` in `lib/notify.ts`) with Client ID, username, temp password, login URL
+- Credentials displayed in modal success panel after creation with copy-to-clipboard buttons
+- Client table: added Plan badge column, email under client name
+
+**Plan-Gated Dashboard (`cd5be4e`):**
+- `app/api/client-portal/dashboard/route.ts` — plan-specific aggregations: industry breakdown, status distribution, weekly lead flow, conversion funnel
+- `app/api/client-portal/me/route.ts` — switched from header-based auth to SSR `createServerClient` (more reliable)
+- `app/client-portal/page.tsx` — sections gated by `allowedModules`:
+  - **DIY**: core stats + leads table + upgrade CTA → Growth
+  - **Growth**: +industry bars +status grid +icebreakers preview +slack status +upgrade CTA → Scale
+  - **Scale**: +weekly lead flow bar chart +active sequences +conversion funnel +quick actions row
+- super_admin and qa_agent get all modules regardless of plan
+
+**Middleware fixes (`cd5be4e`):**
+- Profiles query uses `.maybeSingle()` instead of `.single()` to avoid throwing on no rows
+- When profile query fails (error or no data), falls back to `user.user_metadata` for `x-user-*` headers
+- Ensures headers are always set even when profiles RLS blocks the query
+
+**Database changes:**
+- `clients` table: added `email` (TEXT), `portal_username` (TEXT), `plan` (TEXT) columns
+- Migration: `supabase/migrations/20260517_add_client_portal_fields.sql`
+
+**Files:** 18 files changed (Phase 1: `9c08baa`), 4 files changed (Phase 2: `cd5be4e`)
+**Build:** 0 TypeScript errors, 60/60 pages compiled
 
 ---
 
@@ -1222,5 +1268,4 @@ supabase/migrations/20260517_phase4_guardrails.sql
 - OpenOutreach sequence integration — connect LinkedIn steps to the engine
 - Email open/bounce tracking via Resend webhooks
 - Automated winner selection in A/B testing
-- Client portal billing history
 - Multi-currency MRR tracking
