@@ -167,7 +167,8 @@ export async function runAgentBatch(): Promise<void> {
             payload: action.payload,
             risk_level: action.riskLevel,
             status: "executed",
-          } satisfies Omit<AgentActionRow, "id" | "telegram_msg_id" | "approved_by" | "created_at" | "resolved_at">);
+            notified_via: [],
+          });
           continue;
         }
 

@@ -57,12 +57,13 @@ export async function runEscalationEngine(): Promise<{
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString();
 
   // 1. Auto-reject >72h pending
-  const { count: autoRejected } = await supabaseAdmin
+  const { data: rejectedData } = await supabaseAdmin
     .from("agent_actions")
     .update({ status: "rejected", resolved_at: now })
     .eq("status", "pending")
     .lt("created_at", threeDaysAgo)
-    .select("id", { count: "exact" });
+    .select("id");
+  const autoRejected = rejectedData?.length || 0;
 
   // 2. Escalate >24h pending (<72h)
   const { data: toEscalate } = await supabaseAdmin
@@ -82,11 +83,13 @@ export async function runEscalationEngine(): Promise<{
   }
 
   // 3. Archive >30 days resolved
-  const { count: archived } = await supabaseAdmin
+  const { data: archivedData } = await supabaseAdmin
     .from("agent_actions")
-    .delete({ count: "exact" })
+    .delete()
     .in("status", ["executed", "rejected"])
-    .lt("created_at", thirtyDaysAgo);
+    .lt("created_at", thirtyDaysAgo)
+    .select("id");
+  const archived = archivedData?.length || 0;
 
   const parts: string[] = [];
   if (autoRejected) parts.push(`auto-rejected ${autoRejected} stale`);
@@ -94,5 +97,5 @@ export async function runEscalationEngine(): Promise<{
   if (archived) parts.push(`archived ${archived} old`);
   const log = parts.length ? parts.join(", ") : "No escalations needed";
 
-  return { autoRejected: autoRejected || 0, escalated, archived: archived || 0, log };
+  return { autoRejected, escalated, archived, log };
 }
