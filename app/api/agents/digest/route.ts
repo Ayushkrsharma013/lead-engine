@@ -178,6 +178,31 @@ export async function GET(req: NextRequest) {
 
   await sendEmail({ to: notifyEmail, subject, html });
 
+  // Phase 7: Hot lead Telegram digest — top 10 by score
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat  = process.env.TELEGRAM_CHAT_ID;
+  if (tgToken && tgChat) {
+    const { data: hotLeads } = await supabaseAdmin
+      .from("leads")
+      .select("name, title, company, score")
+      .gte("score", 80)
+      .order("score", { ascending: false })
+      .limit(10)
+      .returns<Array<{ name: string; title: string; company: string; score: number }>>();
+
+    if (hotLeads?.length) {
+      const lines = hotLeads.map(
+        (l, i) => `${i + 1}. ${l.name} — ${l.title} @ ${l.company} (${l.score})`
+      );
+      const tgText = `Hot Leads — ${date}\n\n${lines.join("\n")}\n\nView: ${base}/leads`;
+      await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: tgChat, text: tgText }),
+      }).catch(() => undefined);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     runs: runRows.length,

@@ -21,6 +21,7 @@ export default function SyncApifyModal({ onClose, onSuccess }: SyncApifyModalPro
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<SyncResult | null>(null);
   const [scored, setScored] = useState(0);
+  const [hotQueued, setHotQueued] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSync = async () => {
@@ -39,8 +40,9 @@ export default function SyncApifyModal({ onClose, onSuccess }: SyncApifyModalPro
       setPhase("scoring");
       const scoreRes = await fetch("/prospecting-os/api/leads/apify-sync/score", { method: "POST" });
       if (scoreRes.ok) {
-        const scoreData = await scoreRes.json() as { scored?: number };
+        const scoreData = await scoreRes.json() as { scored?: number; hot_leads_queued?: number };
         setScored(scoreData.scored ?? 0);
+        setHotQueued(scoreData.hot_leads_queued ?? 0);
       }
 
       setPhase("done");
@@ -163,6 +165,7 @@ export default function SyncApifyModal({ onClose, onSuccess }: SyncApifyModalPro
                 { label: "Leads imported", value: result.leads_imported },
                 { label: "Already existed", value: result.leads_skipped },
                 { label: "Leads scored", value: scored },
+                ...(hotQueued > 0 ? [{ label: "Hot queued", value: hotQueued }] : []),
               ].map(({ label, value }) => (
                 <div
                   key={label}

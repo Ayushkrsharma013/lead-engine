@@ -321,6 +321,20 @@ export async function processInboundReply(params: {
     console.warn("[inbound] Kanban update failed:", err);
   }
 
+  // 3b. Boost lead score on reply (+15, capped at 100)
+  try {
+    const currentScore = typeof lead.score === "number" ? lead.score : 0;
+    const newScore = Math.min(100, currentScore + 15);
+    if (newScore > currentScore) {
+      await supabase
+        .from("leads")
+        .update({ score: newScore, last_touched: new Date().toISOString() })
+        .eq("id", lead.id);
+    }
+  } catch (err) {
+    console.warn("[inbound] Score boost failed:", err);
+  }
+
   // 4. Log activity
   const preview = bodyText.length > 200 ? bodyText.slice(0, 200) + "..." : bodyText;
   try {

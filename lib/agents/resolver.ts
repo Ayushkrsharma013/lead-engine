@@ -134,6 +134,54 @@ async function dispatchAction(action: AgentActionRow): Promise<string> {
       return `Weekly report sent to ${client.email}`;
     }
 
+    case "auto_enroll_hot_leads": {
+      const leadIds = Array.isArray(p.lead_ids) ? p.lead_ids.map(String) : [];
+      if (!leadIds.length) throw new Error("auto_enroll_hot_leads payload missing lead_ids");
+      const sequenceId = p.sequence_id ? String(p.sequence_id) : null;
+
+      let seqId = sequenceId;
+      let seqName = "default sequence";
+      if (!seqId) {
+        const { data: seqs, error: seqErr } = await supabaseAdmin
+          .from("sequences")
+          .select("id, name")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (seqErr) throw new Error(`Could not fetch sequences: ${seqErr.message}`);
+        if (!seqs?.length) throw new Error("No sequences available to enroll leads into");
+        seqId = String(seqs[0].id);
+        seqName = String(seqs[0].name);
+      } else {
+        const { data: seq } = await supabaseAdmin
+          .from("sequences")
+          .select("name")
+          .eq("id", seqId)
+          .single();
+        if (seq) seqName = String((seq as { name: string }).name);
+      }
+
+      const { data: existing } = await supabaseAdmin
+        .from("sequence_executions")
+        .select("lead_id")
+        .eq("sequence_id", seqId)
+        .in("lead_id", leadIds)
+        .in("status", ["active", "paused"]);
+      const existingIds = new Set((existing ?? []).map((e: Record<string, unknown>) => String(e.lead_id)));
+      const newIds = leadIds.filter(id => !existingIds.has(id));
+      if (newIds.length === 0) return `All ${leadIds.length} hot leads already enrolled in "${seqName}"`;
+
+      const rows = newIds.map(leadId => ({
+        sequence_id: seqId,
+        lead_id: leadId,
+        status: "active",
+        variant: "A",
+        current_step: 0,
+      }));
+      const { error: insErr } = await supabaseAdmin.from("sequence_executions").insert(rows);
+      if (insErr) throw new Error(`Failed to enroll leads: ${insErr.message}`);
+      return `${newIds.length} hot lead${newIds.length !== 1 ? "s" : ""} enrolled in "${seqName}"`;
+    }
+
     // Informational types — no DB changes, just mark executed
     case "resolve_duplicates":
     case "deprioritize_industry":

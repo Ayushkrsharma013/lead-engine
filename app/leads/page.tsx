@@ -6,6 +6,7 @@ import {
   Sparkles, Database, HardDrive, CloudDownload, Flame, RefreshCw,
 } from "lucide-react";
 import SyncApifyModal from "@/components/SyncApifyModal";
+import NewScrapeModal from "@/components/NewScrapeModal";
 import type { Source, Lead, LogEntry, FilterState, SortField } from "@/lib/types";
 import { DEFAULT_FILTERS, DEFAULT_PAGINATION } from "@/lib/types";
 import { applyFilters, sortLeads, getActiveFilterChips, countActiveFilters } from "@/lib/filters";
@@ -203,6 +204,7 @@ export default function Home() {
 
   const [scoreTab, setScoreTab] = useState<ScoreTab>("all");
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [newScrapeOpen, setNewScrapeOpen] = useState(false);
 
   // Derived data
   const sourceLeads = tab === "latest" ? latestLeads : leads;
@@ -670,6 +672,34 @@ export default function Home() {
               )}
             </button>
 
+            {/* New Scrape — trigger live actor run */}
+            <button
+              onClick={() => setNewScrapeOpen(true)}
+              disabled={running}
+              title="Trigger a new Apify scrape with custom search params"
+              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: "rgba(0,212,255,0.08)",
+                color: "var(--accent-blue)",
+                border: "1px solid rgba(0,212,255,0.25)",
+              }}
+              onMouseEnter={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.16)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.4)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!running) {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.08)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.25)";
+                }
+              }}
+            >
+              <Play size={12} fill="currentColor" />
+              New Scrape
+            </button>
+
             {/* Import from Apify */}
             <button
               onClick={() => setImportModalOpen(true)}
@@ -1022,6 +1052,15 @@ export default function Home() {
             dispatch({ type: "SET_LEADS", payload: stored });
             const newStats = await computeStatsFromLeads(stored);
             dispatch({ type: "SET_STATS", payload: newStats });
+          }}
+        />
+      )}
+
+      {newScrapeOpen && (
+        <NewScrapeModal
+          onClose={() => setNewScrapeOpen(false)}
+          onSuccess={() => {
+            showToast("Scrape complete — use Sync History to import leads");
           }}
         />
       )}

@@ -74,7 +74,68 @@ export async function POST(req: NextRequest) {
       text: `Auto-scored ${updates.length} imported leads`,
     });
 
-    return NextResponse.json({ scored: updates.length });
+    // Phase 4: Queue hot lead auto-enrollment for approval
+    let hotLeadsQueued = 0;
+    const hotLeads = updates.filter(u => u.score >= 80);
+    if (hotLeads.length > 0) {
+      try {
+        const hotLeadIds = hotLeads.map(u => u.id);
+        const { data: seqs } = await supabaseAdmin
+          .from("sequences")
+          .select("id, name")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const seq = seqs?.[0] as { id: string; name: string } | undefined;
+        const batchId = `score-engine-${Date.now()}`;
+        const { data: inserted } = await supabaseAdmin
+          .from("agent_actions")
+          .insert({
+            agent_name: "score-engine",
+            batch_run_id: batchId,
+            action_type: "auto_enroll_hot_leads",
+            description: `Auto-enroll ${hotLeads.length} hot lead${hotLeads.length !== 1 ? "s" : ""} (score ≥80)${seq ? ` into "${seq.name}"` : ""}`,
+            payload: { lead_ids: hotLeadIds, sequence_id: seq?.id ?? null },
+            risk_level: "medium",
+            status: "pending",
+            notified_via: [],
+          })
+          .select("id")
+          .single();
+        if (inserted) {
+          const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+          const tgChat  = process.env.TELEGRAM_CHAT_ID;
+          if (tgToken && tgChat) {
+            const msg = `[Score Engine] — Needs Approval\n\n${hotLeads.length} hot lead${hotLeads.length !== 1 ? "s" : ""} scored ≥80 after sync.\nApprove auto-enroll into${seq ? ` "${seq.name}"` : " first sequence"}?\n\nRisk: medium`;
+            const tgRes = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: tgChat,
+                text: msg,
+                reply_markup: {
+                  inline_keyboard: [[
+                    { text: "Approve", callback_data: `approve_agent:${(inserted as { id: string }).id}` },
+                    { text: "Reject",  callback_data: `reject_agent:${(inserted as { id: string }).id}` },
+                  ]],
+                },
+              }),
+            });
+            const tgData = await tgRes.json() as { ok: boolean; result?: { message_id: number } };
+            if (tgData.ok && tgData.result) {
+              await supabaseAdmin
+                .from("agent_actions")
+                .update({ telegram_msg_id: String(tgData.result.message_id), notified_via: ["telegram"] })
+                .eq("id", (inserted as { id: string }).id);
+            }
+          }
+          hotLeadsQueued = hotLeads.length;
+        }
+      } catch (queueErr) {
+        console.warn("[score] Hot lead queue failed:", queueErr);
+      }
+    }
+
+    return NextResponse.json({ scored: updates.length, hot_leads_queued: hotLeadsQueued });
   } catch (err) {
     captureApiError(err, "api/leads/apify-sync/score");
     return NextResponse.json({ error: String(err) }, { status: 500 });
