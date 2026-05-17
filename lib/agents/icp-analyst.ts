@@ -1,6 +1,7 @@
 // lib/agents/icp-analyst.ts
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
+import { writeKnowledge } from "./knowledge";
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
@@ -296,6 +297,14 @@ export class IcpAnalystAgent implements AgentModule {
           `Top segments: ${topSegments.map((s) => s.key).join(" | ")}`
         );
       }
+
+      // ── 9. Write to knowledge store ──────────────────────────────────────────
+      const highPerfIndustries = highPerforming.map((g) => g.key);
+      const topSources = [...bySource].sort((a, b) => b.rate - a.rate).map((g) => g.key);
+
+      try { await writeKnowledge("min_score_threshold", avgConverted, "icp-analyst"); } catch { /* ignore */ }
+      try { await writeKnowledge("high_perf_industries", highPerfIndustries, "icp-analyst"); } catch { /* ignore */ }
+      try { await writeKnowledge("top_lead_sources", topSources, "icp-analyst"); } catch { /* ignore */ }
 
       return {
         outcome: "success",
