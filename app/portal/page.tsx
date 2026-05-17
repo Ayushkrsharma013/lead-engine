@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { usePortalAuth } from "@/lib/portal-auth";
-import { supabase } from "@/lib/supabase";
 import { Users, Zap, TrendingUp, Mail, CalendarCheck } from "lucide-react";
 import type { Lead } from "@/lib/types";
+
+interface PortalStats {
+  total: number;
+  hot: number;
+  contacted: number;
+  meetings: number;
+  avgScore: number;
+}
 
 const cardBg = "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))";
 const cardBorder = "1px solid rgba(201,168,124,0.07)";
@@ -12,26 +19,57 @@ const cardBorder = "1px solid rgba(201,168,124,0.07)";
 export default function PortalDashboard() {
   const { state } = usePortalAuth();
   const { client } = state;
+  const [stats, setStats] = useState<PortalStats | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client) return;
+    setError(null);
     (async () => {
       try {
-        const { data } = await supabase.from("leads").select("*").eq("client_id", client.id).order("saved_at", { ascending: false });
-        if (data) setLeads(data as unknown as Lead[]);
-      } catch { /* ignore */ }
+        const basePath = window.location.pathname.startsWith("/prospecting-os") ? "/prospecting-os" : "";
+        const [statsRes, leadsRes] = await Promise.all([
+          fetch(`${basePath}/api/portal/stats?client_id=${encodeURIComponent(client.id)}`),
+          fetch(`${basePath}/api/portal/leads?client_id=${encodeURIComponent(client.id)}`),
+        ]);
+        if (!statsRes.ok) throw new Error(`Stats fetch failed: ${statsRes.statusText}`);
+        if (!leadsRes.ok) throw new Error(`Leads fetch failed: ${leadsRes.statusText}`);
+        const statsData = await statsRes.json();
+        const leadsData = await leadsRes.json();
+        setStats(statsData);
+        setLeads(Array.isArray(leadsData) ? (leadsData as Lead[]) : []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load data");
+      }
       setLoading(false);
     })();
   }, [client]);
 
-  const hot = leads.filter(l => l.score > 80).length;
-  const contacted = leads.filter(l => l.status && l.status !== "new").length;
-  const meetings = leads.filter(l => l.status === "meeting" || l.status === "won").length;
-  const avgScore = leads.length ? Math.round(leads.reduce((s, l) => s + l.score, 0) / leads.length) : 0;
-
   if (!client) return null;
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto p-6 space-y-5">
+        <div>
+          <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Welcome back, {client.name}</h1>
+          <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>{client.company} · {client.industry} · Active client</p>
+        </div>
+        <div className="rounded-xl p-8 text-center" style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <p className="text-[12px]" style={{ color: "var(--negative)" }}>Failed to load dashboard data. Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: "Total Leads", value: stats ? stats.total.toLocaleString() : "—", icon: Users, color: "var(--accent)" },
+    { label: "Hot Leads", value: stats ? String(stats.hot) : "—", icon: Zap, color: "var(--negative)" },
+    { label: "Contacted", value: stats ? String(stats.contacted) : "—", icon: Mail, color: "var(--info)" },
+    { label: "Avg Score", value: stats ? String(stats.avgScore) : "—", icon: TrendingUp, color: "var(--positive)" },
+    { label: "Meetings", value: stats ? String(stats.meetings) : "—", icon: CalendarCheck, color: "var(--positive)" },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-5">
@@ -41,13 +79,7 @@ export default function PortalDashboard() {
       </div>
 
       <div className="grid grid-cols-5 gap-3">
-        {([
-          { label: "Total Leads", value: leads.length.toLocaleString(), icon: Users, color: "var(--accent)" },
-          { label: "Hot Leads", value: String(hot), icon: Zap, color: "var(--negative)" },
-          { label: "Contacted", value: String(contacted), icon: Mail, color: "var(--info)" },
-          { label: "Avg Score", value: String(avgScore), icon: TrendingUp, color: "var(--positive)" },
-          { label: "Meetings", value: String(meetings), icon: CalendarCheck, color: "var(--positive)" },
-        ]).map(stat => (
+        {statCards.map(stat => (
           <div key={stat.label} className="rounded-xl p-4" style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)", opacity: 0.5 }}>{stat.label}</span>

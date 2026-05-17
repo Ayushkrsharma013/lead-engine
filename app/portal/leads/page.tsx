@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePortalAuth } from "@/lib/portal-auth";
-import { supabase } from "@/lib/supabase";
 import { Search, Mail, Linkedin } from "lucide-react";
 import type { Lead } from "@/lib/types";
 
@@ -15,14 +14,21 @@ export default function PortalLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client) return;
+    setError(null);
     (async () => {
       try {
-        const { data } = await supabase.from("leads").select("*").eq("client_id", client.id).order("saved_at", { ascending: false });
-        if (data) setLeads(data as unknown as Lead[]);
-      } catch { /* ignore */ }
+        const basePath = window.location.pathname.startsWith("/prospecting-os") ? "/prospecting-os" : "";
+        const res = await fetch(`${basePath}/api/portal/leads?client_id=${encodeURIComponent(client.id)}`);
+        if (!res.ok) throw new Error(`Failed to fetch leads: ${res.statusText}`);
+        const data = await res.json();
+        setLeads(Array.isArray(data) ? (data as Lead[]) : []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load leads");
+      }
       setLoading(false);
     })();
   }, [client]);
@@ -32,6 +38,20 @@ export default function PortalLeadsPage() {
     : leads;
 
   if (!client) return null;
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto p-6 space-y-5">
+        <div>
+          <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Your Leads</h1>
+          <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Error loading leads for {client.company}</p>
+        </div>
+        <div className="rounded-xl p-8 text-center" style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <p className="text-[12px]" style={{ color: "var(--negative)" }}>Failed to load leads. Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-5">
