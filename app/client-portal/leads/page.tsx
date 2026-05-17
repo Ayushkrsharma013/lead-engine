@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useContext, createContext } from "react";
-import { Download, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, Flame } from "lucide-react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
@@ -20,8 +20,12 @@ export default function ClientLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [scoreMin, setScoreMin] = useState(0);
+  const [view, setView] = useState<"all" | "hot">("all");
+  const [hotCount, setHotCount] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const limit = 50;
+
+  const effectiveScoreMin = view === "hot" ? 80 : scoreMin;
 
   useEffect(() => {
     async function init() {
@@ -29,6 +33,11 @@ export default function ClientLeadsPage() {
       if (meRes.ok) {
         const d = await meRes.json();
         setProfile(d.profile);
+      }
+      const hotRes = await fetch("/prospecting-os/api/client-portal/leads?limit=1&score_min=80");
+      if (hotRes.ok) {
+        const d = await hotRes.json();
+        setHotCount(d.count || 0);
       }
     }
     init();
@@ -38,7 +47,7 @@ export default function ClientLeadsPage() {
     async function fetchLeads() {
       setLoading(true);
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (scoreMin > 0) params.set("score_min", String(scoreMin));
+      if (effectiveScoreMin > 0) params.set("score_min", String(effectiveScoreMin));
       const res = await fetch(`/prospecting-os/api/client-portal/leads?${params}`);
       if (res.ok) {
         const d = await res.json();
@@ -48,12 +57,14 @@ export default function ClientLeadsPage() {
       setLoading(false);
     }
     fetchLeads();
-  }, [page, scoreMin]);
+  }, [page, effectiveScoreMin]);
 
   const totalPages = Math.ceil(count / limit);
 
   const handleExportCSV = async () => {
-    const res = await fetch("/prospecting-os/api/client-portal/leads?limit=1000");
+    const params = new URLSearchParams({ limit: "1000" });
+    if (effectiveScoreMin > 0) params.set("score_min", String(effectiveScoreMin));
+    const res = await fetch(`/prospecting-os/api/client-portal/leads?${params}`);
     if (!res.ok) return;
     const data = await res.json();
     const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
@@ -63,7 +74,7 @@ export default function ClientLeadsPage() {
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "my-leads.csv"; a.click();
+    a.href = url; a.download = view === "hot" ? "hot-leads.csv" : "my-leads.csv"; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -81,28 +92,61 @@ export default function ClientLeadsPage() {
         </button>
       </div>
 
-      {/* Score filter */}
+      {/* View tabs */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-medium" style={{ color: "var(--ink-4)" }}>Min Score:</span>
-        {[0, 40, 60, 80].map(s => (
-          <button key={s} onClick={() => { setScoreMin(s); setPage(1); }}
-            className="px-3 py-1 rounded-full text-[11px] font-medium transition-all"
-            style={{
-              background: scoreMin === s ? "var(--accent-soft)" : "transparent",
-              color: scoreMin === s ? "var(--accent-ink)" : "var(--ink-3)",
-              border: `1px solid ${scoreMin === s ? "rgba(232,168,64,0.25)" : "var(--line)"}`,
-            }}>
-            {s === 0 ? "All" : `${s}+`}
-          </button>
-        ))}
+        <button onClick={() => { setView("all"); setPage(1); setScoreMin(0); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+          style={{
+            background: view === "all" ? "var(--surface)" : "transparent",
+            color: view === "all" ? "var(--ink)" : "var(--ink-3)",
+            border: `1px solid ${view === "all" ? "var(--line)" : "transparent"}`,
+          }}>
+          All Leads
+        </button>
+        <button onClick={() => { setView("hot"); setPage(1); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+          style={{
+            background: view === "hot" ? "rgba(224,96,96,0.08)" : "transparent",
+            color: view === "hot" ? "#e06060" : "var(--ink-3)",
+            border: `1px solid ${view === "hot" ? "rgba(224,96,96,0.20)" : "transparent"}`,
+          }}>
+          <Flame size={12} />
+          Hot Leads
+          {hotCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{ background: "rgba(224,96,96,0.15)", color: "#e06060" }}>
+              {hotCount}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Score filter (only shown in All view) */}
+      {view === "all" && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium" style={{ color: "var(--ink-4)" }}>Min Score:</span>
+          {[0, 40, 60, 80].map(s => (
+            <button key={s} onClick={() => { setScoreMin(s); setPage(1); }}
+              className="px-3 py-1 rounded-full text-[11px] font-medium transition-all"
+              style={{
+                background: scoreMin === s ? "var(--accent-soft)" : "transparent",
+                color: scoreMin === s ? "var(--accent-ink)" : "var(--ink-3)",
+                border: `1px solid ${scoreMin === s ? "rgba(232,168,64,0.25)" : "var(--line)"}`,
+              }}>
+              {s === 0 ? "All" : `${s}+`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
         {loading ? (
           <div className="p-8 text-center text-[12px]" style={{ color: "var(--ink-3)" }}>Loading...</div>
         ) : leads.length === 0 ? (
-          <div className="p-8 text-center text-[12px]" style={{ color: "var(--ink-3)" }}>No leads match your filters.</div>
+          <div className="p-8 text-center text-[12px]" style={{ color: "var(--ink-3)" }}>
+            {view === "hot" ? "No hot leads yet — scores update daily." : "No leads match your filters."}
+          </div>
         ) : (
           <table className="w-full">
             <thead>

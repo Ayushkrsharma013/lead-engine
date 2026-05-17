@@ -6,7 +6,7 @@ import {
   Check, Eye, EyeOff, Sparkles, Send, Globe,
   Key, Bell, User, Shield, CreditCard, LogOut,
   RefreshCw, AlertTriangle, Info, Copy, Settings2,
-  Moon, Sun, Mail, MessageSquare, Trash2,
+  Moon, Sun, Mail, MessageSquare, Trash2, Clock,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import LogoutButton from "@/components/auth/LogoutButton";
@@ -16,11 +16,12 @@ import type { EnabledSources } from "@/lib/AppContext";
 import type { Source } from "@/lib/types";
 
 const TABS = [
-  { id: "profile",  label: "Profile",   icon: User },
-  { id: "sources",  label: "Sources",   icon: Globe },
-  { id: "keys",     label: "API Keys",  icon: Key },
-  { id: "agent",    label: "Agent",     icon: Bot },
-  { id: "about",    label: "About",     icon: Info },
+  { id: "profile",   label: "Profile",    icon: User },
+  { id: "sources",   label: "Sources",    icon: Globe },
+  { id: "keys",      label: "API Keys",   icon: Key },
+  { id: "agent",     label: "Agent",      icon: Bot },
+  { id: "scheduler", label: "Scheduler",  icon: Clock },
+  { id: "about",     label: "About",      icon: Info },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -515,6 +516,158 @@ function AboutTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Scheduler Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+const COUNTRIES = [
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "India", "Brazil", "Netherlands", "Singapore", "Ireland",
+  "Spain", "Italy", "Sweden", "Denmark", "Norway", "Finland",
+  "Switzerland", "Belgium", "Austria", "New Zealand", "Israel",
+  "United Arab Emirates", "Japan", "South Korea", "Mexico",
+];
+const SIZES = ["Any", "1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"];
+
+function SchedulerTab() {
+  const [enabled, setEnabled] = useState(false);
+  const [titles, setTitles] = useState("");
+  const [country, setCountry] = useState("United States");
+  const [size, setSize] = useState("Any");
+  const [limit, setLimit] = useState(100);
+  const [lastRun, setLastRun] = useState<string | null>(null);
+  const [lastImported, setLastImported] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/prospecting-os/api/settings/scheduler");
+      if (res.ok) {
+        const d = await res.json() as {
+          enabled: boolean; titles: string; country: string;
+          size: string; limit: number; lastRun: string | null; lastImported: number;
+        };
+        setEnabled(d.enabled);
+        setTitles(d.titles);
+        setCountry(d.country);
+        setSize(d.size);
+        setLimit(d.limit);
+        setLastRun(d.lastRun);
+        setLastImported(d.lastImported);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await fetch("/prospecting-os/api/settings/scheduler", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled, titles, country, size, limit }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <RefreshCw size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+      </div>
+    );
+  }
+
+  const inputStyle = {
+    background: "var(--surface2)", border: "1px solid var(--line)",
+    color: "var(--ink)", outline: "none",
+  };
+
+  return (
+    <div className="space-y-3">
+      <SectionCard icon={Clock} title="Daily Apify Scrape" sub="Auto-runs at 6 AM UTC every day">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>Enable scheduler</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>Runs daily at 6 AM UTC via Vercel Cron</p>
+          </div>
+          <Toggle enabled={enabled} onChange={() => setEnabled(!enabled)} />
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>
+              Job Titles <span style={{ color: "var(--ink-4)" }}>(comma-separated, optional)</span>
+            </label>
+            <input type="text" value={titles} onChange={e => setTitles(e.target.value)}
+              placeholder="CTO, VP Engineering, Head of Product"
+              className="w-full h-9 px-3 rounded-lg text-[12px]" style={inputStyle} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>Country</label>
+              <select value={country} onChange={e => setCountry(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg text-[12px] appearance-none" style={inputStyle}>
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>Company Size</label>
+              <select value={size} onChange={e => setSize(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg text-[12px] appearance-none" style={inputStyle}>
+                {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>Max Leads per Run</label>
+            <div className="flex gap-2">
+              {[50, 100, 200, 500].map(n => (
+                <button key={n} onClick={() => setLimit(n)}
+                  className="flex-1 h-8 rounded-lg text-[12px] font-medium transition-colors"
+                  style={{
+                    background: limit === n ? "rgba(232,168,64,0.12)" : "var(--surface2)",
+                    border: `1px solid ${limit === n ? "rgba(232,168,64,0.30)" : "var(--line)"}`,
+                    color: limit === n ? "var(--accent)" : "var(--ink-3)",
+                  }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button onClick={handleSave} disabled={saving}
+          className="mt-4 w-full h-9 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-2 transition-all"
+          style={{ background: "var(--accent)", color: "#000", opacity: saving ? 0.7 : 1 }}>
+          {saving ? <RefreshCw size={13} className="animate-spin" /> : saved ? <Check size={13} /> : <Clock size={13} />}
+          {saving ? "Saving…" : saved ? "Saved" : "Save Schedule"}
+        </button>
+      </SectionCard>
+
+      {lastRun && (
+        <SectionCard icon={RefreshCw} title="Last Run" sub={new Date(lastRun).toLocaleString()}>
+          <div className="flex items-center justify-between">
+            <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>Leads imported</span>
+            <span className="text-[14px] font-bold tabular-nums" style={{ color: "var(--ink)" }}>{lastImported}</span>
+          </div>
+        </SectionCard>
+      )}
+
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]"
+        style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.15)", color: "var(--ink-3)" }}>
+        <Info size={13} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+        <span>The scheduler runs via Vercel Cron at 6 AM UTC daily. Duplicate leads (matched by email) are automatically skipped. Leads are not scored until the next agent run at 7 AM.</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Page
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -560,6 +713,7 @@ export default function SettingsPage() {
           {activeTab === "sources" && <SourcesTab enabledSources={state.enabledSources} onToggle={toggleSource} />}
           {activeTab === "keys" && <ApiKeysTab />}
           {activeTab === "agent" && <AgentTab />}
+          {activeTab === "scheduler" && <SchedulerTab />}
           {activeTab === "about" && <AboutTab />}
 
           <div className="h-8" />

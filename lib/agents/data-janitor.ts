@@ -197,10 +197,60 @@ export class DataJanitorAgent implements AgentModule {
       );
     }
 
+    // ── 4. Score decay (active leads not touched in 7+ days, -5 pts/week) ───────
+    let decayedCount = 0;
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: decayLeads, error: decayErr } = await supabaseAdmin
+        .from("leads")
+        .select("id, score, notes, last_touched")
+        .gt("score", 0)
+        .or(`last_touched.lt.${sevenDaysAgo},last_touched.is.null`);
+
+      if (decayErr) throw decayErr;
+
+      if (decayLeads && decayLeads.length > 0) {
+        for (const lead of decayLeads) {
+          const existingNotes: string = lead.notes ?? "";
+          // Skip if already decayed in the last 7 days
+          const decayMatch = existingNotes.match(/\[DECAY (\d{4}-\d{2}-\d{2})\]/);
+          if (decayMatch) {
+            const lastDecayDate = new Date(decayMatch[1]);
+            const daysSinceDecay = (Date.now() - lastDecayDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceDecay < 7) continue;
+          }
+
+          const currentScore = Number(lead.score ?? 0);
+          const newScore = Math.max(0, currentScore - 5);
+          const decayMarker = `[DECAY ${today}]`;
+          // Replace old DECAY marker or append new one
+          const updatedNotes = existingNotes.includes("[DECAY ")
+            ? existingNotes.replace(/\[DECAY \d{4}-\d{2}-\d{2}\]/, decayMarker)
+            : existingNotes ? existingNotes + " " + decayMarker : decayMarker;
+
+          const { error: updateErr } = await supabaseAdmin
+            .from("leads")
+            .update({ score: newScore, notes: updatedNotes, updated_at: now })
+            .eq("id", lead.id);
+          if (updateErr) throw updateErr;
+          decayedCount++;
+        }
+        logLines.push(`Decayed score on ${decayedCount} inactive lead(s) (-5 pts each)`);
+        safeCount += decayedCount;
+      } else {
+        logLines.push("No leads require score decay");
+      }
+    } catch (err) {
+      outcome = "partial";
+      logLines.push(`Score decay failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     const duplicateDomains = Array.from(duplicateDomainSet);
 
     try { await writeKnowledge("stale_window_days", 30, "data-janitor"); } catch { /* ignore */ }
     try { await writeKnowledge("dup_email_domains", duplicateDomains, "data-janitor"); } catch { /* ignore */ }
+    try { await writeKnowledge("janitor.decayed_count", decayedCount, "data-janitor"); } catch { /* ignore */ }
 
     return {
       outcome,
