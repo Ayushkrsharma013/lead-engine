@@ -888,31 +888,38 @@ Low:
 - Added finance_agent_log policies (RLS was enabled but had no policies)
 - Revoked anon EXECUTE on `verify_portal_password` — only service_role can call it now
 - Fixed: `REVOKE EXECUTE ON FUNCTION public.verify_portal_password(text, text) FROM anon, authenticated`
+- CRON_SECRET set on Vercel, both cron endpoints verified working after redeploy
+- Resend inbound webhook configured, signing secret received
+- Added Resend webhook signature verification to `/api/inbound-email` (Svix-compatible HMAC-SHA256)
+- Leaked password protection: NOT enabled — restricted on Supabase free tier
 
 **External Configuration Status:**
-- CRON_SECRET generated: `7_84SyvUzVI3wnf2gwwoX6Wf1EsNqxLweCAEzHPbxUk` — needs to be set on Vercel
-- Both cron endpoints (`/api/cron/sequence-runner`, `/api/agent/finance/cron`) already check CRON_SECRET when set
-- Leaked password protection — requires Supabase Auth dashboard: Email provider → enable "Leaked password protection"
-- Resend inbound webhook — requires Resend dashboard: add webhook pointing to `/api/inbound-email`
-- SENTRY_DSN — optional, requires Sentry account
+- CRON_SECRET: DONE — set on Vercel, cron endpoints verified
+- Resend inbound webhook: DONE — webhook configured, signing secret set as RESEND_WEBHOOK_SECRET
+- Leaked password protection: BLOCKED — requires Supabase Pro/Team tier
+- SENTRY_DSN: Optional, not yet configured
 
 ---
 
 ## Roadmap — What's Left
 
-### Immediate (external configuration — user action required)
+### Immediate (external configuration — 3/4 complete)
 
 | # | Action | Where | Status |
 |---|--------|-------|--------|
-| 1 | Enable leaked password protection | Supabase Auth dashboard → Email provider settings | **User action** |
-| 2 | Configure Resend inbound webhook domain | Resend dashboard → Webhooks → add `/api/inbound-email` | **User action** |
-| 3 | Set CRON_SECRET env var on Vercel | Vercel → lead-engine → Environment Variables | **User action** (key generated) |
-| 4 | Set SENTRY_DSN env var | Vercel (optional, enables Sentry forwarding) | Optional |
-| 5 | ~~Add GEMINI_API_KEY env var~~ | Vercel lead-engine project | **DONE** |
+| 1 | ~~Enable leaked password protection~~ | Supabase Auth dashboard | **BLOCKED** (free tier) |
+| 2 | ~~Configure Resend inbound webhook~~ | Resend dashboard | **DONE** |
+| 3 | ~~Set CRON_SECRET env var on Vercel~~ | Vercel | **DONE** |
+| 4 | Set SENTRY_DSN env var | Vercel (optional) | Optional |
+| 5 | ~~Add GEMINI_API_KEY env var~~ | Vercel | **DONE** |
 
-### RLS Status (all tables now secured)
+### Immediate (code — all done)
 
-All 18 public tables now have RLS enabled with appropriate policies. `tool_rate_limits` intentionally has no policies (service_role only). Public INSERT policies for appointments/email_captures/audit_requests are intentional for public-facing forms. |
+| # | Item | Status |
+|---|------|--------|
+| 6 | Resend webhook signature verification | **DONE** — HMAC-SHA256 in inbound-email route |
+| 7 | RLS on all public tables | **DONE** — 18/18 tables with policies |
+| 8 | 12 bugs from analysis | **DONE** — all fixed | |
 
 ### Future enhancements (not yet planned)
 

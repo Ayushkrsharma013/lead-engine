@@ -90,9 +90,9 @@ const API_ROUTES: { name: string; route: string; status: "live" | "partial" }[] 
 ];
 
 const ROADMAP: RoadmapItem[] = [
-  { action: "Enable leaked password protection", where: "Supabase Auth dashboard → Email provider", done: false },
-  { action: "Configure Resend inbound webhook", where: "Resend dashboard → Webhooks", done: false },
-  { action: "Set CRON_SECRET env var on Vercel", where: "Vercel → lead-engine → Env Variables", done: false },
+  { action: "Enable leaked password protection", where: "Supabase Auth (blocked on free tier)", done: false },
+  { action: "Configure Resend inbound webhook", where: "Resend dashboard → Webhooks", done: true },
+  { action: "Set CRON_SECRET env var on Vercel", where: "Vercel → lead-engine → Env Variables", done: true },
   { action: "Set SENTRY_DSN env var (optional)", where: "Vercel", done: false },
   { action: "Add GEMINI_API_KEY env var", where: "Vercel", done: true },
 ];
