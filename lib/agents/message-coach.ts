@@ -2,6 +2,7 @@
 
 import type { AgentModule, AgentResult, AgentAction } from "./types";
 import { supabaseAdmin } from "@/lib/supabase";
+import { writeKnowledge } from "./knowledge";
 
 const supabase = supabaseAdmin;
 
@@ -236,6 +237,7 @@ export class MessageCoachAgent implements AgentModule {
       const bestType = sortedTypes[0] || null;
 
       // ── 9. Stale template detection ───────────────────────────────────────
+      const worstTemplateSet = new Set<string>();
       for (const [, entry] of Array.from(stepSendCounts.entries())) {
         if (entry.count >= 5) {
           const hasReplies = msgsWithSeq.some(
@@ -245,6 +247,7 @@ export class MessageCoachAgent implements AgentModule {
               m.status === "replied",
           );
           if (!hasReplies) {
+            worstTemplateSet.add(entry.seqId);
             const seqName = sequenceNames.get(entry.seqId) || "Unknown";
             actionsToQueue.push({
               type: "stale_template",
@@ -302,6 +305,18 @@ export class MessageCoachAgent implements AgentModule {
       if (highPerformerNoticeCount > 0) {
         log += `, ${highPerformerNoticeCount} high performers noted`;
       }
+
+      // ── 11. Write to knowledge store ─────────────────────────────────────────
+      const bestTemplateMap: Record<string, string> = {};
+      for (const [seqId, perf] of seqBest) {
+        bestTemplateMap[seqId] = perf.variant;
+      }
+      const bestToneStr = bestTone ? bestTone[0] : "";
+      const worstTemplateIds = Array.from(worstTemplateSet);
+
+      try { await writeKnowledge("best_template_ids", bestTemplateMap, "message-coach"); } catch { /* ignore */ }
+      try { await writeKnowledge("best_tone", bestToneStr, "message-coach"); } catch { /* ignore */ }
+      try { await writeKnowledge("worst_templates", worstTemplateIds, "message-coach"); } catch { /* ignore */ }
 
       return {
         outcome: "success",
