@@ -1,26 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePortalAuth } from "@/lib/portal-auth";
+import { supabase } from "@/lib/supabase";
 import { CreditCard, DollarSign, FileText, Calendar, Download, CheckCircle2, Clock } from "lucide-react";
 
 const cardBg = "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))";
 const cardBorder = "1px solid rgba(201,168,124,0.07)";
 
-const SAMPLE_INVOICES = [
-  { id: "INV-2026-05", date: "2026-05-01", amount: 2500, status: "paid" },
-  { id: "INV-2026-04", date: "2026-04-01", amount: 2500, status: "paid" },
-  { id: "INV-2026-03", date: "2026-03-01", amount: 2500, status: "paid" },
-  { id: "INV-2026-02", date: "2026-02-01", amount: 2000, status: "paid" },
-  { id: "INV-2026-01", date: "2026-01-01", amount: 2000, status: "paid" },
-  { id: "INV-2025-12", date: "2025-12-01", amount: 2000, status: "paid" },
-];
+interface PaymentRecord {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+}
 
 export default function PortalBillingPage() {
   const { state } = usePortalAuth();
   const { client } = state;
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   if (!client) return null;
+
+  useEffect(() => {
+    async function fetchPayments() {
+      try {
+        const { data: logs } = await supabase
+          .from("finance_agent_log")
+          .select("id, event_type, payload, status, created_at")
+          .eq("event_type", "payment_received")
+          .order("created_at", { ascending: false });
+
+        if (logs && logs.length > 0) {
+          setPayments(
+            logs.map((l: Record<string, unknown>) => ({
+              id: String(l.id).substring(0, 8),
+              date: String(l.created_at || ""),
+              amount: Number(
+                ((l.payload as Record<string, unknown>)?.amount as number) || 0
+              ),
+              status: String(l.status || "paid"),
+            }))
+          );
+        }
+      } catch {
+        // RLS or network error — fall back to empty
+      }
+      setPaymentsLoading(false);
+    }
+    fetchPayments();
+  }, []);
 
   const retainer = client.monthlyRetainer || 0;
   const nextPayment = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
@@ -106,8 +136,17 @@ export default function PortalBillingPage() {
       <div className="rounded-xl overflow-hidden" style={{ background: cardBg, border: cardBorder, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
         <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
           <h3 className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--ink-4)", opacity: 0.5 }}>Invoice History</h3>
-          <span className="text-[10px]" style={{ color: "var(--ink-4)" }}>{SAMPLE_INVOICES.length} invoices</span>
+          <span className="text-[10px]" style={{ color: "var(--ink-4)" }}>{payments.length} invoice{payments.length !== 1 ? "s" : ""}</span>
         </div>
+        {paymentsLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <span className="w-5 h-5 border-2 border-white/[0.10] border-t-[#E8A840] rounded-full animate-spin" />
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="px-5 py-8 text-center">
+            <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>No payment history</p>
+          </div>
+        ) : (
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--line)" }}>
@@ -117,7 +156,7 @@ export default function PortalBillingPage() {
             </tr>
           </thead>
           <tbody>
-            {SAMPLE_INVOICES.map(inv => (
+            {payments.map(inv => (
               <tr key={inv.id} className="transition-colors duration-150" style={{ borderBottom: "1px solid var(--line)" }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.02)"}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
@@ -141,6 +180,7 @@ export default function PortalBillingPage() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );
