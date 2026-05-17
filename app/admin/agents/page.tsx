@@ -1,29 +1,21 @@
 // app/admin/agents/page.tsx
 import { supabaseAdmin } from "@/lib/supabase";
-import { headers, cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { headers } from "next/headers";
 import type { AgentRow, AgentActionRow, AgentRunRow } from "@/lib/agents/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  // Auth check — verify super_admin via Supabase SSR
-  const cookieStore = await cookies();
-  const rawUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
-  const ssr = createServerClient(rawUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      getAll() { return cookieStore.getAll(); },
-      setAll() {},
-    },
-  });
-
-  const { data: { user } } = await ssr.auth.getUser();
+  // Auth check — read x-user-id from middleware, verify role via supabaseAdmin
+  const hdrs = await headers();
+  const userId = hdrs.get("x-user-id");
   let role = "user";
-  if (user) {
+
+  if (userId) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
     role = profile?.role || "user";
   }
