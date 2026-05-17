@@ -149,7 +149,7 @@ try {
   // Extract the latest session date
   const allDates = claudeContent.match(/### (\d{4}-\d{2}-\d{2})/g);
   if (allDates && allDates.length > 0) {
-    lastUpdated = allDates[0].replace("### ", "");
+    lastUpdated = allDates[allDates.length - 1].replace("### ", "");
   }
 } catch {
   // fallback
