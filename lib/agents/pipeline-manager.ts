@@ -1,5 +1,6 @@
 // lib/agents/pipeline-manager.ts
 import { supabaseAdmin } from "@/lib/supabase";
+import { readKnowledge, readKnowledgeNumber, writeKnowledge } from "./knowledge";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
 
 const ACTIVE_COLUMNS = ["New", "Contacted", "Replied", "Hot Lead", "Meeting Booked"];
@@ -21,6 +22,20 @@ export class PipelineManagerAgent implements AgentModule {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // ── Knowledge reads — coordination with Outreach Agent & Data Janitor ───
+    let qualifiedCount = 0;
+    let followUpCount = 0;
+    let staleWindowDays = 14;
+    try {
+      qualifiedCount = await readKnowledgeNumber("qualified_lead_count", 0);
+      followUpCount = await readKnowledgeNumber("follow_up_count", 0);
+      staleWindowDays = await readKnowledgeNumber("stale_window_days", 14);
+    } catch (err) {
+      logLines.push(
+        `Knowledge read failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
 
     // ── 1. Column health stats (before any mutations) ───────────────────────
     let columnStats: Record<string, number> = {};
@@ -139,19 +154,26 @@ export class PipelineManagerAgent implements AgentModule {
       );
     }
 
-    // ── 4. Identify stuck leads (>14 days same column) ─────────────────────
+    // ── 4. Identify stuck leads (>N days same column) ──────────────────────
     // Queue medium-risk unstuck_recommendation actions for leads whose
-    // last_touched is older than 14 days and are still in an active column.
+    // last_touched is older than staleWindowDays and are still in an active column.
     let stuckCount = 0;
+    let stuckLeadsForKnowledge: Array<Record<string, unknown>> = [];
     try {
+      const staleThreshold = new Date(
+        Date.now() - staleWindowDays * 24 * 60 * 60 * 1000
+      ).toISOString();
+
       const { data: stuckLeads, error: stuckErr } = await supabaseAdmin
         .from("leads")
         .select("id, name, company, kanban_column, last_touched")
         .not("last_touched", "is", null)
-        .lt("last_touched", fourteenDaysAgo)
+        .lt("last_touched", staleThreshold)
         .in("kanban_column", ACTIVE_COLUMNS);
 
       if (stuckErr) throw stuckErr;
+
+      stuckLeadsForKnowledge = (stuckLeads || []) as Array<Record<string, unknown>>;
 
       for (const lead of stuckLeads || []) {
         const column: string = lead.kanban_column || "New";
@@ -162,7 +184,7 @@ export class PipelineManagerAgent implements AgentModule {
 
         actionsToQueue.push({
           type: "unstuck_recommendation",
-          description: `${lead.name} at ${lead.company} stuck in ${column} for ${daysStuck} days`,
+          description: `${lead.name} at ${lead.company} stuck in ${column} for ${daysStuck} days. Pipeline has ${qualifiedCount} qualified leads ready for outreach and ${followUpCount} needing follow-up.`,
           payload: {
             leadId: lead.id,
             currentColumn: column,
@@ -228,7 +250,29 @@ export class PipelineManagerAgent implements AgentModule {
     );
 
     if (stuckCount > 0) {
-      summaryParts.push(`${stuckCount} leads stuck >14 days`);
+      summaryParts.push(`${stuckCount} leads stuck >${staleWindowDays} days`);
+    }
+
+    // ── Write knowledge for peer coordination ────────────────────────────
+    try {
+      await writeKnowledge("column_distribution", columnStats, "pipeline-manager");
+      await writeKnowledge("stale_window_days", staleWindowDays, "pipeline-manager");
+      await writeKnowledge(
+        "stuck_lead_patterns",
+        {
+          count: stuckLeadsForKnowledge.length,
+          columns: [
+            ...new Set(
+              stuckLeadsForKnowledge.map((l) => String(l.kanban_column))
+            ),
+          ],
+        },
+        "pipeline-manager"
+      );
+    } catch (err) {
+      logLines.push(
+        `Knowledge write failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
 
     if (logLines.length === 0 && advancedContacted === 0 && advancedReplied === 0) {
