@@ -160,6 +160,10 @@ export interface Client {
   industry: string;
   monthlyRetainer: number;
   status: "active" | "inactive";
+  email?: string;
+  portalUsername?: string;
+  portalPassword?: string;
+  plan?: PlanKey;
   createdAt?: string;
 }
 

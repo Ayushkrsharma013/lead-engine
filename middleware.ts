@@ -83,7 +83,7 @@ export async function middleware(req: NextRequest) {
 
   const isStaticAsset = /\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot|map)$/.test(path);
   const isApiRoute = normalizedPath.startsWith("/api/");
-  const isPortalRoute = normalizedPath.startsWith("/portal/");
+  const isClientPortalLogin = normalizedPath === "/client-portal/login";
 
   // ─── Role-based routing ──────────────────────────────────────────
 
@@ -117,8 +117,8 @@ export async function middleware(req: NextRequest) {
 
   // ─── Public/auth route handling ──────────────────────────────────
 
-  if (isPublicRoute || isStaticAsset || isApiRoute || isPortalRoute) {
-    if (user && (normalizedPath === "/login" || normalizedPath === "/signup")) {
+  if (isPublicRoute || isStaticAsset || isApiRoute || isClientPortalLogin) {
+    if (user && (normalizedPath === "/login" || normalizedPath === "/signup" || normalizedPath === "/client-portal/login")) {
       // Route to appropriate destination based on role
       const dest = role === "client" ? "/client-portal" : "/dashboard";
       return NextResponse.redirect(new URL(basePath + dest, req.url));
@@ -139,7 +139,10 @@ export async function middleware(req: NextRequest) {
   );
 
   if (isProtected && !user) {
-    const loginUrl = new URL(basePath + "/login", req.url);
+    // Route client-portal visitors to the client portal login page
+    const isClientPortal = normalizedPath.startsWith("/client-portal");
+    const loginPath = isClientPortal ? "/client-portal/login" : "/login";
+    const loginUrl = new URL(basePath + loginPath, req.url);
     loginUrl.searchParams.set("redirect", normalizedPath);
     return NextResponse.redirect(loginUrl);
   }

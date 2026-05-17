@@ -33,10 +33,10 @@ export default function ClientPortalLayout({ children }: { children: React.React
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/prospecting-os/login"); return; }
+      if (!user) { router.replace("/prospecting-os/client-portal/login"); return; }
 
       const res = await fetch("/prospecting-os/api/client-portal/me");
-      if (!res.ok) { router.replace("/prospecting-os/login"); return; }
+      if (!res.ok) { router.replace("/prospecting-os/client-portal/login"); return; }
       const data = await res.json();
       const prof = data.profile as UserProfile;
 
@@ -54,7 +54,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.replace("/prospecting-os/login");
+    router.replace("/prospecting-os/client-portal/login");
   };
 
   if (loading) {

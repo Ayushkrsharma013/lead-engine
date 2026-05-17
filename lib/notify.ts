@@ -430,6 +430,119 @@ export async function notifyTelegram(message: string): Promise<void> {
   }
 }
 
+// ─── Client Portal Credentials Email ───────────────────────────────────────
+
+export interface ClientCredentialsParams {
+  to: string;
+  clientName: string;
+  clientId: string;
+  username: string;
+  tempPassword: string;
+  loginUrl: string;
+}
+
+export async function sendClientCredentialsEmail(p: ClientCredentialsParams): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const subject = `Your Prospecting OS Client Portal Access`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0e0d0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0d0a;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#E8A840;padding:28px 36px;">
+            <p style="margin:0;color:#1a1917;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Prospecting OS</p>
+            <h1 style="margin:8px 0 0;color:#1a1917;font-size:24px;font-weight:800;">Your Client Portal is Ready</h1>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 36px;">
+
+            <p style="margin:0 0 24px;color:#f5f4f1;font-size:15px;line-height:1.6;">
+              Hi ${p.clientName},<br><br>
+              Your Prospecting OS client portal has been set up. Use the credentials below to log in and access your lead pipeline, analytics, and reports.
+            </p>
+
+            <!-- Credentials Box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#141310;border-radius:12px;overflow:hidden;">
+              <tr>
+                <td style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Client ID</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${p.clientId}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Username / Email</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;">${p.username}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 24px;">
+                  <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Temporary Password</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${p.tempPassword}</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA -->
+            <div style="text-align:center;margin-top:32px;">
+              <a href="${p.loginUrl}" style="display:inline-block;background:#E8A840;color:#1a1917;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:999px;">
+                Open Client Portal &rarr;
+              </a>
+            </div>
+
+            <p style="margin:28px 0 0;color:#7a7875;font-size:12px;line-height:1.5;text-align:center;">
+              For security, you'll be prompted to change your password after logging in.
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+            <p style="margin:0;color:#7a7875;font-size:12px;text-align:center;">
+              Prospecting OS &middot; <a href="https://app.flow-forges.com/prospecting-os" style="color:#E8A840;text-decoration:none;">app.flow-forges.com</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Prospecting OS <notifications@flow-forges.com>",
+        to: [p.to],
+        subject,
+        html,
+      }),
+    });
+  } catch (err) {
+    console.warn("[notify] Client credentials email failed:", err);
+  }
+}
+
 // ─── Shared ──────────────────────────────────────────────────────────────────
 
 function row(label: string, value: string): string {

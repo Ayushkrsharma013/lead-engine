@@ -109,6 +109,10 @@ function clientFromDB(row: Record<string, unknown>): Client {
     industry: String(row.industry || ""),
     monthlyRetainer: Number(row.monthly_retainer ?? 0),
     status: String(row.status || "active") as Client["status"],
+    email: row.email ? String(row.email) : undefined,
+    portalUsername: row.portal_username ? String(row.portal_username) : undefined,
+    portalPassword: row.portal_password ? String(row.portal_password) : undefined,
+    plan: (row.plan ? String(row.plan) : undefined) as Client["plan"],
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
@@ -340,7 +344,7 @@ export async function getClients(): Promise<Client[]> {
 }
 
 export async function saveClient(c: Omit<Client, "id" | "createdAt"> & { id?: string }): Promise<Client> {
-  const row = {
+  const row: Record<string, unknown> = {
     ...(c.id ? { id: c.id } : {}),
     name: c.name,
     company: c.company,
@@ -348,6 +352,10 @@ export async function saveClient(c: Omit<Client, "id" | "createdAt"> & { id?: st
     monthly_retainer: c.monthlyRetainer,
     status: c.status,
   };
+  if (c.email !== undefined) row.email = c.email;
+  if (c.portalUsername !== undefined) row.portal_username = c.portalUsername;
+  if (c.portalPassword !== undefined) row.portal_password = c.portalPassword;
+  if (c.plan !== undefined) row.plan = c.plan;
   const { data, error } = await supabase
     .from("clients")
     .upsert(row, { onConflict: "id" })
@@ -364,6 +372,10 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
   if (updates.industry !== undefined) row.industry = updates.industry;
   if (updates.monthlyRetainer !== undefined) row.monthly_retainer = updates.monthlyRetainer;
   if (updates.status !== undefined) row.status = updates.status;
+  if (updates.email !== undefined) row.email = updates.email;
+  if (updates.portalUsername !== undefined) row.portal_username = updates.portalUsername;
+  if (updates.portalPassword !== undefined) row.portal_password = updates.portalPassword;
+  if (updates.plan !== undefined) row.plan = updates.plan;
   const { data, error } = await supabase
     .from("clients")
     .update(row)
