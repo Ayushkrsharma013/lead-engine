@@ -951,6 +951,132 @@ Low:
 
 ---
 
+### 2026-05-17 — Agentic Workforce Phase 1 — Design + Planning
+
+**Brainstorm + Design (superpowers:brainstorming skill):**
+- Full design doc at `docs/superpowers/specs/2026-05-17-agentic-workforce-design.md` (committed `e2cac35`)
+- 8-agent workforce: Lead Scout, Outreach Agent, Pipeline Manager, ICP Analyst, Client Reporter, Finance Watcher (live), Data Janitor, Message Coach
+- Dispatcher pattern (Approach B): single `/api/agents/run` cron at 7 AM dispatches 7 modules in parallel via `Promise.allSettled` with 25s timeout each
+- Finance Watcher stays on its own 9 AM cron and writes directly to `agent_runs` (not in AGENT_REGISTRY)
+- 3 new DB tables: `agents` (registry), `agent_actions` (approval queue + notifications log), `agent_runs` (execution log)
+- Safe vs risky action classification: `safe_notify` = auto-execute; `medium`/`high` = queue for Telegram approval
+- Telegram inline keyboard buttons (`approve_agent:<id>` / `reject_agent:<id>`) added to existing `/api/agent/telegram` webhook
+- Email one-click approve/reject via HMAC-signed tokens (CRON_SECRET) — `GET /api/agents/approve?id=&token=&decision=`
+- 6 AM daily Resend digest email with yesterday's run summary + pending approval list
+- `/admin/agents` Full Mission Control: status grid, pending approvals inbox, notifications log, activity feed
+- All notifications mirrored in DB — Telegram/email are delivery channels, command center is source of truth
+- No new npm packages — uses existing Supabase, Resend, Telegram integrations
+
+**Implementation plan:**
+- Full plan at `docs/superpowers/plans/2026-05-17-agentic-workforce-phase1.md`
+- 11 tasks with complete code for every step
+- Status: **PLANNED — Phase 1 implementation pending**
+
+---
+
+## Agentic Workforce — Phase 1 Roadmap
+
+### Architecture
+
+```
+Vercel Cron (7 AM) ──▶ /api/agents/run ──▶ AgentDispatcher
+                                              │ reads agents table (enabled only)
+                                              │ runs lib/agents/*.ts in parallel (25s timeout)
+                                              ├─▶ safeActions → auto-execute
+                                              └─▶ riskyActions → agent_actions (pending)
+                                                                → Telegram inline keyboard
+/api/agent/finance/cron (9 AM) ──▶ Finance Watcher (own cron, writes to agent_runs directly)
+Vercel Cron (6 AM) ──▶ /api/agents/digest ──▶ Resend HTML email with pending approvals
+/api/agent/telegram ──▶ handles approve_agent:/reject_agent: callbacks
+/api/agents/approve ──▶ email one-click approve/reject (HMAC token)
+/admin/agents ──▶ Full Mission Control UI (reads DB at request time)
+```
+
+### New files (Phase 1)
+
+```
+supabase/migrations/20260517_agentic_workforce.sql
+lib/agents/types.ts            — AgentModule, AgentAction, AgentResult, DB row shapes
+lib/agents/tokens.ts           — generateApproveToken, verifyApproveToken (HMAC-SHA256)
+lib/agents/resolver.ts         — resolveAgentAction() shared by Telegram webhook + email endpoint
+lib/agents/dispatcher.ts       — runAgentBatch(), parallel execution, health score
+lib/agents/lead-scout.ts       — stub (enabled Phase 2)
+lib/agents/outreach-agent.ts   — stub (enabled Phase 2)
+lib/agents/pipeline-manager.ts — stub (enabled Phase 2)
+lib/agents/icp-analyst.ts      — stub (enabled Phase 2)
+lib/agents/client-reporter.ts  — stub (enabled Phase 2)
+lib/agents/data-janitor.ts     — stub (enabled Phase 2)
+lib/agents/message-coach.ts    — stub (enabled Phase 2)
+app/api/agents/run/route.ts    — GET cron endpoint (CRON_SECRET auth, maxDuration 300)
+app/api/agents/approve/route.ts — GET email one-click approve/reject
+app/api/agents/digest/route.ts  — GET 6 AM daily digest cron
+app/admin/agents/page.tsx       — Full Mission Control UI
+```
+
+### Modified files (Phase 1)
+
+```
+app/api/agent/finance/cron/route.ts  — add agent_runs write at end of run
+app/api/agent/telegram/route.ts      — add callback_query handler for approve_agent/reject_agent
+components/layout/Sidebar.tsx        — add "Agent Command Center" link in Operations section
+vercel.json                          — add 2 cron entries (7 AM run + 6 AM digest)
+```
+
+### Phase 1 task checklist
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | DB migration — agents, agent_actions, agent_runs + RLS + 8 seed rows | Pending |
+| 2 | lib/agents/types.ts + lib/agents/tokens.ts | Pending |
+| 3 | lib/agents/dispatcher.ts (runAgentBatch) | Pending |
+| 4 | 7 stub agent modules in lib/agents/ | Pending |
+| 5 | Finance Watcher integration (writes to agent_runs) | Pending |
+| 6 | /api/agents/run cron endpoint | Pending |
+| 7 | lib/agents/resolver.ts + /api/agents/approve GET endpoint | Pending |
+| 8 | Telegram webhook callback_query handler | Pending |
+| 9 | /api/agents/digest daily email cron | Pending |
+| 10 | /admin/agents Full Mission Control UI | Pending |
+| 11 | Sidebar link + vercel.json + full build check | Pending |
+
+### Agent roster
+
+| Agent | Slug | Schedule | Phase 1 Status |
+|---|---|---|---|
+| Lead Scout | `lead-scout` | 7 AM daily | Stub — disabled |
+| Outreach Agent | `outreach-agent` | 8 AM daily | Stub — disabled |
+| Pipeline Manager | `pipeline-manager` | 9 AM daily | Stub — disabled |
+| ICP Analyst | `icp-analyst` | Sun 8 AM | Stub — disabled |
+| Client Reporter | `client-reporter` | Sun 8 AM | Stub — disabled |
+| Finance Watcher | `finance-watcher` | 9 AM daily | **Live — own cron** |
+| Data Janitor | `data-janitor` | 4 AM daily | Stub — disabled |
+| Message Coach | `message-coach` | 10 AM daily | Stub — disabled |
+
+### Safe vs risky action classification
+
+| Action | Risk Level | Execution |
+|---|---|---|
+| Update leads.kanban_column / score / status | safe_notify | Auto |
+| Insert into activity_log / lead_activity_log | safe_notify | Auto |
+| Flag lead as stale (update leads.notes) | safe_notify | Auto |
+| Update agents.health_score | safe_notify | Auto |
+| Update profiles.icp_preferences score threshold | safe_notify | Auto (with notify) |
+| Launch a sequence for leads | **medium** | Queue |
+| Send email / create campaign / modify sequence | **medium** | Queue |
+| Archive leads (status = archived) | **medium** | Queue |
+| Send client report | **medium** | Queue |
+| Delete any record | **high** | Queue |
+| Bulk status change (>10 leads) | **high** | Queue |
+| Modify another agent's config | **high** | Queue |
+
+### Environment variables (all already set)
+
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram approvals + alerts
+- `RESEND_API_KEY`, `NOTIFY_EMAIL` — 6 AM digest email
+- `SUPABASE_SERVICE_ROLE_KEY` — all agent DB writes (supabaseAdmin)
+- `CRON_SECRET` — secures /api/agents/run + signs email approve tokens
+
+---
+
 - CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
 ### Future enhancements (not yet planned)
 
