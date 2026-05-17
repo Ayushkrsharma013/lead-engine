@@ -9,6 +9,7 @@ import {
   findSequenceMessageByResendId,
   updateSequenceMessageStatus,
   logActivity,
+  leadFromDB as leadFromRow,
 } from "./db";
 import { sendEmail, buildProspectingEmailHtml } from "./resend";
 import { supabaseAdmin } from "./supabase";
@@ -111,28 +112,6 @@ export async function launchSequence(sequenceId: string, userId?: string): Promi
   });
 
   return { sequence, executions, alreadyRunning };
-}
-
-// ─── Lead row to Lead ───────────────────────────────────────────────────────
-
-function leadFromRow(row: Record<string, unknown>): Lead {
-  const s = String(row.source || "linkedin");
-  const validSources = new Set(["linkedin", "gmaps", "amazon"]);
-  return {
-    id: String(row.id || ""),
-    name: String(row.name || ""),
-    title: String(row.title || ""),
-    company: String(row.company || ""),
-    industry: String(row.industry || ""),
-    location: String(row.location || ""),
-    email: String(row.email || ""),
-    emailStatus: (["verified", "risky", "not_found"].includes(String(row.email_status)) ? String(row.email_status) : "not_found") as Lead["emailStatus"],
-    linkedin: String(row.linkedin || ""),
-    website: String(row.website || ""),
-    companySize: String(row.company_size || ""),
-    score: Number(row.score ?? 0),
-    source: validSources.has(s) ? s as Lead["source"] : "linkedin",
-  };
 }
 
 // ─── Cron Handler ────────────────────────────────────────────────────────────

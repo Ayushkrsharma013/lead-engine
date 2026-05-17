@@ -11,7 +11,7 @@ import type {
 
 type LeadRow = Record<string, unknown>;
 
-function leadFromDB(row: LeadRow): Lead {
+export function leadFromDB(row: LeadRow): Lead {
   const s = String(row.source || "linkedin");
   const validSources = new Set(["linkedin", "gmaps", "amazon"]);
   return {
