@@ -18,10 +18,10 @@ const TIME_SLOTS = [
   "15:30", "16:00", "16:30", "17:00",
 ];
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const CONFETTI_COLORS = ["#e8420a","#ff6b35","#ffd700","#22c55e","#3b82f6","#a855f7","#ec4899","#f97316"];
+const CONFETTI_COLORS = ["#e8420a", "#ff6b35", "#ffd700", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#f97316"];
 
 const MEETING_ICONS: Record<MeetingType, typeof Search> = {
   discovery: Search,
@@ -149,7 +149,7 @@ export default function BookPage() {
       .then((data: Array<{ date: string; time: string }>) => {
         setBookedSlots(new Set(data.map(a => `${a.date}|${a.time}`)));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setSlotsLoading(false));
   }, []);
 
@@ -279,10 +279,18 @@ export default function BookPage() {
       {/* ══════ Nav ══════ */}
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight no-underline" style={{ color: "var(--text-primary, #f5f4f1)" }}>
-            <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
-            Prospecting<span style={{ color: "var(--accent, #e8420a)" }}>OS</span>
-          </a>
+          {/* Logo */}
+          <Link href="/prospecting-os" className="flex items-center gap-2.5 flex-shrink-0 group">
+            <img
+              src="/prospecting-os/assets/Logo_Icon.png"
+              alt="Prospecting OS"
+              className="w-7 h-7 rounded-lg object-contain"
+            />
+            <span className="text-[15px] font-semibold tracking-tight">
+              <span className="text-white">Prospecting</span>
+              <span className="text-[#E8420a]">OS</span>
+            </span>
+          </Link>
           <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--text-tertiary, #7a7875)" }}>
 
             {/* Calendar status indicator */}
@@ -327,408 +335,408 @@ export default function BookPage() {
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-5 h-full">
           <div className="flex-1 min-w-0 overflow-y-auto">
 
-        {step === 5 ? (
-          /* ══════════════════════ STEP 5 — Confirmation ════════════════ */
-          <div className="text-center py-12 animate-scale-in">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)" }}>
-              <CheckCircle size={40} style={{ color: "var(--success, #22c55e)" }} />
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight mb-3">You&apos;re Booked!</h1>
-            <p className="text-base mb-8" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
-              A confirmation has been sent to <strong style={{ color: "var(--text-primary, #f5f4f1)" }}>{email}</strong>.
-            </p>
-            <div className="inline-flex flex-col gap-3 p-6 rounded-xl mb-6 text-left" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-              <div className="flex items-center gap-3">
-                <Calendar size={18} style={{ color: "var(--accent, #e8420a)" }} />
-                <span className="font-semibold">{selectedDate}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock size={18} style={{ color: "var(--accent, #e8420a)" }} />
-                <span className="font-semibold">{selectedTime}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
-                <span className="font-semibold">
-                  {MEETING_TYPES[meetingType].label} &mdash; {MEETING_TYPES[meetingType].duration} min
-                </span>
-              </div>
-            </div>
+            {step === 5 ? (
+              /* ══════════════════════ STEP 5 — Confirmation ════════════════ */
+              <div className="text-center py-12 animate-scale-in">
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)" }}>
+                  <CheckCircle size={40} style={{ color: "var(--success, #22c55e)" }} />
+                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight mb-3">You&apos;re Booked!</h1>
+                <p className="text-base mb-8" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
+                  A confirmation has been sent to <strong style={{ color: "var(--text-primary, #f5f4f1)" }}>{email}</strong>.
+                </p>
+                <div className="inline-flex flex-col gap-3 p-6 rounded-xl mb-6 text-left" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                  <div className="flex items-center gap-3">
+                    <Calendar size={18} style={{ color: "var(--accent, #e8420a)" }} />
+                    <span className="font-semibold">{selectedDate}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock size={18} style={{ color: "var(--accent, #e8420a)" }} />
+                    <span className="font-semibold">{selectedTime}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Zap size={18} style={{ color: "var(--accent, #e8420a)" }} />
+                    <span className="font-semibold">
+                      {MEETING_TYPES[meetingType].label} &mdash; {MEETING_TYPES[meetingType].duration} min
+                    </span>
+                  </div>
+                </div>
 
-            {/* Countdown + progress bar */}
-            <p className="text-sm mb-3" style={{ color: "var(--text-tertiary)" }}>
-              Returning to booking page in{" "}
-              <span style={{ color: "var(--accent)", fontWeight: 700 }}>{countdown}</span>s&hellip;
-            </p>
-            <div style={{ width: 160, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 999, margin: "0 auto 28px" }}>
-              <div style={{
-                height: "100%", borderRadius: 999,
-                background: "var(--accent, #e8420a)",
-                width: `${((3 - countdown) / 3) * 100}%`,
-                transition: "width 1s linear",
-              }} />
-            </div>
+                {/* Countdown + progress bar */}
+                <p className="text-sm mb-3" style={{ color: "var(--text-tertiary)" }}>
+                  Returning to booking page in{" "}
+                  <span style={{ color: "var(--accent)", fontWeight: 700 }}>{countdown}</span>s&hellip;
+                </p>
+                <div style={{ width: 160, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 999, margin: "0 auto 28px" }}>
+                  <div style={{
+                    height: "100%", borderRadius: 999,
+                    background: "var(--accent, #e8420a)",
+                    width: `${((3 - countdown) / 3) * 100}%`,
+                    transition: "width 1s linear",
+                  }} />
+                </div>
 
-            <a href="/" className="inline-flex items-center gap-2 font-semibold text-sm px-6 py-3 rounded-full transition-all no-underline" style={{ background: "var(--accent, #e8420a)", color: "#fff" }}>
-              Back to Home <ArrowRight size={14} />
-            </a>
-          </div>
-        ) : (
-          <>
-            {/* ══════ Header ══════ */}
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-widest mb-2 px-3 py-1.5 rounded-full" style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))", color: "var(--badge-text, #ff8a5c)" }}>
-                Book a Demo
+                <a href="/" className="inline-flex items-center gap-2 font-semibold text-sm px-6 py-3 rounded-full transition-all no-underline" style={{ background: "var(--accent, #e8420a)", color: "#fff" }}>
+                  Back to Home <ArrowRight size={14} />
+                </a>
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight mb-1">Schedule Your Demo</h1>
-              <p className="text-base max-w-md mx-auto" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
-                See how Prospecting OS finds 500+ qualified leads every month — in a 20-minute walkthrough.
-              </p>
-            </div>
+            ) : (
+              <>
+                {/* ══════ Header ══════ */}
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-widest mb-2 px-3 py-1.5 rounded-full" style={{ background: "var(--badge-bg, rgba(232,66,10,0.12))", color: "var(--badge-text, #ff8a5c)" }}>
+                    Book a Demo
+                  </div>
+                  <h1 className="text-3xl font-extrabold tracking-tight mb-1">Schedule Your Demo</h1>
+                  <p className="text-base max-w-md mx-auto" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
+                    See how Prospecting OS finds 500+ qualified leads every month — in a 20-minute walkthrough.
+                  </p>
+                </div>
 
-            {/* ══════════════════════ STEP 1 — Meeting Type ════════════ */}
-            {step === 1 && (
-              <div className="animate-fade-up">
-                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  <h2 className="text-base font-extrabold tracking-tight mb-1">Choose Your Meeting Type</h2>
-                  <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Select the type of session that best fits your needs.</p>
+                {/* ══════════════════════ STEP 1 — Meeting Type ════════════ */}
+                {step === 1 && (
+                  <div className="animate-fade-up">
+                    <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                      <h2 className="text-base font-extrabold tracking-tight mb-1">Choose Your Meeting Type</h2>
+                      <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Select the type of session that best fits your needs.</p>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {(Object.keys(MEETING_TYPES) as MeetingType[]).map(type => {
-                      const Icon = MEETING_ICONS[type];
-                      const isSelected = meetingType === type;
-                      const accentColor = MEETING_ACCENT_COLORS[type];
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setMeetingType(type)}
-                          className="rounded-xl p-4 text-left transition-all cursor-pointer"
-                          style={{
-                            background: isSelected ? "rgba(232,66,10,0.06)" : "rgba(255,255,255,0.02)",
-                            border: `1px solid ${isSelected ? accentColor : "var(--border-card, rgba(255,255,255,0.06))"}`,
-                            outline: "none",
-                          }}
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className="w-9 h-9 rounded-lg flex items-center justify-center"
+                      <div className="grid grid-cols-2 gap-3">
+                        {(Object.keys(MEETING_TYPES) as MeetingType[]).map(type => {
+                          const Icon = MEETING_ICONS[type];
+                          const isSelected = meetingType === type;
+                          const accentColor = MEETING_ACCENT_COLORS[type];
+                          return (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setMeetingType(type)}
+                              className="rounded-xl p-4 text-left transition-all cursor-pointer"
                               style={{
-                                background: isSelected ? `${accentColor}22` : "rgba(255,255,255,0.04)",
-                                color: isSelected ? accentColor : "var(--text-secondary)",
+                                background: isSelected ? "rgba(232,66,10,0.06)" : "rgba(255,255,255,0.02)",
+                                border: `1px solid ${isSelected ? accentColor : "var(--border-card, rgba(255,255,255,0.06))"}`,
+                                outline: "none",
                               }}
                             >
-                              <Icon size={16} />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-tertiary)" }}>
-                              {MEETING_TYPES[type].duration} min
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-bold tracking-tight mb-0.5" style={{ color: "var(--text-primary)" }}>
-                            {MEETING_TYPES[type].label}
-                          </h3>
-                          <p className="text-[11px] leading-snug" style={{ color: "var(--text-tertiary)" }}>
-                            {MEETING_TYPES[type].description}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setStep(2)}
-                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all"
-                  style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
-                >
-                  Continue with {MEETING_TYPES[meetingType].label}
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            )}
-
-            {/* ══════════════════════ STEP 2 — Date Picker ══════════════ */}
-            {step === 2 && (
-              <div className="animate-fade-up">
-                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
-                  <ArrowLeft size={14} /> Back to meeting type
-                </button>
-
-                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  {/* Month nav */}
-                  <div className="flex items-center justify-between mb-3">
-                    <button onClick={prevMonth} className="p-2 rounded-lg transition-colors hover:bg-white/5" aria-label="Previous month">
-                      <ChevronLeft size={18} style={{ color: "var(--text-secondary)" }} />
-                    </button>
-                    <h2 className="text-lg font-extrabold tracking-tight">
-                      {MONTHS[viewMonth]} {viewYear}
-                    </h2>
-                    <button onClick={nextMonth} className={classNames("p-2 rounded-lg transition-colors", canGoNext && "hover:bg-white/5 cursor-pointer", !canGoNext && "opacity-30 cursor-not-allowed")} aria-label="Next month" disabled={!canGoNext}>
-                      <ChevronRight size={18} style={{ color: "var(--text-secondary)" }} />
-                    </button>
-                  </div>
-
-                  {/* Day headers */}
-                  <div className="grid grid-cols-7 mb-1">
-                    {DAYS.map(d => (
-                      <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wider py-1" style={{ color: "var(--text-tertiary, #7a7875)" }}>
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Day grid */}
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: firstDay }).map((_, i) => (
-                      <div key={`empty-${i}`} />
-                    ))}
-                    {Array.from({ length: daysInMonth }).map((_, i) => {
-                      const day = i + 1;
-                      const past = isPastDay(viewYear, viewMonth, day);
-                      const weekend = isWeekend(viewYear, viewMonth, day);
-                      const disabled = past || weekend;
-                      const dateStr = formatDate(viewYear, viewMonth, day);
-                      const isSelected = selectedDate === dateStr;
-                      return (
-                        <button
-                          key={day}
-                          disabled={disabled}
-                          onClick={() => selectDate(viewYear, viewMonth, day)}
-                          className={classNames(
-                            "h-10 rounded-xl text-sm font-semibold transition-all",
-                            disabled && "cursor-not-allowed",
-                            !disabled && !isSelected && "hover:bg-white/5 cursor-pointer",
-                            isSelected && "text-white cursor-pointer",
-                          )}
-                          style={{
-                            ...(isSelected ? { background: "var(--accent, #e8420a)" } : { color: "var(--text-primary, #f5f4f1)" }),
-                            ...(disabled ? { opacity: weekend ? 0.15 : 0.2 } : {}),
-                          }}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  disabled={!selectedDate}
-                  onClick={() => setStep(3)}
-                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: selectedDate ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedDate ? "#fff" : "var(--text-tertiary)" }}
-                >
-                  {selectedDate ? `Continue — ${selectedDate}` : "Select a date to continue"}
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            )}
-
-            {/* ══════════════════════ STEP 3 — Time Slots ══════════════ */}
-            {step === 3 && (
-              <div className="animate-fade-up">
-                <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
-                  <ArrowLeft size={14} /> {selectedDate}
-                </button>
-
-                {/* Timezone display */}
-                <div className="flex items-center gap-1.5 mb-3" style={{ color: "var(--text-tertiary)" }}>
-                  <Clock size={12} />
-                  <span className="text-xs">Times shown in {userTimezone}</span>
-                </div>
-
-                <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  {slotsLoading ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {Array.from({ length: 12 }).map((_, i) => (
-                          <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
-                        ))}
+                              <div className="flex items-center gap-2 mb-2">
+                                <div
+                                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                                  style={{
+                                    background: isSelected ? `${accentColor}22` : "rgba(255,255,255,0.04)",
+                                    color: isSelected ? accentColor : "var(--text-secondary)",
+                                  }}
+                                >
+                                  <Icon size={16} />
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-tertiary)" }}>
+                                  {MEETING_TYPES[type].duration} min
+                                </span>
+                              </div>
+                              <h3 className="text-sm font-bold tracking-tight mb-0.5" style={{ color: "var(--text-primary)" }}>
+                                {MEETING_TYPES[type].label}
+                              </h3>
+                              <p className="text-[11px] leading-snug" style={{ color: "var(--text-tertiary)" }}>
+                                {MEETING_TYPES[type].description}
+                              </p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
-                      <div className="grid grid-cols-3 gap-2.5 mb-4">
-                        {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
-                          const isSel = selectedTime === t;
-                          const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
+
+                    <button
+                      onClick={() => setStep(2)}
+                      className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all"
+                      style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
+                    >
+                      Continue with {MEETING_TYPES[meetingType].label}
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* ══════════════════════ STEP 2 — Date Picker ══════════════ */}
+                {step === 2 && (
+                  <div className="animate-fade-up">
+                    <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                      <ArrowLeft size={14} /> Back to meeting type
+                    </button>
+
+                    <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                      {/* Month nav */}
+                      <div className="flex items-center justify-between mb-3">
+                        <button onClick={prevMonth} className="p-2 rounded-lg transition-colors hover:bg-white/5" aria-label="Previous month">
+                          <ChevronLeft size={18} style={{ color: "var(--text-secondary)" }} />
+                        </button>
+                        <h2 className="text-lg font-extrabold tracking-tight">
+                          {MONTHS[viewMonth]} {viewYear}
+                        </h2>
+                        <button onClick={nextMonth} className={classNames("p-2 rounded-lg transition-colors", canGoNext && "hover:bg-white/5 cursor-pointer", !canGoNext && "opacity-30 cursor-not-allowed")} aria-label="Next month" disabled={!canGoNext}>
+                          <ChevronRight size={18} style={{ color: "var(--text-secondary)" }} />
+                        </button>
+                      </div>
+
+                      {/* Day headers */}
+                      <div className="grid grid-cols-7 mb-1">
+                        {DAYS.map(d => (
+                          <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-wider py-1" style={{ color: "var(--text-tertiary, #7a7875)" }}>
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Day grid */}
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: firstDay }).map((_, i) => (
+                          <div key={`empty-${i}`} />
+                        ))}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                          const day = i + 1;
+                          const past = isPastDay(viewYear, viewMonth, day);
+                          const weekend = isWeekend(viewYear, viewMonth, day);
+                          const disabled = past || weekend;
+                          const dateStr = formatDate(viewYear, viewMonth, day);
+                          const isSelected = selectedDate === dateStr;
                           return (
                             <button
-                              key={t}
-                              disabled={isBooked}
-                              onClick={() => !isBooked && setSelectedTime(t)}
-                              className="h-10 rounded-xl text-sm font-semibold transition-all border"
+                              key={day}
+                              disabled={disabled}
+                              onClick={() => selectDate(viewYear, viewMonth, day)}
+                              className={classNames(
+                                "h-10 rounded-xl text-sm font-semibold transition-all",
+                                disabled && "cursor-not-allowed",
+                                !disabled && !isSelected && "hover:bg-white/5 cursor-pointer",
+                                isSelected && "text-white cursor-pointer",
+                              )}
                               style={{
-                                background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
-                                color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                                borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
-                                cursor: isBooked ? "not-allowed" : "pointer",
-                                opacity: isBooked ? 0.4 : 1,
-                                textDecoration: isBooked ? "line-through" : "none",
+                                ...(isSelected ? { background: "var(--accent, #e8420a)" } : { color: "var(--text-primary, #f5f4f1)" }),
+                                ...(disabled ? { opacity: weekend ? 0.15 : 0.2 } : {}),
                               }}
                             >
-                              {t}
+                              {day}
                             </button>
                           );
                         })}
                       </div>
+                    </div>
 
-                      <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
-                          const isSel = selectedTime === t;
-                          const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
-                          return (
-                            <button
-                              key={t}
-                              disabled={isBooked}
-                              onClick={() => !isBooked && setSelectedTime(t)}
-                              className="h-10 rounded-xl text-sm font-semibold transition-all border"
-                              style={{
-                                background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
-                                color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
-                                borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
-                                cursor: isBooked ? "not-allowed" : "pointer",
-                                opacity: isBooked ? 0.4 : 1,
-                                textDecoration: isBooked ? "line-through" : "none",
-                              }}
-                            >
-                              {t}
-                            </button>
-                          );
-                        })}
+                    <button
+                      disabled={!selectedDate}
+                      onClick={() => setStep(3)}
+                      className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ background: selectedDate ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedDate ? "#fff" : "var(--text-tertiary)" }}
+                    >
+                      {selectedDate ? `Continue — ${selectedDate}` : "Select a date to continue"}
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* ══════════════════════ STEP 3 — Time Slots ══════════════ */}
+                {step === 3 && (
+                  <div className="animate-fade-up">
+                    <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                      <ArrowLeft size={14} /> {selectedDate}
+                    </button>
+
+                    {/* Timezone display */}
+                    <div className="flex items-center gap-1.5 mb-3" style={{ color: "var(--text-tertiary)" }}>
+                      <Clock size={12} />
+                      <span className="text-xs">Times shown in {userTimezone}</span>
+                    </div>
+
+                    <div className="rounded-2xl p-4 lg:p-5" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                      {slotsLoading ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {Array.from({ length: 12 }).map((_, i) => (
+                              <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Morning</h3>
+                          <div className="grid grid-cols-3 gap-2.5 mb-4">
+                            {TIME_SLOTS.filter(t => parseInt(t) < 12).map(t => {
+                              const isSel = selectedTime === t;
+                              const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
+                              return (
+                                <button
+                                  key={t}
+                                  disabled={isBooked}
+                                  onClick={() => !isBooked && setSelectedTime(t)}
+                                  className="h-10 rounded-xl text-sm font-semibold transition-all border"
+                                  style={{
+                                    background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                                    color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                                    borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                                    cursor: isBooked ? "not-allowed" : "pointer",
+                                    opacity: isBooked ? 0.4 : 1,
+                                    textDecoration: isBooked ? "line-through" : "none",
+                                  }}
+                                >
+                                  {t}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <h3 className="text-sm font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-tertiary)" }}>Afternoon</h3>
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {TIME_SLOTS.filter(t => parseInt(t) >= 12).map(t => {
+                              const isSel = selectedTime === t;
+                              const isBooked = selectedDate ? bookedSlots.has(`${selectedDate}|${t}`) : false;
+                              return (
+                                <button
+                                  key={t}
+                                  disabled={isBooked}
+                                  onClick={() => !isBooked && setSelectedTime(t)}
+                                  className="h-10 rounded-xl text-sm font-semibold transition-all border"
+                                  style={{
+                                    background: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.02)" : "transparent",
+                                    color: isBooked ? "var(--text-tertiary, #7a7875)" : isSel ? "#fff" : "var(--text-primary, #f5f4f1)",
+                                    borderColor: isSel ? "var(--accent, #e8420a)" : isBooked ? "rgba(255,255,255,0.04)" : "var(--border, rgba(255,255,255,0.08))",
+                                    cursor: isBooked ? "not-allowed" : "pointer",
+                                    opacity: isBooked ? 0.4 : 1,
+                                    textDecoration: isBooked ? "line-through" : "none",
+                                  }}
+                                >
+                                  {t}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <button
+                      disabled={!selectedTime}
+                      onClick={confirmDateTime}
+                      className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ background: selectedTime ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedTime ? "#fff" : "var(--text-tertiary)" }}
+                    >
+                      {selectedTime ? `Confirm — ${selectedDate} at ${selectedTime}` : "Pick a time slot"}
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* ══════════════════════ STEP 4 — Booking Form ════════════ */}
+                {step === 4 && (
+                  <div className="animate-fade-up">
+                    <button onClick={() => setStep(3)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                      <ArrowLeft size={14} /> {selectedDate} at {selectedTime}
+                    </button>
+
+                    <div className="rounded-2xl p-4 lg:p-5 space-y-4" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
+                      {/* Name */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                          <User size={12} /> Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          placeholder="John Doe"
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
+                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
                       </div>
-                    </>
-                  )}
-                </div>
+                      {/* Email */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                          <Mail size={12} /> Work Email *
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          placeholder="you@company.com"
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
+                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
+                      </div>
+                      {/* Phone */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                          <Phone size={12} /> Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={e => setPhone(e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
+                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
+                      </div>
+                      {/* Company */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                          <Building2 size={12} /> Company
+                        </label>
+                        <input
+                          type="text"
+                          value={company}
+                          onChange={e => setCompany(e.target.value)}
+                          placeholder="Acme Inc."
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
+                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
+                      </div>
+                      {/* Notes */}
+                      <div>
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
+                          <MessageSquare size={12} /> Notes
+                        </label>
+                        <textarea
+                          value={notes}
+                          onChange={e => setNotes(e.target.value)}
+                          placeholder="Anything we should know before the call?"
+                          rows={3}
+                          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none"
+                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                        />
+                      </div>
 
-                <button
-                  disabled={!selectedTime}
-                  onClick={confirmDateTime}
-                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: selectedTime ? "var(--accent, #e8420a)" : "var(--bg-input, #1a1a1a)", color: selectedTime ? "#fff" : "var(--text-tertiary)" }}
-                >
-                  {selectedTime ? `Confirm — ${selectedDate} at ${selectedTime}` : "Pick a time slot"}
-                  <ArrowRight size={14} />
-                </button>
-              </div>
+                      {/* Turnstile CAPTCHA */}
+                      {turnstileSiteKey && (
+                        <div className="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+                      )}
+
+                      {error && (
+                        <p className="text-xs font-medium" style={{ color: "var(--accent, #e8420a)" }}>{error}</p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={submit}
+                      disabled={submitting || !name.trim() || !email.trim()}
+                      className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
+                    >
+                      {submitting ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>Confirm Booking <ArrowRight size={14} /></>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-
-            {/* ══════════════════════ STEP 4 — Booking Form ════════════ */}
-            {step === 4 && (
-              <div className="animate-fade-up">
-                <button onClick={() => setStep(3)} className="flex items-center gap-1.5 text-sm font-medium mb-3 transition-colors hover:opacity-80" style={{ color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
-                  <ArrowLeft size={14} /> {selectedDate} at {selectedTime}
-                </button>
-
-                <div className="rounded-2xl p-4 lg:p-5 space-y-4" style={{ background: "var(--bg-card, #1a1917)", border: "1px solid var(--border-card, rgba(255,255,255,0.06))" }}>
-                  {/* Name */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
-                      <User size={12} /> Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="John Doe"
-                      className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
-                    />
-                  </div>
-                  {/* Email */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
-                      <Mail size={12} /> Work Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="you@company.com"
-                      className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
-                    />
-                  </div>
-                  {/* Phone */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
-                      <Phone size={12} /> Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      placeholder="+1 (555) 123-4567"
-                      className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
-                    />
-                  </div>
-                  {/* Company */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
-                      <Building2 size={12} /> Company
-                    </label>
-                    <input
-                      type="text"
-                      value={company}
-                      onChange={e => setCompany(e.target.value)}
-                      placeholder="Acme Inc."
-                      className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
-                    />
-                  </div>
-                  {/* Notes */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>
-                      <MessageSquare size={12} /> Notes
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      placeholder="Anything we should know before the call?"
-                      rows={3}
-                      className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none"
-                      style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
-                    />
-                  </div>
-
-                  {/* Turnstile CAPTCHA */}
-                  {turnstileSiteKey && (
-                    <div className="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
-                  )}
-
-                  {error && (
-                    <p className="text-xs font-medium" style={{ color: "var(--accent, #e8420a)" }}>{error}</p>
-                  )}
-                </div>
-
-                <button
-                  onClick={submit}
-                  disabled={submitting || !name.trim() || !email.trim()}
-                  className="w-full mt-3 h-11 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: "var(--accent, #e8420a)", color: "#fff" }}
-                >
-                  {submitting ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>Confirm Booking <ArrowRight size={14} /></>
-                  )}
-                </button>
-              </div>
-            )}
-          </>
-          )}
           </div>
 
           {/* Right — Pros Bot Conversational Agent */}

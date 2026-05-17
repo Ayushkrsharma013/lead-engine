@@ -43,7 +43,7 @@ const FUNNEL_COLORS = [
   "var(--ink-4)",
 ];
 
-function PipelineInsight({ core }: { core: { total: number; hot: number; contacted: number; avgScore: number } }) {
+function PipelineInsight({ core }: { core: { total: number; hot: number; contacted: number; avgScore: number; meetings: number } }) {
   if (core.total === 0) return null;
   const hotRate = Math.round((core.hot / core.total) * 100);
   const contactRate = Math.round((core.contacted / core.total) * 100);
