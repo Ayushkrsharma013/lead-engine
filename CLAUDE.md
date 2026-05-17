@@ -121,7 +121,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | AI | Gemini 2.5 Flash — called from browser (Message Lab + Scorer + A/B variants) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
 | Email | Resend HTTP API — sequence dispatch + booking notifications + inbound webhooks |
-| Scheduling | Vercel Cron Jobs — sequence runner daily at 8 AM (`vercel.json`) |
+| Scheduling | Vercel Cron Jobs — 5 daily crons at 6/6/7/8/9 AM (`vercel.json`) |
 | Error tracking | `lib/error-tracking.ts` — Supabase error_logs table + optional Sentry |
 | Google Drive | Google Identity Services (GIS) — client-side OAuth |
 | Browser testing | agent-browser CLI (Vercel) — screenshots gitignored |
@@ -136,7 +136,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 lead-engine/
 ├── middleware.ts                 # Auth middleware — protects admin routes, sets x-user-* headers
 ├── next.config.mjs               # basePath: '/prospecting-os', assetPrefix
-├── vercel.json                   # Cron: daily sequence runner (8 AM) + finance agent (9 AM)
+├── vercel.json                   # Cron: digest(6AM) + apify-scrape(6AM) + agents(7AM) + sequences(8AM) + finance(9AM)
 ├── supabase-migration.sql        # Full DB schema + RLS policies + auth columns
 ├── .env.example                  # All required environment variables
 ├── .mcp.json                     # MCP servers: ruflo + supabase
@@ -186,9 +186,12 @@ lead-engine/
 │       ├── outreach/               # OpenOutreach status/sync endpoints
 │       ├── agent/telegram/route.ts # Telegram bot webhook
 │       ├── cron/sequence-runner/   # GET — Vercel Cron: processes due sequence steps
+│       ├── cron/apify-scrape/      # GET — Vercel Cron: scheduled Apify scrape (6 AM)
 │       ├── sequence/launch/        # POST — launch sequence for assigned leads
 │       ├── sequence/cancel/        # POST — pause/cancel sequence executions
-│       ├── inbound-email/          # POST — Resend inbound webhook (reply tracking)
+│       ├── sequences/route.ts      # GET — list sequences [{id, name}] for bulk picker
+│       ├── inbound-email/          # POST — Resend webhook: reply + open/click/bounce tracking
+│       ├── agents/knowledge/       # GET — knowledge store lookup (?key=) or full list
 │       ├── admin/users/
 │       │   ├── route.ts               # GET list + POST create (super_admin only)
 │       │   ├── [id]/route.ts          # GET/PATCH/DELETE single user
@@ -200,6 +203,7 @@ lead-engine/
 │       │   ├── dashboard/route.ts     # GET plan-gated dashboard data (stats, breakdowns, funnel)
 │       │   ├── leads/route.ts         # GET client's leads (scoped by user_id)
 │       │   └── icebreakers/route.ts   # GET client's icebreaker-enriched leads
+│       ├── settings/scheduler/     # GET|POST — Apify scheduler config (super_admin)
 │       └── analytics/
 │           ├── business/           # GET — MRR, churn rate, conversion stats
 │           └── variant-stats/      # GET — A/B variant reply rate comparison
@@ -907,51 +911,26 @@ Low:
 
 ## Roadmap — What's Left
 
-### Immediate (external configuration — 3/4 complete)
+**2 phases remaining** as of 2026-05-18.
 
-| # | Action | Where | Status |
-|---|--------|-------|--------|
-| 1 | ~~Enable leaked password protection~~ | Supabase Auth dashboard | **BLOCKED** (free tier) |
-| 2 | ~~Configure Resend inbound webhook~~ | Resend dashboard | **DONE** |
-| 3 | ~~Set CRON_SECRET env var on Vercel~~ | Vercel | **DONE** |
-| 4 | Set SENTRY_DSN env var | Vercel (optional) | Optional |
-| 5 | ~~Add GEMINI_API_KEY env var~~ | Vercel | **DONE** |
+| Phase | Feature | Notes |
+|---|---|---|
+| **15** | **OpenOutreach → Sequence integration** | `channel: "linkedin"` steps in sequences are currently logged as skipped. Wire them to OpenOutreach sync so LinkedIn DMs/connection requests are actually sent. |
+| **16** | **Multi-currency MRR tracking** | USD/EUR/GBP/CAD/AUD/INR in `/api/analytics/business` and Finance Agent monthly summary. Country detection already in mark1. |
 
-### Immediate (code — all done)
+**External config status (as of 2026-05-17):**
+| Item | Status |
+|---|---|
+| Resend inbound webhook | **DONE** — RESEND_WEBHOOK_SECRET set |
+| CRON_SECRET | **DONE** — set on Vercel, endpoints verified |
+| GEMINI_API_KEY | **DONE** — set on Vercel |
+| SENTRY_DSN | Optional — not configured |
+| Leaked password protection | **BLOCKED** — Supabase Pro tier required |
 
-| # | Item | Status |
-|---|------|--------|
-| 6 | Resend webhook signature verification | **DONE** — HMAC-SHA256 in inbound-email route |
-| 7 | RLS on all public tables | **DONE** — 18/18 tables with policies |
-| 8 | 12 bugs from analysis | **DONE** — all fixed |
-
-### Immediate (code — portal modernization)
-
-| # | Item | Status |
-|---|------|--------|
-| 9 | Legacy portal modernized | **DONE** — all 4 pages live |
-| 10 | client_id column on leads | **DONE** — DB migration applied to production |
-| 11 | Portal API routes | **DONE** — /api/portal/leads + /api/portal/stats |
-| 12 | Progress page + tracker | **DONE** — live at /prospecting-os/progress |
-
-### 2026-05-17 — Portal Modernization + External Config Complete
-
-**Portal Modernization (2-agent swarm):**
-- Added `client_id TEXT` column + index to production `leads` table via Supabase MCP (`add_client_id_to_leads` migration)
-- Created `app/api/portal/leads/route.ts` — GET leads by client_id via supabaseAdmin (bypasses RLS)
-- Created `app/api/portal/stats/route.ts` — GET pre-computed stats (total, hot, contacted, meetings, avgScore)
-- Updated `app/portal/page.tsx` — fetches from /api/portal/stats + /api/portal/leads instead of direct anon Supabase queries
-- Updated `app/portal/leads/page.tsx` — fetches from /api/portal/leads, added error state
-- Portal login unchanged — uses bcrypt `verify_portal_password` RPC (already secure)
-- Portal billing unchanged — already uses live `finance_agent_log` data
-- Portal layout unchanged — well-designed with PortalAuthProvider + auth guard
-
-**Final Stats:**
-- 34/34 pages fully functional (0 legacy, 0 placeholder, 0 partial)
-- 22/22 API routes live
+**Current build stats (2026-05-18):**
+- 83 routes (pages + API) compiled — 0 TypeScript errors
+- 18/18 DB tables with RLS policies
 - 0 open bugs
-- External config: 3/4 done (1 blocked on free tier)
-- Build: 0 TypeScript errors, 55/55 pages compiled
 
 ---
 
@@ -1262,10 +1241,98 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 
 ---
 
-### Future enhancements (not yet planned)
+---
 
-- CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
-- OpenOutreach sequence integration — connect LinkedIn steps to the engine
-- Email open/bounce tracking via Resend webhooks
-- Automated winner selection in A/B testing
-- Multi-currency MRR tracking
+### 2026-05-18 — Phases 8–14: Feature Sweep (7 features, 5 commits)
+
+**Phase 8 — Client Portal Hot Leads Tab (`cb13e04`):**
+- `app/client-portal/leads/page.tsx` — added `view` state (`"all" | "hot"`), `hotCount` badge
+- Tab bar with Flame icon; score filters hidden in hot view; `effectiveScoreMin = 80` in hot mode
+- CSV export names file "hot-leads.csv" when in hot view; empty state "No hot leads yet"
+
+**Phase 9 — Apify Run Scheduler (`cb13e04`):**
+- `app/api/cron/apify-scrape/route.ts` — GET cron (CRON_SECRET auth), reads `scheduler.*` from knowledge_store, polls Apify actor, maps results, merges into DB, writes `scheduler.last_run` + `scheduler.last_run_imported`
+- `app/api/settings/scheduler/route.ts` — GET (reads all scheduler keys) + POST (writes scheduler config), super_admin only
+- `app/settings/page.tsx` — new Scheduler tab with enabled toggle, titles/country/size/limit fields, last-run display
+- `vercel.json` — added `0 6 * * *` cron for apify-scrape
+
+**Phase 10 — Score Decay in Data Janitor (`cb13e04`):**
+- `lib/agents/data-janitor.ts` — 4th detection section: finds leads with `score > 0` + `last_touched < 7 days ago`, skips if `[DECAY YYYY-MM-DD]` marker < 7 days old, applies `score - 5` floor 0, appends/replaces decay marker, writes `janitor.decayed_count` to knowledge_store
+
+**Phase 11 — Email Engagement Tracking (`77404bb`):**
+- `app/api/inbound-email/route.ts` — rewritten: routes by `body.type` field
+  - `email.opened` → +3 score, activity log "opened your email"
+  - `email.clicked` → +5 score, activity log "clicked your email"
+  - `email.bounced` → `sequence_messages.status = "bounced"`
+  - (no type) → existing inbound reply handler (unchanged)
+
+**Phase 12 — Automated A/B Winner Selection (`77404bb`):**
+- `lib/agents/message-coach.ts` — section 5b: for each sequence with ≥10 total sends, winner needs ≥5 sends + ≥30% relative improvement over runner-up → writes `ab_winner.{seqId}` to knowledge_store, queues `high_performer_notice` safe_notify action
+
+**Phase 13 — Bulk Lead Operations (`77404bb`):**
+- `app/leads/page.tsx` — "Status" dropdown + "Sequence" picker appear when rows are selected
+  - Status: changes all selected leads to new/contacted/replied/hot/meeting/won/lost via `batchUpdateLeadStatus`
+  - Sequence: enrolls selected leads via `POST /api/sequence/launch`
+  - Close-on-click-outside; dropdowns mutually exclusive
+- `app/api/sequences/route.ts` — new GET endpoint returns `[{ id, name }]` for the picker
+
+**Phase 14 — A/B Winner Banner + Knowledge Store Inspector (`a57f9d2`):**
+- `app/sequences/page.tsx` — gold trophy banner when `ab_winner.{seqId}` exists in knowledge_store (variant, reply rate, send count, date); fetched in `fetchExecutions()`
+- `app/admin/agents/page.tsx` — new "Agent Knowledge Store" section: filterable table of all agent-written knowledge, `ab_winner.*` keys highlighted gold
+- `app/api/agents/knowledge/route.ts` — GET endpoint: `?key=<k>` single lookup, no params = full list
+- `app/api/admin/agents/route.ts` — now includes `knowledge` in the single GET response
+
+**Build:** 0 TypeScript errors, 83 routes compiled after all phases
+
+---
+
+## Roadmap — Phases Remaining
+
+**2 phases left** out of the original roadmap. All 14 completed phases cover the full feature set except:
+
+| Phase | Feature | Description |
+|---|---|---|
+| 15 | OpenOutreach → Sequence integration | Connect LinkedIn steps in sequences to actual OpenOutreach sync — currently `channel: "linkedin"` steps are logged as skipped |
+| 16 | Multi-currency MRR tracking | USD/EUR/GBP/CAD/AUD/INR in `/api/analytics/business` and the Finance Agent summary |
+
+**Deferred (not planned):**
+- CRM integrations (HubSpot/Salesforce) — building in-house instead
+
+---
+
+### Completed Phase Index
+
+| Phase | Feature | Commit | Date |
+|---|---|---|---|
+| 1–3 | Foundation, RBAC, auth, booking, payments, onboarding | multiple | 2026-05-16 |
+| 4 | Finance Agent, Stripe removal, auth redesign | `6375290` | 2026-05-16 |
+| 5 | Tier 2: Sequence execution engine | `8a48435` | 2026-05-16 |
+| 6 | Tier 2: Reply tracking + A/B testing | `62e0bcf`/`f5b2cbf` | 2026-05-16 |
+| 7 | Tier 3: Rate limiting, error tracking, business analytics | `e91e1a3` | 2026-05-16 |
+| 8 | Client portal Hot Leads tab | `cb13e04` | 2026-05-18 |
+| 9 | Apify run scheduler (settings UI + cron) | `cb13e04` | 2026-05-18 |
+| 10 | Score decay in Data Janitor | `cb13e04` | 2026-05-18 |
+| 11 | Email engagement tracking (open/click/bounce) | `77404bb` | 2026-05-18 |
+| 12 | A/B winner auto-selection | `77404bb` | 2026-05-18 |
+| 13 | Bulk lead operations (status + sequence) | `77404bb` | 2026-05-18 |
+| 14 | A/B winner banner + Knowledge Store inspector | `a57f9d2` | 2026-05-18 |
+
+**Agentic Workforce (all 4 phases complete):**
+| Phase | Description | Key commits |
+|---|---|---|
+| W1 | DB, dispatcher, 7 stub agents, Command Center skeleton | `127f1e0`–`d3680f6` |
+| W2 | All 7 agents fully implemented | `813d733`–`db7fd90` |
+| W3 | Knowledge store + cross-agent coordination | `96664ca`–`5baa542` |
+| W4 | Guardrails (auto-disable, trust scoring, anomaly, escalation) | `52c5f01`–`d08f842` |
+
+**Command Center Automation (all 8 tasks complete):**
+| Task | Description | Commit |
+|---|---|---|
+| 1 | DB migration: "failed" status on agent_actions | `1b12787` |
+| 2 | dispatchAction() — 14 action types wired in resolver | `027e277` |
+| 3 | POST /api/agents/resolve UI endpoint | `797d3e0` |
+| 4 | Telegram + email callers updated for dispatch errors | `dd948a5` |
+| 5 | ?agent=<name> filter on /api/agents/run | `d38f5e0` |
+| 6 | GET\|PATCH /api/admin/agents/[name] | `423ce7b` |
+| 7 | /admin/agents/[name] detail page (charts, toggle, Run Now) | `8a92692` |
+| 8 | Expand/approve/reject in Command Center pending approvals | `32d4639` |
