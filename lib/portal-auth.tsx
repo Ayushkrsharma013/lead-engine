@@ -56,12 +56,14 @@ export function PortalAuthProvider({ children }: { children: React.ReactNode }) 
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      // Find client by company name AND portal_password
+      // Verify portal password via bcrypt-hashed RPC (SECURITY DEFINER)
+      // This avoids sending passwords in plaintext Supabase query filters
+      // and prevents timing attacks via constant-time bcrypt comparison
       const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("company", company)
-        .eq("portal_password", password)
+        .rpc("verify_portal_password", {
+          p_company: company,
+          p_password: password
+        })
         .single();
 
       if (error || !data) {
