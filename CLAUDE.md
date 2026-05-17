@@ -845,6 +845,41 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 ---
 
+### 2026-05-17 — Application Analysis + Progress Tracker + 12-Bug Fix Swarm
+
+**Application Analysis (SPARC Analyzer):**
+- 3 parallel agents analyzed all 55 pages, 31 API routes, 38 components, 28 lib files
+- Comprehensive report at `docs/PROGRESS.md` — module inventory, completion stats, bug tracker
+- Live progress dashboard at `/prospecting-os/progress` — server component reads CLAUDE.md at request time, auto-updates when CLAUDE.md is pushed (Vercel deploy triggers rebuild)
+- Added `/progress` to public routes (middleware.ts) and clean layout routes (Shell.tsx)
+- 5 stat cards (87% overall), progress bar, module grid, API route list, roadmap tracker, bug list, future enhancement list
+- Zero console errors, 55/55 pages compiled
+
+**12-Bug Fix Swarm (3 specialized agents in parallel):**
+
+High:
+- `.mcp.json` — Replaced hardcoded `RESEND_API_KEY` with `${RESEND_API_KEY}` env var reference (`c7329e1`)
+- `app/dashboard/page.tsx:343` — Fixed missing basePath: `/api/appointments` → `/prospecting-os/api/appointments` (`3c5bedb`)
+
+Medium:
+- `app/client-portal/slack/page.tsx` — Wired `handleSave` to POST webhook URL via `createClient().from("client_workspaces").update()` with toast feedback (`0afaa29`)
+- `app/client-portal/settings/page.tsx` — Replaced wrong admin API PATCH with direct Supabase upsert to `client_workspaces.icp_config` (`89a0a62`)
+- `app/client-portal/sequences/page.tsx` — Replaced placeholder with live data from `sequence_executions` joined with `sequences`, loading/error/empty states (`09e388d`)
+- `app/portal/billing/page.tsx` — Removed hardcoded SAMPLE_INVOICES, now queries `finance_agent_log` for real payment history (`6b6ee55`)
+- `db: clients` — Added bcrypt-hashed `portal_password` column, created `verify_portal_password()` SECURITY DEFINER RPC function, updated `lib/portal-auth.tsx` to use `.rpc()` instead of plaintext `.eq()` comparison (`e9f7cc3`)
+- `db: profiles` — Added `super_admin_select_all_profiles` + `super_admin_update_all_profiles` RLS policies (DB migration applied to `tbsqpnqzpbnilifhwvgr`)
+
+Low:
+- `lib/storage.ts` + `lib/types.ts` — Deduplicated `MergeResult` interface, imports from types.ts (`6a2f5ce`)
+- `lib/db.ts` + `lib/sequence-engine.ts` — Exported `leadFromDB`, removed local `leadFromRow` copy (`d5c9828`)
+- `public/sitemap.xml` — Added 5 missing URLs: onboarding, checkout, tools/free-audit, tools/icebreaker-generator, progress (`c7329e1`)
+- `tsconfig.json` — Bumped `target` from `es5` to `es2017` (`c7329e1`)
+
+**Files:** 14 files changed across app, lib, public, and Supabase DB
+**Build:** 0 TypeScript errors, 55/55 pages compiled
+
+---
+
 ## Roadmap — What's Left
 
 ### Immediate (external configuration)
