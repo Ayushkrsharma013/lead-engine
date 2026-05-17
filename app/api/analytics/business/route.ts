@@ -25,8 +25,9 @@ const PLAN_PRICES: Record<string, number> = {
 };
 
 export async function GET(req: NextRequest) {
+  const rawUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
   const supabaseSSR = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    rawUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll: () => req.cookies.getAll(), setAll: () => {} } }
   );
