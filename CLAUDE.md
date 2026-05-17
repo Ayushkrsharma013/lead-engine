@@ -622,6 +622,56 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 
 **Total session**: 8 commits, 28 files created, 8 modified, 0 TypeScript errors, 48/48 pages compiled, 18 new routes
 
+### 2026-05-17 — Hub + Checkout + Email Modal + Hero Refine + ProBot AI + Comparison Fixes
+
+**FlowForges Hub (new project)**:
+- Created `D:\Flow-Forges\hub\` — separate Next.js 14 app at `app.flow-forges.com` root zone
+- 6 product cards: Prospecting OS (live), Support OS + Content OS (coming soon), Proposal OS + Reputation OS + SOW OS (planned)
+- Design tokens match lead-engine (--accent: #E8A840, Geist fonts, grain texture, zero emojis)
+- All lucide-react icons, filter pills, animated live dot, spring hover, scroll progress bar
+- Shared Supabase auth — user logged into Prospecting OS auto-recognized on hub
+- Multi-zone: Vercel edge rewrites proxy `/prospecting-os/*` to lead-engine deployment
+- Domain `app.flow-forges.com` transferred from lead-engine → hub project
+- Fixed redirect loop: Vercel `:path*` doesn't match bare paths — added exact match rules
+- Disabled Vercel SSO on both projects (was returning 401 for all public routes)
+- Repo: `github.com/Ayushkrsharma013/flowforges-hub`
+
+**Checkout / Billing page (`/checkout`)**:
+- Client-facing payment page with plan details, status badge, payment reference (copy button)
+- Xflow Pay 3-step payment instructions (Transfer → Share reference → We activate)
+- Active state: green shield + "Go to Dashboard" CTA
+- Pending state: payment steps + "Book a Call" / "Sign Out" actions
+- Onboarding redirect now goes to `/checkout` instead of `dashboard?checkout=manual`
+- Added `/checkout` to public routes in middleware
+
+**Email Capture Modal — framer-motion upgrade**:
+- AnimatePresence for open/close (opacity + scale + y transitions)
+- Spring-animated success checkmark, mobile-aware (no trigger below 768px)
+- whileHover/whileTap on buttons, keyboard shortcuts (Escape/Enter)
+
+**Email Capture Section — custom dropdown**:
+- Replaced native `<select>` with `IndustryDropdown`: pill button, animated chevron, framer-motion drawer
+- Staggered item reveals, glass backdrop, click-outside-to-close
+
+**Comparison Table — Badge fix**:
+- Added `paddingTop: 16px` to prevent "Best value" badge clipping
+
+**Hero Section — minimalist refine**:
+- H1: clamp(1.9rem, 3.5vw, 2.6rem), weight 800, no italic serif
+- Badge: 0.68rem, no pulse animation, "AI Lead Generation"
+- Subtitle: 0.92rem, trimmed to 2 lines
+- Pipeline: removed LIVE/AI/AUTO badges, simpler step labels
+- Stats: 0.75rem, no monospace font. Buttons: 0.875rem
+
+**ProsBot — Gemini AI upgrade**:
+- New `/api/chat/bot` — Gemini 2.5 Flash with full product knowledge system prompt
+- 8-message context, natural responses, auto-suggests booking, replaced rule-based state machine
+
+**Pricing nav fix**: "Pricing" links scroll to `#pricing` section (not separate route)
+
+**Files**: hub: 10 created; lead-engine: ~12 modified, 2 new routes
+**Build**: 0 TS errors, 54/54 pages (lead-engine), 5/5 pages (hub)
+
 ### 2026-05-16 (Night) — Landing Page Final Push
 
 **Bug fixes**:
