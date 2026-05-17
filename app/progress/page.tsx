@@ -110,6 +110,70 @@ const FUTURE: string[] = [
   "Multi-currency MRR tracking",
 ];
 
+// ─── Agentic Workforce ──────────────────────────────────────────────────
+
+interface AgentTask {
+  num: number;
+  task: string;
+  done: boolean;
+  commit?: string;
+}
+
+interface AgentRosterEntry {
+  agent: string;
+  slug: string;
+  schedule: string;
+  status: "live" | "stub";
+}
+
+interface RiskRule {
+  action: string;
+  level: "safe_notify" | "medium" | "high";
+  execution: string;
+}
+
+const AGENT_TASKS: AgentTask[] = [
+  { num: 1, task: "DB migration — agents, agent_actions, agent_runs + RLS + 8 seed rows", done: true, commit: "127f1e0" },
+  { num: 2, task: "lib/agents/types.ts + lib/agents/tokens.ts (HMAC-SHA256)", done: true, commit: "1384ee0" },
+  { num: 3, task: "lib/agents/dispatcher.ts — runAgentBatch, parallel execution, health score", done: true, commit: "479761c" },
+  { num: 4, task: "7 stub agent modules in lib/agents/", done: true, commit: "14467ba" },
+  { num: 5, task: "Finance Watcher integration — writes to agent_runs", done: true, commit: "2c0a58d" },
+  { num: 6, task: "/api/agents/run cron endpoint (CRON_SECRET auth, maxDuration 300)", done: true, commit: "0ca3e0b" },
+  { num: 7, task: "lib/agents/resolver.ts + /api/agents/approve GET endpoint (HMAC tokens)", done: true, commit: "d6e5abc" },
+  { num: 8, task: "Telegram webhook callback_query handler (approve_agent/reject_agent)", done: true, commit: "8be44bd" },
+  { num: 9, task: "/api/agents/digest daily email cron (6 AM)", done: true, commit: "383c6ec" },
+  { num: 10, task: "/admin/agents Full Mission Control UI", done: true, commit: "50b95ef" },
+  { num: 11, task: "Sidebar link + vercel.json cron entries (7 AM run + 6 AM digest)", done: false },
+];
+
+const AGENT_ROSTER: AgentRosterEntry[] = [
+  { agent: "Lead Scout", slug: "lead-scout", schedule: "7 AM daily", status: "stub" },
+  { agent: "Outreach Agent", slug: "outreach-agent", schedule: "8 AM daily", status: "stub" },
+  { agent: "Pipeline Manager", slug: "pipeline-manager", schedule: "9 AM daily", status: "stub" },
+  { agent: "ICP Analyst", slug: "icp-analyst", schedule: "Sun 8 AM", status: "stub" },
+  { agent: "Client Reporter", slug: "client-reporter", schedule: "Sun 8 AM", status: "stub" },
+  { agent: "Finance Watcher", slug: "finance-watcher", schedule: "9 AM daily", status: "live" },
+  { agent: "Data Janitor", slug: "data-janitor", schedule: "4 AM daily", status: "stub" },
+  { agent: "Message Coach", slug: "message-coach", schedule: "10 AM daily", status: "stub" },
+];
+
+const RISK_CLASSIFICATION: RiskRule[] = [
+  { action: "Update leads.kanban_column / score / status", level: "safe_notify", execution: "Auto" },
+  { action: "Insert into activity_log / lead_activity_log", level: "safe_notify", execution: "Auto" },
+  { action: "Flag lead as stale (update leads.notes)", level: "safe_notify", execution: "Auto" },
+  { action: "Update agents.health_score", level: "safe_notify", execution: "Auto" },
+  { action: "Launch a sequence for leads", level: "medium", execution: "Queue" },
+  { action: "Send email / create campaign / modify sequence", level: "medium", execution: "Queue" },
+  { action: "Archive leads", level: "medium", execution: "Queue" },
+  { action: "Send client report", level: "medium", execution: "Queue" },
+  { action: "Delete any record", level: "high", execution: "Queue" },
+  { action: "Bulk status change (>10 leads)", level: "high", execution: "Queue" },
+  { action: "Modify another agent's config", level: "high", execution: "Queue" },
+];
+
+const agentTasksDone = AGENT_TASKS.filter((t) => t.done).length;
+const liveAgents = AGENT_ROSTER.filter((a) => a.status === "live").length;
+
 // ─── Computed stats ────────────────────────────────────────────────────
 
 const liveModules = MODULES.filter((m) => m.status === "live").length;
@@ -154,6 +218,7 @@ const line = "rgba(255,255,255,.06)";
 const ink = "#EBEBEB";
 const ink2 = "#B0B0B0";
 const ink3 = "#808080";
+const ink4 = "#555555";
 const green = "#6BCB77";
 const red = "#E06060";
 const blue = "#3b82f6";
@@ -248,6 +313,7 @@ export default function ProgressPage() {
           <StatCard label="Live APIs" value={String(liveApis)} color={blue} sub={`/ ${API_ROUTES.length} total`} />
           <StatCard label="Open Bugs" value={String(totalBugs)} color={highBugs > 0 ? red : green} sub={`${highBugs} high, ${mediumBugs} medium`} />
           <StatCard label="Config Tasks" value={`${doneRoadmap}/${ROADMAP.length}`} color={accent} sub="external setup" />
+          <StatCard label="Agent Workforce" value={`${liveAgents}/${AGENT_ROSTER.length}`} color={blue} sub={`${agentTasksDone}/${AGENT_TASKS.length} tasks done`} />
         </div>
 
         {/* Progress bar */}
@@ -560,6 +626,316 @@ export default function ProgressPage() {
                 {item}
               </div>
             ))}
+          </div>
+        </Section>
+
+        {/* ─── Agentic Workforce ──────────────────────────────────── */}
+        <Section
+          title="Agentic Workforce — Phase 1"
+          count={`${liveAgents}/${AGENT_ROSTER.length} live · ${agentTasksDone}/${AGENT_TASKS.length} tasks done`}
+        >
+          {/* Architecture */}
+          <div
+            style={{
+              marginBottom: 24,
+              padding: 20,
+              borderRadius: 12,
+              background: surface,
+              border: `1px solid ${line}`,
+              fontFamily: "'Geist Mono', monospace",
+              fontSize: 11,
+              lineHeight: 1.8,
+              color: ink3,
+              overflowX: "auto",
+              whiteSpace: "pre",
+            }}
+          >
+            {`Vercel Cron (7 AM) ──▶ /api/agents/run ──▶ AgentDispatcher
+                                              │ reads agents table (enabled only)
+                                              │ runs lib/agents/*.ts in parallel
+                                              │ 25s timeout per agent
+                                              ├─▶ safeNotify → auto-execute
+                                              └─▶ riskyActions → agent_actions (pending)
+                                                                → Telegram inline keyboard
+                                                                → Email approve/reject links
+
+Vercel Cron (9 AM) ──▶ /api/agent/finance/cron ──▶ Finance Watcher
+Vercel Cron (6 AM) ──▶ /api/agents/digest ──▶ Resend HTML email
+/api/agent/telegram  ──▶ handles approve_agent:/reject_agent: callbacks
+/api/agents/approve   ──▶ email one-click approve/reject (HMAC token)
+/admin/agents         ──▶ Full Mission Control UI`}
+          </div>
+
+          {/* Agent Roster */}
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: ink2,
+              marginBottom: 12,
+            }}
+          >
+            Agent Roster
+          </h3>
+          <div style={{ overflowX: "auto", marginBottom: 24 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${line}` }}>
+                  {["Agent", "Slug", "Schedule", "Status"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: "8px 14px",
+                        textAlign: "left",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: ink4,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {AGENT_ROSTER.map((a) => (
+                  <tr
+                    key={a.slug}
+                    style={{ borderBottom: `1px solid ${line}` }}
+                  >
+                    <td
+                      style={{
+                        padding: "10px 14px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: ink,
+                      }}
+                    >
+                      {a.agent}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px 14px",
+                        fontSize: 11,
+                        color: ink3,
+                        fontFamily: "'Geist Mono', monospace",
+                      }}
+                    >
+                      {a.slug}
+                    </td>
+                    <td
+                      style={{
+                        padding: "10px 14px",
+                        fontSize: 11,
+                        color: ink2,
+                      }}
+                    >
+                      {a.schedule}
+                    </td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "2px 10px",
+                          borderRadius: 9999,
+                          background:
+                            a.status === "live"
+                              ? `${green}18`
+                              : `${ink3}10`,
+                          color: a.status === "live" ? green : ink3,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          border: `1px solid ${a.status === "live" ? green : ink3}20`,
+                        }}
+                      >
+                        {a.status === "live" ? "Live" : "Stub"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phase 1 Tasks */}
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: ink2,
+              marginBottom: 12,
+            }}
+          >
+            Phase 1 Implementation Tasks
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+            {AGENT_TASKS.map((t) => (
+              <div
+                key={t.num}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: surface,
+                  border: `1px solid ${line}`,
+                  opacity: t.done ? 0.6 : 1,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    width: 22,
+                    height: 22,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 6,
+                    background: t.done ? `${green}15` : `${accent}15`,
+                    color: t.done ? green : accent,
+                    flexShrink: 0,
+                  }}
+                >
+                  {t.done ? "✓" : t.num}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: t.done ? ink3 : ink,
+                    textDecoration: t.done ? "line-through" : "none",
+                  }}
+                >
+                  {t.task}
+                </span>
+                {t.commit && (
+                  <code
+                    style={{
+                      fontSize: 10,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: surface2,
+                      color: ink4,
+                      fontFamily: "'Geist Mono', monospace",
+                    }}
+                  >
+                    {t.commit}
+                  </code>
+                )}
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: 9999,
+                    background: t.done ? `${green}15` : `${accent}10`,
+                    color: t.done ? green : accent,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {t.done ? "Done" : "Pending"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Risk Classification */}
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: ink2,
+              marginBottom: 12,
+            }}
+          >
+            Safe vs Risky Action Classification
+          </h3>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${line}` }}>
+                  {["Action", "Risk Level", "Execution"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: "8px 14px",
+                        textAlign: "left",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: ink4,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {RISK_CLASSIFICATION.map((r, i) => (
+                  <tr
+                    key={i}
+                    style={{ borderBottom: `1px solid ${line}` }}
+                  >
+                    <td
+                      style={{
+                        padding: "9px 14px",
+                        fontSize: 12,
+                        color: ink,
+                        fontFamily: "'Geist Mono', monospace",
+                      }}
+                    >
+                      {r.action}
+                    </td>
+                    <td style={{ padding: "9px 14px" }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: 9999,
+                          background:
+                            r.level === "safe_notify"
+                              ? `${green}12`
+                              : r.level === "medium"
+                                ? `${accent}12`
+                                : `${red}12`,
+                          color:
+                            r.level === "safe_notify"
+                              ? green
+                              : r.level === "medium"
+                                ? accent
+                                : red,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {r.level}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        padding: "9px 14px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color:
+                          r.execution === "Auto" ? green : accent,
+                      }}
+                    >
+                      {r.execution}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Section>
 
