@@ -9,6 +9,7 @@ import {
   Moon, Sun, Mail, MessageSquare, Trash2,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
+import LogoutButton from "@/components/auth/LogoutButton";
 import { useApp } from "@/lib/AppContext";
 import { createClient } from "@/lib/supabase/client";
 import type { EnabledSources } from "@/lib/AppContext";
@@ -83,11 +84,19 @@ function ProfileTab() {
       const client = createClient();
       const { data: { user } } = await client.auth.getUser();
       if (user) {
-        const { data } = await client.from("profiles").select("*").eq("id", user.id).single();
-        if (data) {
-          setProfile(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v ?? "")])));
+        // Fetch profile via API (uses supabaseAdmin, bypasses RLS)
+        const res = await fetch("/prospecting-os/api/admin/me");
+        if (res.ok) {
+          const d = await res.json();
+          setProfile(Object.fromEntries(Object.entries(d).map(([k, v]) => [k, String(v ?? "")])));
         } else {
-          setProfile({ email: user.email || "" });
+          // Fallback: query directly
+          const { data } = await client.from("profiles").select("role, email, full_name, plan, subscription_status, created_at").eq("id", user.id).single();
+          if (data) {
+            setProfile(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v ?? "")])));
+          } else {
+            setProfile({ email: user.email || "", role: user.user_metadata?.role || "user" });
+          }
         }
       }
       setLoading(false);
@@ -154,6 +163,9 @@ function ProfileTab() {
           Your account is secured with Supabase Auth. Passwords are hashed with bcrypt. Enable 2FA in your Supabase account settings.
         </p>
       </div>
+
+      {/* Logout */}
+      <LogoutButton />
     </div>
   );
 }
