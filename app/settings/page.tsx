@@ -1,151 +1,242 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  Linkedin, Map, ShoppingBag, Cpu, Zap, DollarSign, Bot,
-  Star, Info, Check, AlertTriangle, Globe, Key, Eye, EyeOff, Sparkles, Send,
+  Linkedin, Map, ShoppingBag, Cpu, Zap, Bot,
+  Check, Eye, EyeOff, Sparkles, Send, Globe,
+  Key, Bell, User, Shield, CreditCard, LogOut,
+  RefreshCw, AlertTriangle, Info, Copy, Settings2,
+  Moon, Sun, Mail, MessageSquare, Trash2,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
+import { createClient } from "@/lib/supabase/client";
 import type { EnabledSources } from "@/lib/AppContext";
 import type { Source } from "@/lib/types";
 
-// ─── Providers ────────────────────────────────────────────────────────────────
-const AI_PROVIDERS = [
-  {
-    id: "anthropic",
-    label: "Anthropic (Claude)",
-    icon: Cpu,
-    color: "var(--accent)",
-    bg: "var(--accent-soft)",
-    description: "Powers Message Lab and Lead Scorer. Claude Sonnet 4 for complex reasoning, Haiku for fast generation.",
-    storageKey: "proos_anthropic_key",
-    docsUrl: "https://console.anthropic.com/keys",
-  },
-  {
-    id: "gemini",
-    label: "Google Gemini",
-    icon: Zap,
-    color: "var(--info)",
-    bg: "var(--info-soft)",
-    description: "Gemini Flash for cost-effective scoring and data extraction. 20x cheaper than Claude for structured tasks.",
-    storageKey: "proos_gemini_key",
-    docsUrl: "https://aistudio.google.com/apikey",
-  },
-  {
-    id: "openai",
-    label: "OpenAI (GPT-4o)",
-    icon: Sparkles,
-    color: "var(--positive)",
-    bg: "var(--positive-soft)",
-    description: "GPT-4o mini for message generation at $0.15/M tokens. Natural, conversion-optimised copy.",
-    storageKey: "proos_openai_key",
-    docsUrl: "https://platform.openai.com/api-keys",
-  },
-] as const;
-
-const SOURCES_CONFIG: {
-  key: Source;
-  label: string;
-  icon: React.ElementType;
-  color: string;
-  bg: string;
-  description: string;
-  status: string;
-  comingSoon?: boolean;
-}[] = [
-  {
-    key: "linkedin", label: "LinkedIn", icon: Linkedin,
-    color: "var(--accent)", bg: "var(--accent-soft)",
-    description: "Scrape decision-makers from LinkedIn via Apollo/ZoomInfo data. Best for B2B outreach.",
-    status: "Fully operational",
-  },
-  {
-    key: "gmaps", label: "Google Maps", icon: Map,
-    color: "var(--positive)", bg: "var(--positive-soft)",
-    description: "Find local business owners from Google Maps listings. Great for agency and SMB targeting.",
-    status: "Coming soon", comingSoon: true,
-  },
-  {
-    key: "amazon", label: "Amazon", icon: ShoppingBag,
-    color: "var(--negative)", bg: "var(--negative-soft)",
-    description: "Identify Amazon Seller Central operators by category. E-commerce tools and supplier outreach.",
-    status: "Coming soon", comingSoon: true,
-  },
-];
-
 const TABS = [
-  { id: "sources", label: "Data Sources", icon: Globe },
-  { id: "keys",    label: "API Keys",     icon: Key },
-  { id: "agent",   label: "Agent",        icon: Bot },
-  { id: "about",   label: "About",        icon: Info },
+  { id: "profile",  label: "Profile",   icon: User },
+  { id: "sources",  label: "Sources",   icon: Globe },
+  { id: "keys",     label: "API Keys",  icon: Key },
+  { id: "agent",    label: "Agent",     icon: Bot },
+  { id: "about",    label: "About",     icon: Info },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
-// ─── Source Card ───────────────────────────────────────────────────────────────
-function SourceCard({ cfg, enabled, onToggle }: {
-  cfg: typeof SOURCES_CONFIG[number];
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  const Icon = cfg.icon;
+// ═══════════════════════════════════════════════════════════════════════════
+
+function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: () => void; disabled?: boolean }) {
   return (
-    <div
-      className="rounded-xl p-4 transition-all"
-      style={{
-        background: enabled ? cfg.bg : "var(--surface-2)",
-        border: `1px solid ${enabled ? cfg.color + "40" : "var(--line)"}`,
-      }}
+    <button
+      role="switch" aria-checked={enabled} onClick={onChange}
+      disabled={disabled}
+      className="relative w-10 h-5 rounded-full transition-all duration-200 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+      style={{ background: enabled ? "var(--accent)" : "var(--line)" }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: enabled ? cfg.bg : "var(--surface-2)", border: `1px solid ${enabled ? cfg.color + "30" : "var(--line)"}` }}
-          >
-            <Icon size={16} style={{ color: enabled ? cfg.color : "var(--ink-3)" }} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{cfg.label}</span>
-              {cfg.comingSoon && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide" style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid var(--negative)/25" }}>
-                  Soon
-                </span>
-              )}
-              {!cfg.comingSoon && enabled && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1" style={{ background: "var(--positive-soft)", color: "var(--positive)", border: "1px solid var(--positive)/25" }}>
-                  <Check size={8} /> Active
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{cfg.status}</p>
-          </div>
+      <span
+        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+        style={{ left: 2, transform: enabled ? "translateX(20px)" : "translateX(0)" }}
+      />
+    </button>
+  );
+}
+
+function SectionCard({ icon: Icon, title, sub, children }: {
+  icon: React.ElementType; title: string; sub?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.12)" }}>
+          <Icon size={18} style={{ color: "var(--accent)" }} />
         </div>
-        <button
-          onClick={onToggle}
-          disabled={cfg.comingSoon}
-          className="relative w-10 h-5 rounded-full transition-all duration-200 focus:outline-none shrink-0 disabled:opacity-40 disabled:cursor-not-allowed mt-0.5"
-          style={{ background: enabled ? cfg.color : "var(--line)" }}
-          aria-checked={enabled}
-          role="switch"
-        >
-          <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
-            style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
-        </button>
+        <div>
+          <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{title}</p>
+          {sub && <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{sub}</p>}
+        </div>
       </div>
-      <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--ink-3)" }}>{cfg.description}</p>
-      {cfg.comingSoon && (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: "var(--negative-soft)", color: "var(--negative)", border: "1px solid var(--negative)/25" }}>
-          <AlertTriangle size={11} />
-          Integration in development -- toggle will unlock automatically on release.
-        </div>
-      )}
+      {children}
     </div>
   );
 }
 
-// ─── API Key Card ──────────────────────────────────────────────────────────────
+function Badge({ label, color }: { label: string; color: string }) {
+  return (
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+      style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
+      {label}
+    </span>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Profile Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ProfileTab() {
+  const [profile, setProfile] = useState<Record<string, string | null> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const client = createClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (user) {
+        const { data } = await client.from("profiles").select("*").eq("id", user.id).single();
+        if (data) {
+          setProfile(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v ?? "")])));
+        } else {
+          setProfile({ email: user.email || "" });
+        }
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <RefreshCw size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+      </div>
+    );
+  }
+
+  const roleColors: Record<string, string> = {
+    super_admin: "#E8A840", client: "#3b82f6", qa_agent: "#a78bfa", user: "#6b7280",
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Avatar + identity */}
+      <div className="rounded-xl p-5 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-[22px] font-bold"
+          style={{ background: "linear-gradient(135deg, rgba(232,168,64,0.15), rgba(232,168,64,0.05))", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }}>
+          {String(profile?.full_name || profile?.email || "?")[0]?.toUpperCase()}
+        </div>
+        <p className="text-[16px] font-bold mt-3" style={{ color: "var(--ink)" }}>
+          {String(profile?.full_name || profile?.display_name || profile?.email || "Unknown")}
+        </p>
+        <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>{String(profile?.email || "")}</p>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <Badge label={String(profile?.role || "user").replace("_", " ")} color={roleColors[String(profile?.role)] || "#6b7280"} />
+          {!!profile?.plan && <Badge label={String(profile.plan).toUpperCase()} color="#6BCB77" />}
+          {!!profile?.subscription_status && (
+            <Badge
+              label={String(profile.subscription_status)}
+              color={String(profile.subscription_status) === "active" ? "#6BCB77" : "#E8A840"}
+            />
+          )}
+        </div>
+        <p className="text-[10px] mt-3" style={{ color: "var(--ink-4)" }}>
+          Member since {profile?.created_at ? new Date(String(profile.created_at)).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : "—"}
+        </p>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "Role", value: String(profile?.role || "user").replace("_", " ") },
+          { label: "Plan", value: (String(profile?.plan || "none")).toUpperCase() },
+          { label: "Status", value: String(profile?.subscription_status || "inactive") },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-4)" }}>{s.label}</p>
+            <p className="text-[14px] font-semibold mt-0.5 capitalize" style={{ color: "var(--ink)" }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Security note */}
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl" style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.15)" }}>
+        <Shield size={14} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+        <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+          Your account is secured with Supabase Auth. Passwords are hashed with bcrypt. Enable 2FA in your Supabase account settings.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Sources Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SOURCES_CONFIG = [
+  {
+    key: "linkedin" as Source, label: "LinkedIn (Apollo/ZoomInfo)",
+    icon: Linkedin, color: "var(--accent)",
+    description: "B2B decision-makers via Apollo & ZoomInfo data. Best for tech, finance, healthcare.",
+    status: "Active — 222 leads scraped",
+    comingSoon: false,
+  },
+  {
+    key: "gmaps" as Source, label: "Google Maps",
+    icon: Map, color: "var(--positive)",
+    description: "Local business owners from Google Maps. Great for agency and SMB targeting.",
+    status: "Integration pending",
+    comingSoon: true,
+  },
+  {
+    key: "amazon" as Source, label: "Amazon Sellers",
+    icon: ShoppingBag, color: "var(--negative)",
+    description: "Amazon Seller Central operators by category. E-commerce and supplier outreach.",
+    status: "Integration pending",
+    comingSoon: true,
+  },
+];
+
+function SourcesTab({ enabledSources, onToggle }: {
+  enabledSources: EnabledSources;
+  onToggle: (key: Source) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+        Enable or disable lead data sources. At least one source must remain active. Disabled sources are hidden from the Leads toolbar.
+      </p>
+      {SOURCES_CONFIG.map(cfg => {
+        const Icon = cfg.icon;
+        const enabled = enabledSources[cfg.key];
+        return (
+          <div key={cfg.key} className="rounded-xl p-4 transition-all"
+            style={{ background: enabled ? "var(--surface)" : "var(--surface-2)", border: `1px solid ${enabled ? cfg.color + "30" : "var(--line)"}`, opacity: cfg.comingSoon ? 0.55 : 1 }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: enabled ? `${cfg.color}15` : "var(--surface-2)", border: `1px solid ${enabled ? cfg.color + "25" : "var(--line)"}` }}>
+                  <Icon size={18} style={{ color: enabled ? cfg.color : "var(--ink-4)" }} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{cfg.label}</span>
+                    {cfg.comingSoon && <Badge label="Soon" color="#E8A840" />}
+                    {!cfg.comingSoon && enabled && <Badge label="Active" color="#6BCB77" />}
+                    {!cfg.comingSoon && !enabled && <Badge label="Paused" color="#6b7280" />}
+                  </div>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>{cfg.status}</p>
+                </div>
+              </div>
+              <Toggle enabled={enabled} onChange={() => onToggle(cfg.key)} disabled={cfg.comingSoon} />
+            </div>
+            <p className="text-[12px] mt-3 leading-relaxed" style={{ color: "var(--ink-3)" }}>{cfg.description}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// API Keys Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AI_PROVIDERS = [
+  { id: "anthropic", label: "Anthropic (Claude)", icon: Cpu, color: "var(--accent)", storageKey: "proos_anthropic_key", docsUrl: "https://console.anthropic.com/keys", desc: "Claude Sonnet 4 for complex reasoning. Powers Message Lab and Lead Scorer." },
+  { id: "gemini", label: "Google Gemini", icon: Zap, color: "#3b82f6", storageKey: "proos_gemini_key", docsUrl: "https://aistudio.google.com/apikey", desc: "Gemini 2.5 Flash — 20x cheaper than Claude for structured tasks like scoring." },
+  { id: "openai", label: "OpenAI (GPT-4o)", icon: Sparkles, color: "#6BCB77", storageKey: "proos_openai_key", docsUrl: "https://platform.openai.com/api-keys", desc: "GPT-4o mini at $0.15/M tokens. Natural, conversion-optimized copy generation." },
+];
+
 function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
   const [key, setKey] = useState("");
   const [show, setShow] = useState(false);
@@ -164,84 +255,57 @@ function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleClear = () => {
-    localStorage.removeItem(provider.storageKey);
-    setKey("");
-    setSaved(false);
-  };
-
-  const masked = key ? `${key.slice(0, 8)}${"*".repeat(Math.min(24, key.length - 8))}` : "";
+  const masked = key ? `${key.slice(0, 6)}${"•".repeat(Math.min(20, key.length - 6))}` : "";
 
   return (
     <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
       <div className="flex items-start gap-3 mb-3">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: provider.bg }}>
-          <Icon size={16} style={{ color: provider.color }} />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: `${provider.color}10`, border: `1px solid ${provider.color}20` }}>
+          <Icon size={18} style={{ color: provider.color }} />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{provider.label}</span>
-            {key && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-1" style={{ background: "var(--positive-soft)", color: "var(--positive)", border: "1px solid var(--positive)/25" }}>
-                <Check size={8} /> Configured
-              </span>
-            )}
+            {key && <Badge label="Configured" color="#6BCB77" />}
           </div>
-          <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: "var(--ink-3)" }}>{provider.description}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-3)" }}>{provider.desc}</p>
         </div>
       </div>
-
       <div className="flex items-center gap-2">
         <div className="flex-1 relative">
           <input
             type={show ? "text" : "password"}
             value={show ? key : (key ? masked : "")}
             onChange={e => { setKey(e.target.value); setSaved(false); }}
-            placeholder={`Enter your ${provider.label} API key...`}
+            placeholder={`Paste your ${provider.label} key…`}
             className="w-full h-9 rounded-lg px-3 pr-8 text-[12px] font-mono outline-none transition-colors"
-            style={{
-              background: "var(--surface-2)",
-              border: `1px solid ${key ? provider.color + "40" : "var(--line)"}`,
-              color: key ? provider.color : "var(--ink-3)",
-            }}
+            style={{ background: "var(--surface-2)", border: `1px solid ${key ? provider.color + "30" : "var(--line)"}`, color: key ? provider.color : "var(--ink-3)" }}
             onFocus={e => (e.currentTarget.style.borderColor = provider.color)}
-            onBlur={e => (e.currentTarget.style.borderColor = key ? provider.color + "40" : "var(--line)")}
+            onBlur={e => (e.currentTarget.style.borderColor = key ? provider.color + "30" : "var(--line)")}
           />
-          <button
-            onClick={() => setShow(!show)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center transition-colors hover:bg-[var(--surface-2)]"
-            style={{ color: "var(--ink-3)" }}
-          >
-            {show ? <EyeOff size={12} /> : <Eye size={12} />}
-          </button>
+          {key && (
+            <button onClick={() => setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded"
+              style={{ color: "var(--ink-3)" }}>
+              {show ? <EyeOff size={12} /> : <Eye size={12} />}
+            </button>
+          )}
         </div>
         {key && !saved && (
-          <button
-            onClick={handleSave}
-            className="h-9 px-4 rounded-lg text-[12px] font-semibold transition-all active:translate-y-[0.5px]"
-            style={{ background: provider.color, color: "var(--bg)" }}
-          >
-            Save
-          </button>
+          <button onClick={handleSave} className="h-9 px-4 rounded-lg text-[12px] font-semibold transition-all"
+            style={{ background: provider.color, color: "#000" }}>Save</button>
         )}
-        {key && (
-          <button
-            onClick={handleClear}
-            className="h-9 px-3 rounded-lg text-[12px] font-medium transition-all border"
-            style={{ color: "var(--ink-3)", borderColor: "var(--line)" }}
-          >
+        {key && saved && (
+          <button onClick={() => { localStorage.removeItem(provider.storageKey); setKey(""); setSaved(false); }}
+            className="h-9 px-3 rounded-lg text-[12px] transition-all" style={{ color: "var(--ink-3)", border: "1px solid var(--line)" }}>
             Clear
           </button>
         )}
         {!key && (
-          <a
-            href={provider.docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-9 px-3 rounded-lg text-[11px] font-medium transition-all border inline-flex items-center"
-            style={{ color: "var(--ink-3)", borderColor: "var(--line)" }}
-          >
-            Get key
+          <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer"
+            className="h-9 px-3 rounded-lg text-[11px] font-medium inline-flex items-center transition-all"
+            style={{ color: "var(--ink-3)", border: "1px solid var(--line)" }}>
+            Get key ↗
           </a>
         )}
       </div>
@@ -249,246 +313,202 @@ function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
   );
 }
 
-// ─── Agent Config Tab ───────────────────────────────────────────────────────────
-const AGENT_STORAGE_KEYS = {
-  telegramToken: "proos_telegram_bot_token",
-  agentName: "proos_agent_name",
-  autoReply: "proos_agent_auto_reply",
-};
+function ApiKeysTab() {
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+        Add API keys for AI providers. Keys are stored in your browser only — never sent to our servers or database.
+      </p>
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]"
+        style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.15)", color: "var(--ink-3)" }}>
+        <Shield size={13} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+        <span><span className="font-semibold" style={{ color: "var(--accent)" }}>Local storage only.</span> Keys live in localStorage and are used directly from your browser. No one else can access them.</span>
+      </div>
+      {AI_PROVIDERS.map(p => <ApiKeyCard key={p.id} provider={p} />)}
+    </div>
+  );
+}
 
-function AgentConfigTab() {
+// ═══════════════════════════════════════════════════════════════════════════
+// Agent Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AgentTab() {
   const [telegramToken, setTelegramToken] = useState("");
-  const [agentName, setAgentName] = useState("");
+  const [agentName, setAgentName] = useState("ProOS Agent");
   const [autoReply, setAutoReply] = useState(true);
   const [saved, setSaved] = useState(false);
-  const [webhookStatus, setWebhookStatus] = useState<string | null>(null);
+  const [webhookStatus, setWebhookStatus] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setTelegramToken(localStorage.getItem(AGENT_STORAGE_KEYS.telegramToken) || "");
-      setAgentName(localStorage.getItem(AGENT_STORAGE_KEYS.agentName) || "ProOS Agent");
-      const ar = localStorage.getItem(AGENT_STORAGE_KEYS.autoReply);
-      setAutoReply(ar === null ? true : ar === "true");
-    }
+    setTelegramToken(localStorage.getItem("proos_telegram_bot_token") || "");
+    setAgentName(localStorage.getItem("proos_agent_name") || "ProOS Agent");
+    setAutoReply(localStorage.getItem("proos_agent_auto_reply") !== "false");
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem(AGENT_STORAGE_KEYS.telegramToken, telegramToken.trim());
-    localStorage.setItem(AGENT_STORAGE_KEYS.agentName, agentName.trim() || "ProOS Agent");
-    localStorage.setItem(AGENT_STORAGE_KEYS.autoReply, String(autoReply));
+    localStorage.setItem("proos_telegram_bot_token", telegramToken.trim());
+    localStorage.setItem("proos_agent_name", agentName.trim() || "ProOS Agent");
+    localStorage.setItem("proos_agent_auto_reply", String(autoReply));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleSetupWebhook = async () => {
-    setWebhookStatus("Setting up...");
+  const setupWebhook = async () => {
+    setWebhookStatus("Registering webhook…");
     try {
-      const res = await fetch("/api/agent/telegram?action=set");
-      const data = await res.json() as { webhookUrl?: string; result?: { ok?: boolean; description?: string } };
-      if (data.result?.ok) {
-        setWebhookStatus("Webhook registered: " + (data.webhookUrl || "OK"));
-      } else {
-        setWebhookStatus("Failed: " + (data.result?.description || "Unknown error"));
-      }
-    } catch {
-      setWebhookStatus("Error connecting");
-    }
+      const res = await fetch("/prospecting-os/api/agent/telegram?action=set");
+      const d = await res.json() as Record<string, unknown>;
+      const r = d.result as Record<string, unknown> | undefined;
+      setWebhookStatus(r?.ok ? "Webhook active ✓" : `Failed: ${r?.description || "Unknown"}`);
+    } catch { setWebhookStatus("Network error"); }
   };
 
-  const webhookUrl = typeof window !== "undefined"
-    ? `https://${window.location.host}/api/agent/telegram`
-    : "";
+  const webhookUrl = typeof window !== "undefined" ? `https://app.flow-forges.com/prospecting-os/api/agent/telegram` : "";
 
   return (
-    <>
-      <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-        Configure your ProOS Agent — the 24/7 AI that lives inside the platform. Connect Telegram to chat with your agent from anywhere.
+    <div className="space-y-3">
+      <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+        Configure your ProOS Agent — the 24/7 AI workforce that lives inside the platform. Connect Telegram to interact with your agent from anywhere.
       </p>
 
-      {/* Agent Identity */}
-      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(201,168,124,0.08)", border: "1px solid rgba(201,168,124,0.18)" }}>
-            <Bot size={18} style={{ color: "var(--accent)" }} />
-          </div>
-          <div>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Agent Identity</span>
-            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Customise how your agent appears</p>
-          </div>
-        </div>
+      <SectionCard icon={Settings2} title="Agent Identity" sub="How your agent appears to users">
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
-            Agent Name
-          </label>
-          <input
-            type="text" value={agentName}
-            onChange={e => setAgentName(e.target.value)}
-            placeholder="ProOS Agent"
-            className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all duration-200"
+          <label className="text-[10px] font-bold uppercase tracking-[0.10em] block mb-1.5" style={{ color: "var(--ink-4)" }}>Name</label>
+          <input type="text" value={agentName} onChange={e => setAgentName(e.target.value)}
+            className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all"
             style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
-            onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent)"}
-            onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
-          />
+            onFocus={e => (e.currentTarget.style.borderColor = "var(--accent)")}
+            onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")} />
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Telegram */}
-      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(154,179,200,0.10)", border: "1px solid rgba(154,179,200,0.18)" }}>
-            <Send size={18} style={{ color: "var(--info)" }} />
-          </div>
+      <SectionCard icon={Send} title="Telegram Integration" sub="Chat with your agent via Telegram bot">
+        <div className="space-y-3">
           <div>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Telegram Integration</span>
-            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Chat with your agent via Telegram from anywhere</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
-              Bot Token
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="password" value={telegramToken}
-                onChange={e => setTelegramToken(e.target.value)}
-                placeholder="123456:ABC-DEF1234ghikl..."
-                className="flex-1 h-9 rounded-lg px-3 text-[12px] font-mono outline-none transition-all duration-200"
-                style={{ color: telegramToken ? "var(--info)" : "var(--ink-3)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
-                onFocus={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--info)"}
-                onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"}
-              />
-            </div>
+            <label className="text-[10px] font-bold uppercase tracking-[0.10em] block mb-1.5" style={{ color: "var(--ink-4)" }}>Bot Token</label>
+            <input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)}
+              placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+              className="w-full h-9 rounded-lg px-3 text-[12px] font-mono outline-none transition-all"
+              style={{ color: telegramToken ? "#3b82f6" : "var(--ink-3)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
+              onFocus={e => (e.currentTarget.style.borderColor = "#3b82f6")}
+              onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")} />
             <p className="text-[10px] mt-1" style={{ color: "var(--ink-4)" }}>
-              Get your token from <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: "var(--info)" }}>@BotFather</a> on Telegram
+              Create a bot with <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6" }}>@BotFather</a> on Telegram
             </p>
           </div>
-
           {telegramToken && (
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1.5" style={{ color: "var(--ink-3)" }}>
-                Webhook URL
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text" readOnly value={webhookUrl}
-                  className="flex-1 h-9 rounded-lg px-3 text-[11px] font-mono outline-none"
-                  style={{ color: "var(--ink-2)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
-                />
-                <button
-                  onClick={() => { navigator.clipboard.writeText(webhookUrl); }}
-                  className="h-9 px-3 rounded-lg text-[11px] font-medium transition-all duration-200"
-                  style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink-3)" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.04)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
-                >
-                  Copy
-                </button>
+            <>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.10em] block mb-1.5" style={{ color: "var(--ink-4)" }}>Webhook URL</label>
+                <div className="flex items-center gap-2">
+                  <input type="text" readOnly value={webhookUrl}
+                    className="flex-1 h-9 rounded-lg px-3 text-[11px] font-mono outline-none"
+                    style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink-3)" }} />
+                  <button onClick={() => { navigator.clipboard.writeText(webhookUrl); }}
+                    className="h-9 w-9 rounded-lg flex items-center justify-center transition-all"
+                    style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink-3)" }}>
+                    <Copy size={13} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={handleSetupWebhook}
-                  className="h-8 px-4 rounded-lg text-[11px] font-medium transition-all duration-200"
-                  style={{ background: "rgba(154,179,200,0.10)", color: "var(--info)", border: "1px solid rgba(154,179,200,0.20)" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(154,179,200,0.18)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(154,179,200,0.10)"}
-                >
+              <div className="flex items-center gap-3">
+                <button onClick={setupWebhook}
+                  className="h-9 px-4 rounded-lg text-[12px] font-medium transition-all"
+                  style={{ background: "rgba(59,130,246,0.10)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.20)" }}>
                   Auto-setup Webhook
                 </button>
                 {webhookStatus && (
-                  <span className="text-[10px]" style={{ color: webhookStatus.includes("Failed") ? "var(--negative)" : "var(--positive)" }}>
+                  <span className="text-[11px]" style={{ color: webhookStatus.includes("Failed") || webhookStatus.includes("error") ? "var(--negative)" : "var(--positive)" }}>
                     {webhookStatus}
                   </span>
                 )}
               </div>
-            </div>
+            </>
           )}
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Gemini Key */}
-      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(168,201,154,0.08)", border: "1px solid rgba(168,201,154,0.15)" }}>
-            <Sparkles size={18} style={{ color: "var(--positive)" }} />
-          </div>
-          <div>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>AI Brain</span>
-            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>The agent uses Gemini 2.5 Flash for fast, intelligent responses</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
-          style={{ background: "rgba(168,201,154,0.06)", border: "1px solid rgba(168,201,154,0.12)" }}>
-          <span className="w-2 h-2 rounded-full" style={{ background: "var(--positive)" }} />
-          <span className="text-[12px]" style={{ color: "var(--ink-2)" }}>
-            Using Gemini key from <span style={{ color: "var(--accent)" }}>API Keys</span> tab
-          </span>
-          <span className="flex-1" />
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
-            style={{ background: "rgba(168,201,154,0.10)", color: "var(--positive)", border: "1px solid rgba(168,201,154,0.18)" }}>
-            Connected
-          </span>
-        </div>
-      </div>
-
-      {/* Behaviour */}
-      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(212,148,132,0.06)", border: "1px solid rgba(212,148,132,0.12)" }}>
-            <Zap size={18} style={{ color: "var(--negative)" }} />
-          </div>
-          <div>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>Behaviour</span>
-            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Control how your agent operates</p>
-          </div>
-        </div>
+      <SectionCard icon={Bot} title="Behaviour" sub="Control how your agent operates">
         <div className="space-y-3">
-          <label className="flex items-center justify-between cursor-pointer py-1.5">
-            <span className="text-[12px]" style={{ color: "var(--ink-2)" }}>Auto-reply on Telegram</span>
-            <button
-              role="switch"
-              aria-checked={autoReply}
-              onClick={() => setAutoReply(!autoReply)}
-              className="relative w-10 h-5 rounded-full transition-all duration-200 focus:outline-none shrink-0"
-              style={{ background: autoReply ? "var(--positive)" : "var(--line)" }}
-            >
-              <span
-                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
-                style={{ left: 2, transform: autoReply ? "translateX(20px)" : "translateX(0)" }}
-              />
-            </button>
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <span className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>Auto-reply on Telegram</span>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>Agent responds automatically to Telegram messages</p>
+            </div>
+            <Toggle enabled={autoReply} onChange={() => setAutoReply(!autoReply)} />
           </label>
-          <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
-            When enabled, the agent automatically responds to Telegram messages. Disable to review messages in ProOS first.
-          </p>
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Save */}
-      <button
-        onClick={handleSave}
-        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-[13px] font-semibold transition-all duration-200"
+      <button onClick={handleSave}
+        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-[13px] font-semibold transition-all"
         style={{
-          background: saved ? "rgba(168,201,154,0.10)" : "linear-gradient(90deg, rgba(201,168,124,0.14), rgba(201,168,124,0.08))",
-          color: saved ? "var(--positive)" : "var(--accent-ink)",
-          border: saved ? "1px solid rgba(168,201,154,0.20)" : "1px solid rgba(201,168,124,0.22)",
-        }}
-      >
-        {saved ? <><Check size={14} /> Saved</> : "Save Agent Configuration"}
+          background: saved ? "rgba(107,203,119,0.10)" : "linear-gradient(90deg, rgba(232,168,64,0.14), rgba(232,168,64,0.06))",
+          color: saved ? "#6BCB77" : "var(--accent)",
+          border: saved ? "1px solid rgba(107,203,119,0.20)" : "1px solid rgba(232,168,64,0.20)",
+        }}>
+        {saved ? <><Check size={15} /> Configuration Saved</> : "Save Agent Configuration"}
       </button>
-    </>
+    </div>
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// About Tab
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AboutTab() {
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl p-6 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3"
+          style={{ background: "linear-gradient(135deg, rgba(232,168,64,0.15), rgba(232,168,64,0.04))", border: "1px solid rgba(232,168,64,0.20)" }}>
+          <Zap size={22} style={{ color: "var(--accent)" }} />
+        </div>
+        <p className="text-[18px] font-bold" style={{ color: "var(--ink)" }}>Prospecting OS</p>
+        <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>v1.0.0 — AI-Powered B2B Lead Generation</p>
+        <p className="text-[10px] mt-3" style={{ color: "var(--ink-4)" }}>
+          Built with Next.js 14 · Supabase · Anthropic Claude · Gemini 2.5 Flash · Vercel
+        </p>
+      </div>
+
+      <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        {[
+          { l: "Framework", v: "Next.js 14.2 (App Router)" },
+          { l: "Language", v: "TypeScript 5 — strict mode" },
+          { l: "Database", v: "Supabase Postgres + Realtime" },
+          { l: "AI Engine", v: "Claude Sonnet 4 + Gemini 2.5 Flash + GPT-4o" },
+          { l: "Agents", v: "8 autonomous agents (Phase 4)" },
+          { l: "Payments", v: "Xflow Pay — manual activation" },
+          { l: "Email", v: "Resend — transactional + inbound webhooks" },
+          { l: "Deployment", v: "Vercel — auto-deploy from main branch" },
+          { l: "Code", v: "github.com/Ayushkrsharma013/lead-engine" },
+        ].map((row, i) => (
+          <div key={row.l} className="flex items-center justify-between px-5 py-3"
+            style={{ borderBottom: i < 8 ? "1px solid var(--line)" : "none" }}>
+            <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>{row.l}</span>
+            <span className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>{row.v}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]"
+        style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.15)", color: "var(--ink-3)" }}>
+        <Info size={13} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+        <span>API keys are stored in your browser's localStorage only — never written to our database or servers. Your session is managed by Supabase Auth with SSR cookies.</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Page
+// ═══════════════════════════════════════════════════════════════════════════
+
 export default function SettingsPage() {
   const { state, dispatch } = useApp();
-  const [activeTab, setActiveTab] = useState<TabId>("sources");
+  const [activeTab, setActiveTab] = useState<TabId>("profile");
 
   const toggleSource = (key: Source) => {
     const next: EnabledSources = { ...state.enabledSources, [key]: !state.enabledSources[key] };
@@ -502,130 +522,33 @@ export default function SettingsPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-bg">
-      <TopBar title="Settings" subtitle="Configure your ProOS workspace" />
+      <TopBar title="Settings" subtitle="Manage your workspace, keys, and preferences" />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-5 py-6 space-y-4">
-
+        <div className="max-w-[680px] mx-auto px-5 py-6 space-y-4">
           {/* Tabs */}
           <div className="flex items-center gap-0.5">
             {TABS.map(tab => {
               const TabIcon = tab.icon;
               const active = activeTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
-                  style={active ? {
-                    background: "var(--accent-soft)",
-                    color: "var(--accent)",
-                    border: "1px solid var(--accent)/30",
-                  } : {
-                    color: "var(--ink-3)",
-                    border: "1px solid transparent",
-                  }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--ink)"; }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)"; }}
-                >
-                  <TabIcon size={12} />
-                  {tab.label}
+                  style={active ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }
+                    : { color: "var(--ink-3)", border: "1px solid transparent" }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget.style.color = "var(--ink)") }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget.style.color = "var(--ink-3)") }}>
+                  <TabIcon size={12} />{tab.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Data Sources tab */}
-          {activeTab === "sources" && (
-            <>
-              <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
-                Enable or disable data sources. Disabled sources are hidden from the Lead Intelligence toolbar. At least one source must remain active.
-              </p>
-              {SOURCES_CONFIG.map(cfg => (
-                <SourceCard key={cfg.key} cfg={cfg} enabled={state.enabledSources[cfg.key]} onToggle={() => toggleSource(cfg.key)} />
-              ))}
-            </>
-          )}
-
-          {/* API Keys tab */}
-          {activeTab === "keys" && (
-            <>
-              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-                Add your API keys for the AI providers you want to use. Keys are stored in your browser's local storage and never sent to our servers.
-              </p>
-
-              {/* Security note */}
-              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl text-[11px]" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20", color: "var(--ink-3)" }}>
-                <Info size={12} className="shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
-                <span>
-                  <span className="font-semibold" style={{ color: "var(--accent)" }}>Your keys stay local.</span>{" "}
-                  API keys are stored in localStorage and used directly from your browser. They are never uploaded, logged, or accessible by anyone else.
-                </span>
-              </div>
-
-              {AI_PROVIDERS.map(p => (
-                <ApiKeyCard key={p.id} provider={p} />
-              ))}
-
-              {/* Model recommendations */}
-              <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign size={14} style={{ color: "var(--positive)" }} />
-                  <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>Model recommendations by task</span>
-                </div>
-                {[
-                  { task: "Message Generation", best: "GPT-4o mini", alt: "Claude Haiku 3.5", budget: "Llama 3.3 70B (Groq)" },
-                  { task: "Lead Scoring / ICP", best: "Gemini 1.5 Flash", alt: "GPT-4o mini", budget: "Mistral Small" },
-                  { task: "Complex Reasoning", best: "Claude Sonnet 4", alt: "GPT-4o", budget: "DeepSeek V3" },
-                  { task: "Data Extraction", best: "Gemini 1.5 Flash", alt: "GPT-4o mini", budget: "Llama 3.1 8B (Groq)" },
-                ].map(row => (
-                  <div key={row.task} className="flex items-center gap-3 text-[11px] py-1.5 px-3 rounded-lg" style={{ background: "var(--surface-2)" }}>
-                    <span className="font-medium w-[160px] shrink-0" style={{ color: "var(--ink)" }}>{row.task}</span>
-                    <span className="flex-1" style={{ color: "var(--ink-3)" }}>
-                      <span style={{ color: "var(--accent)" }}>Best:</span> {row.best}
-                      {" · "}
-                      <span style={{ color: "var(--info)" }}>Alt:</span> {row.alt}
-                      {" · "}
-                      <span style={{ color: "var(--positive)" }}>Budget:</span> {row.budget}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Agent tab */}
-          {activeTab === "agent" && <AgentConfigTab />}
-
-          {/* About tab */}
-          {activeTab === "about" && (
-            <div className="space-y-3">
-              <div className="rounded-xl p-5 text-center" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20" }}>
-                <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/40" }}>
-                  <Zap size={20} style={{ color: "var(--accent)" }} />
-                </div>
-                <p className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>LinkedIn ProOS</p>
-                <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>Version 1.0.0 · AI-powered B2B prospecting</p>
-              </div>
-              {[
-                { label: "Framework", value: "Next.js 14 (App Router)" },
-                { label: "Database", value: "Supabase (Postgres + Realtime)" },
-                { label: "AI Engine", value: "Anthropic Claude + Gemini + GPT-4o" },
-                { label: "Lead scraping", value: "Apify — Apollo/ZoomInfo" },
-                { label: "Deployment", value: "Vercel (auto-deploy from main)" },
-                { label: "Repository", value: "github.com/Ayushkrsharma013/lead-engine" },
-              ].map(row => (
-                <div key={row.label} className="flex items-center justify-between px-4 py-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}>
-                  <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>{row.label}</span>
-                  <span className="text-[12px] font-medium" style={{ color: "var(--ink)" }}>{row.value}</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px]" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)/20", color: "var(--ink-3)" }}>
-                <Info size={11} style={{ color: "var(--accent)" }} />
-                API keys are stored in your browser's localStorage only — never written to our database or servers.
-              </div>
-            </div>
-          )}
+          {activeTab === "profile" && <ProfileTab />}
+          {activeTab === "sources" && <SourcesTab enabledSources={state.enabledSources} onToggle={toggleSource} />}
+          {activeTab === "keys" && <ApiKeysTab />}
+          {activeTab === "agent" && <AgentTab />}
+          {activeTab === "about" && <AboutTab />}
 
           <div className="h-8" />
         </div>
