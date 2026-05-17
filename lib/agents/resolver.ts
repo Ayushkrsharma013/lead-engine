@@ -44,3 +44,55 @@ export async function resolveAgentAction(
     }
   }
 }
+
+export async function runEscalationEngine(): Promise<{
+  autoRejected: number;
+  escalated: number;
+  archived: number;
+  log: string;
+}> {
+  const now = new Date().toISOString();
+  const threeDaysAgo = new Date(Date.now() - 72 * 3600_000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString();
+
+  // 1. Auto-reject >72h pending
+  const { count: autoRejected } = await supabaseAdmin
+    .from("agent_actions")
+    .update({ status: "rejected", resolved_at: now })
+    .eq("status", "pending")
+    .lt("created_at", threeDaysAgo)
+    .select("id", { count: "exact" });
+
+  // 2. Escalate >24h pending (<72h)
+  const { data: toEscalate } = await supabaseAdmin
+    .from("agent_actions")
+    .select("id, notified_via")
+    .eq("status", "pending")
+    .lt("created_at", oneDayAgo)
+    .gt("created_at", threeDaysAgo);
+
+  let escalated = 0;
+  for (const action of (toEscalate || [])) {
+    const channels = action.notified_via || [];
+    await supabaseAdmin.from("agent_actions").update({
+      notified_via: [...channels, "telegram_escalation"],
+    }).eq("id", action.id);
+    escalated++;
+  }
+
+  // 3. Archive >30 days resolved
+  const { count: archived } = await supabaseAdmin
+    .from("agent_actions")
+    .delete({ count: "exact" })
+    .in("status", ["executed", "rejected"])
+    .lt("created_at", thirtyDaysAgo);
+
+  const parts: string[] = [];
+  if (autoRejected) parts.push(`auto-rejected ${autoRejected} stale`);
+  if (escalated) parts.push(`escalated ${escalated} urgent`);
+  if (archived) parts.push(`archived ${archived} old`);
+  const log = parts.length ? parts.join(", ") : "No escalations needed";
+
+  return { autoRejected: autoRejected || 0, escalated, archived: archived || 0, log };
+}
