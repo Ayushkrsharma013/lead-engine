@@ -33,7 +33,7 @@ const MODULES: ModuleStatus[] = [
   { name: "Checkout / Billing", route: "/checkout", status: "live" },
   { name: "Booking Wizard", route: "/book", status: "live" },
   { name: "Booking Admin", route: "/book/admin", status: "live" },
-  { name: "Dashboard", route: "/dashboard", status: "live", notes: "API fetch missing basePath prefix (bug)" },
+  { name: "Dashboard", route: "/dashboard", status: "live" },
   { name: "Lead Intelligence", route: "/leads", status: "live" },
   { name: "Message Lab", route: "/message-lab", status: "live" },
   { name: "Lead Scorer", route: "/scorer", status: "live" },
@@ -52,10 +52,10 @@ const MODULES: ModuleStatus[] = [
   { name: "Client Leads", route: "/client-portal/leads", status: "live" },
   { name: "Client Icebreakers", route: "/client-portal/icebreakers", status: "live" },
   { name: "Client Analytics", route: "/client-portal/analytics", status: "live" },
-  { name: "Client Sequences", route: "/client-portal/sequences", status: "placeholder", notes: "Placeholder only — no real data" },
-  { name: "Client Slack", route: "/client-portal/slack", status: "partial", notes: "Save button does not POST to any API" },
+  { name: "Client Sequences", route: "/client-portal/sequences", status: "live" },
+  { name: "Client Slack", route: "/client-portal/slack", status: "live" },
   { name: "Client Billing", route: "/client-portal/billing", status: "live" },
-  { name: "Client Settings", route: "/client-portal/settings", status: "partial", notes: "Save uses wrong API endpoint" },
+  { name: "Client Settings", route: "/client-portal/settings", status: "live" },
   // Tools
   { name: "Free Pipeline Audit", route: "/tools/free-audit", status: "live" },
   { name: "Icebreaker Generator", route: "/tools/icebreaker-generator", status: "live" },
@@ -63,7 +63,7 @@ const MODULES: ModuleStatus[] = [
   { name: "Portal (Legacy)", route: "/portal", status: "legacy", notes: "Superseded by /client-portal" },
   { name: "Portal Login (Legacy)", route: "/portal/login", status: "legacy" },
   { name: "Portal Leads (Legacy)", route: "/portal/leads", status: "legacy" },
-  { name: "Portal Billing (Legacy)", route: "/portal/billing", status: "legacy", notes: "Hardcoded sample data" },
+  { name: "Portal Billing (Legacy)", route: "/portal/billing", status: "legacy", notes: "Superseded by /client-portal" },
 ];
 
 const API_ROUTES: { name: string; route: string; status: "live" | "partial" }[] = [
@@ -97,20 +97,7 @@ const ROADMAP: RoadmapItem[] = [
   { action: "Add GEMINI_API_KEY env var", where: "Vercel", done: true },
 ];
 
-const BUGS: BugItem[] = [
-  { severity: "high", file: ".mcp.json", description: "Resend API key hardcoded in plaintext — should be env var" },
-  { severity: "high", file: "app/dashboard/page.tsx:343", description: "Missing basePath prefix — fetches /api/appointments instead of /prospecting-os/api/appointments" },
-  { severity: "medium", file: "app/client-portal/slack/page.tsx", description: "Webhook save is local-state-only — no API call to persist" },
-  { severity: "medium", file: "app/client-portal/settings/page.tsx", description: "Save uses wrong endpoint — PATCHes to admin API with empty modules_allowed" },
-  { severity: "medium", file: "app/client-portal/sequences/page.tsx", description: "Placeholder only — no real sequence data displayed" },
-  { severity: "medium", file: "app/portal/billing/page.tsx", description: "Hardcoded sample invoices — no real payment data" },
-  { severity: "medium", file: "db: clients table", description: "portal_password stored in plaintext — no hashing" },
-  { severity: "medium", file: "db: profiles table", description: "No RLS enabled — exposed via anon key" },
-  { severity: "low", file: "lib/types.ts + lib/storage.ts", description: "Duplicated MergeResult interface — consolidate into types.ts" },
-  { severity: "low", file: "lib/db.ts + lib/sequence-engine.ts", description: "Duplicated leadFromRow function — import from db.ts" },
-  { severity: "low", file: "public/sitemap.xml", description: "Only 2 URLs — missing /tools, /onboarding, /checkout" },
-  { severity: "low", file: "tsconfig.json", description: "target: es5 too conservative for Next.js 14 — should be es2017+" },
-];
+const BUGS: BugItem[] = [];
 
 const FUTURE: string[] = [
   "CRM integrations (HubSpot/Salesforce) — deferred, build in-house",
