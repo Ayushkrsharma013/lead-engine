@@ -5,10 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const [agentsRes, actionsRes, runsRes] = await Promise.all([
+    const [agentsRes, actionsRes, runsRes, knowledgeRes] = await Promise.all([
       supabaseAdmin.from("agents").select("*").order("display_name"),
       supabaseAdmin.from("agent_actions").select("*").order("created_at", { ascending: false }).limit(50),
       supabaseAdmin.from("agent_runs").select("*").order("created_at", { ascending: false }).limit(50),
+      supabaseAdmin.from("knowledge_store").select("key, value, agent, updated_at").order("updated_at", { ascending: false }).limit(100),
     ]);
 
     if (agentsRes.error || actionsRes.error || runsRes.error) {
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
       agents: agentsRes.data || [],
       actions: actionsRes.data || [],
       runs: runsRes.data || [],
+      knowledge: knowledgeRes.data || [],
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Cpu, Play, Check, X, Clock, RefreshCw, Bot, AlertTriangle, TrendingUp,
-  HardDrive, Search, Send, Workflow, BarChart3, FileText, MessageSquare,
+  HardDrive, Search, Send, Workflow, BarChart3, FileText, MessageSquare, Database,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer,
@@ -28,6 +28,9 @@ interface AgentRunRow {
   id: string; agent_name: string; batch_run_id: string; started_at: string;
   completed_at: string | null; duration_ms: number | null; outcome: string;
   safe_actions_count: number; risky_actions_queued: number; log: string;
+}
+interface KnowledgeRow {
+  key: string; value: unknown; agent: string; updated_at: string;
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -98,6 +101,8 @@ export default function AgentCommandCenter() {
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [actions, setActions] = useState<AgentActionRow[]>([]);
   const [runs, setRuns] = useState<AgentRunRow[]>([]);
+  const [knowledge, setKnowledge] = useState<KnowledgeRow[]>([]);
+  const [knowledgeFilter, setKnowledgeFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
@@ -113,6 +118,7 @@ export default function AgentCommandCenter() {
       setAgents(data.agents || []);
       setActions(data.actions || []);
       setRuns(data.runs || []);
+      setKnowledge(data.knowledge || []);
       setError("");
     } catch (e) {
       setError(String(e));
@@ -630,6 +636,65 @@ export default function AgentCommandCenter() {
                       <td style={{ padding: "8px 12px", fontSize: 10, color: "var(--ink-4)" }}>{relativeTime(a.created_at)}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Knowledge Store Inspector */}
+        <div className="rounded-xl p-5 transition-all duration-250"
+          style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              <Database size={10} className="inline mr-1.5" />
+              Agent Knowledge Store ({knowledge.length})
+            </span>
+            <input
+              type="text"
+              placeholder="Filter keys..."
+              value={knowledgeFilter}
+              onChange={e => setKnowledgeFilter(e.target.value)}
+              style={{
+                fontSize: 11, padding: "4px 10px", borderRadius: 8,
+                background: "var(--surface-2)", border: "1px solid var(--line)",
+                color: "var(--ink-3)", width: 160, outline: "none",
+              }}
+            />
+          </div>
+          {knowledge.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>
+              No knowledge stored yet — agents write here on each run
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--line)" }}>
+                    {["Key", "Agent", "Value", "Updated"].map(h => (
+                      <th key={h} style={{ padding: "6px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {knowledge
+                    .filter(k => !knowledgeFilter || k.key.toLowerCase().includes(knowledgeFilter.toLowerCase()) || k.agent.toLowerCase().includes(knowledgeFilter.toLowerCase()))
+                    .map(k => {
+                      const valStr = typeof k.value === "object" ? JSON.stringify(k.value) : String(k.value);
+                      const isWinner = k.key.startsWith("ab_winner.");
+                      return (
+                        <tr key={k.key} style={{ borderBottom: "1px solid rgba(30,30,46,0.5)" }}>
+                          <td style={{ padding: "7px 12px", fontSize: 11, fontFamily: "monospace", color: isWinner ? "#E8A840" : "var(--accent)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {k.key}
+                          </td>
+                          <td style={{ padding: "7px 12px", fontSize: 10, color: AGENT_COLORS[k.agent] || "var(--ink-4)", fontFamily: "monospace" }}>{k.agent}</td>
+                          <td style={{ padding: "7px 12px", fontSize: 10, fontFamily: "monospace", color: "var(--ink-3)", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={valStr}>
+                            {valStr.length > 80 ? valStr.slice(0, 80) + "…" : valStr}
+                          </td>
+                          <td style={{ padding: "7px 12px", fontSize: 10, color: "var(--ink-4)" }}>{relativeTime(k.updated_at)}</td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

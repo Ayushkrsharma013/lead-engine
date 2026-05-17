@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp, Zap,
+  Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp, Zap, Trophy,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -52,6 +52,7 @@ export default function SequencesPage() {
   const [pausing, setPausing] = useState<string | null>(null);
   const [variantOpen, setVariantOpen] = useState<Set<number>>(new Set());
   const [variantStats, setVariantStats] = useState<Array<{ variant: string; sent: number; replied: number; replyRate: number }>>([]);
+  const [abWinner, setAbWinner] = useState<{ variant: string; replyRate: number; sends: number; selectedAt: string; sequenceName: string } | null>(null);
 
   const showToast = (msg: string, type: "success" | "warn" | "error" = "success") => {
     dispatch({ type: "SET_TOAST", payload: { msg, type } });
@@ -63,6 +64,7 @@ export default function SequencesPage() {
     setSteps(seq.steps);
     setEditingId(seq.id);
     setAssignedIds(seq.assignedLeadIds || []);
+    setAbWinner(null);
     fetchExecutions(seq.id);
   };
 
@@ -85,6 +87,11 @@ export default function SequencesPage() {
       const data = await res.json() as { stats?: Array<{ variant: string; sent: number; replied: number; replyRate: number }> };
       if (data.stats) setVariantStats(data.stats);
     } catch { setVariantStats([]); }
+    try {
+      const res = await fetch(`/prospecting-os/api/agents/knowledge?key=ab_winner.${sequenceId}`);
+      const data = await res.json() as { value?: { variant: string; replyRate: number; sends: number; selectedAt: string; sequenceName: string } | null };
+      setAbWinner(data.value ?? null);
+    } catch { setAbWinner(null); }
   };
 
   const handleLaunch = async () => {
@@ -357,6 +364,28 @@ export default function SequencesPage() {
               </div>
             </div>
           </div>
+
+          {/* ── A/B Winner Banner ── */}
+          {abWinner && (
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{
+                background: "linear-gradient(135deg, rgba(232,168,64,0.10) 0%, rgba(232,168,64,0.04) 100%)",
+                border: "1px solid rgba(232,168,64,0.30)",
+                boxShadow: "0 0 16px rgba(232,168,64,0.08)",
+              }}
+            >
+              <Trophy size={18} style={{ color: "#E8A840", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#E8A840" }}>
+                  Variant {abWinner.variant} selected as winner
+                </div>
+                <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 2 }}>
+                  {abWinner.replyRate}% reply rate &middot; {abWinner.sends} sends &middot; auto-selected by Message Coach &middot; {new Date(abWinner.selectedAt).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Variant Stats ── */}
           {variantStats.length > 0 && (
