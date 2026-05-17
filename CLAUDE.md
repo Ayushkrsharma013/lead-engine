@@ -919,11 +919,41 @@ Low:
 |---|------|--------|
 | 6 | Resend webhook signature verification | **DONE** — HMAC-SHA256 in inbound-email route |
 | 7 | RLS on all public tables | **DONE** — 18/18 tables with policies |
-| 8 | 12 bugs from analysis | **DONE** — all fixed | |
+| 8 | 12 bugs from analysis | **DONE** — all fixed |
 
-### Future enhancements (not yet planned)
+### Immediate (code — portal modernization)
+
+| # | Item | Status |
+|---|------|--------|
+| 9 | Legacy portal modernized | **DONE** — all 4 pages live |
+| 10 | client_id column on leads | **DONE** — DB migration applied to production |
+| 11 | Portal API routes | **DONE** — /api/portal/leads + /api/portal/stats |
+| 12 | Progress page + tracker | **DONE** — live at /prospecting-os/progress |
+
+### 2026-05-17 — Portal Modernization + External Config Complete
+
+**Portal Modernization (2-agent swarm):**
+- Added `client_id TEXT` column + index to production `leads` table via Supabase MCP (`add_client_id_to_leads` migration)
+- Created `app/api/portal/leads/route.ts` — GET leads by client_id via supabaseAdmin (bypasses RLS)
+- Created `app/api/portal/stats/route.ts` — GET pre-computed stats (total, hot, contacted, meetings, avgScore)
+- Updated `app/portal/page.tsx` — fetches from /api/portal/stats + /api/portal/leads instead of direct anon Supabase queries
+- Updated `app/portal/leads/page.tsx` — fetches from /api/portal/leads, added error state
+- Portal login unchanged — uses bcrypt `verify_portal_password` RPC (already secure)
+- Portal billing unchanged — already uses live `finance_agent_log` data
+- Portal layout unchanged — well-designed with PortalAuthProvider + auth guard
+
+**Final Stats:**
+- 34/34 pages fully functional (0 legacy, 0 placeholder, 0 partial)
+- 22/22 API routes live
+- 0 open bugs
+- External config: 3/4 done (1 blocked on free tier)
+- Build: 0 TypeScript errors, 55/55 pages compiled
+
+---
 
 - CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
+### Future enhancements (not yet planned)
+
 - OpenOutreach sequence integration — connect LinkedIn steps to the engine
 - Email open/bounce tracking via Resend webhooks
 - Automated winner selection in A/B testing
