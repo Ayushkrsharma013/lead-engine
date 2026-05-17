@@ -970,11 +970,11 @@ Low:
 **Implementation plan:**
 - Full plan at `docs/superpowers/plans/2026-05-17-agentic-workforce-phase1.md`
 - 11 tasks with complete code for every step
-- Status: **PLANNED — Phase 1 implementation pending**
+- Status: **COMPLETE — All 4 phases shipped in this session**
 
 ---
 
-## Agentic Workforce — Phase 1 Roadmap
+## Agentic Workforce — COMPLETE (All 4 Phases)
 
 ### Architecture
 
@@ -1068,6 +1068,87 @@ Build: 0 errors, 59/59 pages.
 | 7 | Message Coach — reply rate analysis + variant optimization + template health | **DONE** |
 | 8 | Enable all agents in production DB | **DONE** |
 | 9 | Update progress page + CLAUDE.md | **DONE** |
+
+### Phase 3 — Shared Knowledge Store (COMPLETE)
+
+**Date:** 2026-05-17
+
+Agents now coordinate via a shared `knowledge_store` Supabase table (key TEXT, value JSONB, agent TEXT, updated_at TIMESTAMPTZ). RLS enabled — service role only.
+
+`lib/agents/knowledge.ts` exports:
+- `readKnowledge(key)` → JSONB value
+- `readKnowledgeNumber(key, fallback)` → number
+- `readKnowledgeList(key)` → string[]
+- `readKnowledgeRecord(key)` → Record<string, number>
+- `writeKnowledge(agent, key, value)` → upsert
+
+What each agent writes to the store:
+
+| Agent | Knowledge written |
+|---|---|
+| Lead Scout | `lead_scout.hot_leads_today`, `lead_scout.industry_distribution`, `lead_scout.avg_icp_score` |
+| Outreach Agent | `outreach.follow_up_needed_count`, `outreach.qualified_leads_today` |
+| Pipeline Manager | `pipeline.stuck_leads_count`, `pipeline.kanban_distribution` |
+| ICP Analyst | `icp.top_industries`, `icp.suggested_threshold`, `icp.conversion_rates` |
+| Client Reporter | `reporter.at_risk_clients`, `reporter.total_clients_active` |
+| Message Coach | `message_coach.best_variant_by_sequence`, `message_coach.avg_reply_rate` |
+| Data Janitor | `janitor.stale_leads_count`, `janitor.duplicate_count` |
+
+| Commit | What was added |
+|---|---|
+| `96664ca` | knowledge_store table migration + `lib/agents/knowledge.ts` |
+| `32c128c`–`5baa542` | All 7 agents wired to write/read knowledge store |
+| `c00d7a0` | Progress dashboard updated with Phase 3 section |
+
+---
+
+### Phase 4 — Guardrails (COMPLETE)
+
+**Date:** 2026-05-17
+
+`lib/agents/guardrails.ts` — `runGuardrails(agent)` pre-flight check runs before each agent execution:
+
+**Auto-disable rule:** 3 consecutive failures → agent disabled, Telegram alert sent. Resets to 0 on success.
+
+**Auto-approve ladder (trust scoring):**
+- `agents.health_score` 90+ → medium-risk actions auto-approved (no Telegram needed)
+- `agents.health_score` 95+ → high-risk actions also auto-approved
+- Stored in `agents.auto_approve_level` ("none" | "medium" | "high")
+
+**Anomaly detection flags:**
+- Action spike: agent returns >10× its baseline `actionsToQueue` count
+- Duration spike: run took >2× rolling average duration
+- Zero-output: agent active for >7 days but returns 0 actions today
+
+**Escalation engine** (in `lib/agents/resolver.ts`):
+- Pending actions >48h → auto-rejected + Telegram alert
+- Pending actions >24h → re-notify via Telegram
+- Resolved actions (approved/rejected/executed) >7d → archived (status = "archived")
+
+New DB columns added to `agents` table:
+- `auto_approve_level TEXT` — "none" | "medium" | "high"
+- `consecutive_failures INT` — resets to 0 on success
+
+| Commit | What was added |
+|---|---|
+| `52c5f01` | `lib/agents/guardrails.ts` — trust scoring + auto-approve + anomaly detection |
+| `149196f` | Escalation engine in resolver — stale rejection, re-notify, archive |
+| `863e615` | Guardrails integrated into dispatcher pre-flight |
+| `d08f842` | TypeScript fixes across Phase 4 |
+
+---
+
+### Command Center — Final State (COMPLETE)
+
+`app/admin/agents/page.tsx` rebuilt as a **live client component** (`35d80dd`):
+- New **"Agent Workforce"** sidebar category (below Overview) — shows Command Center + Finance Agent links
+- `app/api/admin/agents/route.ts` — dedicated GET endpoint returns agents + recent runs + pending actions
+- Agent grid: 8 cards with health bars, auto-approve badge, consecutive_failures dot, last run log
+- Pending approvals inbox with agent/risk chips and Telegram/email review note
+- Notification log table with channel badges (Telegram / Email / Internal)
+- Activity feed with full run history ordered by created_at
+- "Run All Now" button manually triggers `/api/agents/run`
+- Auth: middleware passes `x-user-*` headers; page uses supabaseAdmin for server-side data
 
 ---
 
