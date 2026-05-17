@@ -33,6 +33,8 @@ export interface AgentRow {
   last_run_status: string | null;
   health_score: number;
   config: Record<string, unknown>;
+  auto_approve_level?: string;
+  consecutive_failures?: number;
   created_at: string;
 }
 

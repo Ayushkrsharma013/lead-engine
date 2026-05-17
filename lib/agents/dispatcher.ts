@@ -1,5 +1,6 @@
 // lib/agents/dispatcher.ts
 import { supabaseAdmin } from "@/lib/supabase";
+import { runGuardrails } from "./guardrails";
 import type { AgentModule, AgentResult, AgentRow, AgentActionRow } from "./types";
 
 // Import stub agents (will be populated in Task 4)
@@ -24,13 +25,21 @@ const AGENT_REGISTRY: AgentModule[] = [
 
 const AGENT_TIMEOUT_MS = 25_000;
 
-async function getEnabledAgentSlugs(): Promise<string[]> {
+async function getEnabledAgents(): Promise<Map<string, { auto_approve_level: string; health_score: number; consecutive_failures: number }>> {
   const { data, error } = await supabaseAdmin
     .from("agents")
-    .select("name")
+    .select("name, auto_approve_level, health_score, consecutive_failures")
     .eq("enabled", true);
   if (error) throw new Error(`Failed to fetch enabled agents: ${error.message}`);
-  return (data ?? []).map((r: Pick<AgentRow, "name">) => r.name);
+  const map = new Map<string, { auto_approve_level: string; health_score: number; consecutive_failures: number }>();
+  for (const row of data ?? []) {
+    map.set(row.name, {
+      auto_approve_level: row.auto_approve_level ?? "off",
+      health_score: row.health_score ?? 100,
+      consecutive_failures: row.consecutive_failures ?? 0,
+    });
+  }
+  return map;
 }
 
 async function getAgentConfig(name: string): Promise<Record<string, unknown>> {
@@ -92,40 +101,23 @@ async function sendTelegramText(text: string): Promise<void> {
   }).catch(() => undefined);
 }
 
-async function updateAgentHealthScore(agentName: string): Promise<void> {
-  const { data } = await supabaseAdmin
-    .from("agent_runs")
-    .select("outcome")
-    .eq("agent_name", agentName)
-    .order("created_at", { ascending: false })
-    .limit(7);
-
-  if (!data || data.length === 0) return;
-
-  const score = Math.round(
-    (data.reduce((sum: number, r: { outcome: string }) => {
-      if (r.outcome === "success") return sum + 1;
-      if (r.outcome === "partial") return sum + 0.5;
-      return sum;
-    }, 0) / Math.max(data.length, 1)) * 100
-  );
-
-  await supabaseAdmin
-    .from("agents")
-    .update({ health_score: score })
-    .eq("name", agentName);
-}
-
 export async function runAgentBatch(): Promise<void> {
+  // Phase 4 guardrails — trust check, anomaly detection, auto-approve ladder
+  const guardrails = await runGuardrails();
+  if (!guardrails.passed && guardrails.autoDisabled.length > 0) {
+    console.log(`[dispatcher] Guardrails: ${guardrails.log}`);
+  }
+
   const batchRunId = crypto.randomUUID();
-  const enabledSlugs = await getEnabledAgentSlugs();
-  const toRun = AGENT_REGISTRY.filter(a => enabledSlugs.includes(a.name));
+  const enabledAgentMap = await getEnabledAgents();
+  const toRun = AGENT_REGISTRY.filter(a => enabledAgentMap.has(a.name));
 
   if (toRun.length === 0) return;
 
   // Run all agents in parallel, never let one throw — catch inside each
   const settled = await Promise.allSettled(
     toRun.map(async (agent) => {
+      const agentRow = enabledAgentMap.get(agent.name);
       const config = await getAgentConfig(agent.name);
       const startedAt = new Date().toISOString();
 
@@ -159,8 +151,27 @@ export async function runAgentBatch(): Promise<void> {
         error: runError ?? null,
       });
 
-      // Process actionsToQueue
+      // Process actionsToQueue with auto-approve
+      const autoLevel = agentRow?.auto_approve_level || "off";
       for (const action of result.actionsToQueue) {
+        const canAuto = (autoLevel === "high") ||
+                        (autoLevel === "medium" && action.riskLevel === "medium");
+
+        if (canAuto) {
+          // Auto-execute directly — skip Telegram approval
+          await supabaseAdmin.from("agent_actions").insert({
+            agent_name: agent.name,
+            batch_run_id: batchRunId,
+            action_type: action.type,
+            description: action.description + " [auto-approved]",
+            payload: action.payload,
+            risk_level: action.riskLevel,
+            status: "executed",
+          } satisfies Omit<AgentActionRow, "id" | "telegram_msg_id" | "approved_by" | "created_at" | "resolved_at">);
+          continue;
+        }
+
+        // Queue for human approval (or notify-only for safe actions)
         const isPending = action.riskLevel !== "safe_notify";
         const initialStatus = isPending ? "pending" : "notified";
 
@@ -211,13 +222,22 @@ export async function runAgentBatch(): Promise<void> {
         }
       }
 
-      // Update agents table
+      // Update agent health — increment consecutive_failures on failure, reset on success
+      const newConsecutive = result.outcome === "failed"
+        ? (agentRow?.consecutive_failures || 0) + 1
+        : 0;
+      const newHealth = Math.max(0, Math.min(100,
+        result.outcome === "success" ? (agentRow?.health_score || 100) + 1 :
+        result.outcome === "failed" ? (agentRow?.health_score || 100) - 10 :
+        (agentRow?.health_score || 100)
+      ));
+
       await supabaseAdmin.from("agents").update({
         last_run_at: completedAt,
         last_run_status: runError ? "failed" : result.outcome,
+        health_score: newHealth,
+        consecutive_failures: newConsecutive,
       }).eq("name", agent.name);
-
-      await updateAgentHealthScore(agent.name);
 
       // Error alert to Telegram
       if (runError) {
