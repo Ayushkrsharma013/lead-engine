@@ -10,6 +10,7 @@ import {
   GitBranch, KanbanSquare, BarChart2, Briefcase,
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
   Sparkles, Send, Bot, UserPlus, Zap, Cpu, Shield,
+  HardDrive, Search, Workflow, BarChart3, FileText,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -34,6 +35,8 @@ type NavSection = {
 
 // ─── Menu structure ───────────────────────────────────────────────────────
 
+const TREE_SECTIONS = new Set(["agent-workforce"]);
+
 const NAV_SECTIONS: NavSection[] = [
   {
     id: "overview",
@@ -49,6 +52,13 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "agents-command", module: "agent", label: "Command Center", icon: Cpu, href: "/admin/agents" },
       { id: "agent-finance", module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
+      { id: "agent-data-janitor", module: "agent", label: "Data Janitor", icon: HardDrive, href: "/admin/agents/data-janitor" },
+      { id: "agent-lead-scout", module: "agent", label: "Lead Scout", icon: Search, href: "/admin/agents/lead-scout" },
+      { id: "agent-outreach", module: "agent", label: "Outreach Agent", icon: Send, href: "/admin/agents/outreach-agent" },
+      { id: "agent-pipeline", module: "agent", label: "Pipeline Manager", icon: Workflow, href: "/admin/agents/pipeline-manager" },
+      { id: "agent-icp", module: "agent", label: "ICP Analyst", icon: BarChart3, href: "/admin/agents/icp-analyst" },
+      { id: "agent-reporter", module: "agent", label: "Client Reporter", icon: FileText, href: "/admin/agents/client-reporter" },
+      { id: "agent-coach", module: "agent", label: "Message Coach", icon: MessageSquare, href: "/admin/agents/message-coach" },
     ],
   },
   {
@@ -387,20 +397,25 @@ export default function ProSidebar() {
                   transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="space-y-0.5 mt-0.5">
-                    {section.items.map((item) => (
-                      <div
-                        key={item.id}
-                        onMouseEnter={(e) => {
-                          if (!collapsed) return;
-                          setHoveredItem(item.label);
-                          setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top);
-                        }}
-                        onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
-                      >
-                        <NavLeaf item={item} collapsed={collapsed} pathname={pathname} />
-                      </div>
-                    ))}
+                  <div className={`space-y-0.5 mt-0.5 ${TREE_SECTIONS.has(section.id) ? "tree-section" : ""}`}>
+                    {section.items.map((item, idx) => {
+                      const isTree = TREE_SECTIONS.has(section.id);
+                      const isLast = idx === section.items.length - 1;
+                      return (
+                        <div
+                          key={item.id}
+                          className={isTree ? `tree-item ${isLast ? "tree-item-last" : ""}` : ""}
+                          onMouseEnter={(e) => {
+                            if (!collapsed) return;
+                            setHoveredItem(item.label);
+                            setTooltipY((e.currentTarget as HTMLElement).getBoundingClientRect().top);
+                          }}
+                          onMouseLeave={() => { setHoveredItem(null); setTooltipY(0); }}
+                        >
+                          <NavLeaf item={item} collapsed={collapsed} pathname={pathname} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -483,6 +498,42 @@ export default function ProSidebar() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Elbow tree connector styles */}
+      <style jsx>{`
+        .tree-section {
+          position: relative;
+          padding-left: 18px;
+        }
+        /* Vertical trunk line */
+        .tree-section::before {
+          content: '';
+          position: absolute;
+          left: 8px;
+          top: 2px;
+          bottom: 8px;
+          width: 1px;
+          background: var(--line);
+        }
+        /* Horizontal branch for each tree item */
+        .tree-item {
+          position: relative;
+        }
+        .tree-item::before {
+          content: '';
+          position: absolute;
+          left: -10px;
+          top: 18px;
+          width: 10px;
+          height: 1px;
+          background: var(--line);
+        }
+        /* Active tree item: accent-colored branch */
+        .tree-item:has(a [class*="relative"])::before,
+        .tree-item:has(a > div[style*="accent"])::before {
+          background: var(--accent-soft);
+        }
+      `}</style>
 
       {/* ── Collapsed tooltip ── */}
       <AnimatePresence>
