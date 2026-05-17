@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveAgentAction } from "@/lib/agents/resolver";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -43,7 +44,38 @@ export async function POST(req: Request) {
   try {
     const body = await req.json() as {
       message?: { chat?: { id: number }; text?: string; from?: { first_name?: string } };
+      callback_query?: {
+        id: string;
+        data: string;
+        from: { username?: string; first_name?: string };
+        message?: { message_id?: number };
+      };
     };
+
+    // ── Handle inline keyboard callback (agent approve/reject) ──────────────
+    if (body.callback_query) {
+      const cb = body.callback_query;
+      const match = cb.data.match(/^(approve_agent|reject_agent):(.+)$/);
+
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ callback_query_id: cb.id }),
+      });
+
+      if (match) {
+        const approved = match[1] === "approve_agent";
+        const actionId = match[2];
+        const approvedBy = cb.from.username ?? cb.from.first_name ?? "telegram-user";
+        try {
+          await resolveAgentAction(actionId, approved, approvedBy);
+        } catch (err) {
+          console.error("[telegram] resolveAgentAction failed:", err);
+        }
+      }
+
+      return NextResponse.json({ ok: true });
+    }
 
     const msg = body.message;
     if (!msg?.text) {
