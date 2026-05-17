@@ -1,6 +1,7 @@
 // lib/agents/client-reporter.ts
 import { supabaseAdmin } from "@/lib/supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
+import { writeKnowledge } from "./knowledge";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const HOT_LEAD_THRESHOLD = 80;
@@ -55,6 +56,7 @@ export class ClientReporterAgent implements AgentModule {
       let totalLeadsManaged = 0;
       let totalNewThisWeek = 0;
       let clientsAtRisk = 0;
+      const atRiskClientIds: string[] = [];
 
       // ── Step 3: Per-client stats and actions ──────────────────────────────
       for (const client of clients) {
@@ -120,6 +122,7 @@ export class ClientReporterAgent implements AgentModule {
           });
           safeActionsExecuted++;
           clientsAtRisk++;
+          atRiskClientIds.push(client.id);
         }
       }
 
@@ -131,6 +134,10 @@ export class ClientReporterAgent implements AgentModule {
         `${totalNewThisWeek} new this week.`,
         `${clientsAtRisk} ${clientsAtRisk === 1 ? "client" : "clients"} at risk (0 new leads).`,
       ].join(" ");
+
+      try { await writeKnowledge("at_risk_clients", atRiskClientIds, "client-reporter"); } catch { /* ignore */ }
+      try { await writeKnowledge("weekly_lead_count", totalNewThisWeek, "client-reporter"); } catch { /* ignore */ }
+      try { await writeKnowledge("active_client_count", clients.length, "client-reporter"); } catch { /* ignore */ }
 
       return {
         outcome: "success",
