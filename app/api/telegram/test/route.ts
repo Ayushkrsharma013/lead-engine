@@ -60,5 +60,7 @@ export async function GET() {
     result.send_exception = String(err);
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json(result, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+  });
 }
