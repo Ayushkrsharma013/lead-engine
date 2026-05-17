@@ -12,9 +12,13 @@ export async function GET(req: NextRequest) {
     ]);
 
     if (agentsRes.error || actionsRes.error || runsRes.error) {
-      return NextResponse.json({
-        error: agentsRes.error?.message || actionsRes.error?.message || runsRes.error?.message,
-      }, { status: 500 });
+      const errMsg = agentsRes.error?.message || actionsRes.error?.message || runsRes.error?.message;
+      console.error("[api/admin/agents] Supabase error:", {
+        agents: agentsRes.error,
+        actions: actionsRes.error,
+        runs: runsRes.error,
+      });
+      return NextResponse.json({ error: errMsg }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -23,6 +27,7 @@ export async function GET(req: NextRequest) {
       runs: runsRes.data || [],
     });
   } catch (err) {
+    console.error("[api/admin/agents] Caught exception:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
