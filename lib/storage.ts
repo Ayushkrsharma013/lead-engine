@@ -1,4 +1,4 @@
-import type { Lead, Source } from "./types";
+import type { Lead, Source, MergeResult } from "./types";
 
 const DB_KEY = "leadgen_db_v2";
 const LEGACY_KEY = "leadgen_db_v1";
@@ -109,13 +109,6 @@ export function getStoredLeads(): Lead[] {
 
 export function getStoredLeadsBySource(source: Source): Lead[] {
   return readRaw().filter(l => l.source === source);
-}
-
-export interface MergeResult {
-  stored: Lead[];
-  added: number;
-  updated: number;
-  rejected: number;
 }
 
 export function mergeLeads(incoming: Lead[]): MergeResult {
