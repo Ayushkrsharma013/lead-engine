@@ -1,0 +1,38 @@
+[    1749ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://app.flow-forges.com/prospecting-os/progress:0
+[    1850ms] Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at t5 (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:24673)
+    at t9 (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:25045)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:99413
+    at iu (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:103870)
+    at ia (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:95226)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91091
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91098
+    at oZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91203)
+    at MessagePort.T (https://app.flow-forges.com/prospecting-os/_next/static/chunks/7023-69f9a1d16a93f5c2.js:1:84334)
+[    1850ms] Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at t5 (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:24673)
+    at t9 (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:25045)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:99413
+    at iu (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:103870)
+    at ia (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:95226)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91091
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91098
+    at oZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91203)
+    at MessagePort.T (https://app.flow-forges.com/prospecting-os/_next/static/chunks/7023-69f9a1d16a93f5c2.js:1:84334)
+[    1850ms] Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at t5 (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:24673)
+    at iZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:120538)
+    at ia (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:95165)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91091
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91098
+    at oZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91203)
+    at MessagePort.T (https://app.flow-forges.com/prospecting-os/_next/static/chunks/7023-69f9a1d16a93f5c2.js:1:84334)
+[    1850ms] Error: Minified React error #423; visit https://react.dev/errors/423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at iZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:118352)
+    at ia (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:95165)
+    at https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:94987
+    at il (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:94994)
+    at oJ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:92350)
+    at oZ (https://app.flow-forges.com/prospecting-os/_next/static/chunks/fd9d1056-badbfe19339cd575.js:1:91769)
+    at MessagePort.T (https://app.flow-forges.com/prospecting-os/_next/static/chunks/7023-69f9a1d16a93f5c2.js:1:84334)
+[    1864ms] [WARNING] GoTrueClient@sb-tbsqpnqzpbnilifhwvgr-auth-token:1 (2.105.4) 2026-05-17T01:37:43.556Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. @ https://app.flow-forges.com/prospecting-os/_next/static/chunks/44530001-d185e64b8c37c63a.js:0

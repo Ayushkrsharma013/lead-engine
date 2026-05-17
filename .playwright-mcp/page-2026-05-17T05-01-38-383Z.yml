@@ -1,0 +1,67 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]: Prospecting
+          - generic [ref=e9]: OS
+      - generic [ref=e10]:
+        - button "Overview" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: Overview
+          - img [ref=e15]
+        - button "AI Studio" [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: AI Studio
+          - img [ref=e21]
+        - button "Pipeline" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: Pipeline
+          - img [ref=e27]
+        - button "Outreach" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: Outreach
+          - img [ref=e33]
+        - button "Operations" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: Operations
+          - img [ref=e39]
+      - generic [ref=e41]:
+        - button "Agent" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+          - generic [ref=e45]: Agent
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - generic [ref=e50]: Settings
+        - button "Collapse" [ref=e51] [cursor=pointer]:
+          - img [ref=e52]
+          - generic [ref=e54]: Collapse
+        - generic [ref=e55]:
+          - button "Switch to light mode" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+          - generic [ref=e63]: Toggle theme
+        - generic [ref=e65]: ProOS v1.0
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - heading "Agent Command Center" [level=1] [ref=e70]
+          - paragraph [ref=e71]: 0 of 0 agents enabled · no pending approvals
+        - button "Run All Now" [ref=e73] [cursor=pointer]
+      - paragraph [ref=e74]: Agent Workforce
+      - paragraph [ref=e75]: Pending Approvals
+      - generic [ref=e76]: No pending approvals — agents are either all clear or awaiting their next run.
+      - paragraph [ref=e77]: Notifications Log
+      - generic [ref=e79]: No notifications sent yet.
+      - paragraph [ref=e80]: Activity Feed
+      - generic [ref=e82]: No runs yet. The first run will happen at 7 AM tomorrow (or click Run All Now above).
+    - complementary:
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - img [ref=e86]
+          - generic [ref=e88]: ProOS Agent
+        - button [ref=e90] [cursor=pointer]:
+          - img [ref=e91]
+      - paragraph [ref=e95]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e96]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e97]
+          - button [disabled] [ref=e98]:
+            - img [ref=e99]
+        - paragraph [ref=e102]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e103]

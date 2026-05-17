@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Cpu, ArrowLeft, RefreshCw, Check, X, Clock, AlertTriangle,
@@ -72,6 +72,10 @@ export default function AgentDetailPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"overview" | "runs" | "actions" | "knowledge">("overview");
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
+  const [toggling, setToggling] = useState(false);
+  const [running, setRunning] = useState(false);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -87,6 +91,37 @@ export default function AgentDetailPage() {
   }, [slug]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => () => { if (pollTimerRef.current) clearInterval(pollTimerRef.current); }, []);
+
+  const handleToggle = async () => {
+    if (!data) return;
+    setToggling(true);
+    try {
+      const res = await fetch(`/prospecting-os/api/admin/agents/${slug}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !data.agent.enabled }),
+      });
+      const json = await res.json();
+      if (json.agent) setData(prev => prev ? { ...prev, agent: { ...prev.agent, enabled: json.agent.enabled } } : prev);
+    } catch { /* ignore */ }
+    setToggling(false);
+  };
+
+  const handleRunNow = async () => {
+    setRunning(true);
+    try { await fetch(`/prospecting-os/api/agents/run?agent=${slug}`); } catch { /* ignore */ }
+    pollCountRef.current = 0;
+    pollTimerRef.current = setInterval(async () => {
+      pollCountRef.current++;
+      await fetchData();
+      if (pollCountRef.current >= 6) {
+        clearInterval(pollTimerRef.current!);
+        pollTimerRef.current = null;
+        setRunning(false);
+      }
+    }, 5000);
+  };
 
   if (loading) {
     return (
@@ -113,19 +148,65 @@ export default function AgentDetailPage() {
 
   return (
     <div style={{ padding: "28px 24px", maxWidth: 1100, margin: "0 auto", fontFamily: "Geist, sans-serif" }}>
-      {/* Back nav */}
-      <button
-        onClick={() => router.push("/admin/agents")}
-        style={{
-          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-          color: "var(--ink-3)", fontSize: 12, fontWeight: 600, cursor: "pointer",
-          padding: "6px 0", marginBottom: 20, transition: "color 0.15s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
-      >
-        <ArrowLeft size={14} /> Back to Command Center
-      </button>
+      {/* Back nav + actions row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <button
+          onClick={() => router.push("/admin/agents")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+            color: "var(--ink-3)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            padding: "6px 0", transition: "color 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+        >
+          <ArrowLeft size={14} /> Back to Command Center
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Enable/disable toggle */}
+          <button
+            onClick={handleToggle}
+            disabled={toggling || !data}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              fontSize: 12, fontWeight: 600,
+              color: data?.agent.enabled ? "#6BCB77" : "var(--ink-4)",
+              background: "none", border: "none", cursor: "pointer", opacity: toggling ? 0.5 : 1,
+            }}
+          >
+            <span style={{
+              width: 36, height: 20, borderRadius: 10, position: "relative",
+              background: data?.agent.enabled ? "#6BCB77" : "var(--surface-2)",
+              display: "inline-block", transition: "background 0.2s",
+            }}>
+              <span style={{
+                position: "absolute", top: 3, width: 14, height: 14, borderRadius: "50%",
+                background: "#fff",
+                left: data?.agent.enabled ? "calc(100% - 17px)" : 3,
+                transition: "left 0.2s",
+              }} />
+            </span>
+            {data?.agent.enabled ? "Enabled" : "Disabled"}
+          </button>
+          {/* Run Now */}
+          <button
+            onClick={handleRunNow}
+            disabled={running}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "8px 18px", borderRadius: 9999,
+              border: "none", cursor: running ? "not-allowed" : "pointer",
+              background: "var(--accent)", color: "#000", fontWeight: 700, fontSize: 13,
+              opacity: running ? 0.5 : 1,
+            }}
+          >
+            {running
+              ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} />
+              : <Play size={13} />}
+            {running ? "Running..." : "Run Now"}
+          </button>
+        </div>
+      </div>
 
       {/* Error */}
       {error && (

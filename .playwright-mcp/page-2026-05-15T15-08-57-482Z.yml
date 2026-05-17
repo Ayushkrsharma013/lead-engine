@@ -1,0 +1,91 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]: Prospecting
+          - generic [ref=e9]: OS
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: Overview
+          - generic [ref=e13]:
+            - link "Command Center" [ref=e15] [cursor=pointer]:
+              - /url: /prospecting-os/dashboard
+              - img [ref=e18]
+              - generic [ref=e23]: Command Center
+            - link "Lead Intelligence" [ref=e25] [cursor=pointer]:
+              - /url: /prospecting-os/leads
+              - img [ref=e28]
+              - generic [ref=e33]: Lead Intelligence
+        - generic [ref=e34]:
+          - paragraph [ref=e35]: AI Tools
+          - generic [ref=e36]:
+            - link "AI Message Lab" [ref=e38] [cursor=pointer]:
+              - /url: /prospecting-os/message-lab
+              - img [ref=e41]
+              - generic [ref=e43]: AI Message Lab
+            - link "Lead Scorer" [ref=e45] [cursor=pointer]:
+              - /url: /prospecting-os/scorer
+              - img [ref=e48]
+              - generic [ref=e52]: Lead Scorer
+        - generic [ref=e53]:
+          - paragraph [ref=e54]: Pipeline
+          - generic [ref=e55]:
+            - link "Sequence Builder" [ref=e57] [cursor=pointer]:
+              - /url: /prospecting-os/sequences
+              - img [ref=e60]
+              - generic [ref=e64]: Sequence Builder
+            - link "Kanban Pipeline" [ref=e66] [cursor=pointer]:
+              - /url: /prospecting-os/kanban
+              - img [ref=e69]
+              - generic [ref=e71]: Kanban Pipeline
+            - link "Analytics" [ref=e73] [cursor=pointer]:
+              - /url: /prospecting-os/analytics
+              - img [ref=e76]
+              - generic [ref=e77]: Analytics
+            - link "Client Manager" [ref=e79] [cursor=pointer]:
+              - /url: /prospecting-os/clients
+              - img [ref=e82]
+              - generic [ref=e85]: Client Manager
+        - generic [ref=e86]:
+          - paragraph [ref=e87]: Outreach
+          - link "LinkedIn Outreach" [ref=e90] [cursor=pointer]:
+            - /url: /prospecting-os/outreach
+            - img [ref=e91]
+            - generic [ref=e94]: LinkedIn Outreach
+      - generic [ref=e95]:
+        - button "Agent" [ref=e96] [cursor=pointer]:
+          - img [ref=e97]
+          - generic [ref=e99]: Agent
+        - button "Settings" [ref=e100] [cursor=pointer]:
+          - img [ref=e101]
+          - generic [ref=e104]: Settings
+        - button "Collapse" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e108]: Collapse
+        - generic [ref=e109]:
+          - button "Switch to light mode" [ref=e110] [cursor=pointer]:
+            - img [ref=e111]
+          - generic [ref=e117]: Toggle theme
+        - generic [ref=e119]: ProOS v1.0
+    - generic [ref=e122]:
+      - img [ref=e127]
+      - generic [ref=e129]:
+        - paragraph [ref=e130]: LinkedIn ProOS
+        - paragraph [ref=e131]: Loading your workspace…
+    - complementary:
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - img [ref=e139]
+          - generic [ref=e141]: ProOS Agent
+        - button [ref=e143] [cursor=pointer]:
+          - img [ref=e144]
+      - paragraph [ref=e148]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e149]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e150]
+          - button [disabled] [ref=e151]:
+            - img [ref=e152]
+        - paragraph [ref=e155]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e156]

@@ -1,0 +1,42 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e5]:
+      - link "Prospecting OS ProspectingOS" [ref=e7] [cursor=pointer]:
+        - /url: /prospecting-os/client-portal
+        - img "Prospecting OS" [ref=e8]
+        - generic [ref=e9]: ProspectingOS
+      - navigation [ref=e10]
+      - button "Sign Out" [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+        - text: Sign Out
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: Client
+        - paragraph
+      - generic [ref=e19]:
+        - navigation [ref=e20]:
+          - link "Prospecting OS ProspectingOS" [ref=e22] [cursor=pointer]:
+            - /url: /prospecting-os
+            - img "Prospecting OS" [ref=e23]
+            - generic [ref=e24]: ProspectingOS
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - img "Prospecting OS" [ref=e28]
+            - heading "Client Portal" [level=1] [ref=e29]
+            - paragraph [ref=e30]: Sign in to your Prospecting OS dashboard
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - generic [ref=e33]:
+                - img [ref=e34]
+                - text: Email
+              - textbox "you@company.com" [ref=e37]
+            - generic [ref=e38]:
+              - generic [ref=e39]:
+                - img [ref=e40]
+                - text: Password
+              - textbox "Enter your password" [ref=e43]
+            - button "Sign In" [ref=e44] [cursor=pointer]:
+              - text: Sign In
+              - img [ref=e45]
+          - paragraph [ref=e47]: Need help? Contact your account manager.
+  - alert [ref=e48]

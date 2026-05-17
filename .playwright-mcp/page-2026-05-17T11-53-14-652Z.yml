@@ -1,0 +1,191 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e120]:
+          - generic [ref=e6]: Prospecting
+          - generic [ref=e7]: OS
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - button "Overview" [ref=e10] [cursor=pointer]:
+            - generic [ref=e11]: Overview
+            - img [ref=e13]
+          - generic [ref=e16]:
+            - link "Command Center" [ref=e18] [cursor=pointer]:
+              - /url: /prospecting-os/dashboard
+              - img [ref=e20]
+              - generic [ref=e25]: Command Center
+            - link "Lead Intelligence" [ref=e27] [cursor=pointer]:
+              - /url: /prospecting-os/leads
+              - img [ref=e30]
+              - generic [ref=e35]: Lead Intelligence
+        - button "Agent Workforce" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: Agent Workforce
+          - img [ref=e40]
+        - button "AI Studio" [ref=e43] [cursor=pointer]:
+          - generic [ref=e44]: AI Studio
+          - img [ref=e46]
+        - button "Pipeline" [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]: Pipeline
+          - img [ref=e52]
+        - button "Outreach" [ref=e55] [cursor=pointer]:
+          - generic [ref=e56]: Outreach
+          - img [ref=e58]
+        - button "Operations" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: Operations
+          - img [ref=e64]
+      - generic [ref=e66]:
+        - button "Agent" [ref=e67] [cursor=pointer]:
+          - img [ref=e68]
+          - generic [ref=e70]: Agent
+        - button "Collapse" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e74]: Collapse
+        - button "A ayushkumarsharma013" [ref=e121] [cursor=pointer]:
+          - generic [ref=e78]: A
+          - generic [ref=e79]: ayushkumarsharma013
+          - img [ref=e81]
+    - generic [ref=e83]:
+      - banner [ref=e123]:
+        - generic [ref=e125]:
+          - heading "Command Center" [level=1] [ref=e126]
+          - paragraph [ref=e127]: Overview of your prospecting pipeline
+        - generic [ref=e128]:
+          - button "Search ⌘K" [ref=e129] [cursor=pointer]:
+            - img [ref=e130]
+            - generic [ref=e133]: Search
+            - generic [ref=e134]: ⌘K
+          - button "Notifications" [ref=e137] [cursor=pointer]:
+            - img [ref=e138]
+          - button "Switch to light mode" [ref=e141] [cursor=pointer]:
+            - img [ref=e142]
+      - generic [ref=e148]:
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - generic [ref=e152]: Total Leads
+              - img [ref=e154]
+            - generic [ref=e159]: "222"
+            - paragraph [ref=e160]: 136 hot · 0 messages
+            - application [ref=e164]:
+              - generic [ref=e176]:
+                - generic [ref=e178]: May 3
+                - generic [ref=e180]: May 10
+                - generic [ref=e182]: May 17
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - generic [ref=e185]: Lead Quality
+              - img [ref=e187]
+            - generic [ref=e190]: "83"
+            - paragraph [ref=e191]: avg score · 136 above 80
+            - application [ref=e195]:
+              - generic [ref=e214]:
+                - generic [ref=e216]: 60–70
+                - generic [ref=e218]: 70–80
+                - generic [ref=e220]: 90–100
+          - generic [ref=e221]:
+            - generic [ref=e222]:
+              - generic [ref=e223]: Messages Sent
+              - img [ref=e225]
+            - generic [ref=e228]: "0"
+            - paragraph [ref=e229]: no messages yet
+            - application [ref=e233]:
+              - generic [ref=e235]:
+                - generic [ref=e237]: May 3
+                - generic [ref=e239]: May 10
+                - generic [ref=e241]: May 17
+          - generic [ref=e242]:
+            - generic [ref=e243]:
+              - generic [ref=e244]: Contact Rate
+              - img [ref=e246]
+            - generic [ref=e250]: 0%
+            - paragraph [ref=e251]: 1 of 222 leads
+            - application [ref=e255]:
+              - generic [ref=e267]:
+                - generic [ref=e269]: May 3
+                - generic [ref=e271]: May 10
+                - generic [ref=e273]: May 17
+          - generic [ref=e274]:
+            - generic [ref=e275]:
+              - generic [ref=e276]: Meetings Won
+              - img [ref=e278]
+            - generic [ref=e284]: "0"
+            - paragraph [ref=e285]: no meetings yet
+            - application [ref=e289]:
+              - generic [ref=e291]:
+                - generic [ref=e293]: May 3
+                - generic [ref=e295]: May 10
+                - generic [ref=e297]: May 17
+          - generic [ref=e298]:
+            - generic [ref=e299]:
+              - generic [ref=e300]: Demos Booked
+              - img [ref=e302]
+            - generic [ref=e305]: "0"
+            - paragraph [ref=e306]: no demos yet
+            - generic [ref=e309]: No bookings yet
+        - generic [ref=e310]:
+          - generic [ref=e311]:
+            - heading "Source Mix" [level=3] [ref=e312]
+            - application [ref=e315]
+            - generic [ref=e316]:
+              - generic [ref=e317]:
+                - generic [ref=e318]: LinkedIn
+                - generic [ref=e320]: "218"
+              - generic [ref=e321]:
+                - generic [ref=e322]: G Maps
+                - generic [ref=e324]: "3"
+              - generic [ref=e325]:
+                - generic [ref=e326]: Amazon
+                - generic [ref=e328]: "1"
+          - generic [ref=e329]:
+            - heading "Recent Activity" [level=3] [ref=e330]
+            - generic [ref=e332]:
+              - img [ref=e333]
+              - generic [ref=e335]: benjamin offenberg moved to Contacted
+              - generic [ref=e336]: 6d ago
+          - generic [ref=e337]:
+            - generic [ref=e338]:
+              - heading "Campaigns" [level=3] [ref=e339]
+              - button "New" [ref=e340] [cursor=pointer]:
+                - img [ref=e341]
+                - text: New
+            - paragraph [ref=e342]: No active campaigns.
+        - generic [ref=e343]:
+          - generic [ref=e344]:
+            - heading "Demo Bookings" [level=3] [ref=e345]
+            - generic [ref=e346]: 0 total
+          - paragraph [ref=e395]: No demo bookings yet. They'll appear here when visitors book via the landing page or Pros Bot.
+        - generic [ref=e349]:
+          - generic [ref=e350]: Quick Actions
+          - link "Add Lead" [ref=e351] [cursor=pointer]:
+            - /url: /prospecting-os/leads
+            - img [ref=e352]
+            - text: Add Lead
+          - link "Generate Message" [ref=e355] [cursor=pointer]:
+            - /url: /prospecting-os/message-lab
+            - img [ref=e356]
+            - text: Generate Message
+          - link "Score Lead" [ref=e358] [cursor=pointer]:
+            - /url: /prospecting-os/scorer
+            - img [ref=e359]
+            - text: Score Lead
+          - button "Export CSV" [ref=e363] [cursor=pointer]:
+            - img [ref=e364]
+            - text: Export CSV
+    - complementary:
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - img [ref=e102]
+          - generic [ref=e104]: ProOS Agent
+        - button [ref=e106] [cursor=pointer]:
+          - img [ref=e107]
+      - paragraph [ref=e111]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e112]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e113]
+          - button [disabled] [ref=e114]:
+            - img [ref=e115]
+        - paragraph [ref=e118]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e122]
+  - generic [ref=e367]: 60–70

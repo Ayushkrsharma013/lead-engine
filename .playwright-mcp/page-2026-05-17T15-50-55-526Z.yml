@@ -1,0 +1,105 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e5]:
+      - link "Prospecting OS ProspectingOS" [ref=e7] [cursor=pointer]:
+        - /url: /prospecting-os/client-portal
+        - img "Prospecting OS" [ref=e8]
+        - generic [ref=e9]: ProspectingOS
+      - navigation [ref=e10]:
+        - link "Overview" [ref=e11] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal
+          - img [ref=e12]
+          - text: Overview
+        - link "My Leads" [ref=e17] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/leads
+          - img [ref=e18]
+          - text: My Leads
+        - link "Icebreakers" [ref=e23] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/icebreakers
+          - img [ref=e24]
+          - text: Icebreakers
+        - link "Analytics" [ref=e26] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/analytics
+          - img [ref=e27]
+          - text: Analytics
+        - link "Sequences" [ref=e28] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/sequences
+          - img [ref=e29]
+          - text: Sequences
+        - link "Slack Digest" [ref=e33] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/slack
+          - img [ref=e34]
+          - text: Slack Digest
+        - link "Billing" [ref=e37] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/billing
+          - img [ref=e38]
+          - text: Billing
+        - link "Settings" [ref=e40] [cursor=pointer]:
+          - /url: /prospecting-os/client-portal/settings
+          - img [ref=e41]
+          - text: Settings
+      - button "Sign Out" [ref=e44] [cursor=pointer]:
+        - img [ref=e45]
+        - text: Sign Out
+    - main [ref=e48]:
+      - generic [ref=e50]:
+        - paragraph [ref=e51]: ayushkumarsharma013@gmail.com
+        - paragraph [ref=e52]: ayushkumarsharma013@gmail.com
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - heading "Welcome back" [level=1] [ref=e55]
+          - paragraph [ref=e56]: DIY Setup · 0 leads delivered
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - generic [ref=e60]: Total Leads
+              - img [ref=e61]
+            - generic [ref=e66]: "0"
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Hot (80+)
+              - img [ref=e70]
+            - generic [ref=e72]: "0"
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic [ref=e75]: Avg Score
+              - img [ref=e76]
+            - generic [ref=e79]: "0"
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]: Contacted
+              - img [ref=e83]
+            - generic [ref=e86]: "0"
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: Meetings
+              - img [ref=e90]
+            - generic [ref=e93]: "0"
+        - generic [ref=e94]:
+          - button "Export CSV" [ref=e95] [cursor=pointer]:
+            - img [ref=e96]
+            - text: Export CSV
+          - link "Need help? Book a call →" [ref=e99] [cursor=pointer]:
+            - /url: /book
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - paragraph [ref=e103]: Upgrade to Managed Growth
+            - list [ref=e104]:
+              - listitem [ref=e105]:
+                - img [ref=e106]
+                - text: AI Icebreakers for every lead
+              - listitem [ref=e109]:
+                - img [ref=e110]
+                - text: Pipeline analytics & status tracking
+              - listitem [ref=e113]:
+                - img [ref=e114]
+                - text: Slack digest — morning lead summaries
+          - link "Upgrade" [ref=e117] [cursor=pointer]:
+            - /url: /book
+            - text: Upgrade
+            - img [ref=e118]
+        - generic [ref=e120]:
+          - img [ref=e121]
+          - paragraph [ref=e124]: No leads yet
+          - paragraph [ref=e125]: Your leads will appear here once your account manager assigns them to your workspace.
+  - alert [ref=e126]

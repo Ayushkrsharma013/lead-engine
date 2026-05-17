@@ -101,6 +101,9 @@ export default function AgentCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
+  const [expandedAction, setExpandedAction] = useState<string | null>(null);
+  const [resolvingAction, setResolvingAction] = useState<string | null>(null);
+  const [actionMessages, setActionMessages] = useState<Record<string, { success: boolean; text: string }>>({});
 
   const fetchData = useCallback(async () => {
     try {
@@ -132,6 +135,31 @@ export default function AgentCommandCenter() {
       setRunning(false);
     }
   };
+
+  const handleResolve = useCallback(async (actionId: string, decision: "approve" | "reject") => {
+    setResolvingAction(actionId);
+    try {
+      const res = await fetch("/prospecting-os/api/agents/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionId, decision }),
+      });
+      const data = await res.json() as { success: boolean; message: string };
+      setActionMessages(prev => ({ ...prev, [actionId]: { success: data.success, text: data.message } }));
+      if (res.status === 409) {
+        await fetchData();
+      } else {
+        const newStatus = decision === "approve" ? (data.success ? "executed" : "failed") : "rejected";
+        setActions(prev => prev.map(a =>
+          a.id === actionId ? { ...a, status: newStatus } : a
+        ));
+      }
+    } catch (e) {
+      setActionMessages(prev => ({ ...prev, [actionId]: { success: false, text: String(e) } }));
+    }
+    setResolvingAction(null);
+    setExpandedAction(null);
+  }, [fetchData]);
 
   const enabled = agents.filter((a) => a.enabled);
   const pendingActions = actions.filter((a) => a.status === "pending");
@@ -463,7 +491,7 @@ export default function AgentCommandCenter() {
         </div>
 
         {/* Pending Approvals */}
-        <div className="rounded-xl p-5 transition-all duration-250"
+        <div className="rounded-xl p-5"
           style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
@@ -472,25 +500,101 @@ export default function AgentCommandCenter() {
           </div>
           {pendingActions.length === 0 ? (
             <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>
-              <Check size={18} style={{ display: "block", margin: "0 auto 6", color: "#6BCB77" }} />
+              <Check size={18} style={{ display: "block", margin: "0 auto 6px", color: "#6BCB77" }} />
               All clear
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {pendingActions.map((a) => (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 10, background: "var(--surface-2)", border: "1px solid var(--line)" }}>
-                  <AlertTriangle size={16} style={{ color: riskColor(a.risk_level), flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{a.description}</div>
-                    <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <span>{a.agent_name}</span>
-                      <span style={{ padding: "1px 6px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span>
-                      <span>{relativeTime(a.created_at)}</span>
-                      {a.notified_via?.length > 0 && <span>{a.notified_via.join(", ")}</span>}
+              {pendingActions.map((a) => {
+                const isExpanded = expandedAction === a.id;
+                const isResolving = resolvingAction === a.id;
+                const msg = actionMessages[a.id];
+                const resolved = a.status !== "pending";
+
+                return (
+                  <div
+                    key={a.id}
+                    style={{
+                      borderRadius: 10,
+                      background: "var(--surface-2)",
+                      border: `1px solid ${resolved ? (a.status === "executed" ? "rgba(107,203,119,0.2)" : "rgba(224,96,96,0.15)") : "var(--line)"}`,
+                      overflow: "hidden",
+                      opacity: resolved ? 0.6 : 1,
+                      transition: "opacity 0.2s, border-color 0.2s",
+                    }}
+                  >
+                    {/* Row header — click to expand */}
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", cursor: resolved ? "default" : "pointer", userSelect: "none" }}
+                      onClick={() => !resolved && setExpandedAction(isExpanded ? null : a.id)}
+                    >
+                      <AlertTriangle size={16} style={{ color: riskColor(a.risk_level), flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", textDecoration: resolved ? "line-through" : "none" }}>
+                          {a.description}
+                        </div>
+                        <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <span>{a.agent_name}</span>
+                          <span style={{ padding: "1px 6px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span>
+                          <span>{relativeTime(a.created_at)}</span>
+                          {a.notified_via?.length > 0 && <span>{a.notified_via.join(", ")}</span>}
+                        </div>
+                      </div>
+                      {resolved ? (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: a.status === "executed" ? "#6BCB77" : "#E06060", padding: "2px 8px", borderRadius: 9999, background: a.status === "executed" ? "rgba(107,203,119,0.1)" : "rgba(224,96,96,0.1)" }}>
+                          {a.status}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, color: "var(--ink-4)", display: "inline-block", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+                      )}
                     </div>
+
+                    {/* Expanded payload + buttons */}
+                    {isExpanded && !resolved && (
+                      <div style={{ padding: "0 14px 14px 44px", borderTop: "1px solid rgba(30,30,46,0.8)" }}>
+                        <div style={{ marginTop: 10, marginBottom: 12 }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 6 }}>Payload</div>
+                          <pre style={{ fontSize: 10, fontFamily: "monospace", color: "var(--ink-3)", background: "rgba(255,255,255,0.02)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 10px", overflow: "auto", maxHeight: 120, margin: 0 }}>
+                            {JSON.stringify(a.payload, null, 2)}
+                          </pre>
+                        </div>
+
+                        {msg && !msg.success && (
+                          <div style={{ fontSize: 11, color: "#E06060", marginBottom: 8, padding: "6px 10px", borderRadius: 6, background: "rgba(224,96,96,0.06)", border: "1px solid rgba(224,96,96,0.12)" }}>
+                            {msg.text}
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => handleResolve(a.id, "approve")}
+                            disabled={isResolving}
+                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", borderRadius: 8, border: "none", cursor: isResolving ? "not-allowed" : "pointer", background: "#6BCB77", color: "#000", fontSize: 12, fontWeight: 700, opacity: isResolving ? 0.6 : 1 }}
+                          >
+                            {isResolving ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={13} />}
+                            Approve &amp; Execute
+                          </button>
+                          <button
+                            onClick={() => handleResolve(a.id, "reject")}
+                            disabled={isResolving}
+                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(224,96,96,0.25)", cursor: isResolving ? "not-allowed" : "pointer", background: "transparent", color: "#E06060", fontSize: 12, fontWeight: 700, opacity: isResolving ? 0.6 : 1 }}
+                          >
+                            <X size={13} />
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Success message after execution */}
+                    {msg?.success && (
+                      <div style={{ padding: "6px 14px 10px 44px", fontSize: 11, color: "#6BCB77" }}>
+                        {msg.text}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

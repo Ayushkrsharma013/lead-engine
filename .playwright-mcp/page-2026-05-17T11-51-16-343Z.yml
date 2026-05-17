@@ -1,0 +1,96 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e170]:
+          - generic [ref=e6]: Prospecting
+          - generic [ref=e7]: OS
+      - generic [ref=e8]:
+        - button "Overview" [ref=e10] [cursor=pointer]:
+          - generic [ref=e11]: Overview
+          - img [ref=e13]
+        - generic [ref=e15]:
+          - button "Agent Workforce" [ref=e16] [cursor=pointer]:
+            - generic [ref=e17]: Agent Workforce
+            - img [ref=e19]
+          - generic [ref=e22]:
+            - link "Command Center" [ref=e24] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents
+              - img [ref=e26]
+              - generic [ref=e29]: Command Center
+            - link "Finance Agent" [ref=e31] [cursor=pointer]:
+              - /url: /prospecting-os/agent/finance
+              - img [ref=e34]
+              - generic [ref=e37]: Finance Agent
+            - link "Data Janitor" [ref=e39] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/data-janitor
+              - img [ref=e42]
+              - generic [ref=e44]: Data Janitor
+            - link "Lead Scout" [ref=e46] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/lead-scout
+              - img [ref=e49]
+              - generic [ref=e52]: Lead Scout
+            - link "Outreach Agent" [ref=e54] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/outreach-agent
+              - img [ref=e57]
+              - generic [ref=e60]: Outreach Agent
+            - link "Pipeline Manager" [ref=e62] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/pipeline-manager
+              - img [ref=e65]
+              - generic [ref=e69]: Pipeline Manager
+            - link "ICP Analyst" [ref=e71] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/icp-analyst
+              - img [ref=e74]
+              - generic [ref=e76]: ICP Analyst
+            - link "Client Reporter" [ref=e78] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/client-reporter
+              - img [ref=e81]
+              - generic [ref=e84]: Client Reporter
+            - link "Message Coach" [ref=e86] [cursor=pointer]:
+              - /url: /prospecting-os/admin/agents/message-coach
+              - img [ref=e89]
+              - generic [ref=e91]: Message Coach
+        - button "AI Studio" [ref=e93] [cursor=pointer]:
+          - generic [ref=e94]: AI Studio
+          - img [ref=e96]
+        - button "Pipeline" [ref=e99] [cursor=pointer]:
+          - generic [ref=e100]: Pipeline
+          - img [ref=e102]
+        - button "Outreach" [ref=e105] [cursor=pointer]:
+          - generic [ref=e106]: Outreach
+          - img [ref=e108]
+        - button "Operations" [ref=e111] [cursor=pointer]:
+          - generic [ref=e112]: Operations
+          - img [ref=e114]
+      - generic [ref=e116]:
+        - button "Agent" [ref=e117] [cursor=pointer]:
+          - img [ref=e118]
+          - generic [ref=e120]: Agent
+        - button "Collapse" [ref=e121] [cursor=pointer]:
+          - img [ref=e122]
+          - generic [ref=e124]: Collapse
+        - button "U User" [ref=e126] [cursor=pointer]:
+          - generic [ref=e128]: U
+          - generic [ref=e129]: User
+          - img [ref=e131]
+    - generic [ref=e135]:
+      - img [ref=e140]
+      - generic [ref=e142]:
+        - paragraph [ref=e143]: LinkedIn ProOS
+        - paragraph [ref=e144]: Loading your workspace…
+    - complementary:
+      - generic [ref=e149]:
+        - generic [ref=e150]:
+          - img [ref=e152]
+          - generic [ref=e154]: ProOS Agent
+        - button [ref=e156] [cursor=pointer]:
+          - img [ref=e157]
+      - paragraph [ref=e161]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e162]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e163]
+          - button [disabled] [ref=e164]:
+            - img [ref=e165]
+        - paragraph [ref=e168]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e171]

@@ -1,0 +1,4 @@
+[    2001ms] [WARNING] GoTrueClient@sb-tbsqpnqzpbnilifhwvgr-auth-token:1 (2.105.4) 2026-05-17T02:03:13.414Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. @ https://app.flow-forges.com/prospecting-os/_next/static/chunks/44530001-d185e64b8c37c63a.js:0
+[    3925ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://app.flow-forges.com/prospecting-os/api/client-portal/me:0
+[    6926ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://tbsqpnqzpbnilifhwvgr.supabase.co/rest/v1/profiles?select=role&id=eq.583da756-b93a-435f-973b-8f83b5999f87:0
+[    7309ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://app.flow-forges.com/prospecting-os/api/analytics/business:0

@@ -1,0 +1,69 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]: Prospecting
+          - generic [ref=e9]: OS
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button "Overview" [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: Overview
+            - img [ref=e15]
+          - generic [ref=e18]:
+            - link "Command Center" [ref=e20] [cursor=pointer]:
+              - /url: /prospecting-os/dashboard
+              - img [ref=e22]
+              - generic [ref=e27]: Command Center
+            - link "Lead Intelligence" [ref=e29] [cursor=pointer]:
+              - /url: /prospecting-os/leads
+              - img [ref=e32]
+              - generic [ref=e37]: Lead Intelligence
+        - button "AI Studio" [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]: AI Studio
+          - img [ref=e42]
+        - button "Pipeline" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]: Pipeline
+          - img [ref=e48]
+        - button "Outreach" [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]: Outreach
+          - img [ref=e54]
+        - button "Operations" [ref=e57] [cursor=pointer]:
+          - generic [ref=e58]: Operations
+          - img [ref=e60]
+      - generic [ref=e62]:
+        - button "Agent" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e66]: Agent
+        - button "Settings" [ref=e67] [cursor=pointer]:
+          - img [ref=e68]
+          - generic [ref=e71]: Settings
+        - button "Collapse" [ref=e72] [cursor=pointer]:
+          - img [ref=e73]
+          - generic [ref=e75]: Collapse
+        - generic [ref=e76]:
+          - button "Switch to light mode" [ref=e77] [cursor=pointer]:
+            - img [ref=e78]
+          - generic [ref=e84]: Toggle theme
+        - generic [ref=e86]: ProOS v1.0
+    - generic [ref=e89]:
+      - img [ref=e94]
+      - generic [ref=e96]:
+        - paragraph [ref=e97]: LinkedIn ProOS
+        - paragraph [ref=e98]: Loading your workspace…
+    - complementary:
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - img [ref=e106]
+          - generic [ref=e108]: ProOS Agent
+        - button [ref=e110] [cursor=pointer]:
+          - img [ref=e111]
+      - paragraph [ref=e115]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e116]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e117]
+          - button [disabled] [ref=e118]:
+            - img [ref=e119]
+        - paragraph [ref=e122]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e123]

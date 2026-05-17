@@ -1,0 +1,337 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]: Prospecting
+          - generic [ref=e9]: OS
+      - generic [ref=e10]:
+        - button "Overview" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: Overview
+          - img [ref=e15]
+        - button "Agent Workforce" [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: Agent Workforce
+          - img [ref=e21]
+        - generic [ref=e23]:
+          - button "AI Studio" [ref=e24] [cursor=pointer]:
+            - generic [ref=e25]: AI Studio
+            - img [ref=e27]
+          - generic [ref=e30]:
+            - link "AI Message Lab" [ref=e32] [cursor=pointer]:
+              - /url: /prospecting-os/message-lab
+              - img [ref=e34]
+              - generic [ref=e36]: AI Message Lab
+            - link "Lead Scorer" [ref=e38] [cursor=pointer]:
+              - /url: /prospecting-os/scorer
+              - img [ref=e41]
+              - generic [ref=e45]: Lead Scorer
+        - button "Pipeline" [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]: Pipeline
+          - img [ref=e50]
+        - button "Outreach" [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: Outreach
+          - img [ref=e56]
+        - button "Operations" [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Operations
+          - img [ref=e62]
+      - generic [ref=e64]:
+        - button "Agent" [ref=e65] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: Agent
+        - button "Collapse" [ref=e69] [cursor=pointer]:
+          - img [ref=e70]
+          - generic [ref=e72]: Collapse
+        - button "A ayushkumarsharma013" [ref=e118] [cursor=pointer]:
+          - generic [ref=e76]: A
+          - generic [ref=e77]: ayushkumarsharma013
+          - img [ref=e79]
+    - generic [ref=e81]:
+      - banner [ref=e119]:
+        - generic [ref=e121]:
+          - heading "AI Message Lab" [level=1] [ref=e122]
+          - paragraph [ref=e123]: Generate personalized outreach with Gemini
+        - generic [ref=e124]:
+          - button "Search ⌘K" [ref=e125] [cursor=pointer]:
+            - img [ref=e126]
+            - generic [ref=e129]: Search
+            - generic [ref=e130]: ⌘K
+          - button "Notifications" [ref=e133] [cursor=pointer]:
+            - img [ref=e134]
+          - button "Switch to light mode" [ref=e137] [cursor=pointer]:
+            - img [ref=e138]
+      - generic [ref=e144]:
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - text: Select Lead
+            - combobox [ref=e148] [cursor=pointer]:
+              - option "Choose a lead…" [selected]
+              - 'option "benjamin offenberg — director of outside sales, north america @ resy (Score: 91)"'
+              - 'option "sahar mehrabzadeh — executive vice president of sales @ bay cities (Score: 75)"'
+              - 'option "andy domnauer — senior regional sales manager - eastern us @ visioneer (Score: 78)"'
+              - 'option "brian stalzer — senior sales director, southeast @ gasbuddy (Score: 77)"'
+              - 'option "tom cui — global sales director @ sensor tower (Score: 74)"'
+              - 'option "alex lee — senior vice president of global sales @ blueconic (Score: 91)"'
+              - 'option "ross taliaferro — account manager @ systems engineering (Score: 70)"'
+              - 'option "eamp john donald — manager, sales and marketing automation @ designs for health (Score: 71)"'
+              - 'option "tim thrash — regional vice president, global enterprise sales @ global lt (Score: 91)"'
+              - 'option "Rebecca Neeley — vice president of marketing and business development @ home performance alliance (Score: 80)"'
+              - 'option "nicholas piatek — director of technology and cio, data architect, project manager, and lead developer @ ls direct marketing (Score: 90)"'
+              - 'option "amos benninga — vice president of engineering @ lightforce orthodontics (Score: 88)"'
+              - 'option "Maureen Meyer — director of sales @ pletronics, inc. (Score: 79)"'
+              - 'option "arthur sweetser — senior vice president strategic sales @ messagegears (Score: 75)"'
+              - 'option "kate foster — territory sales manager @ journey medical corporation, a subsidiary of fortress biotech (Score: 96)"'
+              - 'option "kristin peters — chief marketing officer @ artifact uprising® (Score: 82)"'
+              - 'option "colleen sepich — sales director @ informa markets - engineering (Score: 83)"'
+              - 'option "brett wagner — vice president of sales @ synup (Score: 79)"'
+              - 'option "peter sevonius — sales director and product manager fpo @ rkw se (Score: 74)"'
+              - 'option "susan gain — sales project manager @ central office systems (Score: 91)"'
+              - 'option "carolina moretti — senior account manager, customer reference programs @ big sky communications (Score: 84)"'
+              - 'option "dena curbelo — national sales manager @ markmaster, inc (Score: 95)"'
+              - 'option "jeff moore — engineering manager @ pubnub (Score: 93)"'
+              - 'option "michelle austin — marketing manager @ tufenkian carpets (Score: 96)"'
+              - 'option "romil gupta — director of sales @ technology mindz (Score: 95)"'
+              - 'option "mark incorvaia — account manager @ pooley inc. (Score: 93)"'
+              - 'option "amy macaulay — sales marketing manager @ macaulay controls company (Score: 87)"'
+              - 'option "steve lapedis — gtm and chief marketing officer consultant-principal @ marketing curators (Score: 92)"'
+              - 'option "Carol Mcadam — senior sales director @ zoomba group (Score: 94)"'
+              - 'option "eric bender — business development manager @ the performance group (Score: 77)"'
+              - 'option "karla tobin — senior digital marketing manager @ meridian knowledge solutions (Score: 97)"'
+              - 'option "eric reaves — enterprise software solutions, central region director of mobile hardware sales @ blue dot solutions (Score: 73)"'
+              - 'option "kristil nicholas — marketing manager @ finance of america reverse llc (Score: 73)"'
+              - 'option "tony medrano — vice president of business development @ cue inc. (Score: 97)"'
+              - 'option "natalie mcdonald — marketing manager @ dircks moving & logistics (Score: 94)"'
+              - 'option "jason crua — director, network and site operations @ ingenio (Score: 72)"'
+              - 'option "heather vaughn — marketing services director @ ci design inc. (Score: 78)"'
+              - 'option "jonathan emkes — director of international sales and operations @ rts international (Score: 87)"'
+              - 'option "tom bisenius — director of business development @ vip sports marketing (Score: 81)"'
+              - 'option "beth sullivan — head of programming, initiatives and experience @ hitlab (Score: 90)"'
+              - 'option "laura elliott — director of marketing @ sambazon (Score: 71)"'
+              - 'option "brie gutmann — marketing manager @ nexant (Score: 90)"'
+              - 'option "balaji srinivasan — chief technology officer @ sherpa software (Score: 77)"'
+              - 'option "conrad lumm — product marketing director @ bangor daily news (Score: 91)"'
+              - 'option "megan francis — marketing and public relations manager @ pkware (Score: 90)"'
+              - 'option "james ashley — senior director, revenue operations @ execonline, inc. (Score: 82)"'
+              - 'option "alex boone — chief technology officer @ sheerid (Score: 88)"'
+              - 'option "mark landis — director, federal business development @ indev, llc (Score: 71)"'
+              - 'option "greg stanton — regional sales manager @ evolution power tools limited (Score: 96)"'
+              - 'option "kari moosmann — senior account manager @ constructive communication, inc. (Score: 88)"'
+              - 'option "andrew szatan — head of marketing @ follow up boss (Score: 81)"'
+              - 'option "tom linafelt — marketing and public relations director @ signal theory inc. (Score: 78)"'
+              - 'option "alex arar — leader, solutions engineer @ gensuite llc (Score: 92)"'
+              - 'option "chris foran — regional sales director, new england @ swimlane (Score: 75)"'
+              - 'option "kelly clarke — award-winning media and marketing professional | director of digital marketing @ health iq (Score: 79)"'
+              - 'option "ryan pirkle — director of marketing @ ffw (Score: 70)"'
+              - 'option "jamie bloomquist — digital marketing manager @ america''s home place (Score: 71)"'
+              - 'option "fathi ghoul — sales manager @ ma labs (Score: 93)"'
+              - 'option "tess bryant — marketing manager @ zeon corporation (Score: 91)"'
+              - 'option "carolyn woods — director, solution marketing @ ineight inc. (Score: 86)"'
+              - 'option "donna childress — marketing director @ mbf (medical benevolence foundation) (Score: 87)"'
+              - 'option "jordan laneve — director of search marketing @ marcus thomas llc (Score: 72)"'
+              - 'option "alicia murphy — sales manager @ leadfeeder (Score: 92)"'
+              - 'option "ryan hodgson — vice president of marketing @ steller (Score: 85)"'
+              - 'option "kevin thornton — chief revenue officer @ service fusion (Score: 84)"'
+              - 'option "lauren hardisky — regional vice president of sales @ genesis credit management (Score: 78)"'
+              - 'option "jacquie braun — director of business to business sales @ aj madison (Score: 72)"'
+              - 'option "cassandre crowe — senior account manager @ secure networkers (Score: 85)"'
+              - 'option "jason mcdowell — business development account manager @ newlane finance (Score: 74)"'
+              - 'option "ajit verma — chief technology officer @ ellipsis health (Score: 85)"'
+              - 'option "katie ervin — midatlantic regional sales manager @ territory foods (Score: 88)"'
+              - 'option "david hirschman — vice president, sales and client success @ swenson he, llc (Score: 73)"'
+              - 'option "abraham dunmeyer — junior marketing manager @ conceptboard (Score: 78)"'
+              - 'option "paul elsass — senior vice president business development @ vivante health (Score: 81)"'
+              - 'option "michael rock — director of distributor sales theochem laboratories @ theochem laboratories (Score: 73)"'
+              - 'option "chelsea mcclure — director of engagement marketing @ redbubble (Score: 73)"'
+              - 'option "brad martin — senior vice president, marketing, mass market sales and services at genie retail energy, inc @ genie energy (Score: 79)"'
+              - 'option "charlie reverte — chief technology officer @ sparkpost (Score: 97)"'
+              - 'option "margaret berdelman — director of marketing @ leeds forensic systems, inc. (manufacturer of forensic comparison microscopes & als imaging systems) (Score: 71)"'
+              - 'option "alex gino — business development manager @ mail prospects (Score: 85)"'
+              - 'option "mark klossner — vice president of marketing @ boss snowplow (Score: 80)"'
+              - 'option "aaron mosby — director, federal business development @ avtex solutions, llc (Score: 88)"'
+              - 'option "clay york — regional sales manager at oxford immunotec @ oxford immunotec (Score: 87)"'
+              - 'option "josue loredo — district sales manager @ cadillac (Score: 95)"'
+              - 'option "paul rafferty — business development manager - global sales @ descartes datamyne (Score: 86)"'
+              - 'option "Joel Aldridge — commercial bus sales manager @ central states bus sales, inc. (Score: 91)"'
+              - 'option "daniele di nunzio — business development manager @ ansaldo nucleare (Score: 84)"'
+              - 'option "brandon yusko — sales manager @ friss | fraud, risk & compliance (Score: 83)"'
+              - 'option "Robin Claterbaugh — senior director, marketing @ interrel consulting (Score: 76)"'
+              - 'option "pamela rude — account manager @ be pressure supply ltd. (Score: 97)"'
+              - 'option "jennifer costa — vice president of marketing @ talalay global (Score: 85)"'
+              - 'option "kevin druecker — director of account management @ affiliated distributors (ad) (Score: 91)"'
+              - 'option "shau-ru lin — senior commercial marketing manager @ earlens corporation (Score: 74)"'
+              - 'option "sarah mangia — account manager and seo @ gainesville coins inc. (Score: 97)"'
+              - 'option "robyn albaum — vice president marketing and owner @ scarlett plus size boutique (Score: 78)"'
+              - 'option "will riley — revenue operations director @ fitzmartin, inc. (Score: 90)"'
+              - 'option "carina hayek — director of marketing @ great performances (Score: 73)"'
+              - 'option "tom roberts — senior vice president global marketing at primerevenue @ primerevenue (Score: 84)"'
+              - 'option "susan taylor — senior manager, customer marketing and content @ parsable (Score: 88)"'
+              - 'option "haley couch — head of business development @ sitejabber (Score: 89)"'
+              - 'option "sean o''neill — director of marketing @ ovation financial services (Score: 83)"'
+              - 'option "eddy de la nuez — eastern division sales manager @ dual electronics corp (Score: 87)"'
+              - 'option "chase donohue — software quality manager @ property solutions international inc. (Score: 72)"'
+              - 'option "a.j hartless — business to business marketing manager @ trader interactive (Score: 82)"'
+              - 'option "jim burkett — vice president marketing @ great lakes gelatin company (Score: 97)"'
+              - 'option "kevin watson — regional sales director, eastern region @ fiberlight, llc (Score: 86)"'
+              - 'option "rose morabito — senior digital marketing manager @ hirevue (Score: 84)"'
+              - 'option "ryan sears — director of sales - east @ pantheon platform (Score: 76)"'
+              - 'option "chris valada — director of business development @ software2 (Score: 71)"'
+              - 'option "stephen masko — vice president, business development @ boost payment solutions (Score: 71)"'
+              - 'option "joseph chen — account manager @ viewsonic (Score: 83)"'
+              - 'option "courtney mancini — business to business marketing manager @ hana (Score: 88)"'
+              - 'option "sean cates — regional account manager @ national automotive experts / nwan (Score: 81)"'
+              - 'option "jonathan su — vice president of engineering @ bento for business (Score: 81)"'
+              - 'option "melissa grimes — marketing director @ laminators incorporated (Score: 92)"'
+              - 'option "robert jelaso — regional sales director @ imagenet consulting, llc (Score: 82)"'
+              - 'option "Luigi Di — head of information technology @ mindstrong (Score: 75)"'
+              - 'option "scott lavery — senior director of marketing @ appsian (formerly greyheller) (Score: 72)"'
+              - 'option "jeff ventura — director, marketing and digital strategy @ mipro consulting (Score: 95)"'
+              - 'option "mike dibaggio — product owner, senior software engineer ii @ cleo (Score: 71)"'
+              - 'option "drew smith — enterprise account manager - account management and strategic sales @ invoca (Score: 84)"'
+              - 'option "Angela Ripinski — vice president of marketing @ officeluv (Score: 86)"'
+              - 'option "amy donovan — business development manager @ threatquotient, inc. (Score: 94)"'
+              - 'option "cynthia spiers — head of global content and digital marketing @ acrolinx (Score: 78)"'
+              - 'option "brooke storey — chief marketing officer chief marketing officer @ stevenson automotive group (Score: 84)"'
+              - 'option "andrea bennett — sales development team lead @ everstring (Score: 91)"'
+              - 'option "joel wethall — sales director - technology, chain store age and ris news @ ensembleiq (Score: 97)"'
+              - 'option "eric sansouci — sales - team lead @ sentinel technologies (Score: 97)"'
+              - 'option "scott draeger — regional sales manager @ bullard (Score: 93)"'
+              - 'option "john sayre — senior account manager @ alterity, inc. (Score: 94)"'
+              - 'option "sara strope — interim chief marketing officer @ taxjar (Score: 84)"'
+              - 'option "frank guido — chief marketing officer @ mi bank (Score: 78)"'
+              - 'option "teri andrews — chief revenue officer @ reading plus (Score: 71)"'
+              - 'option "eve hoffman — director of sales @ hypercore networks, inc. (Score: 83)"'
+              - 'option "steve brown — account manager @ radiant logic (Score: 79)"'
+              - 'option "watson wat — deputy general manager of suning international usa, business development @ suning commerce r&d center usa, inc. (Score: 81)"'
+              - 'option "mike holihan — marketing director @ masterlibrary.com (Score: 90)"'
+              - 'option "debbie harrison — director of marketing, education vertical @ academic partnerships (Score: 97)"'
+              - 'option "amy loria — director, integrated marketing solutions @ himss (Score: 95)"'
+              - 'option "jill keto — chief marketing officer @ easy metrics inc. (Score: 73)"'
+              - 'option "beth varela — digital marketing manager @ skywater search partners (Score: 83)"'
+              - 'option "katie kinnear — senior manager, social media and engagement @ rubicon global (Score: 72)"'
+              - 'option "debbie bingham — director of sales and marketing @ flower one (Score: 79)"'
+              - 'option "edward maron — vice president of sales and marketing @ pix north america (Score: 94)"'
+              - 'option "bill widis — vice president u.s sales @ worldnet tps (Score: 76)"'
+              - 'option "sean mcveigh — territory sales manager @ healthgrowth capital, llc (Score: 86)"'
+              - 'option "kyle hollingsworth — vice president of sales, west @ 6sense (Score: 97)"'
+              - 'option "alain tsai — senior territory manager @ locus technologies (Score: 81)"'
+              - 'option "tina sebastyn — territory sales manager @ genova diagnostics (Score: 97)"'
+              - 'option "alex mills — sales manager @ emg motor group (Score: 81)"'
+              - 'option "troy sanders — international sales manager @ sawstop (Score: 97)"'
+              - 'option "Nicholas Zabikow — executive vice president of global sales and marketing @ yojee (Score: 92)"'
+              - 'option "heather saari — senior account manager @ tds telecommunications corp. (Score: 88)"'
+              - 'option "scott maughan — vice president sales @ axiom systems, inc. (Score: 89)"'
+              - 'option "tim stanley — vice president - federal sales @ nuvolo (Score: 74)"'
+              - 'option "lynne landau — retention and crm marketing manager @ illy caffè north america, inc. (Score: 83)"'
+              - 'option "Matt Simons — vice president of business development @ oasis solutions group (Score: 95)"'
+              - 'option "tracey smith — director of business development @ corptrav management group (Score: 96)"'
+              - 'option "craig smoak — account manager @ advanced office solutions - ga (Score: 71)"'
+              - 'option "Rosalynn Huynh — account manager @ h code media (Score: 88)"'
+              - 'option "monique phillips — it sector center account manager @ national able network (Score: 83)"'
+              - 'option "paul skladzien — area sales manager @ bishop lifting products (Score: 72)"'
+              - 'option "chris rewey — director of business development @ widen enterprises (Score: 93)"'
+              - 'option "savanh prasasouk — national account sales manager @ go smile, inc. (Score: 78)"'
+              - 'option "rachel jacobs — marketing director @ brown wood inc (Score: 73)"'
+              - 'option "matt jubelirer — chief marketing officer @ turvo inc. (Score: 73)"'
+              - 'option "dan bellopede — vice president of sales @ litify (Score: 95)"'
+              - 'option "seth peters — sales and partnership director @ united fray (Score: 81)"'
+              - 'option "victoria mccord — business development manager @ aarene contracting, llc (Score: 80)"'
+              - 'option "naomi secor — global managing director, sson at shared services and outsourcing network @ shared services & outsourcing network (sson) (Score: 97)"'
+              - 'option "will gallina — director software quality assurance @ real capital analytics (Score: 86)"'
+              - 'option "kim robinson — regional sales director @ brandfolder, inc. (Score: 74)"'
+              - 'option "brooke buesching — account manager @ viracor-ibt laboratories (Score: 83)"'
+              - 'option "heath macarthur — chief revenue officer @ certify, inc. (Score: 84)"'
+              - 'option "theresa gardner — rare disease account manager @ recordati rare diseases inc. (Score: 78)"'
+              - 'option "timothy berry — national account manager at national regulatory services and accuity, a reed business information company @ nrs (Score: 91)"'
+              - 'option "moyosola onileere — digital marketing manager @ lineate (formerly thumbtack technology) (Score: 97)"'
+              - 'option "ellen nyboer — show manager - distributed energy conference, senior marketing manager - energy and engineering group @ access intelligence (Score: 70)"'
+              - 'option "corie savage — senior director of business development @ hypr brands - influencer marketing platform (Score: 96)"'
+              - 'option "john nguyen — sales manager @ monsido (Score: 72)"'
+              - 'option "meaghan moraes — content marketing manager @ enterprisedb (Score: 71)"'
+              - 'option "rubens basso — co-founder and chief technology officer @ pestroutes software (Score: 97)"'
+              - 'option "stephen lawrence — vice president of sales @ thermal-tec roofing (Score: 76)"'
+              - 'option "rick beres — major account manager @ quench usa, inc. (Score: 90)"'
+              - 'option "chris davis — senior manager, digital marketing @ management concepts inc. (Score: 76)"'
+              - 'option "amy hanusey — account manager @ local wisdom (Score: 89)"'
+              - 'option "james byrne — national director of business development @ devlinhair productions, inc. (Score: 74)"'
+              - 'option "jarrett olin — vice president enterprise sales @ salesloft (Score: 77)"'
+              - 'option "mishelle forbes — sales director @ evaluation zone, inc (Score: 85)"'
+              - 'option "simon spencer — senior marketing manager @ kinsa (Score: 91)"'
+              - 'option "don lewis — director of sales @ hallmark stone company (Score: 78)"'
+              - 'option "laura kendall — vice president of marketing @ madkudu (Score: 73)"'
+              - 'option "yancy weinrich — chief growth officer @ reed exhibitions us (Score: 70)"'
+              - 'option "georgina stopfer — director, client delivery and engagement @ affinity, inc. (Score: 97)"'
+              - 'option "pedro figueroa — international sales manager @ orbus exhibit & display group (Score: 86)"'
+              - 'option "ian nicley — inside sales account manager @ regal plastic supply company inc. (Score: 83)"'
+              - 'option "therese detolla — regional sales manager @ elemental led (Score: 80)"'
+              - 'option "kevin nadjimov — sales director @ silicon valley innovation center (Score: 77)"'
+              - 'option "magaji edwards — sales manager @ quick base (Score: 72)"'
+              - 'option "fran kathriner — director, global sales development @ kenna security (Score: 82)"'
+              - 'option "shane desrochers — chief revenue officer @ billingplatform (Score: 89)"'
+              - 'option "susan mlodozeniec — marketing director @ massachusetts clean energy center (Score: 79)"'
+              - 'option "Lawanda Parnell — chief information officer @ pedernales electric cooperative (Score: 73)"'
+              - 'option "gary bonner — director of marketing @ asi sign systems, inc. (Score: 70)"'
+              - 'option "megan jaffarian — engagement director @ the article group (Score: 79)"'
+              - 'option "john olson — director of consumer sales and marketing @ federal companies (Score: 92)"'
+              - 'option "scott king — senior account manager @ metric theory (Score: 90)"'
+              - 'option "Jake Taylor — CTO @ Loom (Score: 89)"'
+              - 'option "Emily Zhang — Head of Sales @ Figma (Score: 93)"'
+              - 'option "David Kim — Founder & CEO @ Retool (Score: 96)"'
+              - 'option "Amanda Foster — VP Sales @ Airtable (Score: 82)"'
+              - 'option "Chris Nakamura — CMO @ Stripe (Score: 88)"'
+              - 'option "Sarah Chen — Founder @ Notion (Score: 91)"'
+              - 'option "Marcus Williams — CEO @ AI Startup (Score: 78)"'
+              - 'option "Priya Sharma — Co-Founder @ DevTools Co (Score: 85)"'
+              - 'option "Alex Rodriguez — Solo Founder @ MarTech SaaS (Score: 67)"'
+              - 'option "Jordan Lee — Founder & CTO @ Data Platform (Score: 94)"'
+              - 'option "Rachel Kim — Agency Director @ Growth Co (Score: 87)"'
+              - 'option "Tom Baker — Head of Growth @ Performance (Score: 72)"'
+              - 'option "Nina Patel — Consultant @ RevOps Firm (Score: 65)"'
+              - 'option "Carlos Mendez — Partner @ Creative Agency (Score: 55)"'
+              - 'option "Lisa Wong — Director @ Content Studio (Score: 38)"'
+          - generic [ref=e149]:
+            - text: Message Type
+            - generic [ref=e150]:
+              - button "Connection" [ref=e151] [cursor=pointer]
+              - button "LinkedIn DM" [ref=e152] [cursor=pointer]
+              - button "Cold Email" [ref=e153] [cursor=pointer]
+          - generic [ref=e154]:
+            - text: Tone
+            - generic [ref=e155]:
+              - button "Professional" [ref=e156] [cursor=pointer]
+              - button "Friendly" [ref=e157] [cursor=pointer]
+              - button "Direct" [ref=e158] [cursor=pointer]
+              - button "Consultative" [ref=e159] [cursor=pointer]
+          - generic [ref=e160]:
+            - text: Your Offer
+            - textbox "e.g. We help SaaS companies reduce churn by 40%..." [ref=e161]
+          - button "Add API key to generate" [ref=e163] [cursor=pointer]:
+            - img [ref=e164]
+            - text: Add API key to generate
+          - button "Generate with Gemini" [disabled] [ref=e168]:
+            - img [ref=e169]
+            - text: Generate with Gemini
+          - button "Generate A/B Test (2 variants)" [disabled] [ref=e171]:
+            - img [ref=e172]
+            - text: Generate A/B Test (2 variants)
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - heading "Generated Message" [level=3] [ref=e177]
+            - paragraph [ref=e178]: Generated message will appear here
+          - button "Message History (0)" [ref=e180] [cursor=pointer]:
+            - generic [ref=e181]: Message History (0)
+            - img [ref=e182]
+    - complementary:
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - img [ref=e100]
+          - generic [ref=e102]: ProOS Agent
+        - button [ref=e104] [cursor=pointer]:
+          - img [ref=e105]
+      - paragraph [ref=e109]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e110]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e111]
+          - button [disabled] [ref=e112]:
+            - img [ref=e113]
+        - paragraph [ref=e116]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e117]

@@ -1,0 +1,576 @@
+- generic [active] [ref=e1]:
+  - main "Prospecting OS — AI B2B Lead Generation Landing Page" [ref=e3]:
+    - navigation "Prospecting OS — AI B2B Lead Generation Navigation" [ref=e4]:
+      - generic [ref=e5]:
+        - link "Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges Prospecting OS" [ref=e6] [cursor=pointer]:
+          - /url: "#"
+          - img "Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" [ref=e7]
+          - text: Prospecting
+          - generic [ref=e8]: OS
+        - list [ref=e9]:
+          - listitem [ref=e10]:
+            - link "How It Works" [ref=e11] [cursor=pointer]:
+              - /url: "#how-it-works"
+          - listitem [ref=e12]:
+            - link "Pricing" [ref=e13] [cursor=pointer]:
+              - /url: "#pricing"
+          - listitem [ref=e14]:
+            - link "ROI Calculator" [ref=e15] [cursor=pointer]:
+              - /url: "#roi"
+          - listitem [ref=e16]:
+            - link "FAQ" [ref=e17] [cursor=pointer]:
+              - /url: "#faq"
+        - link "Book a free B2B prospecting strategy call with the Prospecting OS team" [ref=e18] [cursor=pointer]:
+          - /url: /prospecting-os/book
+          - img [ref=e19]
+          - text: Book a Free Strategy Call
+        - button "Toggle light/dark theme" [ref=e22] [cursor=pointer]:
+          - generic:
+            - img
+          - generic:
+            - img
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - img "Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" [ref=e27]
+          - text: AI-Powered B2B Prospecting
+        - heading "AI-Powered B2B Lead Generation. 500+ S |" [level=1] [ref=e28]:
+          - text: AI-Powered B2B Lead Generation. 500+ S
+          - generic [ref=e29]: "|"
+        - paragraph [ref=e30]:
+          - text: Prospecting OS is an automated B2B prospecting system built for agencies, SaaS founders, and consultants. It combines LinkedIn Sales Navigator with Gemini AI to find, score, enrich, and deliver your ideal decision-maker leads to Slack or Telegram — every day, without manual research. Built by
+          - link "Flow-Forges — AI automation agency" [ref=e31] [cursor=pointer]:
+            - /url: https://flow-forges.com
+            - text: Flow-Forges
+          - text: .
+        - generic [ref=e32]:
+          - button "See how Prospecting OS automates B2B lead generation in 5 steps" [ref=e33] [cursor=pointer]:
+            - text: See the AI Pipeline in Action
+            - img [ref=e34]
+          - link "View Prospecting OS pricing — from $2,500 one-time to fully managed AI SDR" [ref=e36] [cursor=pointer]:
+            - /url: "#pricing"
+            - text: See Pricing Plans
+            - img [ref=e37]
+        - generic [ref=e39]:
+          - generic [ref=e40]: 500+ AI-Scored Leads/Month
+          - generic [ref=e41]: 97% Less Manual Prospecting
+          - generic [ref=e42]: 4h Live in 4 Hours (Basic)
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: HOT LEADS THIS WEEK
+            - generic "Example lead scoring output — not live data" [ref=e47]: LIVE
+          - generic [ref=e49]:
+            - generic [ref=e50]: "47"
+            - generic [ref=e51]: qualified & scored
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: "1"
+              - generic [ref=e55]: Source Leads (Sales Navigator)
+              - generic [ref=e56]: LIVE
+            - generic [ref=e57]:
+              - generic [ref=e58]: "2"
+              - generic [ref=e59]: Filter Decision Makers
+              - generic [ref=e60]: AI
+            - generic [ref=e61]:
+              - generic [ref=e62]: "3"
+              - generic [ref=e63]: Score & Qualify (1–10)
+              - generic [ref=e64]: AI
+            - generic [ref=e65]:
+              - generic [ref=e66]: "4"
+              - generic [ref=e67]: Personalize Icebreaker
+              - generic [ref=e68]: AI
+            - generic [ref=e69]:
+              - generic [ref=e70]: "5"
+              - generic [ref=e71]: Alert & Deliver
+              - generic [ref=e72]: AUTO
+        - generic [ref=e73]:
+          - img [ref=e75]
+          - generic [ref=e78]:
+            - text: New lead scored
+            - strong [ref=e79]: 8.5/10
+            - text: — TechCorp CEO
+    - region "How Prospecting OS works — 5-step AI lead generation pipeline" [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]: // How It Works
+          - heading "From zero to pipeline in 5 steps" [level=2] [ref=e84]
+          - paragraph [ref=e85]: Every morning, fresh scored leads land where you work. No manual input. No missed targets.
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e89]: "1"
+            - generic [ref=e91]:
+              - generic [ref=e92]: SALES NAVIGATOR
+              - heading "Pull your ICP from LinkedIn" [level=4] [ref=e93]
+              - paragraph [ref=e94]: Sales Navigator runs a saved search for your exact ICP every morning — by title, industry, company size, geography. Results export automatically into the pipeline. No CSV uploads, no manual browsing.
+              - generic [ref=e95]:
+                - text: "Search: \"Head of Marketing\" · SaaS · 51–200 · US"
+                - text: → 847 results pulled · 06:00 AM daily
+          - generic [ref=e96]:
+            - generic [ref=e98]: "2"
+            - generic [ref=e100]:
+              - generic [ref=e101]: AI FILTER
+              - heading "Strip out the noise — only decision makers pass" [level=4] [ref=e102]
+              - paragraph [ref=e103]: AI cross-checks each profile against your ICP rules. Individual contributors, students, job-seekers, and duplicate contacts are removed automatically. Only founders, VPs, and C-suite in your target segment advance.
+              - generic [ref=e104]:
+                - text: "✗ Filtered out: 612 (IC roles, irrelevant industries)"
+                - text: "✓ Passed: 235 decision-makers advancing to scoring"
+          - generic [ref=e105]:
+            - generic [ref=e107]: "3"
+            - generic [ref=e109]:
+              - generic [ref=e110]: GEMINI AI
+              - heading "Every lead scored 1–10 with reasoning" [level=4] [ref=e111]
+              - paragraph [ref=e112]: Gemini AI scores each lead against your ICP with a written justification — not just a number. You see exactly why a lead scored 8.5 vs 4.2. Only leads scoring 7+ advance to enrichment. You never touch a cold lead again.
+              - generic [ref=e113]:
+                - text: Alex M. · VP Marketing · Acme SaaS · 120 emp
+                - text: "Score: 8.5 / 10"
+                - text: "Reason: \"Exact ICP match — SaaS, growth stage, US-based, active on LinkedIn, budget signals\""
+          - generic [ref=e114]:
+            - generic [ref=e116]: "4"
+            - generic [ref=e118]:
+              - generic [ref=e119]: AUTO ENRICH
+              - heading "Company data + a personalized icebreaker" [level=4] [ref=e120]
+              - paragraph [ref=e121]: Each qualified lead is enriched with company news, recent LinkedIn posts, funding events, and tech stack data. Gemini then writes a unique, context-specific icebreaker for that lead — not a template. No two icebreakers are the same.
+              - generic [ref=e122]:
+                - text: "Icebreaker generated:"
+                - text: "\"Saw your post about scaling your CS team post-Series B — congrats on the funding. We built a support automation for a similar-stage company that cut ticket volume 70%...\""
+          - generic [ref=e123]:
+            - generic [ref=e125]: "5"
+            - generic [ref=e126]:
+              - generic [ref=e127]: AUTO DELIVER
+              - heading "Hot leads delivered where you work" [level=4] [ref=e128]
+              - paragraph [ref=e129]: Qualified, scored, enriched leads with icebreakers arrive in your Slack channel, Telegram, or directly into HubSpot/Google Sheets — every morning by 8 AM. Reply directly, copy the icebreaker, close the deal.
+              - generic [ref=e130]:
+                - text: NEW HOT LEAD · Score 8.5
+                - text: Alex M. · VP Marketing · Acme SaaS
+                - text: View full profile · Copy icebreaker
+    - region "Prospecting OS pricing plans — DIY Setup, Managed Growth, Managed Scale" [ref=e131]:
+      - generic [ref=e132]:
+        - generic [ref=e133] [cursor=pointer]:
+          - generic [ref=e134]: // Pricing
+          - heading "Your AI SDR. A fraction of the cost." [level=2] [ref=e135]
+          - paragraph [ref=e136]: An in-house SDR costs $4,000–6,000/month and delivers 50 leads. We deliver 500+ scored leads — already enriched and ready to send.
+        - generic [ref=e137]: Zero-risk guarantee — less than 50 qualified leads in month 1? Month 2 is on us.
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e141]: ONE-TIME
+            - heading "DIY Setup" [level=3] [ref=e142]
+            - generic [ref=e143]: $1,500
+            - generic [ref=e144]: one-time setup fee
+            - paragraph [ref=e145]: We build and hand over the full n8n workflow. You run it yourself with your own API keys and Sales Navigator.
+            - list [ref=e146]:
+              - listitem [ref=e147]: ✓ Full n8n workflow built for you
+              - listitem [ref=e148]: ✓ Sales Navigator integration configured
+              - listitem [ref=e149]: ✓ Gemini AI scoring (7+ filter)
+              - listitem [ref=e150]: ✓ Google Sheets dashboard
+              - listitem [ref=e151]: ✓ Telegram alerts configured
+              - listitem [ref=e152]: ✓ 1-week email support post-handover
+              - listitem [ref=e153]: ✗ No AI icebreakers
+              - listitem [ref=e154]: ✗ No ongoing management
+            - link "Get the DIY Setup workflow — $1,500 one-time" [ref=e155] [cursor=pointer]:
+              - /url: /prospecting-os/book
+              - text: Get the Workflow
+          - generic [ref=e156]:
+            - generic [ref=e157]: MOST POPULAR
+            - heading "Managed Growth" [level=3] [ref=e158]
+            - generic [ref=e159]: $3,500
+            - generic [ref=e160]: per month
+            - paragraph [ref=e161]: Fully managed pipeline. We run everything — scraping, scoring, enrichment, and delivery. You just reply to hot leads.
+            - list [ref=e162]:
+              - listitem [ref=e163]: "✓ Everything in DIY Setup, plus:"
+              - listitem [ref=e164]: ✓ AI icebreaker per lead (unique, not templated)
+              - listitem [ref=e165]: ✓ Company & LinkedIn enrichment
+              - listitem [ref=e166]: ✓ Daily Slack digest with hot leads
+              - listitem [ref=e167]: ✓ Duplicate suppression across batches
+              - listitem [ref=e168]: ✓ Monthly ICP refinement call
+              - listitem [ref=e169]: ✓ Dedicated Slack channel with us
+              - listitem [ref=e170]: ✓ 500+ leads/month, 7+ score threshold
+            - link "Book a demo for Managed Growth AI prospecting" [ref=e171] [cursor=pointer]:
+              - /url: /prospecting-os/book
+              - text: Book a Demo
+          - generic [ref=e172]:
+            - generic [ref=e173]: ENTERPRISE
+            - heading "Managed Scale" [level=3] [ref=e174]
+            - generic [ref=e175]: $12,500
+            - generic [ref=e176]: per month
+            - paragraph [ref=e177]: Full AI outbound engine. Auto-sends cold emails, detects replies, syncs with your CRM, and A/B tests messaging — all autonomous.
+            - list [ref=e178]:
+              - listitem [ref=e179]: "✓ Everything in Managed Growth, plus:"
+              - listitem [ref=e180]: ✓ Automated cold email sending (warmed domain)
+              - listitem [ref=e181]: ✓ 3-touch follow-up sequences
+              - listitem [ref=e182]: ✓ AI reply detection & routing
+              - listitem [ref=e183]: ✓ HubSpot / Salesforce CRM sync
+              - listitem [ref=e184]: ✓ A/B message testing
+              - listitem [ref=e185]: ✓ Weekly performance report
+              - listitem [ref=e186]: ✓ Dedicated AI strategist (monthly call)
+            - button "Talk to us about the Managed Scale AI SDR plan" [ref=e187] [cursor=pointer]: Talk to Us
+        - paragraph [ref=e188]: All plans billed in USD. Setup fees non-refundable. Monthly plans cancel anytime with 14-day notice.
+    - generic [ref=e190]:
+      - generic [ref=e191] [cursor=pointer]:
+        - generic [ref=e192]: // Why Prospecting OS
+        - heading "The only option that thinks before it delivers." [level=2] [ref=e193]:
+          - text: The only option that
+          - emphasis [ref=e194]: thinks
+          - text: before it delivers.
+        - paragraph [ref=e195]: Other tools give you lists. We give you scored, enriched, icebreaker-ready leads — every morning.
+      - generic [ref=e196]:
+        - table [ref=e197]:
+          - rowgroup [ref=e198]:
+            - row "Feature Best value Prospecting OS In-house SDR Apollo.io Clay Uplead" [ref=e199]:
+              - columnheader "Feature" [ref=e200]
+              - columnheader "Best value Prospecting OS" [ref=e201]:
+                - generic [ref=e202]: Best value
+                - text: Prospecting OS
+              - columnheader "In-house SDR" [ref=e203]
+              - columnheader "Apollo.io" [ref=e204]
+              - columnheader "Clay" [ref=e205]
+              - columnheader "Uplead" [ref=e206]
+          - rowgroup [ref=e207]:
+            - row "Pricing $1,500 one-time / $3,500/mo $4,000–6,000/mo salary $99–$149/mo $149–$800/mo $99–$299/mo" [ref=e208]:
+              - cell "Pricing" [ref=e209]
+              - cell "$1,500 one-time / $3,500/mo" [ref=e210]
+              - cell "$4,000–6,000/mo salary" [ref=e211]
+              - cell "$99–$149/mo" [ref=e212]
+              - cell "$149–$800/mo" [ref=e213]
+              - cell "$99–$299/mo" [ref=e214]
+            - row "Lead volume 500+ / month 40–60 / month Unlimited export (no scoring) Unlimited (manual workflows) 200–1,000 / month" [ref=e215]:
+              - cell "Lead volume" [ref=e216]
+              - cell "500+ / month" [ref=e217]
+              - cell "40–60 / month" [ref=e218]
+              - cell "Unlimited export (no scoring)" [ref=e219]
+              - cell "Unlimited (manual workflows)" [ref=e220]
+              - cell "200–1,000 / month" [ref=e221]
+            - row "AI ICP scoring ✓ Gemini AI — 1–10 with reasoning ✗ Manual judgment ✗ No scoring ⚠ DIY via Clay AI ✗ No scoring" [ref=e222]:
+              - cell "AI ICP scoring" [ref=e223]
+              - cell "✓ Gemini AI — 1–10 with reasoning" [ref=e224]
+              - cell "✗ Manual judgment" [ref=e225]
+              - cell "✗ No scoring" [ref=e226]
+              - cell "⚠ DIY via Clay AI" [ref=e227]
+              - cell "✗ No scoring" [ref=e228]
+            - row "Personalized icebreaker ✓ Unique per lead, context-aware ⚠ Human-written, slow ✗ No ⚠ Template-based ✗ No" [ref=e229]:
+              - cell "Personalized icebreaker" [ref=e230]
+              - cell "✓ Unique per lead, context-aware" [ref=e231]
+              - cell "⚠ Human-written, slow" [ref=e232]
+              - cell "✗ No" [ref=e233]
+              - cell "⚠ Template-based" [ref=e234]
+              - cell "✗ No" [ref=e235]
+            - row "Company enrichment ✓ News, funding, LinkedIn, tech stack ⚠ Inconsistent ⚠ Basic firmographics ✓ Via integrations ⚠ Basic firmographics" [ref=e236]:
+              - cell "Company enrichment" [ref=e237]
+              - cell "✓ News, funding, LinkedIn, tech stack" [ref=e238]
+              - cell "⚠ Inconsistent" [ref=e239]
+              - cell "⚠ Basic firmographics" [ref=e240]
+              - cell "✓ Via integrations" [ref=e241]
+              - cell "⚠ Basic firmographics" [ref=e242]
+            - row "Daily Slack/Telegram delivery ✓ Hot leads every morning by 8 AM ✗ Manual reporting ✗ No ✗ No ✗ No" [ref=e243]:
+              - cell "Daily Slack/Telegram delivery" [ref=e244]
+              - cell "✓ Hot leads every morning by 8 AM" [ref=e245]
+              - cell "✗ Manual reporting" [ref=e246]
+              - cell "✗ No" [ref=e247]
+              - cell "✗ No" [ref=e248]
+              - cell "✗ No" [ref=e249]
+            - row "No-hire required ✓ Zero headcount ✗ Full hire + ramp + benefits ✓ ✓ But high setup time ✓" [ref=e250]:
+              - cell "No-hire required" [ref=e251]
+              - cell "✓ Zero headcount" [ref=e252]
+              - cell "✗ Full hire + ramp + benefits" [ref=e253]
+              - cell "✓" [ref=e254]
+              - cell "✓ But high setup time" [ref=e255]
+              - cell "✓" [ref=e256]
+            - row "Setup time 4 hours (DIY) / 2–3 days (Managed) 30–90 days (hire + ramp) Immediate 1–4 weeks (complex) Immediate" [ref=e257]:
+              - cell "Setup time" [ref=e258]
+              - cell "4 hours (DIY) / 2–3 days (Managed)" [ref=e259]
+              - cell "30–90 days (hire + ramp)" [ref=e260]
+              - cell "Immediate" [ref=e261]
+              - cell "1–4 weeks (complex)" [ref=e262]
+              - cell "Immediate" [ref=e263]
+            - row "Data privacy ✓ Your Google Sheet — we never store N/A ⚠ Apollo stores all data ⚠ Clay stores all data ⚠ Uplead stores all data" [ref=e264]:
+              - cell "Data privacy" [ref=e265]
+              - cell "✓ Your Google Sheet — we never store" [ref=e266]
+              - cell "N/A" [ref=e267]
+              - cell "⚠ Apollo stores all data" [ref=e268]
+              - cell "⚠ Clay stores all data" [ref=e269]
+              - cell "⚠ Uplead stores all data" [ref=e270]
+            - row "Performance guarantee ✓ 50 leads or month 2 free ✗ No guarantee ✗ No ✗ No ✗ No" [ref=e271]:
+              - cell "Performance guarantee" [ref=e272]
+              - cell "✓ 50 leads or month 2 free" [ref=e273]
+              - cell "✗ No guarantee" [ref=e274]
+              - cell "✗ No" [ref=e275]
+              - cell "✗ No" [ref=e276]
+              - cell "✗ No" [ref=e277]
+        - link "Book a Demo — Start Outperforming Apollo in Week 1 →" [ref=e279] [cursor=pointer]:
+          - /url: /prospecting-os/book
+    - region "Prospecting OS results — metrics and early access feedback" [ref=e280]:
+      - generic [ref=e281]:
+        - generic [ref=e282] [cursor=pointer]:
+          - generic [ref=e283]: // Results
+          - heading "What the system delivers" [level=2] [ref=e284]
+        - generic [ref=e285]:
+          - generic [ref=e286]:
+            - generic [ref=e287]: 500+
+            - generic [ref=e288]: leads scored per active client/month
+          - generic [ref=e289]:
+            - generic [ref=e290]: "8.5"
+            - generic [ref=e291]: average ICP match score (out of 10)
+          - generic [ref=e292]:
+            - generic [ref=e293]: ~4hrs
+            - generic [ref=e294]: average time to go live
+          - generic [ref=e295]:
+            - generic [ref=e296]: 97%
+            - generic [ref=e297]: reduction in manual prospecting time
+        - generic [ref=e298]:
+          - generic [ref=e299]: EARLY ACCESS FEEDBACK
+          - generic [ref=e300]:
+            - generic [ref=e301]:
+              - paragraph [ref=e302]:
+                - emphasis [ref=e303]: We ran this
+                - text: on 300 LinkedIn contacts from our saved search. 47 scored 7+. We'd been manually reviewing 300 contacts over 2 days. This did it in 40 minutes and the icebreakers were actually good.
+              - generic [ref=e304]:
+                - generic [ref=e305]: BU
+                - generic [ref=e306]: Beta user — B2B SaaS, Austin TX · Tested May 2026
+            - generic [ref=e307]:
+              - paragraph [ref=e308]:
+                - emphasis [ref=e309]: The scoring with reasoning
+                - text: was the thing I didn't expect. It's not just a number — it told me why this person was a 4 vs why that one was an 8. Changed how I think about ICP.
+              - generic [ref=e310]:
+                - generic [ref=e311]: GA
+                - generic [ref=e312]: Beta user — Growth agency, London UK · Tested April 2026
+            - generic [ref=e313]:
+              - paragraph [ref=e314]:
+                - emphasis [ref=e315]: Icebreaker quality
+                - text: surprised me. I've used Clay, Apollo outreach, all of them. These felt like I wrote them after 10 minutes of research on each person. Because the system actually did.
+              - generic [ref=e316]:
+                - generic [ref=e317]: CF
+                - generic [ref=e318]: Beta user — Consulting firm, Singapore · Tested May 2026
+        - generic [ref=e319]:
+          - paragraph [ref=e320]: Want to be in the next cohort?
+          - link "Apply for Beta Access" [ref=e321] [cursor=pointer]:
+            - /url: /prospecting-os/book
+    - generic [ref=e323]:
+      - generic [ref=e324] [cursor=pointer]:
+        - generic [ref=e325]: // Free Sample
+        - heading "See exactly what you'd receive. Before you pay." [level=2] [ref=e326]:
+          - text: See exactly what you'd receive.
+          - emphasis [ref=e327]: Before you pay.
+        - paragraph [ref=e328]: Enter your email and industry — we'll send you 5 real AI-scored leads with icebreakers for your niche. No card. No demo call required.
+      - generic [ref=e329]:
+        - generic [ref=e330]:
+          - textbox "your@email.com" [ref=e331]
+          - combobox [ref=e332] [cursor=pointer]:
+            - option "Your industry" [selected]
+            - option "SaaS"
+            - option "Digital Agency"
+            - option "E-commerce"
+            - option "Consulting"
+            - option "Recruitment"
+            - option "Professional Services"
+            - option "FinTech"
+            - option "HealthTech"
+            - option "Other"
+        - button "Send Me a Sample Report →" [disabled] [ref=e333]
+      - paragraph [ref=e334]: No spam. One email. Unsubscribe anytime.
+    - region "ROI calculator — calculate your AI prospecting return" [ref=e335]:
+      - generic [ref=e336]:
+        - generic [ref=e337] [cursor=pointer]:
+          - generic [ref=e338]: // ROI Calculator
+          - heading "The math doesn't lie" [level=2] [ref=e339]
+          - paragraph [ref=e340]: Tell us how your team prospects today. We'll show you exactly what you're leaving on the table.
+        - generic [ref=e341]:
+          - generic [ref=e342]:
+            - generic [ref=e343]:
+              - generic [ref=e344]:
+                - generic [ref=e345]: Hours/week spent on manual prospecting
+                - generic [ref=e346]: 15 hrs/week
+              - slider "Hours per week on manual prospecting" [ref=e347] [cursor=pointer]: "15"
+            - generic [ref=e348]:
+              - generic [ref=e349]:
+                - generic [ref=e350]: Your hourly rate (or team cost)
+                - generic [ref=e351]: $75/hr
+              - slider "Hourly rate" [ref=e352] [cursor=pointer]: "75"
+            - generic [ref=e353]:
+              - generic [ref=e354]:
+                - generic [ref=e355]: Meetings booked per week (current)
+                - generic [ref=e356]: 5 meetings/week
+              - slider "Meetings booked per week" [ref=e357] [cursor=pointer]: "5"
+            - generic [ref=e358]:
+              - generic [ref=e359]:
+                - generic [ref=e360]: Average deal value
+                - generic [ref=e361]: $8,000
+              - slider "Average deal value" [ref=e362] [cursor=pointer]: "8000"
+          - generic [ref=e363]:
+            - generic [ref=e364]: YOUR CURRENT STATE
+            - generic [ref=e365]:
+              - generic [ref=e366]: Monthly cost of manual prospecting
+              - generic [ref=e367]: $4,871 / month
+              - generic [ref=e368]: 65 hrs/month × $75/hr
+            - generic [ref=e369]:
+              - generic [ref=e370]: Leads researched manually per month
+              - generic [ref=e371]: ~260 leads/month
+              - generic [ref=e372]: at your current booking rate
+            - generic [ref=e374]: WITH PROSPECTING OS
+            - generic [ref=e375]:
+              - generic [ref=e376]: AI-scored leads delivered
+              - generic [ref=e377]: 500+ / month
+              - generic [ref=e378]: all 7+ ICP score, enriched, icebreaker included
+            - generic [ref=e379]:
+              - generic [ref=e380]: Additional revenue opportunity/month
+              - generic [ref=e381]: $115,129 / month
+              - generic [ref=e382]: at 3% close rate on 500 scored leads
+            - generic [ref=e383]:
+              - generic [ref=e384]: ROI vs Managed Growth plan ($3,500/mo)
+              - generic [ref=e385]: 34.3x
+              - generic [ref=e386]: return on investment
+            - link "Book a Demo — See Your Custom Pipeline" [ref=e387] [cursor=pointer]:
+              - /url: /prospecting-os/book
+            - paragraph [ref=e388]: Revenue projections are estimates based on industry-average close rates. Actual results vary by ICP, offer, and outreach quality.
+    - region "Frequently asked questions about AI B2B lead generation" [ref=e389]:
+      - generic [ref=e390]:
+        - generic [ref=e391] [cursor=pointer]:
+          - generic [ref=e392]: // FAQ
+          - heading "Got questions? We've got answers." [level=2] [ref=e393]
+          - paragraph [ref=e394]: Everything you need to know before committing a dollar.
+        - generic [ref=e395]:
+          - button "All" [ref=e396] [cursor=pointer]
+          - button "Setup & Pricing" [ref=e397] [cursor=pointer]
+          - button "Results & Data" [ref=e398] [cursor=pointer]
+        - generic [ref=e399]:
+          - generic [ref=e400]:
+            - button "Do I need a LinkedIn Sales Navigator subscription?" [ref=e401] [cursor=pointer]:
+              - text: Do I need a LinkedIn Sales Navigator subscription?
+              - generic [ref=e402]: +
+            - paragraph [ref=e403]: Yes — LinkedIn Sales Navigator is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.
+          - generic [ref=e404]:
+            - button "How long does it take to go live?" [ref=e405] [cursor=pointer]:
+              - text: How long does it take to go live?
+              - generic [ref=e406]: +
+            - paragraph [ref=e407]: "DIY Setup: 4–6 hours from payment to live pipeline. Managed Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Managed Scale: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration."
+          - generic [ref=e408]:
+            - button "What industries does AI B2B lead generation work for?" [ref=e409] [cursor=pointer]:
+              - text: What industries does AI B2B lead generation work for?
+              - generic [ref=e410]: +
+            - paragraph [ref=e411]: Prospecting OS works for any B2B business whose ideal clients are active on LinkedIn. It has been deployed for SaaS companies, digital agencies, management consultancies, professional services firms, and recruitment agencies in the US, UK, Australia, Singapore, Canada, and India. If your target buyer has a LinkedIn profile, the system works.
+          - generic [ref=e412]:
+            - button "Will automated LinkedIn prospecting get my domain blacklisted?" [ref=e413] [cursor=pointer]:
+              - text: Will automated LinkedIn prospecting get my domain blacklisted?
+              - generic [ref=e414]: +
+            - paragraph [ref=e415]: No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Managed Scale plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.
+          - generic [ref=e416]:
+            - button "What is the performance guarantee?" [ref=e417] [cursor=pointer]:
+              - text: What is the performance guarantee?
+              - generic [ref=e418]: +
+            - paragraph [ref=e419]:
+              - text: "On the Managed Growth plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked."
+              - link "Compare Prospecting OS pricing plans" [ref=e420] [cursor=pointer]:
+                - /url: "#pricing"
+                - text: Compare all plans →
+          - generic [ref=e421]:
+            - button "Can I upgrade from DIY Setup to Managed Growth later?" [ref=e422] [cursor=pointer]:
+              - text: Can I upgrade from DIY Setup to Managed Growth later?
+              - generic [ref=e423]: +
+            - paragraph [ref=e424]: Yes. Upgrades are seamless — no migration, no rebuild. The Managed Growth features are activated on your existing n8n workflow. You only pay the difference in plan cost from the upgrade date.
+          - generic [ref=e425]:
+            - button "What is an AI SDR and how is it different from hiring a human SDR?" [ref=e426] [cursor=pointer]:
+              - text: What is an AI SDR and how is it different from hiring a human SDR?
+              - generic [ref=e427]: +
+            - paragraph [ref=e428]: An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Managed Growth plan at $3,500/month — running 24/7, with no sick days, no training ramp, and no turnover.
+          - generic [ref=e429]:
+            - button "Does Prospecting OS integrate with HubSpot or other CRMs?" [ref=e430] [cursor=pointer]:
+              - text: Does Prospecting OS integrate with HubSpot or other CRMs?
+              - generic [ref=e431]: +
+            - paragraph [ref=e432]: Yes, on the Managed Scale plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.
+          - generic [ref=e433]:
+            - button "Does this work for clients outside the US and UK?" [ref=e434] [cursor=pointer]:
+              - text: Does this work for clients outside the US and UK?
+              - generic [ref=e435]: +
+            - paragraph [ref=e436]: Yes — Sales Navigator is global. We've run pipelines targeting APAC, EMEA, and LATAM. The ICP scoring and icebreaker generation work regardless of geography. The only constraint is that your target clients need a LinkedIn presence.
+          - generic [ref=e437]:
+            - button "Who owns the lead data?" [ref=e438] [cursor=pointer]:
+              - text: Who owns the lead data?
+              - generic [ref=e439]: +
+            - paragraph [ref=e440]: You do. All leads are delivered to your own Google Sheet — we never store, sell, or access your lead data outside of the active pipeline run. For Managed Growth and Scale plans, your data lives in your workspace, not ours.
+          - generic [ref=e441]:
+            - button "Can I see a sample output before buying?" [ref=e442] [cursor=pointer]:
+              - text: Can I see a sample output before buying?
+              - generic [ref=e443]: +
+            - paragraph [ref=e444]: Yes — book a demo call and we'll walk you through a live run on 50 contacts from your ICP. You'll see the scoring logic, a real icebreaker output, and the Slack delivery format before you commit.
+    - region "Book a demo — start your AI prospecting pipeline" [ref=e445]:
+      - generic [ref=e447]:
+        - generic [ref=e450]: LIVE · 47 leads scored this week
+        - heading "Stop hunting. Start closing." [level=2] [ref=e451]:
+          - generic [ref=e452]: Stop hunting.
+          - generic [ref=e453]: Start closing.
+        - paragraph [ref=e454]: Your ideal clients are on LinkedIn right now — 500+ of them, every week. Our AI finds them, scores them against your ICP, writes their icebreaker, and drops them in your Slack before your morning coffee.
+        - generic [ref=e455]:
+          - link "Book a free demo — see your custom AI prospecting pipeline" [ref=e456] [cursor=pointer]:
+            - /url: /prospecting-os/book
+            - text: Book a Free Demo
+          - link "See how it works" [ref=e457] [cursor=pointer]:
+            - /url: "#how-it-works"
+        - generic [ref=e458]:
+          - generic [ref=e459]:
+            - generic [ref=e460]: ✓
+            - text: No contract — cancel anytime
+          - generic [ref=e461]:
+            - generic [ref=e462]: ✓
+            - text: Results in 4 hours or less
+          - generic [ref=e463]:
+            - generic [ref=e464]: ✓
+            - text: 50 leads guaranteed in month 1
+        - paragraph [ref=e465]:
+          - text: Not ready to book?
+          - button "Chat with Pros Bot →" [ref=e466] [cursor=pointer]
+          - text: — it answers everything.
+    - contentinfo "Prospecting OS footer" [ref=e467]:
+      - generic [ref=e468]:
+        - paragraph [ref=e469]:
+          - text: © 2026
+          - link "Flow-Forges AI automation agency" [ref=e470] [cursor=pointer]:
+            - /url: https://flow-forges.com
+            - text: Flow-Forges
+          - text: · Prospecting OS — AI-Powered B2B Lead Generation System
+        - navigation "Footer navigation" [ref=e471]:
+          - link "How It Works" [ref=e472] [cursor=pointer]:
+            - /url: "#how-it-works"
+          - link "Pricing" [ref=e473] [cursor=pointer]:
+            - /url: "#pricing"
+          - link "FAQ" [ref=e474] [cursor=pointer]:
+            - /url: "#faq"
+          - link "Book a free B2B prospecting strategy call" [ref=e475] [cursor=pointer]:
+            - /url: /prospecting-os/book
+            - text: Book a Call
+          - link "Flow-Forges — AI automation agency for B2B businesses" [ref=e476] [cursor=pointer]:
+            - /url: https://flow-forges.com
+            - text: Flow-Forges.com
+        - paragraph [ref=e477]: Prospecting OS is a productized AI system built on n8n, Gemini AI, and LinkedIn Sales Navigator. Results vary based on ICP configuration and industry. Pro plan includes a 50-lead/month performance guarantee.
+    - generic [ref=e478]:
+      - button "Open chat" [ref=e479] [cursor=pointer]:
+        - img [ref=e480]
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - generic: Pros Bot
+            - generic: Online — replies instantly
+          - button "Close chat":
+            - img
+        - generic:
+          - generic:
+            - generic:
+              - text: Hi! I'm
+              - strong: Pros Bot
+              - text: 👋 — the Prospecting OS AI assistant. I can tell you how the AI lead generation pipeline works, explain pricing plans, or book you a free strategy call. What would you like to know?
+            - generic:
+              - button "How does the AI scoring work?":
+                - img
+                - text: How does the AI scoring work?
+              - button "What does Pro plan include?":
+                - img
+                - text: What does Pro plan include?
+              - button "Book a Free Strategy Call":
+                - img
+                - text: Book a Free Strategy Call
+              - button "How fast can I go live?"
+        - generic:
+          - textbox "Type your message..."
+          - button "Send message":
+            - img
+  - alert [ref=e482]

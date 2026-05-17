@@ -96,3 +96,40 @@ export async function GET(
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  const role = req.headers.get("x-user-role");
+  if (role !== "super_admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: { enabled?: boolean; config?: Record<string, unknown> };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (typeof body.enabled === "boolean") updates.enabled = body.enabled;
+  if (body.config && typeof body.config === "object") updates.config = body.config;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("agents")
+    .update(updates)
+    .eq("name", params.slug)
+    .select()
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+
+  return NextResponse.json({ agent: data });
+}

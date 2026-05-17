@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "Prospecting OS" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - text: Prospecting
+          - generic [ref=e9]: OS
+        - generic [ref=e10]:
+          - generic [ref=e11]: "|"
+          - generic [ref=e12]: "1"
+          - generic [ref=e13]: Type
+          - generic [ref=e14]: →
+          - generic [ref=e15]: "2"
+          - generic [ref=e16]: Date
+          - generic [ref=e17]: →
+          - generic [ref=e18]: "3"
+          - generic [ref=e19]: Time
+          - generic [ref=e20]: →
+          - generic [ref=e21]: "4"
+          - generic [ref=e22]: Details
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: Book a Demo
+          - heading "Schedule Your Demo" [level=1] [ref=e28]
+          - paragraph [ref=e29]: See how Prospecting OS finds 500+ qualified leads every month — in a 20-minute walkthrough.
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - heading "Choose Your Meeting Type" [level=2] [ref=e32]
+            - paragraph [ref=e33]: Select the type of session that best fits your needs.
+            - generic [ref=e34]:
+              - button "15 min Discovery Call Quick intro to see if we're a fit" [ref=e35] [cursor=pointer]:
+                - generic [ref=e36]:
+                  - img [ref=e38]
+                  - generic [ref=e41]: 15 min
+                - heading "Discovery Call" [level=3] [ref=e42]
+                - paragraph [ref=e43]: Quick intro to see if we're a fit
+              - button "30 min Product Demo Full platform walkthrough with your use case" [ref=e44] [cursor=pointer]:
+                - generic [ref=e45]:
+                  - img [ref=e47]
+                  - generic [ref=e49]: 30 min
+                - heading "Product Demo" [level=3] [ref=e50]
+                - paragraph [ref=e51]: Full platform walkthrough with your use case
+              - button "45 min Technical Deep-Dive Architecture, integrations, and security" [ref=e52] [cursor=pointer]:
+                - generic [ref=e53]:
+                  - img [ref=e55]
+                  - generic [ref=e58]: 45 min
+                - heading "Technical Deep-Dive" [level=3] [ref=e59]
+                - paragraph [ref=e60]: Architecture, integrations, and security
+              - button "60 min Strategy Session Custom ICP + pipeline design workshop" [ref=e61] [cursor=pointer]:
+                - generic [ref=e62]:
+                  - img [ref=e64]
+                  - generic [ref=e67]: 60 min
+                - heading "Strategy Session" [level=3] [ref=e68]
+                - paragraph [ref=e69]: Custom ICP + pipeline design workshop
+          - button "Continue with Product Demo" [ref=e70] [cursor=pointer]:
+            - text: Continue with Product Demo
+            - img [ref=e71]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - img [ref=e75]
+          - generic [ref=e77]: Book via Chat
+          - generic [ref=e78]: AI
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - img [ref=e83]
+            - generic [ref=e85]:
+              - generic [ref=e86]: Pros Bot
+              - generic [ref=e87]: Online — replies instantly
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - text: Hi! I'm
+              - strong [ref=e93]: Pros Bot
+              - text: . Let's book your demo! First, what type of meeting are you looking for?
+            - generic [ref=e94]:
+              - button "Discovery Call (15 min)" [ref=e95] [cursor=pointer]
+              - button "Product Demo (30 min)" [ref=e96] [cursor=pointer]
+              - button "Technical Deep-Dive (45 min)" [ref=e97] [cursor=pointer]
+              - button "Strategy Session (60 min)" [ref=e98] [cursor=pointer]
+          - generic [ref=e99]:
+            - textbox "Type your message..." [ref=e100]
+            - button [ref=e101] [cursor=pointer]:
+              - img [ref=e102]
+  - alert [ref=e105]

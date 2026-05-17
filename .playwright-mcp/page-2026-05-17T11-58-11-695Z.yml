@@ -1,0 +1,59 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic:
+          - generic:
+            - generic [ref=e6]: Prospecting
+            - generic [ref=e7]: OS
+      - generic [ref=e8]:
+        - button "Overview" [ref=e10] [cursor=pointer]:
+          - generic [ref=e11]: Overview
+          - img [ref=e13]
+        - button "Agent Workforce" [ref=e16] [cursor=pointer]:
+          - generic [ref=e17]: Agent Workforce
+          - img [ref=e19]
+        - button "AI Studio" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: AI Studio
+          - img [ref=e25]
+        - button "Pipeline" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: Pipeline
+          - img [ref=e31]
+        - button "Outreach" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: Outreach
+          - img [ref=e37]
+        - button "Operations" [ref=e40] [cursor=pointer]:
+          - generic [ref=e41]: Operations
+          - img [ref=e43]
+      - generic [ref=e45]:
+        - button "Agent" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - generic [ref=e49]: Agent
+        - button "Collapse" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - generic [ref=e53]: Collapse
+        - button "U User" [ref=e55] [cursor=pointer]:
+          - generic [ref=e57]: U
+          - generic [ref=e58]: User
+          - img [ref=e60]
+    - generic [ref=e64]:
+      - img [ref=e69]
+      - generic [ref=e71]:
+        - paragraph [ref=e72]: LinkedIn ProOS
+        - paragraph [ref=e73]: Loading your workspace…
+    - complementary:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - img [ref=e81]
+          - generic [ref=e83]: ProOS Agent
+        - button [ref=e85] [cursor=pointer]:
+          - img [ref=e86]
+      - paragraph [ref=e90]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e91]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e92]
+          - button [disabled] [ref=e93]:
+            - img [ref=e94]
+        - paragraph [ref=e97]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e98]

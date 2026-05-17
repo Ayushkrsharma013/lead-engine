@@ -1,0 +1,78 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e7]: // Powered by Gemini 2.5 Flash
+      - heading "Write a cold email icebreaker that actually gets replies." [level=1] [ref=e8]:
+        - text: Write a cold email icebreaker
+        - emphasis [ref=e9]: that actually gets replies.
+      - paragraph [ref=e10]: Enter your prospect's info. Gemini AI reads their context and writes a unique, context-specific opening line — not a template.
+      - paragraph [ref=e11]: 3 free generations · No signup required · Results in under 5 seconds
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - paragraph [ref=e16]: // Prospect info
+        - generic [ref=e17]:
+          - generic [ref=e18]: Prospect name *
+          - textbox "Alex Morrison" [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]: Their job title *
+          - textbox "VP of Marketing" [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: Company *
+          - textbox "GrowthStack Inc" [ref=e25]
+        - generic [ref=e26]:
+          - generic [ref=e27]: Industry
+          - combobox [ref=e28] [cursor=pointer]:
+            - option "Select industry" [selected]
+            - option "SaaS"
+            - option "Digital Agency"
+            - option "E-commerce"
+            - option "FinTech"
+            - option "HealthTech"
+            - option "Consulting"
+            - option "Recruitment"
+            - option "Other"
+        - generic [ref=e29]:
+          - generic [ref=e30]: Recent activity (post, news, funding, job posting...)
+          - 'textbox "e.g. They just posted about scaling their CS team after a Series B. Or: Recently hired 3 SDRs." [ref=e31]'
+        - generic [ref=e32]:
+          - generic [ref=e33]: What you're offering
+          - textbox "AI-powered B2B lead generation pipeline" [ref=e34]
+        - generic [ref=e35]:
+          - generic [ref=e36]: Tone
+          - generic [ref=e37]:
+            - button "Professional" [ref=e38] [cursor=pointer]
+            - button "Conversational" [ref=e39] [cursor=pointer]
+            - button "Direct" [ref=e40] [cursor=pointer]
+        - paragraph [ref=e42]: 3 free generations remaining
+        - button "Generate Icebreaker →" [ref=e47] [cursor=pointer]
+      - generic [ref=e48]:
+        - paragraph [ref=e49]: // Output
+        - paragraph [ref=e51]:
+          - text: Your icebreaker will appear here.
+          - text: Fill in the form and hit Generate.
+    - generic [ref=e53]:
+      - paragraph [ref=e54]: // How it works
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57]: "01"
+          - paragraph [ref=e58]: Enter prospect context
+          - paragraph [ref=e59]: Add their name, title, company, and any recent activity you've spotted — a post, news article, or job opening.
+        - generic [ref=e60]:
+          - generic [ref=e61]: "02"
+          - paragraph [ref=e62]: Gemini reads the room
+          - paragraph [ref=e63]: Our AI synthesizes their context and generates an opening line that references something real about them — never a template.
+        - generic [ref=e64]:
+          - generic [ref=e65]: "03"
+          - paragraph [ref=e66]: Copy and send
+          - paragraph [ref=e67]: Your icebreaker is ready in under 5 seconds. Copy it directly into LinkedIn or your cold email tool.
+    - generic [ref=e69]:
+      - paragraph [ref=e70]:
+        - text: Need this for
+        - emphasis [ref=e71]: 500 leads a month?
+      - paragraph [ref=e72]: Prospecting OS generates personalized icebreakers for your entire pipeline automatically — every lead enriched and outreach-ready, delivered daily.
+      - generic [ref=e73]:
+        - link "Book a Free Demo →" [ref=e74] [cursor=pointer]:
+          - /url: /prospecting-os/book
+        - link "Or get 50 leads audited free →" [ref=e75] [cursor=pointer]:
+          - /url: /prospecting-os/tools/free-audit
+  - alert [ref=e76]

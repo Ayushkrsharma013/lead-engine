@@ -1,0 +1,61 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img "Prospecting OS" [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]: Prospecting
+          - generic [ref=e9]: OS
+      - generic [ref=e10]:
+        - button "Overview" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: Overview
+          - img [ref=e15]
+        - button "Agent Workforce" [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: Agent Workforce
+          - img [ref=e21]
+        - button "AI Studio" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: AI Studio
+          - img [ref=e27]
+        - button "Pipeline" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: Pipeline
+          - img [ref=e33]
+        - button "Outreach" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: Outreach
+          - img [ref=e39]
+        - button "Operations" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: Operations
+          - img [ref=e45]
+      - generic [ref=e47]:
+        - button "Agent" [ref=e48] [cursor=pointer]:
+          - img [ref=e49]
+          - generic [ref=e51]: Agent
+        - button "Collapse" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - generic [ref=e55]: Collapse
+        - button "U User" [ref=e57] [cursor=pointer]:
+          - generic [ref=e59]: U
+          - generic [ref=e60]: User
+          - img [ref=e62]
+    - generic [ref=e66]:
+      - heading "404" [level=1] [ref=e67]
+      - heading "This page could not be found." [level=2] [ref=e69]
+    - complementary:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - img [ref=e73]
+          - generic [ref=e75]: ProOS Agent
+        - button [ref=e77] [cursor=pointer]:
+          - img [ref=e78]
+      - paragraph [ref=e82]: Ask me anything about your pipeline, leads, or what to do next.
+      - generic [ref=e83]:
+        - generic:
+          - textbox "Ask anything... (/help)" [ref=e84]
+          - button [disabled] [ref=e85]:
+            - img [ref=e86]
+        - paragraph [ref=e89]: Cmd+J to toggle · Gemini-powered
+  - alert [ref=e90]
+  - generic [ref=e93] [cursor=pointer]:
+    - img [ref=e94]
+    - generic [ref=e96]: 1 error
+    - button "Hide Errors" [ref=e97]:
+      - img [ref=e98]
