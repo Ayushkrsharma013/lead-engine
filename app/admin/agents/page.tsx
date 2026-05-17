@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -26,7 +26,6 @@ interface AgentRunRow {
   safe_actions_count: number; risky_actions_queued: number; log: string;
 }
 
-// Each agent gets a distinct accent from the brand palette
 const AGENT_COLORS: Record<string, string> = {
   "data-janitor": "#6BCB77",
   "lead-scout": "#E8A840",
@@ -77,7 +76,6 @@ const relativeTime = (ts: string) => {
   return `${days}d ago`;
 };
 
-// Live clock hook
 function useClock() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -87,23 +85,8 @@ function useClock() {
   return time;
 }
 
-// Circular health ring
-function HealthRing({ pct, color, size = 52, strokeW = 4 }: { pct: number; color: string; size?: number; strokeW?: number }) {
-  const r = (size - strokeW) / 2;
-  const circ = 2 * Math.PI * r;
-  const off = circ - (Math.min(100, Math.max(0, pct)) / 100) * circ;
-  const iconSize = size * 0.38;
-  return (
-    <div style={{ position: "relative", width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={strokeW} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={strokeW}
-          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}
-          style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-      </svg>
-    </div>
-  );
-}
+const cardBorder = "rgba(201,168,124,0.07)";
+const cardBorderHover = "rgba(201,168,124,0.16)";
 
 export default function AgentCommandCenter() {
   const router = useRouter();
@@ -114,7 +97,6 @@ export default function AgentCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
-  const [pulseTick, setPulseTick] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -132,18 +114,10 @@ export default function AgentCommandCenter() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  // Auto-refresh every 30s
   useEffect(() => {
     const id = setInterval(fetchData, 30000);
     return () => clearInterval(id);
   }, [fetchData]);
-
-  // Pulse animation tick
-  useEffect(() => {
-    const id = setInterval(() => setPulseTick((t) => t + 1), 2000);
-    return () => clearInterval(id);
-  }, []);
 
   const handleRunAll = async () => {
     setRunning(true);
@@ -169,35 +143,28 @@ export default function AgentCommandCenter() {
   }
 
   return (
-    <div style={{ padding: "24px", maxWidth: 1320, margin: "0 auto", fontFamily: "Geist, sans-serif" }}>
-      {error && (
-        <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(224,96,96,0.08)", border: "1px solid rgba(224,96,96,0.15)", color: "#E06060", fontSize: 12, marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
-
-      {/* ── Top Bar ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+    <>
+      {/* TopBar — matching dashboard layout */}
+      <div
+        className="flex items-center justify-between shrink-0"
+        style={{
+          height: 56,
+          padding: "0 24px",
+          borderBottom: "1px solid var(--line)",
+          background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.4) 100%)",
+        }}
+      >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--ink)", margin: 0, letterSpacing: "-0.03em" }}>
-              Agent Command Center
-            </h1>
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: "2px 10px", borderRadius: 9999,
-              background: "rgba(107,203,119,0.10)", color: "#6BCB77",
-              border: "1px solid rgba(107,203,119,0.18)",
-              animation: pulseTick % 2 === 0 ? "none" : "pulse 2s ease-in-out",
-            }}>
-              LIVE
-            </span>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "2px 0 0" }}>
-            {enabled.length}/{agents.length} online &middot; {pendingActions.length} pending &middot; {runs.length} runs recorded
+          <h1 className="text-[15px] font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+            <Cpu size={16} style={{ display: "inline", marginRight: 8, verticalAlign: -2, color: "var(--accent)" }} />
+            Agent Workforce
+          </h1>
+          <p className="text-[11px]" style={{ color: "var(--ink-4)", marginTop: 1 }}>
+            {enabled.length}/{agents.length} online &middot; {pendingActions.length} pending &middot; {runs.length} runs
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", fontFamily: "monospace", letterSpacing: "0.04em" }}>
+          <span className="text-[13px] font-semibold tabular-nums" style={{ color: "var(--ink-2)", fontFamily: "monospace", letterSpacing: "0.04em" }}>
             {clock.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
           </span>
           <button onClick={handleRunAll} disabled={running} style={{
@@ -212,208 +179,229 @@ export default function AgentCommandCenter() {
         </div>
       </div>
 
-      {/* ── Agent Grid ── */}
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        Digital Workforce
-      </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, marginBottom: 28 }}>
-        {agents.map((agent) => {
-          const color = AGENT_COLORS[agent.name] || "var(--accent)";
-          const Icon = AGENT_ICONS[agent.name] || Bot;
-          const lastRun = runs.find((r) => r.agent_name === agent.name);
-          return (
-            <div
-              key={agent.id}
-              onClick={() => router.push(`/admin/agents/${agent.name}`)}
-              style={{
-                padding: "16px 18px", borderRadius: 12, cursor: "pointer",
-                background: "var(--surface)", border: "1px solid var(--line)",
-                opacity: agent.enabled ? 1 : 0.45,
-                transition: "border-color 0.2s, transform 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${color}30`;
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--line)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                {/* Health ring + icon */}
-                <div style={{ position: "relative", flexShrink: 0 }}>
-                  <HealthRing pct={agent.health_score} color={color} size={52} />
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={20} style={{ color: agent.enabled ? color : "var(--ink-4)" }} />
-                  </div>
-                </div>
+      {/* Content — matching dashboard scroll area */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {error && (
+          <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(224,96,96,0.08)", border: "1px solid rgba(224,96,96,0.15)", color: "#E06060", fontSize: 12 }}>
+            {error}
+          </div>
+        )}
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{agent.display_name}</span>
-                    {/* Status dot with pulse */}
-                    <span style={{
-                      width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                      background: agent.enabled ? color : "#555",
-                      boxShadow: agent.enabled ? `0 0 6px ${color}60` : "none",
-                      animation: agent.enabled && pulseTick % 2 === 0 ? "pulse-dot 2s ease-in-out" : "none",
-                    }} />
+        {/* Agent Grid — GraphCard-style cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: 12 }}>
+          {agents.map((agent) => {
+            const color = AGENT_COLORS[agent.name] || "var(--accent)";
+            const Icon = AGENT_ICONS[agent.name] || Bot;
+            const r = 22;
+            const circ = 2 * Math.PI * r;
+            const off = circ - (Math.min(100, Math.max(0, agent.health_score)) / 100) * circ;
+
+            return (
+              <div
+                key={agent.id}
+                onClick={() => router.push(`/admin/agents/${agent.name}`)}
+                className="rounded-xl p-5 flex flex-col transition-all duration-250 cursor-pointer group"
+                style={{
+                  background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)",
+                  border: `1px solid ${cardBorder}`,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                  opacity: agent.enabled ? 1 : 0.45,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = cardBorderHover;
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(201,168,124,0.06)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = cardBorder;
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                {/* Header row */}
+                <div className="flex items-center justify-between mb-3">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-[0.14em] select-none"
+                    style={{ color: "var(--ink-4)", opacity: 0.50 }}
+                  >
+                    {agent.display_name}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {agent.auto_approve_level !== "off" && (
-                      <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 9999, background: "rgba(59,130,246,0.10)", color: "#3b82f6", fontWeight: 600 }}>
+                      <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 9999, background: "rgba(59,130,246,0.10)", color: "#3b82f6" }}>
                         Auto-{agent.auto_approve_level}
                       </span>
                     )}
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--ink-4)", fontFamily: "monospace", marginBottom: 4 }}>
-                    {agent.schedule}
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--ink-3)", lineHeight: 1.4, marginBottom: 6 }}>
-                    {agent.description}
-                  </div>
-
-                  {/* Health bar */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ flex: 1, height: 3, borderRadius: 2, background: "var(--surface-2)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 2, transition: "width 0.5s", width: `${agent.health_score}%`, background: color }} />
+                    <div
+                      className="w-6 h-6 rounded-lg flex items-center justify-center"
+                      style={{ background: "rgba(201,168,124,0.06)", border: "1px solid rgba(201,168,124,0.10)" }}
+                    >
+                      <Icon size={12} style={{ color: agent.enabled ? color : "var(--ink-4)" }} />
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 700, color, width: 32, textAlign: "right" }}>
-                      {agent.health_score}
-                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Last run footer */}
-              <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, fontSize: 10 }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: statusDot(agent.last_run_status) }} />
-                <span style={{ color: "var(--ink-4)" }}>
-                  {agent.last_run_status === "success" ? "Healthy" :
-                   agent.last_run_status === "failed" ? "Failed" :
-                   agent.last_run_status === "partial" ? "Partial" :
-                   agent.last_run_status === "skipped" ? "Skipped" :
-                   agent.last_run_status ? agent.last_run_status : "Never run"}
-                </span>
-                {agent.consecutive_failures > 0 && (
-                  <span style={{ color: "#E06060", fontWeight: 600, marginLeft: "auto" }}>
-                    {agent.consecutive_failures}f
-                  </span>
-                )}
-                {lastRun && (
-                  <span style={{ color: "var(--ink-4)", marginLeft: "auto" }}>
-                    {relativeTime(lastRun.started_at)}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Pending Approvals ── */}
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        Pending Approvals ({pendingActions.length})
-      </h2>
-      {pendingActions.length === 0 ? (
-        <div style={{ padding: "18px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)", fontSize: 12, color: "var(--ink-3)", textAlign: "center", marginBottom: 28 }}>
-          <Check size={18} style={{ display: "block", margin: "0 auto 6", color: "#6BCB77" }} />
-          All clear
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 28 }}>
-          {pendingActions.map((a) => (
-            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)" }}>
-              <AlertTriangle size={16} style={{ color: riskColor(a.risk_level), flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{a.description}</div>
-                <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <span>{a.agent_name}</span>
-                  <span style={{ padding: "1px 6px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span>
-                  <span>{relativeTime(a.created_at)}</span>
-                  {a.notified_via?.length > 0 && <span>{a.notified_via.join(", ")}</span>}
+                {/* Health ring + value */}
+                <div className="flex items-center gap-4 mb-2">
+                  <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
+                    <svg width={52} height={52} style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx={26} cy={26} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={3} />
+                      <circle cx={26} cy={26} r={r} fill="none" stroke={color} strokeWidth={3}
+                        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}
+                        style={{ transition: "stroke-dashoffset 0.8s ease" }} />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span className="text-[11px] font-bold tabular-nums" style={{ color }}>
+                        {agent.health_score}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[24px] font-bold tabular-nums leading-none" style={{ color: "var(--ink)" }}>
+                      {agent.health_score}/100
+                    </div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "var(--ink-4)", fontFamily: "monospace" }}>
+                      {agent.schedule}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* ── Notification Log ── */}
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        Notification Log ({notifActions.length})
-      </h2>
-      {notifActions.length === 0 ? (
-        <div style={{ padding: "14px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)", fontSize: 12, color: "var(--ink-3)", textAlign: "center", marginBottom: 28 }}>
-          No notifications yet
-        </div>
-      ) : (
-        <div style={{ marginBottom: 28, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--line)" }}>
-                {["Action", "Agent", "Status", "Risk", "Channel", "Time"].map((h) => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {notifActions.slice(0, 20).map((a) => (
-                <tr key={a.id} style={{ borderBottom: "1px solid var(--line)" }}>
-                  <td style={{ padding: "8px 12px", fontSize: 12, color: "var(--ink)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.description}</td>
-                  <td style={{ padding: "8px 12px", fontSize: 11, color: "var(--ink-3)", fontFamily: "monospace" }}>{a.agent_name}</td>
-                  <td style={{ padding: "8px 12px" }}><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${actionStatusColor(a.status)}15`, color: actionStatusColor(a.status) }}>{a.status}</span></td>
-                  <td style={{ padding: "8px 12px" }}><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span></td>
-                  <td style={{ padding: "8px 12px", fontSize: 10, color: "var(--ink-3)" }}>{a.notified_via?.join(", ") || "—"}</td>
-                  <td style={{ padding: "8px 12px", fontSize: 10, color: "var(--ink-4)" }}>{relativeTime(a.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                {/* Description */}
+                <p className="text-[11px] mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.4 }}>
+                  {agent.description}
+                </p>
 
-      {/* ── Activity Feed ── */}
-      <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        Activity Feed ({latestRuns.length})
-      </h2>
-      {latestRuns.length === 0 ? (
-        <div style={{ padding: "20px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)", fontSize: 12, color: "var(--ink-3)", textAlign: "center" }}>
-          <Clock size={18} style={{ display: "block", margin: "0 auto 8", color: "var(--ink-4)" }} />
-          No runs yet. First cron at 7 AM or click "Run All Now"
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {latestRuns.map((run) => {
-            const color = AGENT_COLORS[run.agent_name] || "var(--accent)";
-            return (
-              <div key={run.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 16px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusDot(run.outcome), marginTop: 4, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: color, fontFamily: "monospace" }}>{run.agent_name}</span>
-                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${statusDot(run.outcome)}15`, color: statusDot(run.outcome) }}>{run.outcome}</span>
-                    {run.duration_ms && <span style={{ fontSize: 10, color: "var(--ink-4)" }}>{(run.duration_ms / 1000).toFixed(1)}s</span>}
-                  </div>
-                  {run.log && <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 3 }}>{run.log.slice(0, 120)}{run.log.length > 120 ? "..." : ""}</div>}
-                  <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 4, display: "flex", gap: 12 }}>
-                    <span>{run.safe_actions_count} safe</span>
-                    <span>{run.risky_actions_queued} queued</span>
-                    <span>{relativeTime(run.started_at)}</span>
-                  </div>
+                {/* Status footer */}
+                <div className="flex items-center gap-2 mt-auto text-[10px]" style={{ color: "var(--ink-4)" }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: statusDot(agent.last_run_status), flexShrink: 0 }} />
+                  <span>
+                    {agent.last_run_status === "success" ? "Healthy" :
+                     agent.last_run_status === "failed" ? "Failed" :
+                     agent.last_run_status === "partial" ? "Partial" :
+                     agent.last_run_status ? agent.last_run_status : "Never run"}
+                  </span>
+                  {agent.consecutive_failures > 0 && (
+                    <span style={{ color: "#E06060", fontWeight: 600, marginLeft: "auto" }}>{agent.consecutive_failures}f</span>
+                  )}
+                  {agent.last_run_at && (
+                    <span style={{ marginLeft: "auto" }}>{relativeTime(agent.last_run_at)}</span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-      )}
 
-      {/* Pulse animation styles */}
-      <style jsx>{`
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.4); }
-        }
-      `}</style>
-    </div>
+        {/* Pending Approvals */}
+        <div className="rounded-xl p-5 transition-all duration-250"
+          style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Pending Approvals ({pendingActions.length})
+            </span>
+          </div>
+          {pendingActions.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>
+              <Check size={18} style={{ display: "block", margin: "0 auto 6", color: "#6BCB77" }} />
+              All clear
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {pendingActions.map((a) => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 10, background: "var(--surface-2)", border: "1px solid var(--line)" }}>
+                  <AlertTriangle size={16} style={{ color: riskColor(a.risk_level), flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{a.description}</div>
+                    <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <span>{a.agent_name}</span>
+                      <span style={{ padding: "1px 6px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span>
+                      <span>{relativeTime(a.created_at)}</span>
+                      {a.notified_via?.length > 0 && <span>{a.notified_via.join(", ")}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Notification Log */}
+        <div className="rounded-xl p-5 transition-all duration-250"
+          style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Notification Log ({notifActions.length})
+            </span>
+          </div>
+          {notifActions.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>No notifications yet</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--line)" }}>
+                    {["Action", "Agent", "Status", "Risk", "Channel", "Time"].map((h) => (
+                      <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {notifActions.slice(0, 20).map((a) => (
+                    <tr key={a.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                      <td style={{ padding: "8px 12px", fontSize: 12, color: "var(--ink)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.description}</td>
+                      <td style={{ padding: "8px 12px", fontSize: 11, color: "var(--ink-3)", fontFamily: "monospace" }}>{a.agent_name}</td>
+                      <td style={{ padding: "8px 12px" }}><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${actionStatusColor(a.status)}15`, color: actionStatusColor(a.status) }}>{a.status}</span></td>
+                      <td style={{ padding: "8px 12px" }}><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${riskColor(a.risk_level)}15`, color: riskColor(a.risk_level) }}>{a.risk_level}</span></td>
+                      <td style={{ padding: "8px 12px", fontSize: 10, color: "var(--ink-3)" }}>{a.notified_via?.join(", ") || "—"}</td>
+                      <td style={{ padding: "8px 12px", fontSize: 10, color: "var(--ink-4)" }}>{relativeTime(a.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Activity Feed */}
+        <div className="rounded-xl p-5 transition-all duration-250"
+          style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Activity Feed ({latestRuns.length})
+            </span>
+          </div>
+          {latestRuns.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>
+              <Clock size={18} style={{ display: "block", margin: "0 auto 8", color: "var(--ink-4)" }} />
+              No runs yet. First cron at 7 AM or click "Run All Now"
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {latestRuns.map((run) => {
+                const color = AGENT_COLORS[run.agent_name] || "var(--accent)";
+                return (
+                  <div key={run.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 14px", borderRadius: 10, background: "var(--surface-2)", border: "1px solid var(--line)" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusDot(run.outcome), marginTop: 4, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color, fontFamily: "monospace" }}>{run.agent_name}</span>
+                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: `${statusDot(run.outcome)}15`, color: statusDot(run.outcome) }}>{run.outcome}</span>
+                        {run.duration_ms && <span style={{ fontSize: 10, color: "var(--ink-4)" }}>{(run.duration_ms / 1000).toFixed(1)}s</span>}
+                      </div>
+                      {run.log && <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 3 }}>{run.log.slice(0, 120)}{run.log.length > 120 ? "..." : ""}</div>}
+                      <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 4, display: "flex", gap: 12 }}>
+                        <span>{run.safe_actions_count} safe</span>
+                        <span>{run.risky_actions_queued} queued</span>
+                        <span>{relativeTime(run.started_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

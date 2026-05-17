@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,9 +11,9 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
   Sparkles, Send, Bot, UserPlus, Zap, Cpu, Shield,
   HardDrive, Search, Workflow, BarChart3, FileText,
+  Sun, Moon, LogOut, User, ChevronUp,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
-import ThemeToggle from "./ThemeToggle";
 import { createClient } from "@/lib/supabase/client";
 import type { ModuleName } from "@/lib/types";
 
@@ -254,6 +254,21 @@ export default function ProSidebar() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipY, setTooltipY] = useState(0);
   const [userRole, setUserRole] = useState<string>("user");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState<{ email: string; name: string; avatar: string | null } | null>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile drawer on outside click
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [profileOpen]);
 
   // Track open section IDs — overlay and ai-studio start collapsed if inactive
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
@@ -280,14 +295,26 @@ export default function ProSidebar() {
     });
   }, [pathname]);
 
-  // Fetch user role
+  // Fetch user role + profile
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
+      try {
+        const { data } = await supabase.from("profiles").select("role, email, display_name, avatar_url").eq("id", user.id).single();
         if (data?.role) setUserRole(data.role as string);
-      });
+        setProfile({
+          email: data?.email || user.email || "",
+          name: data?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          avatar: data?.avatar_url || null,
+        });
+      } catch {
+        setProfile({
+          email: user.email || "",
+          name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+          avatar: null,
+        });
+      }
     });
   }, []);
 
@@ -435,68 +462,164 @@ export default function ProSidebar() {
         />
         <SidebarBottomButton
           collapsed={collapsed}
-          active={pathname === "/settings"}
-          icon={Settings2}
-          label="Settings"
-          onClick={() => router.push("/settings")}
-        />
-        <SidebarBottomButton
-          collapsed={collapsed}
           active={false}
           icon={collapsed ? ChevronRight : ChevronLeft}
           label="Collapse"
           onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
         />
 
-        {/* Theme toggle */}
-        <div
-          className="flex items-center py-0.5 rounded-lg mx-1.5 transition-colors duration-200"
-          style={{
-            paddingLeft: collapsed ? 0 : 12,
-            justifyContent: collapsed ? "center" : "flex-start",
-            height: 36,
-            width: collapsed ? 36 : undefined,
-            margin: collapsed ? "0 auto" : undefined,
-          }}
-        >
-          <ThemeToggle />
-          <AnimatePresence>
+        {/* Profile Section with Dropup Drawer */}
+        <div ref={profileRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setProfileOpen(!profileOpen)}
+            className="flex items-center gap-2.5 rounded-lg transition-all duration-200 w-full group"
+            style={{
+              height: 36,
+              justifyContent: collapsed ? "center" : "flex-start",
+              paddingLeft: collapsed ? 0 : 12,
+              width: collapsed ? 36 : "calc(100% - 12px)",
+              margin: collapsed ? "0 auto" : "0 6px",
+              background: profileOpen ? "rgba(232,168,64,0.08)" : "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            {/* Avatar */}
+            <div
+              className="shrink-0 rounded-full flex items-center justify-center"
+              style={{
+                width: 22, height: 22,
+                background: "linear-gradient(135deg, rgba(232,168,64,0.20), rgba(232,168,64,0.08))",
+                border: "1px solid rgba(232,168,64,0.25)",
+              }}
+            >
+              {profile?.avatar ? (
+                <img src={profile.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", lineHeight: 1 }}>
+                  {profile?.name?.charAt(0)?.toUpperCase() || "U"}
+                </span>
+              )}
+            </div>
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="text-[12px] font-medium whitespace-nowrap truncate"
+                  style={{ color: profileOpen ? "var(--accent)" : "var(--ink-3)", flex: 1, textAlign: "left" }}
+                >
+                  {profile?.name || "User"}
+                </motion.span>
+              )}
+            </AnimatePresence>
             {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -4 }}
-                className="ml-1.5 text-[11px] select-none"
-                style={{ color: "var(--ink-4)" }}
+              <motion.div
+                animate={{ rotate: profileOpen ? 180 : 0 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                style={{ opacity: profileOpen ? 0.7 : 0.3, marginRight: 4 }}
               >
-                Toggle theme
-              </motion.span>
+                <ChevronUp size={10} />
+              </motion.div>
+            )}
+          </button>
+
+          {/* Profile Dropup Drawer */}
+          <AnimatePresence>
+            {profileOpen && !collapsed && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scaleY: 0.8 }}
+                animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                exit={{ opacity: 0, y: 8, scaleY: 0.8 }}
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  position: "absolute",
+                  bottom: "100%",
+                  left: 6,
+                  right: 6,
+                  marginBottom: 6,
+                  padding: "10px",
+                  borderRadius: 12,
+                  background: "var(--surface-elev)",
+                  border: "1px solid var(--line)",
+                  boxShadow: "var(--shadow-lg)",
+                  transformOrigin: "bottom",
+                  zIndex: 100,
+                }}
+              >
+                {/* Profile info */}
+                <div style={{ padding: "8px 10px", marginBottom: 6, borderRadius: 8, background: "var(--surface-2)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)" }}>
+                    {profile?.name || "User"}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 1 }}>
+                    {profile?.email || ""}
+                  </div>
+                  <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
+                    <span style={{
+                      fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 9999,
+                      background: "rgba(232,168,64,0.10)", color: "var(--accent)",
+                      border: "1px solid rgba(232,168,64,0.15)",
+                    }}>
+                      {userRole === "super_admin" ? "Super Admin" : userRole === "client" ? "Client" : "User"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {/* Settings */}
+                  <button
+                    onClick={() => { setProfileOpen(false); router.push("/settings"); }}
+                    className="flex items-center gap-2.5 rounded-lg transition-colors duration-150 w-full"
+                    style={{
+                      height: 34, padding: "0 10px", background: pathname === "/settings" ? "rgba(232,168,64,0.08)" : "transparent",
+                      border: "none", cursor: "pointer", color: pathname === "/settings" ? "var(--accent)" : "var(--ink-3)",
+                    }}
+                  >
+                    <Settings2 size={14} />
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>Settings</span>
+                  </button>
+
+                  {/* Theme toggle */}
+                  <button
+                    onClick={() => dispatch({ type: "SET_THEME", payload: state.theme === "dark" ? "light" : "dark" })}
+                    className="flex items-center gap-2.5 rounded-lg transition-colors duration-150 w-full"
+                    style={{
+                      height: 34, padding: "0 10px", background: "transparent",
+                      border: "none", cursor: "pointer", color: "var(--ink-3)",
+                    }}
+                  >
+                    {state.theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>
+                      {state.theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </span>
+                  </button>
+
+                  {/* Logout */}
+                  <div style={{ marginTop: 2, paddingTop: 4, borderTop: "1px solid var(--line)" }}>
+                    <button
+                      onClick={() => {
+                        const supabase = createClient();
+                        supabase.auth.signOut().then(() => router.push("/login"));
+                      }}
+                      className="flex items-center gap-2.5 rounded-lg transition-colors duration-150 w-full"
+                      style={{
+                        height: 34, padding: "0 10px", background: "transparent",
+                        border: "none", cursor: "pointer", color: "#E06060",
+                      }}
+                    >
+                      <LogOut size={14} />
+                      <span style={{ fontSize: 12, fontWeight: 500 }}>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Version badge */}
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-4 pt-0.5 pb-1"
-            >
-              <span
-                className="text-[10px] px-2 py-0.5 rounded-full font-medium inline-block select-none"
-                style={{
-                  background: "rgba(232,168,64,0.06)",
-                  color: "var(--ink-4)",
-                  border: "1px solid var(--sidebar-border)",
-                }}
-              >
-                ProOS v1.0
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Elbow tree connector styles */}
@@ -505,33 +628,50 @@ export default function ProSidebar() {
           position: relative;
           padding-left: 18px;
         }
-        /* Vertical trunk line */
+        /* Vertical trunk — gradient matching hover accent */
         .tree-section::before {
           content: '';
           position: absolute;
-          left: 8px;
+          left: 7px;
           top: 2px;
           bottom: 8px;
-          width: 1px;
-          background: var(--line);
+          width: 2px;
+          background: linear-gradient(
+            180deg,
+            rgba(232,168,64,0.15) 0%,
+            rgba(232,168,64,0.06) 60%,
+            rgba(232,168,64,0.02) 100%
+          );
+          border-radius: 1px;
         }
-        /* Horizontal branch for each tree item */
+        /* Smooth elbow branch — border-left + border-bottom with radius */
         .tree-item {
           position: relative;
         }
         .tree-item::before {
           content: '';
           position: absolute;
-          left: -10px;
-          top: 18px;
+          left: -11px;
+          top: 12px;
           width: 10px;
-          height: 1px;
-          background: var(--line);
+          height: 12px;
+          border-left: 2px solid rgba(232,168,64,0.12);
+          border-bottom: 2px solid rgba(232,168,64,0.12);
+          border-radius: 0 0 0 7px;
         }
-        /* Active tree item: accent-colored branch */
-        .tree-item:has(a [class*="relative"])::before,
-        .tree-item:has(a > div[style*="accent"])::before {
-          background: var(--accent-soft);
+        /* Last item — shorter vertical line (stop at elbow junction) */
+        .tree-item-last::after {
+          content: '';
+          position: absolute;
+          left: 7px;
+          top: 24px;
+          bottom: 0;
+          width: 2px;
+          background: var(--sidebar-bg);
+        }
+        /* Active / hover treatment to make branches more visible */
+        .tree-item:hover::before {
+          border-color: rgba(232,168,64,0.28);
         }
       `}</style>
 
