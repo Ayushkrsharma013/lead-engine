@@ -1,32 +1,11 @@
 // app/admin/agents/page.tsx
 import { supabaseAdmin } from "@/lib/supabase";
-import { headers } from "next/headers";
 import type { AgentRow, AgentActionRow, AgentRunRow } from "@/lib/agents/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  // Auth check — read x-user-id from middleware, verify role via supabaseAdmin
-  const hdrs = await headers();
-  const userId = hdrs.get("x-user-id");
-  let role = "user";
-
-  if (userId) {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
-    role = profile?.role || "user";
-  }
-
-  if (role !== "super_admin") {
-    return (
-      <div style={{ padding: "40px", color: "#E06060", fontFamily: "monospace" }}>
-        Access denied. Super admin only.
-      </div>
-    );
-  }
+  // Auth is handled by middleware.ts — /admin/* is super_admin only
 
   // Fetch all data in parallel
   const [agentsRes, actionsRes, runsRes] = await Promise.all([
