@@ -340,7 +340,7 @@ export default function DashboardPage() {
   const [apptsLoading, setApptsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/appointments")
+    fetch("/prospecting-os/api/appointments")
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setAppointments(d); })
       .catch(() => {})
