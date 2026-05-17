@@ -61,7 +61,7 @@ export interface AgentActionRow {
   description: string;
   payload: Record<string, unknown>;
   risk_level: "safe_notify" | "medium" | "high";
-  status: "pending" | "approved" | "rejected" | "executed" | "notified";
+  status: "pending" | "approved" | "rejected" | "executed" | "notified" | "failed";
   notified_via: string[];
   telegram_msg_id: string | null;
   approved_by: string | null;
