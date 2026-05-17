@@ -631,8 +631,8 @@ export default function ProgressPage() {
 
         {/* ─── Agentic Workforce ──────────────────────────────────── */}
         <Section
-          title="Agentic Workforce — Phase 1"
-          count={`${liveAgents}/${AGENT_ROSTER.length} live · ${agentTasksDone}/${AGENT_TASKS.length} tasks done`}
+          title="Agentic Workforce — Phase 1-3"
+          count={`${liveAgents}/${AGENT_ROSTER.length} live · coordinated via knowledge store`}
         >
           {/* Architecture */}
           <div
@@ -936,6 +936,52 @@ Vercel Cron (6 AM) ──▶ /api/agents/digest ──▶ Resend HTML email
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Phase 3 knowledge coordination summary */}
+          <h3
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: ink2,
+              marginBottom: 12,
+              marginTop: 24,
+            }}
+          >
+            Phase 3 — Shared Knowledge Store
+          </h3>
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 10,
+              background: surface,
+              border: `1px solid ${line}`,
+              fontFamily: "'Geist Mono', monospace",
+              fontSize: 10,
+              lineHeight: 1.7,
+              color: ink3,
+              marginBottom: 16,
+            }}
+          >
+            {`knowledge_store
+  ├── min_score_threshold   ← icp-analyst    → lead-scout, outreach-agent
+  ├── hot_lead_threshold    ← lead-scout     → outreach-agent
+  ├── high_perf_industries  ← icp-analyst    → lead-scout
+  ├── top_lead_sources      ← icp-analyst    → lead-scout
+  ├── best_template_ids     ← message-coach  → outreach-agent
+  ├── best_tone             ← message-coach  → (dashboard)
+  ├── worst_templates       ← message-coach  → (dashboard)
+  ├── qualified_lead_count  ← outreach-agent → pipeline-manager
+  ├── follow_up_count       ← outreach-agent → pipeline-manager
+  ├── follow_up_window_days ← outreach-agent → (dashboard)
+  ├── column_distribution   ← pipeline-mgr   → icp-analyst
+  ├── stuck_lead_patterns   ← pipeline-mgr   → (dashboard)
+  ├── stale_window_days     ← data-janitor   → pipeline-manager
+  ├── dup_email_domains     ← data-janitor   → (dashboard)
+  ├── at_risk_clients       ← client-reporter→ finance-watcher
+  ├── weekly_lead_count     ← client-reporter→ (dashboard)
+  ├── active_client_count   ← client-reporter→ finance-watcher
+  ├── new_leads_today       ← lead-scout     → client-reporter
+  └── total_hot_leads       ← lead-scout     → (dashboard)`}
           </div>
         </Section>
 
