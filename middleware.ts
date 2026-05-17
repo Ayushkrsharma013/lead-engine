@@ -71,6 +71,7 @@ export async function middleware(req: NextRequest) {
     "/onboarding",
     "/checkout",
     "/tools",
+    "/progress",
   ];
 
   const isPublicRoute = publicRoutes.some((route) => {
