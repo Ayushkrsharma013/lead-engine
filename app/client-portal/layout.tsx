@@ -32,16 +32,22 @@ export default function ClientPortalLayout({ children }: { children: React.React
 
   useEffect(() => {
     async function init() {
+      // Don't check auth on the login page itself
+      if (pathname === "/client-portal/login") {
+        setLoading(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/prospecting-os/client-portal/login"); return; }
+      if (!user) { router.replace("/client-portal/login"); return; }
 
       const res = await fetch("/prospecting-os/api/client-portal/me");
-      if (!res.ok) { router.replace("/prospecting-os/client-portal/login"); return; }
+      if (!res.ok) { router.replace("/client-portal/login"); return; }
       const data = await res.json();
       const prof = data.profile as UserProfile;
 
       if (prof.role !== "client" && prof.role !== "qa_agent" && prof.role !== "super_admin") {
-        router.replace("/prospecting-os/dashboard");
+        router.replace("/dashboard");
         return;
       }
 
@@ -54,7 +60,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.replace("/prospecting-os/client-portal/login");
+    router.replace("/client-portal/login");
   };
 
   if (loading) {
@@ -63,6 +69,11 @@ export default function ClientPortalLayout({ children }: { children: React.React
         <span className="w-5 h-5 border-2 border-white/[0.10] border-t-[#E8A840] rounded-full animate-spin" />
       </div>
     );
+  }
+
+  // Login page renders clean — no sidebar chrome
+  if (pathname === "/client-portal/login") {
+    return <>{children}</>;
   }
 
   const visibleNav = CLIENT_NAV.filter(item =>
