@@ -101,7 +101,7 @@ async function sendTelegramText(text: string): Promise<void> {
   }).catch(() => undefined);
 }
 
-export async function runAgentBatch(): Promise<void> {
+export async function runAgentBatch(singleAgentName?: string): Promise<void> {
   // Phase 4 guardrails — trust check, anomaly detection, auto-approve ladder
   const guardrails = await runGuardrails();
   if (!guardrails.passed && guardrails.autoDisabled.length > 0) {
@@ -110,7 +110,14 @@ export async function runAgentBatch(): Promise<void> {
 
   const batchRunId = crypto.randomUUID();
   const enabledAgentMap = await getEnabledAgents();
-  const toRun = AGENT_REGISTRY.filter(a => enabledAgentMap.has(a.name));
+  const toRun = AGENT_REGISTRY.filter(a =>
+    enabledAgentMap.has(a.name) &&
+    (!singleAgentName || a.name === singleAgentName)
+  );
+
+  if (singleAgentName && toRun.length === 0) {
+    throw new Error(`Agent "${singleAgentName}" not found or not enabled`);
+  }
 
   if (toRun.length === 0) return;
 

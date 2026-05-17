@@ -14,9 +14,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const agentName = req.nextUrl.searchParams.get("agent") ?? undefined;
+
   try {
-    await runAgentBatch();
-    return NextResponse.json({ ok: true, ts: new Date().toISOString() });
+    await runAgentBatch(agentName);
+    return NextResponse.json({ ok: true, agent: agentName ?? "all", ts: new Date().toISOString() });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[agents/run] Batch failed:", message);
