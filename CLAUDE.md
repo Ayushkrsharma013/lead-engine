@@ -1191,10 +1191,34 @@ New DB columns added to `agents` table:
 
 ---
 
+---
+
+### 2026-05-17 — Integration Fix + Migration Sync
+
+**TypeScript strict errors fixed in `app/settings/page.tsx` (4 errors):**
+- `profile` is typed `Record<string, unknown> | null` — all field accesses return `unknown`
+- Fixed by wrapping with `String()`, `!!` coercion, and explicit `String()` for ReactNode contexts
+- Build: 0 errors, 59/59 pages
+
+**Missing migration files created** (production DB already had the columns/tables applied manually):
+- `supabase/migrations/20260517_phase3_knowledge_store.sql` — `knowledge_store` table + RLS (`96664ca` had no file)
+- `supabase/migrations/20260517_phase4_guardrails.sql` — `agents.auto_approve_level` + `agents.consecutive_failures` columns (Phase 4 had no file)
+- Commit: `1c572a2` — repo migrations now fully in sync with production schema `tbsqpnqzpbnilifhwvgr`
+
+**Migration files in repo (5 total):**
+```
+supabase/migrations/20260516200000_audit_requests.sql
+supabase/migrations/20260516200001_tool_rate_limits.sql
+supabase/migrations/20260517_agentic_workforce.sql
+supabase/migrations/20260517_phase3_knowledge_store.sql
+supabase/migrations/20260517_phase4_guardrails.sql
+```
+
+---
+
 ### Future enhancements (not yet planned)
 
 - CRM integrations (HubSpot/Salesforce) — deferred, build in-house instead
-
 - OpenOutreach sequence integration — connect LinkedIn steps to the engine
 - Email open/bounce tracking via Resend webhooks
 - Automated winner selection in A/B testing
