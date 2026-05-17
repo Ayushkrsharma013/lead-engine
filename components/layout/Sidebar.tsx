@@ -44,6 +44,14 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: "agent-workforce",
+    label: "Agent Workforce",
+    items: [
+      { id: "agents-command", module: "agent", label: "Command Center", icon: Cpu, href: "/admin/agents" },
+      { id: "agent-finance", module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
+    ],
+  },
+  {
     id: "ai-studio",
     label: "AI Studio",
     items: [
@@ -285,10 +293,7 @@ export default function ProSidebar() {
   // Build dynamic sections
   const sections = NAV_SECTIONS.map((sec) => {
     if (sec.id === "operations") {
-      const items: NavItem[] = [
-        { id: "agent", module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
-        { id: "agents-command", module: "agent", label: "Agent Command", icon: Cpu, href: "/admin/agents" },
-      ];
+      const items: NavItem[] = [];
       if (userRole === "super_admin") {
         items.push({ id: "admin-users", module: "agent", label: "Users", icon: UserPlus, href: "/admin/users" });
       }
