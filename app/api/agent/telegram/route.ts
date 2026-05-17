@@ -262,11 +262,17 @@ export async function POST(req: Request) {
         const approved = m[1] === "approve_agent";
         const actionId = m[2];
         const approvedBy = cb.from.username ?? cb.from.first_name ?? "telegram-user";
-        try {
-          await resolveAgentAction(actionId, approved, approvedBy);
-          if (chatId) await sendMessage(chatId, `${approved ? "Approved" : "Rejected"} action ${actionId.slice(0, 8)}...`);
-        } catch (err) {
-          console.error("[telegram] resolveAgentAction failed:", err);
+        {
+          const result = await resolveAgentAction(actionId, approved, approvedBy).catch(err => ({
+            success: false,
+            message: err instanceof Error ? err.message : String(err),
+          }));
+          if (chatId) {
+            const label = result.success
+              ? `${approved ? "Approved" : "Rejected"} action ${actionId.slice(0, 8)}...`
+              : `Action ${actionId.slice(0, 8)}... — ${result.message}`;
+            await sendMessage(chatId, label);
+          }
         }
       }
 

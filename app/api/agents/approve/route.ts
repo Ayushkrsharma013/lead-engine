@@ -19,12 +19,14 @@ export async function GET(req: NextRequest) {
 
   const approved = decision === "approve";
 
-  try {
-    await resolveAgentAction(id, approved, "email-link");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  const result = await resolveAgentAction(id, approved, "email-link").catch(err => ({
+    success: false,
+    message: err instanceof Error ? err.message : String(err),
+  }));
+
+  if (!result.success) {
     return new NextResponse(
-      `<html><body style="font-family:sans-serif;padding:40px;text-align:center"><h2>Error</h2><p>${msg}</p></body></html>`,
+      `<html><body style="font-family:sans-serif;padding:40px;text-align:center;background:#000;color:#eee"><h2 style="color:#E06060">Error</h2><p style="color:#888">${result.message}</p></body></html>`,
       { headers: { "Content-Type": "text/html" }, status: 400 }
     );
   }
