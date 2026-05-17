@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
-  Cpu, Play, Check, X, Clock, RefreshCw, Bot, AlertTriangle,
+  Cpu, Play, Check, X, Clock, RefreshCw, Bot, AlertTriangle, TrendingUp,
   HardDrive, Search, Send, Workflow, BarChart3, FileText, MessageSquare,
 } from "lucide-react";
+import {
+  AreaChart, Area, XAxis, YAxis, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, CartesianGrid,
+} from "recharts";
 
 interface AgentRow {
   id: string; name: string; display_name: string; description: string;
@@ -134,6 +138,55 @@ export default function AgentCommandCenter() {
   const latestRuns = runs.slice(0, 20);
   const notifActions = actions.filter((a) => a.status !== "pending");
 
+  // ─── Chart data ──────────────────────────────────────────────────────────
+
+  const runsByDay = useMemo(() => {
+    const days: { day: string; count: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const end = new Date(d);
+      end.setDate(end.getDate() + 1);
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const count = runs.filter((r) => {
+        const ts = new Date(r.started_at);
+        return ts >= d && ts < end;
+      }).length;
+      days.push({ day: label, count });
+    }
+    return days;
+  }, [runs]);
+
+  const outcomeDist = useMemo(() => {
+    const outcomeColors: Record<string, string> = { success: "#6BCB77", failed: "#E06060", partial: "#E8A840", skipped: "#3b82f6" };
+    const counts: Record<string, number> = {};
+    runs.forEach((r) => { counts[r.outcome] = (counts[r.outcome] || 0) + 1; });
+    return Object.entries(counts).map(([name, count]) => ({ name, count, fill: outcomeColors[name] || "var(--ink-4)" }));
+  }, [runs]);
+
+  const actionDist = useMemo(() => {
+    const safe = runs.reduce((s, r) => s + (r.safe_actions_count || 0), 0);
+    const risky = runs.reduce((s, r) => s + (r.risky_actions_queued || 0), 0);
+    return [
+      { name: "Safe", count: safe, fill: "#6BCB77" },
+      { name: "Risky", count: risky, fill: "#E8A840" },
+    ];
+  }, [runs]);
+
+  const tooltipStyle = {
+    background: "var(--surface-elev)",
+    border: "1px solid var(--line)",
+    borderRadius: 8,
+    fontSize: 11,
+    color: "var(--ink)",
+    padding: "6px 10px",
+    boxShadow: "var(--shadow-md)",
+  };
+
+  const chartId = "agents";
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh" }}>
@@ -186,6 +239,123 @@ export default function AgentCommandCenter() {
             {error}
           </div>
         )}
+
+        {/* Chart Row — Weekly Runs + Outcomes + Actions */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 260px 220px", gap: 10 }}>
+          {/* Weekly Runs Area Chart */}
+          <div className="rounded-xl p-5 flex flex-col"
+            style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+                Weekly Runs
+              </span>
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(201,168,124,0.06)", border: "1px solid rgba(201,168,124,0.10)" }}>
+                <TrendingUp size={12} style={{ color: "var(--accent)" }} />
+              </div>
+            </div>
+            <div className="text-[28px] font-bold tabular-nums leading-none mt-1" style={{ color: "var(--ink)" }}>
+              {runs.length}
+            </div>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>total executions</p>
+            <div style={{ flex: 1, marginTop: 8, minHeight: 80 }}>
+              {runs.length > 0 ? (
+                <ResponsiveContainer width="100%" height={100}>
+                  <AreaChart data={runsByDay} margin={{ top: 4, right: 2, bottom: 0, left: -28 }}>
+                    <defs>
+                      <linearGradient id={`area-${chartId}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#C9A87C" stopOpacity={0.28} />
+                        <stop offset="100%" stopColor="#C9A87C" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} opacity={0.3} />
+                    <XAxis dataKey="day" tick={{ fontSize: 9, fill: "var(--ink-4)" }} axisLine={false} tickLine={false} />
+                    <YAxis hide domain={[0, "auto"]} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Area type="monotone" dataKey="count" stroke="#C9A87C" strokeWidth={1.5}
+                      fill={`url(#area-${chartId})`} dot={false} activeDot={{ r: 3, fill: "#C9A87C", stroke: "var(--bg)", strokeWidth: 1.5 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--ink-4)", fontSize: 11 }}>
+                  No data yet
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Outcome Donut */}
+          <div className="rounded-xl p-5 flex flex-col"
+            style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2 select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Outcomes
+            </span>
+            {outcomeDist.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={110}>
+                  <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                    <Pie data={outcomeDist} dataKey="count" nameKey="name" cx="50%" cy="50%"
+                      innerRadius={28} outerRadius={46} paddingAngle={3}>
+                      {outcomeDist.map((d, i) => (<Cell key={i} fill={d.fill} />))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {outcomeDist.map((d) => (
+                    <div key={d.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--ink-3)" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.fill, flexShrink: 0 }} />
+                        {d.name}
+                      </span>
+                      <span style={{ fontWeight: 600, color: "var(--ink-2)", fontVariantNumeric: "tabular-nums" }}>{d.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-4)", fontSize: 11 }}>
+                No runs yet
+              </div>
+            )}
+          </div>
+
+          {/* Action Balance Donut */}
+          <div className="rounded-xl p-5 flex flex-col"
+            style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: `1px solid ${cardBorder}`, boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2 select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
+              Action Balance
+            </span>
+            {actionDist.some((d) => d.count > 0) ? (
+              <>
+                <ResponsiveContainer width="100%" height={110}>
+                  <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                    <Pie data={actionDist} dataKey="count" nameKey="name" cx="50%" cy="50%"
+                      innerRadius={28} outerRadius={46} paddingAngle={3}>
+                      {actionDist.map((d, i) => (<Cell key={i} fill={d.fill} />))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {actionDist.map((d) => (
+                    <div key={d.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--ink-3)" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.fill, flexShrink: 0 }} />
+                        {d.name}
+                      </span>
+                      <span style={{ fontWeight: 600, color: "var(--ink-2)", fontVariantNumeric: "tabular-nums" }}>{d.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-4)", fontSize: 11 }}>
+                No actions yet
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Agent Grid — GraphCard-style cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: 12 }}>
