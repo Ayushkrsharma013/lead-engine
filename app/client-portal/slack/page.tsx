@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
+import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/lib/AppContext";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
 export default function ClientSlackPage() {
@@ -10,6 +12,7 @@ export default function ClientSlackPage() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { dispatch } = useApp();
 
   useEffect(() => {
     async function init() {
@@ -25,10 +28,19 @@ export default function ClientSlackPage() {
   }, []);
 
   const handleSave = async () => {
-    // Note: saving slack webhook to workspace would need an API route
-    // For now, store locally as a visual confirmation
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    if (!profile?.id || !webhookUrl.trim()) return;
+    const client = createClient();
+    const { error } = await client
+      .from("client_workspaces")
+      .update({ slack_webhook: webhookUrl })
+      .eq("client_user_id", profile.id);
+    if (error) {
+      dispatch({ type: "SET_TOAST", payload: { msg: "Failed to save webhook", type: "error" } });
+    } else {
+      setSaved(true);
+      dispatch({ type: "SET_TOAST", payload: { msg: "Webhook saved", type: "success" } });
+      setTimeout(() => setSaved(false), 3000);
+    }
   };
 
   if (loading) {
