@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
-  Sparkles, Send, Bot, UserPlus, Zap,
+  Sparkles, Send, Bot, UserPlus, Zap, Cpu,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -287,6 +287,7 @@ export default function ProSidebar() {
     if (sec.id === "operations") {
       const items: NavItem[] = [
         { id: "agent", module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
+        { id: "agents-command", module: "agent", label: "Agent Command", icon: Cpu, href: "/admin/agents" },
       ];
       if (userRole === "super_admin") {
         items.push({ id: "admin-users", module: "agent", label: "Users", icon: UserPlus, href: "/admin/users" });

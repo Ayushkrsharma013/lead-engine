@@ -143,7 +143,7 @@ const AGENT_TASKS: AgentTask[] = [
   { num: 8, task: "Telegram webhook callback_query handler (approve_agent/reject_agent)", done: true, commit: "8be44bd" },
   { num: 9, task: "/api/agents/digest daily email cron (6 AM)", done: true, commit: "383c6ec" },
   { num: 10, task: "/admin/agents Full Mission Control UI", done: true, commit: "50b95ef" },
-  { num: 11, task: "Sidebar link + vercel.json cron entries (7 AM run + 6 AM digest)", done: false },
+  { num: 11, task: "Sidebar link + vercel.json cron entries (7 AM run + 6 AM digest)", done: true, commit: "current" },
 ];
 
 const AGENT_ROSTER: AgentRosterEntry[] = [

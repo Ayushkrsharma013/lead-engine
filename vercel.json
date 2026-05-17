@@ -1,12 +1,20 @@
 {
   "crons": [
     {
+      "path": "/prospecting-os/api/agents/run",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/prospecting-os/api/cron/sequence-runner",
       "schedule": "0 8 * * *"
     },
     {
       "path": "/prospecting-os/api/agent/finance/cron",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/prospecting-os/api/agents/digest",
+      "schedule": "0 6 * * *"
     }
   ]
 }
