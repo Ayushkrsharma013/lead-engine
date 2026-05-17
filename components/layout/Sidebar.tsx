@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, MessageSquare, Target,
   GitBranch, KanbanSquare, BarChart2, Briefcase,
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
-  Sparkles, Send, Bot, UserPlus, Zap, Cpu,
+  Sparkles, Send, Bot, UserPlus, Zap, Cpu, Shield,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import ThemeToggle from "./ThemeToggle";
@@ -293,7 +293,9 @@ export default function ProSidebar() {
   // Build dynamic sections
   const sections = NAV_SECTIONS.map((sec) => {
     if (sec.id === "operations") {
-      const items: NavItem[] = [];
+      const items: NavItem[] = [
+        { id: "integrations", module: "settings", label: "Integrations", icon: Shield, href: "/integrations" },
+      ];
       if (userRole === "super_admin") {
         items.push({ id: "admin-users", module: "agent", label: "Users", icon: UserPlus, href: "/admin/users" });
       }

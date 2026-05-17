@@ -36,7 +36,7 @@ function LoadingScreen() {
 }
 
 const MARKETING_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/tools"];
-const CLEAN_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/client-portal", "/tools", "/progress"];
+const CLEAN_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/client-portal", "/tools", "/progress", "/integrations"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { state } = useApp();
