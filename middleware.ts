@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+  const requestHeaders = new Headers(req.headers);
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
   const path = req.nextUrl.pathname;
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
@@ -37,20 +38,20 @@ export async function middleware(req: NextRequest) {
         .single();
 
       if (profile) {
-        res.headers.set("x-user-id", profile.id);
-        res.headers.set("x-user-email", profile.email || "");
-        res.headers.set("x-user-name", profile.full_name || "");
-        res.headers.set("x-user-role", profile.role || "user");
+        requestHeaders.set("x-user-id", profile.id);
+        requestHeaders.set("x-user-email", profile.email || "");
+        requestHeaders.set("x-user-name", profile.full_name || "");
+        requestHeaders.set("x-user-role", profile.role || "user");
         if (profile.avatar_url) {
           res.headers.set("x-user-avatar", profile.avatar_url);
         }
         role = profile.role || "user";
       }
     } catch {
-      res.headers.set("x-user-id", user.id);
-      res.headers.set("x-user-email", user.email || "");
-      res.headers.set("x-user-name", user.user_metadata?.full_name || "");
-      res.headers.set("x-user-role", user.user_metadata?.role || "user");
+      requestHeaders.set("x-user-id", user.id);
+      requestHeaders.set("x-user-email", user.email || "");
+      requestHeaders.set("x-user-name", user.user_metadata?.full_name || "");
+      requestHeaders.set("x-user-role", user.user_metadata?.role || "user");
       role = user.user_metadata?.role || "user";
     }
   }
