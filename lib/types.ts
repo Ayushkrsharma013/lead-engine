@@ -342,3 +342,64 @@ export interface QASession {
   started_at: string
   ended_at: string | null
 }
+
+// ─── Invoice Agent ───────────────────────────────────────────────
+
+export interface InvoiceItem {
+  name: string;
+  qty: number;
+  unit: string;
+  cost: number;
+  amount: number;
+}
+
+export interface Invoice {
+  id: string;
+  user_id: string;
+  invoice_number: string;
+  client_name: string;
+  client_email: string | null;
+  client_billing_address: string | null;
+  issue_date: string;
+  due_date: string;
+  payment_terms: string;
+  items: InvoiceItem[];
+  discount: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+  tax_rate: number;
+  currency: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  notes: string | null;
+  billed_by_name: string;
+  billed_by_address: string;
+  bank_name: string;
+  bank_account_name: string;
+  bank_account_number: string;
+  sent_at: string | null;
+  paid_at: string | null;
+  reminder_count: number;
+  last_reminder_at: string | null;
+  ai_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceDraft {
+  client_name?: string;
+  client_email?: string;
+  client_billing_address?: string;
+  issue_date?: string;
+  due_date?: string;
+  payment_terms?: string;
+  items?: InvoiceItem[];
+  discount?: number;
+  notes?: string;
+  currency?: string;
+}
+
+export interface InvoiceAIMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

@@ -557,6 +557,25 @@ export async function sendClientCredentialsEmail(p: ClientCredentialsParams): Pr
   }
 }
 
+// ─── Invoice Agent Notifications ─────────────────────────────────────────────
+
+export async function notifyInvoiceEvent(
+  event: 'sent' | 'paid' | 'overdue' | 'reminder',
+  inv: { invoice_number: string; client_name: string; total: number; due_date: string }
+): Promise<void> {
+  const formatIDR = (n: number) => new Intl.NumberFormat('id-ID').format(n);
+  const emoji = { sent: '📨', paid: '✅', overdue: '⚠️', reminder: '🔔' }[event];
+  const label = { sent: 'Invoice Sent', paid: 'Invoice Paid', overdue: 'Invoice Overdue', reminder: 'Reminder Sent' }[event];
+
+  await notifyTelegram(
+    `${emoji} <b>${label}</b>\n` +
+    `Invoice: <code>${inv.invoice_number}</code>\n` +
+    `Client: ${inv.client_name}\n` +
+    `Amount: IDR ${formatIDR(inv.total)}\n` +
+    `Due: ${inv.due_date}`
+  );
+}
+
 // ─── Shared ──────────────────────────────────────────────────────────────────
 
 function row(label: string, value: string): string {

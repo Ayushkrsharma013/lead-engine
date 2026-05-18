@@ -332,6 +332,7 @@ export default function ProSidebar() {
     if (sec.id === "operations") {
       const items: NavItem[] = [
         { id: "integrations", module: "settings", label: "Integrations", icon: Shield, href: "/integrations" },
+        { id: "invoice-agent", module: "settings", label: "Invoice Agent", icon: FileText, href: "/invoice" },
       ];
       if (userRole === "super_admin") {
         items.push({ id: "admin-users", module: "agent", label: "Users", icon: UserPlus, href: "/admin/users" });

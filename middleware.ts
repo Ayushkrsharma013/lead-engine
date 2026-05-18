@@ -139,6 +139,7 @@ export async function middleware(req: NextRequest) {
     "/dashboard", "/leads", "/message-lab", "/scorer",
     "/sequences", "/kanban", "/analytics", "/clients",
     "/outreach", "/settings", "/agent", "/admin", "/client-portal",
+    "/invoice",
   ];
 
   const isProtected = protectedPrefixes.some((prefix) =>

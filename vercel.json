@@ -37,6 +37,10 @@
     {
       "path": "/prospecting-os/api/agent/finance/cron",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/prospecting-os/api/cron/invoice-agent",
+      "schedule": "0 10 * * *"
     }
   ]
 }

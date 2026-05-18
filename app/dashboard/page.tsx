@@ -13,6 +13,7 @@ import {
   PieChart, Pie, Cell, Tooltip, CartesianGrid,
 } from "recharts";
 import TopBar from "@/components/layout/TopBar";
+import InvoicePanel from "@/components/invoice/InvoicePanel";
 import { useApp } from "@/lib/AppContext";
 import { generateCSV } from "@/lib/storage";
 import type { Lead, Message, ActivityLogEntry } from "@/lib/types";
@@ -676,7 +677,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ── Row 4: Quick Actions ── */}
+        {/* ── Row 4: Invoice Panel ── */}
+        <InvoicePanel />
+
+        {/* ── Row 5: Quick Actions ── */}
         <div
           className="rounded-xl p-4 flex items-center gap-3"
           style={{
