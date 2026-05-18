@@ -1,4 +1,18 @@
 {
+  "rewrites": [
+    {
+      "source": "/mailflow",
+      "destination": "https://mailflow-swart.vercel.app/mailflow"
+    },
+    {
+      "source": "/mailflow/",
+      "destination": "https://mailflow-swart.vercel.app/mailflow/"
+    },
+    {
+      "source": "/mailflow/:path*",
+      "destination": "https://mailflow-swart.vercel.app/mailflow/:path*"
+    }
+  ],
   "crons": [
     {
       "path": "/prospecting-os/api/agents/digest",
