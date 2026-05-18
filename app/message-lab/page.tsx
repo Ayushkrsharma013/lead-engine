@@ -6,6 +6,7 @@ import {
   ChevronDown, Check, AlertCircle, Loader2, FlaskConical,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
+import { Dropdown } from "@/components/ui/dropdown";
 import { useApp } from "@/lib/AppContext";
 import { addMessage, getMessages } from "@/lib/db";
 import { logActivity } from "@/lib/db";
@@ -263,27 +264,17 @@ ${scoreTier.guidance}` }],
               <label className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
                 Select Lead
               </label>
-              <select
+              <Dropdown
+                options={[
+                  { label: "Choose a lead…", value: "" },
+                  ...leads.map(l => {
+                    const tier = getScoreTier(l.score);
+                    return { label: `[${tier.label}] ${l.name} — ${l.title} @ ${l.company} (${l.score})`, value: l.id };
+                  })
+                ]}
                 value={selectedLeadId}
-                onChange={e => setSelectedLeadId(e.target.value)}
-                className="w-full h-9 rounded-lg mt-1.5 px-3 text-[13px] outline-none transition-all duration-200 appearance-none cursor-pointer"
-                style={{
-                  color: "var(--ink)", background: "var(--surface-2)",
-                  border: "1px solid var(--line)",
-                }}
-                onFocus={e => (e.currentTarget as HTMLSelectElement).style.borderColor = "var(--accent)"}
-                onBlur={e => (e.currentTarget as HTMLSelectElement).style.borderColor = "var(--line)"}
-              >
-                <option value="">Choose a lead…</option>
-                {leads.map(l => {
-                  const tier = getScoreTier(l.score);
-                  return (
-                    <option key={l.id} value={l.id}>
-                      [{tier.label}] {l.name} — {l.title} @ {l.company} ({l.score})
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={setSelectedLeadId}
+              />
             </div>
 
             {/* Lead Intelligence Card */}

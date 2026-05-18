@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Invoice, InvoiceDraft, InvoiceItem, InvoiceAIMessage } from "@/lib/types";
 import TopBar from "@/components/layout/TopBar";
+import { Dropdown } from "@/components/ui/dropdown";
 
 const formatIDR = (n: number) => new Intl.NumberFormat("id-ID").format(Math.round(n));
 
@@ -452,14 +453,11 @@ export default function InvoicePage() {
                   <InputField label="Due Date" type="date" value={draft.due_date || ""} onChange={v => setDraft({ ...draft, due_date: v })} />
                   <div className="space-y-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Terms</label>
-                    <select
+                    <Dropdown
+                      options={PAYMENT_TERMS.map(t => ({ label: t, value: t }))}
                       value={draft.payment_terms || "Net 14"}
-                      onChange={e => setDraft({ ...draft, payment_terms: e.target.value })}
-                      className="w-full h-9 rounded-lg px-3 text-[12px] outline-none transition-colors duration-200"
-                      style={{ color: "var(--text)", background: "var(--surface2)", border: "1px solid var(--border)" }}
-                    >
-                      {PAYMENT_TERMS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                      onChange={v => setDraft({ ...draft, payment_terms: v })}
+                    />
                   </div>
                 </div>
 
@@ -492,13 +490,11 @@ export default function InvoicePage() {
                             className="h-8 rounded-md px-2.5 text-[11px] outline-none text-center"
                             style={{ color: "var(--text)", background: "var(--surface2)", border: "1px solid var(--border)" }}
                           />
-                          <select value={item.unit}
-                            onChange={e => updateItem(idx, "unit", e.target.value)}
-                            className="h-8 rounded-md px-1.5 text-[11px] outline-none"
-                            style={{ color: "var(--text)", background: "var(--surface2)", border: "1px solid var(--border)" }}
-                          >
-                            {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                          </select>
+                          <Dropdown
+                            options={UNITS.map(u => ({ label: u, value: u }))}
+                            value={item.unit}
+                            onChange={v => updateItem(idx, "unit", v)}
+                          />
                           <input type="number" placeholder="Cost" value={item.cost || ""}
                             onChange={e => updateItem(idx, "cost", Number(e.target.value))}
                             className="h-8 rounded-md px-2.5 text-[11px] outline-none text-right"

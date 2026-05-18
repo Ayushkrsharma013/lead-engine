@@ -8,6 +8,7 @@ import {
 import {
   X, Trash2, MessageSquare, ChevronRight, ChevronDown, MapPin, Building2, Link as LinkIcon,
 } from "lucide-react";
+import { Dropdown } from "@/components/ui/dropdown";
 import Link from "next/link";
 import TopBar from "@/components/layout/TopBar";
 import { useApp } from "@/lib/AppContext";
@@ -342,15 +343,11 @@ export default function KanbanPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-ink-3">Move to:</span>
-                  <select
-                    value={currentCol}
-                    onChange={e => handleMoveToColumn(selected.id, e.target.value)}
-                    className="flex-1 h-7 rounded-md bg-white/5 border border-line px-2 text-xs text-ink focus:outline-none appearance-none cursor-pointer"
-                  >
-                    {COLUMNS.map(c => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </select>
+                  <Dropdown
+                    options={COLUMNS.map(c => ({ label: c.label, value: c.id }))}
+                    value={selected.kanbanColumn || "New"}
+                    onChange={v => handleMoveToColumn(selected.id, v)}
+                  />
                 </div>
 
                 <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Play, Download, X, RotateCcw, ChevronRight,
   Sparkles, Database, HardDrive, CloudDownload, Flame, RefreshCw,
@@ -844,27 +845,42 @@ export default function Home() {
                 >
                   <ListChecks size={13} />
                   Status
-                  <ChevronDown size={11} style={{ transform: bulkStatusOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 150ms" }} />
-                </button>
-                {bulkStatusOpen && (
-                  <div
-                    className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
-                    style={{ minWidth: 140, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+                  <motion.div
+                    animate={{ rotate: bulkStatusOpen ? 180 : 0 }}
+                    transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ display: "flex" }}
                   >
-                    {(["new","contacted","replied","hot","meeting","won","lost"] as const).map(s => (
-                      <button
-                        key={s}
-                        onClick={() => handleBulkStatus(s)}
-                        className="w-full text-left px-3 py-2 text-xs capitalize transition-colors"
-                        style={{ color: "var(--text)" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    <ChevronDown size={11} />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {bulkStatusOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                      className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
+                      style={{ minWidth: 140, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.2)", transformOrigin: "top" }}
+                    >
+                      {(["new","contacted","replied","hot","meeting","won","lost"] as const).map((s, idx) => (
+                        <motion.button
+                          key={s}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.03, duration: 0.15 }}
+                          onClick={() => handleBulkStatus(s)}
+                          className="w-full text-left px-3 py-2 text-xs capitalize transition-colors"
+                          style={{ color: "var(--text)" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {s}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
@@ -882,29 +898,44 @@ export default function Home() {
                 >
                   <GitBranch size={13} />
                   Sequence
-                  <ChevronDown size={11} style={{ transform: bulkSeqOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 150ms" }} />
-                </button>
-                {bulkSeqOpen && (
-                  <div
-                    className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
-                    style={{ minWidth: 180, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+                  <motion.div
+                    animate={{ rotate: bulkSeqOpen ? 180 : 0 }}
+                    transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ display: "flex" }}
                   >
-                    {sequences.length === 0 ? (
-                      <p className="px-3 py-2 text-xs" style={{ color: "var(--muted)" }}>No sequences found</p>
-                    ) : sequences.map(seq => (
-                      <button
-                        key={seq.id}
-                        onClick={() => handleBulkSequence(seq.id, seq.name)}
-                        className="w-full text-left px-3 py-2 text-xs truncate transition-colors"
-                        style={{ color: "var(--text)", maxWidth: 220 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                      >
-                        {seq.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    <ChevronDown size={11} />
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {bulkSeqOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                      className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 py-1"
+                      style={{ minWidth: 180, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.2)", transformOrigin: "top" }}
+                    >
+                      {sequences.length === 0 ? (
+                        <p className="px-3 py-2 text-xs" style={{ color: "var(--muted)" }}>No sequences found</p>
+                      ) : sequences.map((seq, idx) => (
+                        <motion.button
+                          key={seq.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.03, duration: 0.15 }}
+                          onClick={() => handleBulkSequence(seq.id, seq.name)}
+                          className="w-full text-left px-3 py-2 text-xs truncate transition-colors"
+                          style={{ color: "var(--text)", maxWidth: 220 }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        >
+                          {seq.name}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 

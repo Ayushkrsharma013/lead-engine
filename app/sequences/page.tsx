@@ -5,6 +5,7 @@ import {
   Save, Trash2, GripVertical, Plus, Users, Copy, Check, Play, FlaskConical, ChevronDown, ChevronUp, Zap, Trophy,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
+import { Dropdown } from "@/components/ui/dropdown";
 import { useApp } from "@/lib/AppContext";
 import { saveSequence as saveSeq, deleteSequence as delSeq } from "@/lib/db";
 import type { SequenceStep, Sequence, SequenceExecution } from "@/lib/types";
@@ -585,20 +586,11 @@ export default function SequencesPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-medium" style={{ color: "var(--ink-4)" }}>Channel</span>
-                      <select
+                      <Dropdown
+                        options={[{ label: "LinkedIn", value: "linkedin" }, { label: "Email", value: "email" }]}
                         value={step.channel}
-                        onChange={e => updateStep(idx, { channel: e.target.value as "linkedin" | "email" })}
-                        className="h-7 rounded-lg px-2 text-[12px] outline-none transition-all duration-200 appearance-none cursor-pointer"
-                        style={{
-                          color: "var(--ink)", background: "var(--surface-2)",
-                          border: "1px solid var(--line)",
-                        }}
-                        onFocus={e => (e.currentTarget as HTMLSelectElement).style.borderColor = "var(--accent)"}
-                        onBlur={e => (e.currentTarget as HTMLSelectElement).style.borderColor = "var(--line)"}
-                      >
-                        <option value="linkedin">LinkedIn</option>
-                        <option value="email">Email</option>
-                      </select>
+                        onChange={v => updateStep(idx, { channel: v as "linkedin" | "email" })}
+                      />
                     </div>
                   </div>
 

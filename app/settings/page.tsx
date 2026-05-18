@@ -11,6 +11,7 @@ import {
 import TopBar from "@/components/layout/TopBar";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { useApp } from "@/lib/AppContext";
+import { Dropdown } from "@/components/ui/dropdown";
 import { createClient } from "@/lib/supabase/client";
 import type { EnabledSources } from "@/lib/AppContext";
 import type { Source } from "@/lib/types";
@@ -609,17 +610,19 @@ function SchedulerTab() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>Country</label>
-              <select value={country} onChange={e => setCountry(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg text-[12px] appearance-none" style={inputStyle}>
-                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <Dropdown
+                options={COUNTRIES.map(c => ({ label: c, value: c }))}
+                value={country}
+                onChange={setCountry}
+              />
             </div>
             <div>
               <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--ink-4)" }}>Company Size</label>
-              <select value={size} onChange={e => setSize(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg text-[12px] appearance-none" style={inputStyle}>
-                {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Dropdown
+                options={SIZES.map(s => ({ label: s, value: s }))}
+                value={size}
+                onChange={setSize}
+              />
             </div>
           </div>
 
