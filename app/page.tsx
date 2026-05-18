@@ -632,6 +632,7 @@ export default function LandingPage() {
             <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
             <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a></li>
             <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
+            <li><a href="/blog" style={{ color: "var(--accent)", fontWeight: 500 }}>Blog</a></li>
           </ul>
           <Link href="/book" className="nav-cta desktop-only" aria-label="Book a free B2B prospecting strategy call with the Prospecting OS team" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>

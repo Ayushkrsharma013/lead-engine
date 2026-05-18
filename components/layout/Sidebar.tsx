@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
   Sparkles, Send, Bot, UserPlus, Zap, Cpu, Shield,
   HardDrive, Search, Workflow, BarChart3, FileText,
-  Sun, Moon, LogOut, User, ChevronUp,
+  Sun, Moon, LogOut, User, ChevronUp, PenTool,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import { createClient } from "@/lib/supabase/client";
@@ -333,6 +333,7 @@ export default function ProSidebar() {
       const items: NavItem[] = [
         { id: "integrations", module: "settings", label: "Integrations", icon: Shield, href: "/integrations" },
         { id: "invoice-agent", module: "settings", label: "Invoice Agent", icon: FileText, href: "/invoice" },
+        { id: "blog", module: "settings", label: "Blog", icon: PenTool, href: "/admin/blog" },
       ];
       if (userRole === "super_admin") {
         items.push({ id: "admin-users", module: "agent", label: "Users", icon: UserPlus, href: "/admin/users" });
