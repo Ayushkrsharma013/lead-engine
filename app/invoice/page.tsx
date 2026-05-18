@@ -10,6 +10,7 @@ import {
 import type { Invoice, InvoiceDraft, InvoiceItem, InvoiceAIMessage } from "@/lib/types";
 import TopBar from "@/components/layout/TopBar";
 import { Dropdown } from "@/components/ui/dropdown";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const formatIDR = (n: number) => new Intl.NumberFormat("id-ID").format(Math.round(n));
 
@@ -449,8 +450,14 @@ export default function InvoicePage() {
                 <InputField label="Billing Address" value={draft.client_billing_address || ""} onChange={v => setDraft({ ...draft, client_billing_address: v })} />
 
                 <div className="grid grid-cols-3 gap-3">
-                  <InputField label="Issue Date" type="date" value={draft.issue_date || ""} onChange={v => setDraft({ ...draft, issue_date: v })} />
-                  <InputField label="Due Date" type="date" value={draft.due_date || ""} onChange={v => setDraft({ ...draft, due_date: v })} />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Issue Date</label>
+                    <DatePicker value={draft.issue_date || ""} onChange={v => setDraft({ ...draft, issue_date: v })} placeholder="Issue date…" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Due Date</label>
+                    <DatePicker value={draft.due_date || ""} onChange={v => setDraft({ ...draft, due_date: v })} placeholder="Due date…" />
+                  </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Terms</label>
                     <Dropdown
