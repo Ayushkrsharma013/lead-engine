@@ -403,3 +403,46 @@ export interface InvoiceAIMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+// ─── Blog Engine ───────────────────────────────────────────────
+
+export type BlogCategory = 'lead-gen' | 'outbound' | 'ai-sales' | 'agency';
+export type BlogPostStatus = 'draft' | 'published';
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  excerpt: string | null;
+  content: string;
+  category: BlogCategory;
+  keywords: string[];
+  voice_profile_id: string | null;
+  read_time: number;
+  status: BlogPostStatus;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  extracted_guide: Record<string, unknown> | null;
+  sample_texts: string[];
+  is_active: boolean;
+  extracted_at: string | null;
+  created_at: string;
+}
+
+export interface BlogKeyword {
+  id: string;
+  keyword: string;
+  category: string | null;
+  volume_estimate: number;
+  difficulty: 'low' | 'medium' | 'high';
+  posts_count: number;
+  last_used_at: string | null;
+  created_at: string;
+}
