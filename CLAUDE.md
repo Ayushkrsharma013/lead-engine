@@ -1479,4 +1479,10 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 
 **Commits**: `7bcd9b8`, `53cdf2b`, `7c77d1c`, `4ce2ce5`, `bb118c6`, `0a4b8e6`, `6556325`, `9edeaf4`, `cb52123`, `bf3e19e` (10 commits)
 
+**Post-review fixes** (`12ae65c`):
+- DM daily cap now covers `follow_up` action type (was only checking `"dm"`)
+- Queue API (`/api/outreach/queue`) requires `super_admin` or `qa_agent` role — was unauthenticated
+- Added partial unique index `(lead_id, action_type) WHERE status IN ('pending', 'executing')` — prevents duplicate sends at DB level
+- `resetStuckExecuting()` called at start of each `runOnce()` poll cycle — recovers rows orphaned by runner crashes
+
 **Current build**: 80 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
