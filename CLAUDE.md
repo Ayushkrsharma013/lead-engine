@@ -911,11 +911,11 @@ Low:
 
 ## Roadmap — What's Left
 
-**1 phase remaining** as of 2026-05-19.
+**0 phases remaining** as of 2026-05-20. All planned phases complete.
 
 | Phase | Feature | Notes |
 |---|---|---|
-| **15** | **OpenOutreach → Sequence integration** | `channel: "linkedin"` steps in sequences are currently logged as skipped. Wire them to OpenOutreach sync so LinkedIn DMs/connection requests are actually sent. |
+| ~~**15**~~ | ~~**OpenOutreach → Sequence integration**~~ | **DONE** — LinkedIn Queue System: local runner (`runner/linkedin-runner.js`), Supabase queue (`linkedin_queue` + `linkedin_daily_stats`), Outreach Agent integration, sequence engine queues LinkedIn steps, rebuilt `/outreach` page |
 | ~~**16**~~ | ~~**Multi-currency MRR tracking**~~ | **DONE** — `lib/currency.ts` with 6 currencies, multi-currency plan prices, currency-aware business analytics API, multi-currency monthly summary, dashboard MRR with geo-detected currency |
 
 **External config status (as of 2026-05-17):**
@@ -931,7 +931,7 @@ Low:
 - 83 routes (pages + API) — 0 TypeScript errors (tsc --noEmit)
 - 18/18 DB tables with RLS policies
 - 0 open bugs
-- 1 phase remaining (OpenOutreach → Sequence integration)
+- 0 phases remaining — all planned features complete
 
 ---
 
@@ -1314,12 +1314,12 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 
 ## Roadmap — Phases Remaining
 
-**2 phases left** out of the original roadmap. All 14 completed phases cover the full feature set except:
+**0 phases remaining** — all 16 phases complete as of 2026-05-20.
 
 | Phase | Feature | Description |
 |---|---|---|
-| 15 | OpenOutreach → Sequence integration | Connect LinkedIn steps in sequences to actual OpenOutreach sync — currently `channel: "linkedin"` steps are logged as skipped |
-| 16 | Multi-currency MRR tracking | USD/EUR/GBP/CAD/AUD/INR in `/api/analytics/business` and the Finance Agent summary |
+| ~~15~~ | ~~OpenOutreach → Sequence integration~~ | **DONE** — LinkedIn Queue System (local runner, Supabase queue, agent integration) |
+| ~~16~~ | ~~Multi-currency MRR tracking~~ | **DONE** — `lib/currency.ts`, multi-currency business analytics, dashboard MRR |
 
 **Deferred (not planned):**
 - CRM integrations (HubSpot/Salesforce) — building in-house instead
@@ -1395,7 +1395,7 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 
 **Commits**: 10 commits (Shell fix, blog nav/footer, hero, analytics+panel, sample particle, dropdown fix, cursor fix, ImportModal URL fix, import tracking)
 
-**Current build**: 78 routes, 0 TypeScript errors, 0 open bugs, 1 phase remaining
+**Current build**: 80 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
 
 ---
 
@@ -1445,3 +1445,38 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Commits**: 1 commit (themed date picker + apify 404 fix + save/load filters)
 
 **Current build**: 80 routes, 0 TypeScript errors, 0 open bugs
+
+---
+
+### 2026-05-20 — Phase 15: LinkedIn Queue System (Local Runner)
+
+**Why**: OpenOutreach fails on Hetzner CPX42 — LinkedIn detects datacenter IPs and shows a CAPTCHA filter. Server-side browser automation is undetectable-proof. Solution: move all LinkedIn execution to the user's local machine (home residential IP, real Chrome session) and use Supabase as the queue only.
+
+**New files**:
+- `supabase/migrations/20260520_linkedin_queue.sql` — `linkedin_queue` + `linkedin_daily_stats` tables + RLS
+- `lib/linkedin-queue.ts` — `enqueueLinkedInAction()`, `getQueueStatus()`, `getPendingActions()`, `markActionDone()`, `isAlreadyQueued()`, `getTodayStats()` + full type interfaces
+- `app/api/outreach/queue/route.ts` — GET queue status + today stats / POST add manual action
+- `runner/linkedin-runner.js` — Standalone local daemon: playwright-extra + stealth, persistent Chrome profile, CAPTCHA detection, daily cap enforcement, human-paced typing (80-120ms/char), random delays (30-120s), 15-min break every 5 actions, `--setup` flag for first-run profile login
+- `runner/package.json` — Dependencies: playwright, playwright-extra, puppeteer-extra-plugin-stealth, @supabase/supabase-js, dotenv
+- `runner/.env.example` — All configurable safety limits with safe defaults
+
+**Modified files**:
+- `lib/sequence-engine.ts` — LinkedIn steps now write to `linkedin_queue` + set status `"queued"` instead of `"skipped"`
+- `lib/agents/outreach-agent.ts` — Added Step 7: scans qualified leads for LinkedIn candidates, queues `queue_linkedin_connections` as medium-risk action (requires Telegram approval)
+- `lib/agents/resolver.ts` — Dispatches `queue_linkedin_connections` and `queue_linkedin_dm` action types via `enqueueLinkedInAction()`
+- `lib/types.ts` — Added `"queued"` to `SequenceMessage.status` union
+- `app/outreach/page.tsx` — Rebuilt: runner live/offline indicator, daily usage bars, queue status cards, pending actions table, setup guide accordion
+
+**Flow**: Outreach Agent scans leads → Telegram approval → Resolver writes to `linkedin_queue` → Local runner polls every 5 min → Playwright executes on home machine → Updates leads + activity_log + linkedin_daily_stats
+
+**Safety limits (hard-coded in runner)**:
+- Max 10 connection requests/day (LinkedIn limit: 20)
+- Max 20 DMs/day
+- Active hours: 8 AM–8 PM only
+- Random 30-120s delay between actions
+- 15-min break every 5 actions
+- CAPTCHA detected → immediate stop + Telegram alert
+
+**Commits**: `7bcd9b8`, `53cdf2b`, `7c77d1c`, `4ce2ce5`, `bb118c6`, `0a4b8e6`, `6556325`, `9edeaf4`, `cb52123`, `bf3e19e` (10 commits)
+
+**Current build**: 80 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
