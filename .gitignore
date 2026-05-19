@@ -50,3 +50,8 @@ landing*.png
 
 # brainstorm visual companion
 .superpowers/
+
+# linkedin local runner
+runner/node_modules/
+runner/.env
+runner/.env.local
