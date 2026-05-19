@@ -23,18 +23,45 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 
-const MAX_CONNECTIONS = parseInt(process.env.MAX_CONNECTIONS_PER_DAY ?? "10", 10);
-const MAX_DMS = parseInt(process.env.MAX_DMS_PER_DAY ?? "20", 10);
-const MIN_DELAY = parseInt(process.env.MIN_DELAY_SECONDS ?? "30", 10) * 1000;
-const MAX_DELAY = parseInt(process.env.MAX_DELAY_SECONDS ?? "120", 10) * 1000;
-const ACTIVE_START = parseInt(process.env.ACTIVE_HOURS_START ?? "8", 10);
-const ACTIVE_END = parseInt(process.env.ACTIVE_HOURS_END ?? "20", 10);
-const BREAK_EVERY = parseInt(process.env.BREAK_EVERY_N_ACTIONS ?? "5", 10);
-const BREAK_DURATION = parseInt(process.env.BREAK_DURATION_MINUTES ?? "15", 10) * 60 * 1000;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Config — loaded from Supabase knowledge_store on startup (overrides .env)
+let MAX_CONNECTIONS = parseInt(process.env.MAX_CONNECTIONS_PER_DAY ?? "10", 10);
+let MAX_DMS = parseInt(process.env.MAX_DMS_PER_DAY ?? "20", 10);
+let MIN_DELAY = parseInt(process.env.MIN_DELAY_SECONDS ?? "30", 10) * 1000;
+let MAX_DELAY = parseInt(process.env.MAX_DELAY_SECONDS ?? "120", 10) * 1000;
+let ACTIVE_START = parseInt(process.env.ACTIVE_HOURS_START ?? "8", 10);
+let ACTIVE_END = parseInt(process.env.ACTIVE_HOURS_END ?? "20", 10);
+let BREAK_EVERY = parseInt(process.env.BREAK_EVERY_N_ACTIONS ?? "5", 10);
+let BREAK_DURATION = parseInt(process.env.BREAK_DURATION_MINUTES ?? "15", 10) * 60 * 1000;
+
+async function loadCloudConfig() {
+  try {
+    const { data } = await supabase
+      .from("knowledge_store")
+      .select("value")
+      .eq("key", "runner.config")
+      .maybeSingle();
+
+    if (!data?.value || typeof data.value !== "object") return;
+    const c = data.value;
+    if (c.maxConnectionsPerDay) MAX_CONNECTIONS = c.maxConnectionsPerDay;
+    if (c.maxDmsPerDay)         MAX_DMS         = c.maxDmsPerDay;
+    if (c.minDelaySeconds)      MIN_DELAY       = c.minDelaySeconds * 1000;
+    if (c.maxDelaySeconds)      MAX_DELAY       = c.maxDelaySeconds * 1000;
+    if (c.activeHoursStart)     ACTIVE_START    = c.activeHoursStart;
+    if (c.activeHoursEnd)       ACTIVE_END      = c.activeHoursEnd;
+    if (c.breakEveryNActions)   BREAK_EVERY     = c.breakEveryNActions;
+    if (c.breakDurationMinutes) BREAK_DURATION  = c.breakDurationMinutes * 60 * 1000;
+
+    console.log(`[runner] Cloud config loaded — connections: ${MAX_CONNECTIONS}/day, DMs: ${MAX_DMS}/day, hours: ${ACTIVE_START}-${ACTIVE_END}`);
+  } catch (e) {
+    console.warn("[runner] Could not load cloud config, using .env defaults:", e.message);
+  }
+}
+
 const POLL_INTERVAL = 5 * 60 * 1000;
 const PROFILE_DIR = path.join(os.homedir(), ".linkedin-runner", "profile");
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -381,6 +408,9 @@ async function main() {
     await setupProfile();
     return;
   }
+
+  // Load cloud config first — overrides .env values with UI-saved settings
+  await loadCloudConfig();
 
   console.log(`[runner] LinkedIn Runner started`);
   console.log(`[runner] Limits: ${MAX_CONNECTIONS} connections/day · ${MAX_DMS} DMs/day`);

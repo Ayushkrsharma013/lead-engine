@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Send, RefreshCw, CheckCircle2, Clock, Users,
   AlertTriangle, Terminal, ChevronDown, ChevronUp,
-  Copy, Wifi, WifiOff,
+  Copy, Wifi, WifiOff, Settings, Save,
 } from "lucide-react";
 import type { LinkedInQueueItem, LinkedInDailyStats, QueueStatus } from "@/lib/linkedin-queue";
+import type { RunnerConfig } from "@/app/api/outreach/config/route";
 
 const BASE = "/prospecting-os";
 
@@ -38,6 +39,146 @@ function UsageBar({ label, used, max, color }: { label: string; used: number; ma
   );
 }
 
+function NumberInput({
+  label, value, min, max, onChange, unit,
+}: {
+  label: string; value: number; min: number; max: number;
+  onChange: (v: number) => void; unit?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-medium" style={{ color: "var(--muted)" }}>{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={e => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || min)))}
+          className="w-20 px-2 py-1.5 rounded-md text-[12px] font-mono tabular-nums text-center focus:outline-none"
+          style={{
+            background: "var(--surface2)",
+            border: "1px solid var(--border)",
+            color: "var(--text)",
+          }}
+        />
+        {unit && <span className="text-[11px]" style={{ color: "var(--muted)" }}>{unit}</span>}
+        <span className="text-[10px]" style={{ color: "var(--muted)" }}>({min}–{max})</span>
+      </div>
+    </div>
+  );
+}
+
+function RunnerSettings() {
+  const [open, setOpen] = useState(false);
+  const [cfg, setCfg] = useState<RunnerConfig | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch(`${BASE}/api/outreach/config`)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: RunnerConfig | null) => { if (d) setCfg(d); });
+  }, [open]);
+
+  async function save() {
+    if (!cfg) return;
+    setSaving(true);
+    const res = await fetch(`${BASE}/api/outreach/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cfg),
+    });
+    if (res.ok) { setCfg(await res.json() as RunnerConfig); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    setSaving(false);
+  }
+
+  function set<K extends keyof RunnerConfig>(key: K, val: RunnerConfig[K]) {
+    setCfg(prev => prev ? { ...prev, [key]: val } : prev);
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-4"
+        style={{ color: "var(--text)" }}
+      >
+        <div className="flex items-center gap-2">
+          <Settings size={15} style={{ color: "var(--accent-blue)" }} />
+          <span className="text-[13px] font-semibold">Runner Settings</span>
+          <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "rgba(0,212,255,0.08)", color: "var(--accent-blue)" }}>
+            saved to cloud — no .env edit needed
+          </span>
+        </div>
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {open && cfg && (
+        <div className="px-5 pb-5 space-y-5">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Daily Caps</p>
+              <NumberInput label="Max connections/day" value={cfg.maxConnectionsPerDay} min={1} max={20} unit="connections" onChange={v => set("maxConnectionsPerDay", v)} />
+              <NumberInput label="Max DMs/day" value={cfg.maxDmsPerDay} min={1} max={50} unit="DMs" onChange={v => set("maxDmsPerDay", v)} />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Active Hours</p>
+              <NumberInput label="Start hour (24h)" value={cfg.activeHoursStart} min={6} max={12} unit="AM" onChange={v => set("activeHoursStart", v)} />
+              <NumberInput label="End hour (24h)" value={cfg.activeHoursEnd} min={14} max={23} unit="(14=2PM)" onChange={v => set("activeHoursEnd", v)} />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Delays (human pacing)</p>
+              <NumberInput label="Min delay between actions" value={cfg.minDelaySeconds} min={10} max={300} unit="sec" onChange={v => set("minDelaySeconds", v)} />
+              <NumberInput label="Max delay between actions" value={cfg.maxDelaySeconds} min={30} max={600} unit="sec" onChange={v => set("maxDelaySeconds", v)} />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted)" }}>Break Schedule</p>
+              <NumberInput label="Break after every N actions" value={cfg.breakEveryNActions} min={2} max={20} unit="actions" onChange={v => set("breakEveryNActions", v)} />
+              <NumberInput label="Break duration" value={cfg.breakDurationMinutes} min={5} max={60} unit="min" onChange={v => set("breakDurationMinutes", v)} />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-[11px]" style={{ color: "var(--muted)" }}>
+              Runner reads these on every startup. Restart the runner after saving.
+            </p>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold transition-all"
+              style={{
+                background: saved ? "rgba(0,255,136,0.12)" : "rgba(0,212,255,0.12)",
+                border: `1px solid ${saved ? "rgba(0,255,136,0.25)" : "rgba(0,212,255,0.25)"}`,
+                color: saved ? "var(--accent-green)" : "var(--accent-blue)",
+              }}
+            >
+              <Save size={13} />
+              {saving ? "Saving..." : saved ? "Saved" : "Save settings"}
+            </button>
+          </div>
+
+          <div
+            className="flex items-start gap-2 rounded-lg px-4 py-3"
+            style={{ background: "rgba(255,107,53,0.06)", border: "1px solid rgba(255,107,53,0.20)" }}
+          >
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: "var(--accent-orange)" }} />
+            <p className="text-[11px]" style={{ color: "var(--muted)" }}>
+              <span className="font-semibold" style={{ color: "var(--accent-orange)" }}>LinkedIn limits:</span>{" "}
+              Max 20 connections/day (100/week). Staying at 10–15/day is safest.
+              DMs have no hard limit but 20–30/day is conservative.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SetupGuide() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -60,7 +201,7 @@ function SetupGuide() {
       key: "env",
       title: "Configure .env (one-time)",
       code: "cp .env.example .env\n# Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from Vercel env",
-      desc: "Only needs Supabase credentials. No LinkedIn password stored here.",
+      desc: "Only needs Supabase credentials. Limits are controlled from the Settings panel above.",
     },
     {
       key: "browser",
@@ -72,7 +213,13 @@ function SetupGuide() {
       key: "run",
       title: "Start the runner",
       code: "node linkedin-runner.js",
-      desc: "Polls queue every 5 min. Runs 8 AM–8 PM only. Keep this terminal open while working.",
+      desc: "Polls queue every 5 min. Runs during active hours only. Keep this terminal open while working.",
+    },
+    {
+      key: "autostart",
+      title: "Auto-start with Windows (optional — no 24/7 needed)",
+      code: `schtasks /create /tn "LinkedIn Runner" /tr "cmd /c cd /d D:\\Flow-Forges\\lead-engine\\runner && node linkedin-runner.js >> runner.log 2>&1" /sc ONLOGON /f`,
+      desc: "Starts the runner automatically when you log into Windows. Stops when PC is off — no need to keep it running 24/7.",
     },
   ];
 
@@ -122,8 +269,7 @@ function SetupGuide() {
             <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: "var(--accent-orange)" }} />
             <p className="text-[11px]" style={{ color: "var(--muted)" }}>
               <span className="font-semibold" style={{ color: "var(--accent-orange)" }}>LinkedIn ToS:</span>{" "}
-              This automation uses your real account. Stay within limits: 10 connections/day, 20 DMs/day.
-              Always use a dedicated LinkedIn account, not your main one.
+              This automation uses your real account. Always use a dedicated LinkedIn account, not your main one.
             </p>
           </div>
         </div>
@@ -294,8 +440,8 @@ export default function OutreachPage() {
             {[
               { icon: Users, text: "Outreach Agent (8 AM) finds qualified leads and sends a Telegram approval request" },
               { icon: CheckCircle2, text: "You approve in Telegram — actions are written to this queue" },
-              { icon: Send, text: "Local runner on your machine executes actions at human pace (30–120s delay)" },
-              { icon: Clock, text: "10 connection requests/day · 20 DMs/day · runs 8 AM–8 PM only" },
+              { icon: Send, text: "Local runner on your machine executes actions at human pace" },
+              { icon: Clock, text: "Runs only during your configured active hours — no 24/7 needed" },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-start gap-2">
                 <Icon size={12} className="mt-0.5 shrink-0" style={{ color: "var(--accent-blue)" }} />
@@ -305,6 +451,7 @@ export default function OutreachPage() {
           </div>
         </div>
 
+        <RunnerSettings />
         <SetupGuide />
       </div>
     </div>
