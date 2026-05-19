@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import type { AgentModule, AgentResult, AgentAction } from "./types";
 import type { Lead } from "@/lib/types";
 import { readKnowledge, readKnowledgeNumber, readKnowledgeRecord, writeKnowledge } from "./knowledge";
+import { isAlreadyQueued } from "@/lib/linkedin-queue";
 
 const QUALIFIED_SCORE_THRESHOLD = 60;
 const HOT_SCORE_THRESHOLD = 80;
@@ -186,6 +187,50 @@ export class OutreachAgent implements AgentModule {
       try { await writeKnowledge("qualified_lead_count", qualifiedLeads.length, "outreach-agent"); } catch { /* ignore */ }
       try { await writeKnowledge("follow_up_count", followUpLeads.length, "outreach-agent"); } catch { /* ignore */ }
       try { await writeKnowledge("follow_up_window_days", lastTouchedThreshold, "outreach-agent"); } catch { /* ignore */ }
+
+      // ── Step 7: LinkedIn connection candidates ────────────────────────────────
+      // Find qualified leads with a LinkedIn URL not yet in the queue.
+      // Build a batched action so the user approves the whole set at once.
+      const linkedinCandidates: Array<{
+        leadId: string;
+        leadName: string;
+        company: string;
+        profileUrl: string;
+        score: number;
+      }> = [];
+
+      for (const lead of qualifiedLeads) {
+        if (!lead.linkedin) continue;
+        const alreadyQueued = await isAlreadyQueued(lead.id, "connection_request").catch(() => false);
+        if (alreadyQueued) continue;
+        linkedinCandidates.push({
+          leadId: lead.id,
+          leadName: lead.name,
+          company: lead.company,
+          profileUrl: lead.linkedin,
+          score: lead.score,
+        });
+        if (linkedinCandidates.length >= 10) break; // cap at 10/day
+      }
+
+      if (linkedinCandidates.length > 0) {
+        const names = linkedinCandidates
+          .slice(0, 3)
+          .map(c => `${c.leadName} — ${c.company} (score ${c.score})`)
+          .join(", ");
+        const suffix = linkedinCandidates.length > 3 ? ` +${linkedinCandidates.length - 3} more` : "";
+        actionsToQueue.push({
+          type: "queue_linkedin_connections",
+          description: `Queue ${linkedinCandidates.length} LinkedIn connection requests: ${names}${suffix}`,
+          payload: { candidates: linkedinCandidates },
+          riskLevel: "medium",
+        });
+      }
+
+      // Write linkedin stats to knowledge store
+      try {
+        await writeKnowledge("outreach.linkedin_candidates_today", linkedinCandidates.length, "outreach-agent");
+      } catch { /* ignore */ }
 
       // ── Build summary ────────────────────────────────────────────────────────
       const qualifiedCount = qualifiedLeads.length;
