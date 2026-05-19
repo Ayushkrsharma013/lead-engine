@@ -1362,3 +1362,37 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 | 6 | GET\|PATCH /api/admin/agents/[name] | `423ce7b` |
 | 7 | /admin/agents/[name] detail page (charts, toggle, Run Now) | `8a92692` |
 | 8 | Expand/approve/reject in Command Center pending approvals | `32d4639` |
+
+---
+
+### 2026-05-19/20 — Blog Layout + Navbar + Blog Admin + Import Pipeline
+
+**Blog Layout Alignment (Shell.tsx bug)**:
+- `components/Shell.tsx` — Added `/blog` to `CLEAN_ROUTES` (was rendering inside admin chrome instead of clean landing-page layout)
+- `components/blog/BlogNavbar.tsx` — **New** — Client navbar with mark1-style pill-shrink scroll animation (full-width transparent → centered glass pill with glow border), theme toggle hides on scroll, mobile hamburger menu
+- `components/landing/LandingFooter.tsx` — **New** — Reusable footer matching landing page (copyright, nav links, disclaimer)
+- `app/blog/page.tsx` — Replaced inline nav with `<BlogNavbar />`, added `<LandingFooter />`, fixed data fetching with `VERCEL_URL` fallback, added hero section with badge + radial accent glow, replaced event handlers with CSS `::after` hover (fixed 500 error)
+- `app/blog/[slug]/page.tsx` — Same BlogNavbar + LandingFooter treatment
+- `app/page.tsx` — Landing page navbar updated with mark1-style pill-shrink animation + theme toggle hides on scroll + nav links use `.nav-link-item` class for sliding underline hover
+- `app/landing.css` — Added `.blog-card:hover`, `.nav-link-item` with sliding `::after` underline animation, `.nav-links a::after` hover effect
+
+**Blog Admin Dashboard**:
+- `app/api/blog/analytics/route.ts` — **New** — Returns posts by category, avg read time, keyword count, monthly post count
+- `app/admin/blog/page.tsx` — Added live analytics card (4 stat tiles, category bar chart, content health indicators), added preview/edit slide-over panel (click post row → 520px right panel with editable fields, AI Suggest button via Gemini, Live Preview accordion, Save via PATCH API)
+- 5 dummy blog posts inserted into production DB across all 4 categories
+
+**Landing Page Refinements**:
+- `components/landing/EmailCaptureForm.tsx` — Fixed industry dropdown clipping (portal to `document.body` with `position: fixed`), added `whileHover` animation on dropdown items, selected item gets animated accent dot indicator, dropdown z-index adjusted for cursor compatibility
+- `app/landing.css` — Custom cursor z-index bumped to 100001/100000 to stay above portal dropdown (50000)
+- `app/page.tsx` — Sample section: particle canvas added then removed per user request, background now plain `var(--bg-primary)`
+
+**Lead Import Pipeline**:
+- `components/ImportModal.tsx` — Fixed API URLs missing `/prospecting-os` basePath (was 404), added import run tracking (shows "Imported ✓" badge, imported runs disabled at bottom, header shows "N runs available · M imported")
+- `app/api/leads/import/route.ts` — GET now returns `importedRunIds` from `apify_imports` table, POST checks for existing imports (returns `alreadyImported: true` if duplicate), records import history after successful merge, added `supabaseAdmin` import
+- `app/leads/page.tsx` — Removed unused `importedRunIds` state (tracking moved to API + ImportModal)
+- **New DB table**: `apify_imports` (run_id PK, lead_count, status, imported_at) with RLS enabled
+- 65 sample leads inserted into `public.leads` (222 → 287)
+
+**Commits**: 10 commits (Shell fix, blog nav/footer, hero, analytics+panel, sample particle, dropdown fix, cursor fix, ImportModal URL fix, import tracking)
+
+**Current build**: 78 routes, 0 TypeScript errors, 0 open bugs, 1 phase remaining
