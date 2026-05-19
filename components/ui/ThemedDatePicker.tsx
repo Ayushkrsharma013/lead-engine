@@ -61,7 +61,8 @@ export default function ThemedDatePicker({ value, onChange, placeholder = "mm/dd
               background: "var(--surface)",
               border: "1px solid var(--border)",
               borderRadius: 12,
-              padding: 10,
+              padding: "6px 8px",
+              maxWidth: 260,
               boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
             }}
           >
@@ -76,8 +77,16 @@ export default function ThemedDatePicker({ value, onChange, placeholder = "mm/dd
                 }
                 setOpen(false);
               }}
-              captionLayout="dropdown"
               weekStartsOn={1}
+              style={{
+                "--rdp-day-width": "32px",
+                "--rdp-day-height": "28px",
+                "--rdp-day_button-width": "30px",
+                "--rdp-day_button-height": "26px",
+                "--rdp-nav_button-width": "28px",
+                "--rdp-nav_button-height": "28px",
+                fontSize: "11px",
+              } as React.CSSProperties}
             />
             {value && (
               <button

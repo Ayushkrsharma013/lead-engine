@@ -306,11 +306,13 @@ export default function Home() {
           await new Promise(r => setTimeout(r, 5000));
           pollCount++;
 
-          const pollRes = await fetch(`/api/leads?runId=${encodeURIComponent(runId)}`, { headers: API_HEADERS });
+          const pollRes = await fetch(`/prospecting-os/api/leads?runId=${encodeURIComponent(runId)}`, { headers: API_HEADERS });
 
-          const pollData = await pollRes.json() as {
-            status?: string; leads?: Record<string, unknown>[]; error?: string;
-          };
+          let pollData: { status?: string; leads?: Record<string, unknown>[]; error?: string } = {};
+          try { pollData = await pollRes.json(); } catch {
+            const text = await pollRes.text().catch(() => "");
+            throw new Error(`API returned non-JSON (HTTP ${pollRes.status}): ${text.slice(0, 100)}`);
+          }
 
           // Permanent errors — fail fast, don't keep polling
           if (!pollRes.ok && pollRes.status >= 400 && pollRes.status < 500) {

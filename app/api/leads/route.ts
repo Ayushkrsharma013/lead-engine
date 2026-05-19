@@ -168,7 +168,11 @@ export async function GET(req: NextRequest) {
       `https://api.apify.com/v2/actor-runs/${runId}`,
       { headers: APIFY_HEADERS }
     );
-    const statusData = await statusRes.json();
+    const statusText = await statusRes.text();
+    let statusData: any = {};
+    try { statusData = JSON.parse(statusText); } catch {
+      throw new Error(`Apify returned non-JSON response (HTTP ${statusRes.status}): ${statusText.slice(0, 120)}`);
+    }
 
     if (!statusRes.ok) {
       const ae = apifyError(statusData);
@@ -187,11 +191,13 @@ export async function GET(req: NextRequest) {
         `https://api.apify.com/v2/datasets/${datasetId}/items?limit=200`,
         { headers: APIFY_HEADERS }
       );
-      const leads = await dataRes.json();
+      const dataText = await dataRes.text();
+      let leads: unknown[] = [];
+      try { const parsed = JSON.parse(dataText); leads = Array.isArray(parsed) ? parsed : []; } catch { /* empty */ }
 
       return NextResponse.json({
         status: "SUCCEEDED",
-        leads: Array.isArray(leads) ? leads : [],
+        leads,
         runId,
         datasetId,
       });
