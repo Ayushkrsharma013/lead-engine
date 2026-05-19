@@ -323,7 +323,8 @@ export default function DashboardPage() {
 
   // Business analytics
   const [bizStats, setBizStats] = useState<{
-    mrr: number; activeSubscribers: number; churnedCount: number; churnRate: number;
+    mrr: number; mrrCurrency: string; mrrInr: number; mrrByCurrency: Record<string, number>;
+    activeSubscribers: number; churnedCount: number; churnRate: number;
     totalLeads: number; leadsWon: number; conversionRate: number;
     plans: Record<string, number>;
   } | null>(null);
@@ -335,7 +336,13 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+  const formatMRR = (n: number, currency: string) => {
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase(), minimumFractionDigits: 0 }).format(n);
+    } catch {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+    }
+  };
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [apptsLoading, setApptsLoading] = useState(true);
@@ -423,7 +430,7 @@ export default function DashboardPage() {
         {/* ── Business Overview ── */}
         {bizStats && (
           <div className="grid grid-cols-4 gap-3">
-            <StatBox label="MRR" value={formatCurrency(bizStats.mrr)} sub={`${bizStats.activeSubscribers} active subscribers`} color="var(--accent-green)" />
+            <StatBox label="MRR" value={formatMRR(bizStats.mrr, bizStats.mrrCurrency || "USD")} sub={`${bizStats.activeSubscribers} active subscribers`} color="var(--accent-green)" />
             <StatBox label="Churn Rate" value={`${bizStats.churnRate}%`} sub={`${bizStats.activeSubscribers} active · ${bizStats.churnedCount || 0} churned`} color={bizStats.churnRate > 20 ? "var(--negative)" : "var(--accent-green)"} />
             <StatBox label="Conversion" value={`${bizStats.conversionRate}%`} sub={`${bizStats.leadsWon} won of ${bizStats.totalLeads} leads`} color="var(--accent-blue)" />
             <StatBox label="Plans" value={Object.keys(bizStats.plans).length.toString()} sub={Object.entries(bizStats.plans).map(([k, v]) => `${k}: ${v}`).join(" · ")} color="var(--accent-purple)" />

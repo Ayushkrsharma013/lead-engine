@@ -1,3 +1,5 @@
+import { formatINR } from "./currency";
+
 export interface InlineButton {
   text: string;
   callback_data: string;
@@ -93,7 +95,7 @@ export async function tgAnswerCallback(
 }
 
 export function fmt(amount: number): string {
-  return `$${amount.toLocaleString("en-US")}`;
+  return formatINR(amount);
 }
 
 export function fmtDate(iso: string): string {

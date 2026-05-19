@@ -911,12 +911,12 @@ Low:
 
 ## Roadmap — What's Left
 
-**2 phases remaining** as of 2026-05-18.
+**1 phase remaining** as of 2026-05-19.
 
 | Phase | Feature | Notes |
 |---|---|---|
 | **15** | **OpenOutreach → Sequence integration** | `channel: "linkedin"` steps in sequences are currently logged as skipped. Wire them to OpenOutreach sync so LinkedIn DMs/connection requests are actually sent. |
-| **16** | **Multi-currency MRR tracking** | USD/EUR/GBP/CAD/AUD/INR in `/api/analytics/business` and Finance Agent monthly summary. Country detection already in mark1. |
+| ~~**16**~~ | ~~**Multi-currency MRR tracking**~~ | **DONE** — `lib/currency.ts` with 6 currencies, multi-currency plan prices, currency-aware business analytics API, multi-currency monthly summary, dashboard MRR with geo-detected currency |
 
 **External config status (as of 2026-05-17):**
 | Item | Status |
@@ -927,10 +927,36 @@ Low:
 | SENTRY_DSN | Optional — not configured |
 | Leaked password protection | **BLOCKED** — Supabase Pro tier required |
 
-**Current build stats (2026-05-18):**
-- 83 routes (pages + API) compiled — 0 TypeScript errors
+**Current build stats (2026-05-19):**
+- 83 routes (pages + API) — 0 TypeScript errors (tsc --noEmit)
 - 18/18 DB tables with RLS policies
 - 0 open bugs
+- 1 phase remaining (OpenOutreach → Sequence integration)
+
+---
+
+---
+
+### 2026-05-19 — Phase 16: Multi-Currency MRR Tracking
+
+**New file:**
+- `lib/currency.ts` — 6-currency module (USD/EUR/GBP/CAD/AUD/INR) with conversion rates, country→currency mapping (Vercel geo header), `detectCurrency()`, `convertINR()`, `formatCurrency()`, `formatINR()`
+
+**Modified files:**
+- `lib/stripe.ts` — added `getPlanPrice(plan, currency)` and `getPlanPrices(plan)` for multi-currency plan pricing; all internal amounts remain INR
+- `lib/telegram-bot.ts` — `fmt()` now uses `formatINR()` instead of hardcoded `$`
+- `lib/finance-agent.ts` — monthly summary now includes per-currency MRR breakdown in Telegram messages
+- `app/api/analytics/business/route.ts` — returns `mrr` (detected currency), `mrrCurrency`, `mrrInr`, `mrrByCurrency` (all 6); detects currency from Vercel `x-vercel-ip-country` header with `?currency=` query param override
+- `app/dashboard/page.tsx` — `formatMRR()` uses dynamic currency from API response; MRR stat box shows geo-detected currency
+
+**How currency detection works:**
+1. Explicit `?currency=USD` query param (API only)
+2. Vercel `x-vercel-ip-country` header → country→currency map
+3. `Accept-Language` header region code → country→currency map
+4. USD fallback
+
+**Build:** 0 TypeScript errors (tsc --noEmit)
+**Files:** 6 files (1 new, 5 modified)
 
 ---
 

@@ -1,7 +1,8 @@
 import { supabaseAdmin } from "./supabase";
 import { sendEmail } from "./resend";
 import { tgSend, tgEdit, fmt, fmtDate, isConfigured, InlineKeyboard } from "./telegram-bot";
-import { PLANS, type PlanKey } from "./stripe";
+import { PLANS, getPlanPrice, type PlanKey } from "./stripe";
+import { convertINR, formatCurrency, ALL_CURRENCIES } from "./currency";
 
 const supabase = supabaseAdmin;
 
@@ -347,6 +348,9 @@ export async function jobMonthlySummary(): Promise<boolean> {
     return sum + plan.amount;
   }, 0);
 
+  const mrrByCurrency = ALL_CURRENCIES.map(c => `${formatCurrency(convertINR(mrr, c), c)}`)
+    .join(" · ");
+
   const planBreakdown = Object.entries(
     active.reduce((acc, p) => {
       const key = (p.plan as string) || "unknown";
@@ -361,6 +365,7 @@ export async function jobMonthlySummary(): Promise<boolean> {
     `📊 <b>Monthly Finance Summary — ${now.toLocaleString("en-IN", { month: "long", year: "numeric" })}</b>`,
     ``,
     `💰 <b>MRR:</b> ${fmt(mrr)}/mo`,
+    `💱 <b>All currencies:</b> ${mrrByCurrency}`,
     `✅ <b>Active clients:</b> ${active.length}`,
     `🆕 <b>New this month:</b> ${thisMonthNew.length}`,
     `⏳ <b>Pending payment:</b> ${pending.length}`,
@@ -404,7 +409,7 @@ async function generateMonthlyNarrative(
             parts: [{ text: "You are a concise financial analyst. Give a 2-sentence business insight based on the metrics. Be specific, actionable, and direct. No fluff." }],
           },
           contents: [{
-            parts: [{ text: `Month: ${date.toLocaleString("en-IN", { month: "long" })}. MRR: $${mrr}. Active clients: ${activeCount}. New this month: ${newCount}. Pending payment: ${pendingCount}. Give me 2 sentences of insight.` }],
+            parts: [{ text: `Month: ${date.toLocaleString("en-IN", { month: "long" })}. MRR: ${fmt(mrr)}. Active clients: ${activeCount}. New this month: ${newCount}. Pending payment: ${pendingCount}. Give me 2 sentences of insight.` }],
           }],
           generationConfig: { maxOutputTokens: 200 },
         }),

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createServerClient } from "@supabase/ssr";
+import { detectCurrency, convertINR, type CurrencyCode, ALL_CURRENCIES } from "@/lib/currency";
+import { getPlanPrice, type PlanKey } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,9 @@ const supabase = supabaseAdmin;
 
 interface BusinessStats {
   mrr: number;
+  mrrCurrency: CurrencyCode;
+  mrrInr: number;
+  mrrByCurrency: Record<CurrencyCode, number>;
   activeSubscribers: number;
   churnedCount: number;
   churnRate: number;
@@ -16,13 +21,6 @@ interface BusinessStats {
   conversionRate: number;
   plans: Record<string, number>;
 }
-
-// Plan → monthly price mapping (matches lib/stripe.ts)
-const PLAN_PRICES: Record<string, number> = {
-  diy: 1500,
-  growth: 3500,
-  scale: 12500,
-};
 
 export async function GET(req: NextRequest) {
   const rawUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
@@ -34,15 +32,17 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabaseSSR.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const url = new URL(req.url);
+  const explicitCurrency = url.searchParams.get("currency") as CurrencyCode | null;
+
   try {
-    // Subscription stats
     const { data: profiles } = await supabase
       .from("profiles")
       .select("subscription_status, plan");
 
     const allProfiles = (profiles || []) as Array<{ subscription_status?: string; plan?: string }>;
 
-    let mrr = 0;
+    let mrrInr = 0;
     let activeSubscribers = 0;
     let churnedCount = 0;
     const plans: Record<string, number> = {};
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
     for (const p of allProfiles) {
       if (p.subscription_status === "active") {
         activeSubscribers++;
-        const price = PLAN_PRICES[p.plan || ""] || 0;
-        mrr += price;
+        const price = getPlanPrice(p.plan || "", "INR");
+        mrrInr += price;
         plans[p.plan || "unknown"] = (plans[p.plan || "unknown"] || 0) + 1;
       }
       if (p.subscription_status === "cancelled" || p.subscription_status === "inactive") {
@@ -62,7 +62,6 @@ export async function GET(req: NextRequest) {
     const totalWithStatus = activeSubscribers + churnedCount;
     const churnRate = totalWithStatus > 0 ? Math.round((churnedCount / totalWithStatus) * 100) : 0;
 
-    // Lead conversion stats
     const { count: totalLeads } = await supabase
       .from("leads")
       .select("*", { count: "exact", head: true });
@@ -76,8 +75,16 @@ export async function GET(req: NextRequest) {
     const leadTotal = totalLeads || 0;
     const conversionRate = leadTotal > 0 ? Math.round((leadsWon / leadTotal) * 100) : 0;
 
+    const displayCurrency = explicitCurrency || detectCurrency(req);
+    const mrrByCurrency = Object.fromEntries(
+      ALL_CURRENCIES.map(c => [c, convertINR(mrrInr, c)])
+    ) as Record<CurrencyCode, number>;
+
     const stats: BusinessStats = {
-      mrr,
+      mrr: convertINR(mrrInr, displayCurrency),
+      mrrCurrency: displayCurrency,
+      mrrInr,
+      mrrByCurrency,
       activeSubscribers,
       churnedCount,
       churnRate,

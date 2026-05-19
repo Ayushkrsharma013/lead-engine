@@ -1,5 +1,8 @@
 // PLANS — product definitions
 // Payments handled by Xflow Pay; Stripe is not used.
+// All amounts in INR (base currency). Multi-currency conversion via lib/currency.ts.
+
+import { convertINR, type CurrencyCode, ALL_CURRENCIES } from "./currency";
 
 export const PLANS = {
   diy: {
@@ -47,3 +50,14 @@ export const PLANS = {
 };
 
 export type PlanKey = keyof typeof PLANS;
+
+export function getPlanPrice(plan: PlanKey | string, currency?: CurrencyCode): number {
+  const p = PLANS[plan as PlanKey] || PLANS.diy;
+  if (!currency || currency === "INR") return p.amount;
+  return convertINR(p.amount, currency);
+}
+
+export function getPlanPrices(plan: PlanKey | string): Record<CurrencyCode, number> {
+  const p = PLANS[plan as PlanKey] || PLANS.diy;
+  return Object.fromEntries(ALL_CURRENCIES.map(c => [c, c === "INR" ? p.amount : convertINR(p.amount, c)])) as Record<CurrencyCode, number>;
+}
