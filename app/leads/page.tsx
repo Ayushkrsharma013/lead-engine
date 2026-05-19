@@ -17,6 +17,7 @@ import { fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLe
 import { useApp } from "@/lib/AppContext";
 import TopBar from "@/components/layout/TopBar";
 import FilterPanel from "@/components/FilterPanel";
+import SaveFilterModal from "@/components/SaveFilterModal";
 import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
 import ImportModal from "@/components/ImportModal";
@@ -278,7 +279,7 @@ export default function Home() {
         dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: "Starting Apify actor…", type: "info" } });
         dispatch({ type: "SET_PROGRESS", payload: 10 });
 
-        const startRes = await fetch("/api/leads", {
+        const startRes = await fetch("/prospecting-os/api/leads", {
           method: "POST",
           headers: API_HEADERS,
           body: JSON.stringify({ source, fields: {} }),
@@ -552,6 +553,58 @@ export default function Home() {
   const filterCount = countActiveFilters(filters);
   const [gdrive, setGdrive] = useState(false);
   const [filterPanelCollapsed, setFilterPanelCollapsed] = useState(false);
+  const [saveFilterOpen, setSaveFilterOpen] = useState(false);
+  const [savedFilterNames, setSavedFilterNames] = useState<string[]>([]);
+
+  const fetchSavedFilters = useCallback(async () => {
+    try {
+      const res = await fetch("/prospecting-os/api/filters");
+      if (res.ok) {
+        const data = await res.json();
+        setSavedFilterNames((data.filters || []).map((f: { name: string }) => f.name));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchSavedFilters(); }, [fetchSavedFilters]);
+
+  const handleSaveFilter = async (name: string) => {
+    await fetch("/prospecting-os/api/filters", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, config: filters }),
+    });
+    fetchSavedFilters();
+  };
+
+  const handleLoadFilter = useCallback(async (name: string) => {
+    try {
+      const res = await fetch("/prospecting-os/api/filters");
+      if (res.ok) {
+        const data = await res.json();
+        const match = (data.filters || []).find((f: { name: string; filter_config: FilterState }) => f.name === name);
+        if (match) {
+          dispatch({ type: "SET_FILTERS", payload: match.filter_config });
+          showToast(`Loaded filter: ${name}`);
+        }
+      }
+    } catch { showToast("Failed to load filter", "error"); }
+  }, [dispatch, showToast]);
+
+  const handleDeleteFilter = useCallback(async (name: string) => {
+    try {
+      const res = await fetch("/prospecting-os/api/filters");
+      if (res.ok) {
+        const data = await res.json();
+        const match = (data.filters || []).find((f: { id: string; name: string }) => f.name === name);
+        if (match) {
+          await fetch(`/prospecting-os/api/filters/${match.id}`, { method: "DELETE" });
+          fetchSavedFilters();
+          showToast(`Deleted filter: ${name}`);
+        }
+      }
+    } catch { showToast("Failed to delete filter", "error"); }
+  }, [fetchSavedFilters, showToast]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg">
@@ -572,6 +625,12 @@ export default function Home() {
           accent={accent}
           collapsed={filterPanelCollapsed}
           onToggleCollapse={() => setFilterPanelCollapsed(prev => !prev)}
+          onSaveFilter={() => setSaveFilterOpen(true)}
+          savedFilterNames={savedFilterNames}
+          onLoadFilter={async (config) => {
+            dispatch({ type: "SET_FILTERS", payload: config });
+          }}
+          onDeleteFilter={handleDeleteFilter}
         />
 
         {/* Main content */}
@@ -1218,6 +1277,12 @@ export default function Home() {
         csvContent={driveCsv}
         fileName={driveFile}
         leadCount={driveLeads.length}
+      />
+
+      <SaveFilterModal
+        open={saveFilterOpen}
+        onClose={() => setSaveFilterOpen(false)}
+        onSave={handleSaveFilter}
       />
 
       {syncModalOpen && (

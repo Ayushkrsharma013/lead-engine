@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Calendar, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, SlidersHorizontal, Save, X } from "lucide-react";
+import ThemedDatePicker from "@/components/ui/ThemedDatePicker";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
@@ -117,12 +118,16 @@ interface FilterPanelProps {
   accent: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  onSaveFilter?: () => void;
+  onLoadFilter?: (config: FilterState) => void;
+  savedFilterNames?: string[];
+  onDeleteFilter?: (name: string) => void;
 }
 
 const COLLAPSED_W = 48;
 const EXPANDED_W = 272;
 
-export default function FilterPanel({ filters, onChange, accent, collapsed, onToggleCollapse }: FilterPanelProps) {
+export default function FilterPanel({ filters, onChange, accent, collapsed, onToggleCollapse, onSaveFilter, onLoadFilter, savedFilterNames, onDeleteFilter }: FilterPanelProps) {
   const toggle = (key: keyof FilterState, value: string) => {
     const arr = filters[key] as string[];
     const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
@@ -388,36 +393,19 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
               <div className="mt-2 space-y-2.5">
                 <div>
                   <SubLabel>From</SubLabel>
-                  <div className="relative">
-                    <Calendar
-                      size={11}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: "var(--ink-3)" }}
-                    />
-                    <input
-                      type="date"
-                      value={filters.dateFrom}
-                      onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
-                      className="filter-date-input"
-                    />
-                  </div>
+                  <ThemedDatePicker
+                    value={filters.dateFrom}
+                    onChange={v => onChange({ ...filters, dateFrom: v || "" })}
+                    placeholder="Start date"
+                  />
                 </div>
                 <div>
                   <SubLabel>To</SubLabel>
-                  <div className="relative">
-                    <Calendar
-                      size={11}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: "var(--ink-3)" }}
-                    />
-                    <input
-                      type="date"
-                      value={filters.dateTo}
-                      min={filters.dateFrom || undefined}
-                      onChange={e => onChange({ ...filters, dateTo: e.target.value })}
-                      className="filter-date-input"
-                    />
-                  </div>
+                  <ThemedDatePicker
+                    value={filters.dateTo}
+                    onChange={v => onChange({ ...filters, dateTo: v || "" })}
+                    placeholder="End date"
+                  />
                 </div>
                 {dateRangeCount > 0 && (
                   <button
@@ -463,6 +451,51 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
                 })}
               </div>
             </Section>
+
+            {/* Saved Filters */}
+            {(onSaveFilter || (savedFilterNames && savedFilterNames.length > 0)) && (
+              <div className="px-3 py-2 space-y-1.5 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>
+                {onSaveFilter && (
+                  <button
+                    onClick={onSaveFilter}
+                    className="flex items-center gap-1.5 w-full h-7 px-2 rounded-md text-[11px] font-medium transition-all"
+                    style={{ color: "var(--ink-3)" }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--accent-blue)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                    }}
+                  >
+                    <Save size={12} /> Save current filters
+                  </button>
+                )}
+                {savedFilterNames && savedFilterNames.length > 0 && savedFilterNames.map(name => (
+                  <div key={name} className="flex items-center gap-1">
+                    <button
+                      onClick={() => onLoadFilter?.(filters)}
+                      className="flex-1 text-left h-7 px-2 rounded-md text-[11px] font-medium truncate transition-all"
+                      style={{ color: "var(--ink-2)" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                    >
+                      {name}
+                    </button>
+                    <button
+                      onClick={() => onDeleteFilter?.(name)}
+                      className="shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors"
+                      style={{ color: "var(--ink-4)" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "var(--negative)")}
+                      onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-4)")}
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
