@@ -509,11 +509,15 @@ export default function Home() {
   const handleExportCSV = (ids?: string[]) => {
     const toExport = getExportLeads(ids);
     const csv = generateCSV(toExport);
+    const filename = `leads-${source}-${Date.now()}.csv`;
+    // Download the CSV
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `leads-${source}-${Date.now()}.csv`;
+    a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    a.download = filename;
     a.click();
-    showToast(`${toExport.length} leads exported as CSV`);
+    // Open Google Sheets to import the file
+    window.open("https://docs.google.com/spreadsheets/u/0/create?usp=sheets_home", "_blank");
+    showToast(`${toExport.length} leads exported — open in Google Sheets`);
   };
 
   const driveLeads = selected.length ? sorted.filter(l => selected.includes(l.id)) : sorted;
@@ -776,34 +780,6 @@ export default function Home() {
               Import
             </button>
 
-            {/* Sync History — historical Apify runs */}
-            <button
-              onClick={() => setSyncModalOpen(true)}
-              disabled={running}
-              title="Import leads from all past Apify runs"
-              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--surface-2)",
-                color: "var(--ink-3)",
-                border: "1px solid var(--line)",
-              }}
-              onMouseEnter={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.color = "var(--accent)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.35)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--line)";
-                }
-              }}
-            >
-              <RefreshCw size={13} />
-              Sync History
-            </button>
-
             {/* Move to Hot — visible when leads selected in Latest Run tab */}
             {tab === "latest" && selected.length > 0 && (
               <button
@@ -1036,9 +1012,9 @@ export default function Home() {
           {/* Stats bar */}
           <StatsBar {...stats} accent={accent} />
 
-          {/* Score tier tabs */}
+          {/* Score tier tabs — Framer Motion polished */}
           <div
-            className="flex items-center gap-1 px-4 py-2 shrink-0"
+            className="flex items-center gap-1 px-4 py-2 shrink-0 flex-wrap"
             style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)" }}
           >
             {([
@@ -1050,37 +1026,64 @@ export default function Home() {
               const active = scoreTab === key;
               const a = tabAccent || "var(--ink-3)";
               return (
-                <button
+                <motion.button
                   key={key}
                   onClick={() => {
                     setScoreTab(key);
                     dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
                   }}
-                  className="flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium transition-all duration-150"
+                  whileHover={active ? {} : { scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium"
                   style={active ? {
-                    background: `${a}14`,
-                    border: `1px solid ${a}30`,
+                    background: `${a}18`,
+                    border: `1px solid ${a}40`,
                     color: a,
+                    boxShadow: `0 0 10px ${a}18`,
+                    fontWeight: 600,
                   } : {
+                    background: "transparent",
                     border: "1px solid transparent",
                     color: "var(--ink-3)",
                   }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--ink)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "var(--line-strong)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+                    }
+                  }}
                 >
                   {key === "hot" && <Flame size={11} />}
+                  {key === "warm" && (
+                    <motion.span
+                      animate={{ opacity: active ? 1 : 0.5 }}
+                      style={{
+                        width: 6, height: 6, borderRadius: 9999, background: a,
+                        boxShadow: active ? `0 0 4px ${a}` : "none",
+                      }}
+                    />
+                  )}
                   {label}
-                  <span
-                    className="text-[10px] px-1 py-0.5 rounded font-bold tabular-nums"
-                    style={active ? {
-                      background: `${a}20`,
-                      color: a,
-                    } : {
-                      background: "var(--surface-2)",
-                      color: "var(--ink-3)",
+                  <motion.span
+                    animate={{
+                      background: active ? `${a}24` : "var(--surface-2)",
+                      color: active ? a : "var(--ink-3)",
                     }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums"
                   >
                     {count}
-                  </span>
-                </button>
+                  </motion.span>
+                </motion.button>
               );
             })}
           </div>
