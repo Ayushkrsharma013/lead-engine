@@ -406,7 +406,6 @@ export default function Home() {
 
   // Import modal
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [importedRunIds, setImportedRunIds] = useState<Set<string>>(new Set());
   const handleImported = useCallback(async (added: number, updated: number, total: number, leads: Lead[]) => {
     const stored = await fetchLeadsFromDB();
     // Use MERGE_LEADS to populate both "All Saved Leads" AND "Latest Run" tabs
@@ -1189,8 +1188,6 @@ export default function Home() {
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         onImported={handleImported}
-        importedRunIds={importedRunIds}
-        onRunImported={(runId) => setImportedRunIds(prev => new Set(prev).add(runId))}
       />
       <GDriveModal
         open={gdrive}

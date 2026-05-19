@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiAuth } from "@/lib/api-auth";
 import { mergeLeadsInDB } from "@/lib/db";
 import { stableLeadId } from "@/lib/storage";
+import { supabaseAdmin } from "@/lib/supabase";
 import type { Lead } from "@/lib/types";
 
 export const maxDuration = 300;
@@ -113,7 +114,14 @@ export async function GET(req: NextRequest) {
       (a, b) => new Date(b!.finishedAt).getTime() - new Date(a!.finishedAt).getTime()
     );
 
-    return NextResponse.json({ runs: validRuns });
+    // Fetch import history so frontend can mark already-imported runs
+    const { data: imported } = await supabaseAdmin
+      .from("apify_imports")
+      .select("run_id, lead_count, imported_at");
+
+    const importedRunIds = (imported || []).map(r => r.run_id);
+
+    return NextResponse.json({ runs: validRuns, importedRunIds });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err ?? "");
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -171,6 +179,24 @@ export async function POST(req: NextRequest) {
 
     const runIdSet = new Set(targetRunIds);
 
+    // Check which runs are already imported
+    const { data: alreadyImported } = await supabaseAdmin
+      .from("apify_imports")
+      .select("run_id")
+      .in("run_id", targetRunIds);
+
+    const alreadySet = new Set((alreadyImported || []).map(r => r.run_id));
+    const freshRunIds = targetRunIds.filter(id => !alreadySet.has(id));
+
+    if (freshRunIds.length === 0) {
+      return NextResponse.json({
+        message: "All selected runs have already been imported",
+        alreadyImported: true,
+        importedRunIds: targetRunIds,
+        added: 0, updated: 0, total: 0,
+      });
+    }
+
     // 1. Find the target run(s) from the run history
     const runsRes = await fetch(
       `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
@@ -226,6 +252,14 @@ export async function POST(req: NextRequest) {
     // 4. Merge into DB (mergeLeadsInDB handles dedup against existing leads)
     const { stored, added, updated } = await mergeLeadsInDB(deduped);
 
+    // 5. Record import history to prevent future duplicate imports
+    const importRows = targetRunIds.map(rid => ({
+      run_id: rid,
+      lead_count: added + updated,
+      status: "completed",
+    }));
+    await supabaseAdmin.from("apify_imports").upsert(importRows, { onConflict: "run_id" });
+
     // Return the imported leads so the frontend can show them in "Latest Run"
     return NextResponse.json({
       message: `${added + updated} leads imported successfully`,
@@ -233,6 +267,7 @@ export async function POST(req: NextRequest) {
       updated,
       total: added + updated,
       leads: deduped,
+      importedRunIds: targetRunIds,
     });
   } catch (err: unknown) {
     const detail = err instanceof Error
