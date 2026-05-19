@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Building2, MapPin, Trash2, Download, Users, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { ExternalLink, Building2, MapPin, Trash2, Download, Users, ChevronUp, ChevronDown, ChevronsUpDown, Search, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import type { Lead, SortState, SortField, PaginationState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import Pagination from "./Pagination";
@@ -116,12 +117,16 @@ interface LeadsTableProps {
   onExport: (ids: string[]) => void;
   onSort: (field: SortField) => void;
   onPaginationChange: (p: PaginationState) => void;
+  onRunWithFilters?: () => void;
 }
 
 export default function LeadsTable({
   leads, running, accent, selected, sort, pagination, totalFiltered,
   onSelect, onSelectAll, onDelete, onExport, onSort, onPaginationChange,
+  onRunWithFilters,
 }: LeadsTableProps) {
+  const [findLeadsLoading, setFindLeadsLoading] = useState(false);
+  useEffect(() => { if (!running) setFindLeadsLoading(false); }, [running]);
   const { page, pageSize } = pagination;
   const paginated = leads.slice((page - 1) * pageSize, page * pageSize);
   const allSelected = paginated.length > 0 && paginated.every(l => selected.includes(l.id));
@@ -175,6 +180,39 @@ export default function LeadsTable({
             <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>
               Try adjusting your filters or run the agent to fetch new leads
             </p>
+            {onRunWithFilters && (
+              <button
+                onClick={() => {
+                  setFindLeadsLoading(true);
+                  onRunWithFilters();
+                }}
+                disabled={findLeadsLoading}
+                className="flex items-center gap-2 mx-auto h-9 px-5 rounded-xl text-[13px] font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: `linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.08) 100%)`,
+                  color: "var(--accent-blue)",
+                  border: "1px solid rgba(0,212,255,0.30)",
+                  boxShadow: "0 0 14px rgba(0,212,255,0.12)",
+                }}
+                onMouseEnter={e => {
+                  if (!findLeadsLoading) {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 0 22px rgba(0,212,255,0.22)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.45)";
+                  }
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px rgba(0,212,255,0.12)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.30)";
+                }}
+              >
+                {findLeadsLoading ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Search size={13} />
+                )}
+                {findLeadsLoading ? "Searching…" : "Find leads with these filters"}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1198,6 +1198,7 @@ export default function Home() {
             onExport={ids => handleExportCSV(ids)}
             onSort={handleSort}
             onPaginationChange={p => dispatch({ type: "SET_PAGINATION", payload: p })}
+            onRunWithFilters={sorted.length === 0 && filterCount > 0 ? () => handleRun() : undefined}
           />
 
           {/* Agent Log */}
