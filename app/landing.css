@@ -143,7 +143,7 @@
   background: var(--dot-color);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 99999;
+  z-index: 100001;
   transition: transform 0.1s ease, background var(--transition-theme);
   transform: translate(-50%, -50%);
 }
@@ -154,7 +154,7 @@
   border: 2px solid var(--ring-color);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 99998;
+  z-index: 100000;
   transition: width 0.3s ease, height 0.3s ease, border-color var(--transition-theme), transform 0.12s ease;
   transform: translate(-50%, -50%);
 }
@@ -236,9 +236,50 @@
   text-decoration: none;
   transition: color var(--transition-fast);
   letter-spacing: -0.01em;
+  position: relative;
+  padding: 4px 0;
+}
+.landing-page .nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .landing-page .nav-links a:hover {
   color: var(--text-primary);
+}
+.landing-page .nav-links a:hover::after {
+  width: 100%;
+}
+
+/* ── Shared nav link hover underline (for BlogNavbar etc) ──────────────── */
+.landing-page .nav-link-item {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  position: relative;
+  padding: 4px 0;
+  transition: color 0.2s ease;
+}
+.landing-page .nav-link-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 0; height: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.landing-page .nav-link-item:hover {
+  color: var(--text-primary);
+}
+.landing-page .nav-link-item:hover::after {
+  width: 100%;
 }
 .landing-page .nav-cta {
   font-weight: 600;

@@ -372,7 +372,7 @@ export default function LandingPage() {
     ro.observe(section);
     window.addEventListener("resize", resize);
 
-    const gridSize = 48;
+    const gridSize = 72;
     const cols = Math.ceil(canvas.width / gridSize) + 1;
     const rows = Math.ceil(canvas.height / gridSize) + 1;
     interface Dot { baseX: number; baseY: number; ox: number; oy: number; phase: number; speed: number; r: number }
@@ -391,6 +391,18 @@ export default function LandingPage() {
       }
     }
 
+    // Mouse position tracking for repulsion
+    let mx = -999;
+    let my = -999;
+    const onMouse = (e: MouseEvent) => {
+      const r = section.getBoundingClientRect();
+      mx = e.clientX - r.left;
+      my = e.clientY - r.top;
+    };
+    const onLeave = () => { mx = -999; my = -999; };
+    section.addEventListener("mousemove", onMouse, { passive: true });
+    section.addEventListener("mouseleave", onLeave);
+
     let raf: number;
     const animate = () => {
       const isDark = document.documentElement.getAttribute("data-theme") !== "light";
@@ -400,10 +412,24 @@ export default function LandingPage() {
       const t = performance.now() * 0.001;
       const accent = "rgba(232,66,10,";
       const dim = "rgba(255,255,255,";
+      const repelRadius = 100;
 
       for (const d of dots) {
-        const dx = Math.sin(t * d.speed + d.phase) * 10 + d.ox;
-        const dy = Math.cos(t * d.speed * 0.7 + d.phase) * 10 + d.oy;
+        let dx = Math.sin(t * d.speed + d.phase) * 10 + d.ox;
+        let dy = Math.cos(t * d.speed * 0.7 + d.phase) * 10 + d.oy;
+
+        // Mouse repulsion — push dots away from cursor
+        const px = d.baseX + dx;
+        const py = d.baseY + dy;
+        const mdx = px - mx;
+        const mdy = py - my;
+        const md = Math.hypot(mdx, mdy);
+        if (md < repelRadius && md > 0) {
+          const force = (1 - md / repelRadius) * 28;
+          dx += (mdx / md) * force;
+          dy += (mdy / md) * force;
+        }
+
         const x = d.baseX + dx;
         const y = d.baseY + dy;
 
@@ -421,8 +447,16 @@ export default function LandingPage() {
         // Connect nearby dots with faint lines
         for (let j = dots.indexOf(d) + 1; j < dots.length; j++) {
           const n = dots[j];
-          const nx = n.baseX + Math.sin(t * n.speed + n.phase) * 10 + n.ox;
-          const ny = n.baseY + Math.cos(t * n.speed * 0.7 + n.phase) * 10 + n.oy;
+          let nx = n.baseX + Math.sin(t * n.speed + n.phase) * 10 + n.ox;
+          let ny = n.baseY + Math.cos(t * n.speed * 0.7 + n.phase) * 10 + n.oy;
+          const ndx = nx - mx;
+          const ndy = ny - my;
+          const nd = Math.hypot(ndx, ndy);
+          if (nd < repelRadius && nd > 0) {
+            const force = (1 - nd / repelRadius) * 28;
+            nx += (ndx / nd) * force;
+            ny += (ndy / nd) * force;
+          }
           const dist = Math.hypot(x - nx, y - ny);
           if (dist < gridSize * 1.4) {
             ctx.beginPath();
@@ -431,7 +465,7 @@ export default function LandingPage() {
             ctx.strokeStyle = dim + (0.04 * (1 - dist / (gridSize * 1.4))) + ")";
             ctx.lineWidth = 0.5;
             ctx.stroke();
-            break; // only connect to nearest neighbor
+            break;
           }
         }
       }
@@ -444,6 +478,8 @@ export default function LandingPage() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("resize", resize);
+      section.removeEventListener("mousemove", onMouse);
+      section.removeEventListener("mouseleave", onLeave);
     };
   }, []);
 

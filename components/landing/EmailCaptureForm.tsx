@@ -26,7 +26,7 @@ function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: st
       top: rect.bottom + 8,
       left: rect.left,
       width: rect.width,
-      zIndex: 99999,
+      zIndex: 50000,
     })
   }, [])
 
@@ -101,6 +101,8 @@ function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: st
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.2 }}
+                  whileHover={{ scale: 1.03, x: 4, transition: { duration: 0.15 } }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => { onChange(ind); setOpen(false) }}
                   style={{
                     width: '100%', textAlign: 'left', padding: '10px 14px',
@@ -110,10 +112,19 @@ function IndustryDropdown({ value, onChange }: { value: string; onChange: (v: st
                     fontSize: 14, fontWeight: value === ind ? 600 : 400,
                     fontFamily: 'Cabinet Grotesk, Geist, sans-serif',
                     cursor: 'pointer',
-                    transition: 'background 0.12s, color 0.12s',
                   }}
                 >
                   {ind}
+                  {value === ind && (
+                    <motion.span
+                      initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      style={{
+                        float: 'right', width: 6, height: 6, borderRadius: '50%',
+                        background: 'var(--accent)', display: 'inline-block', marginTop: 5,
+                      }}
+                    />
+                  )}
                 </motion.button>
               ))}
             </motion.div>

@@ -128,54 +128,10 @@ export default function BlogNavbar() {
               transform: "translateX(-50%)",
             }}
           >
-            <Link
-              href="/#how-it-works"
-              style={{
-                fontWeight: 500,
-                fontSize: "0.9rem",
-                color: "var(--text-secondary)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/#pricing"
-              style={{
-                fontWeight: 500,
-                fontSize: "0.9rem",
-                color: "var(--text-secondary)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/#roi"
-              style={{
-                fontWeight: 500,
-                fontSize: "0.9rem",
-                color: "var(--text-secondary)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              ROI Calculator
-            </Link>
-            <Link
-              href="/#faq"
-              style={{
-                fontWeight: 500,
-                fontSize: "0.9rem",
-                color: "var(--text-secondary)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              FAQ
-            </Link>
+            <Link href="/#how-it-works" className="nav-link-item">How It Works</Link>
+            <Link href="/#pricing" className="nav-link-item">Pricing</Link>
+            <Link href="/#roi" className="nav-link-item">ROI Calculator</Link>
+            <Link href="/#faq" className="nav-link-item">FAQ</Link>
             <Link
               href="/blog"
               style={{
