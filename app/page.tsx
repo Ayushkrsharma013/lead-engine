@@ -1089,9 +1089,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── EMAIL CAPTURE — GET YOUR SAMPLE ──────────────────────── */}
-      <section id="sample" className="section" style={{ background: 'var(--bg-secondary)' }}>
-        <div className="container">
+      {/* ── FREE SAMPLE — GET 5 AI-SCORED LEADS ──────────────────── */}
+      <section id="sample" className="section" style={{ background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
+        {/* 21st.dev animated background — dot-grid pattern */}
+        <iframe
+          src="https://cdn.21st.dev/bundled/1176.html?theme=dark&dark=true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            pointerEvents: 'none',
+            opacity: 0.45,
+            zIndex: 0,
+          }}
+          title=""
+          aria-hidden="true"
+        />
+        {/* Subtle gradient overlay to blend the background */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          background: 'linear-gradient(180deg, var(--bg-primary) 0%, transparent 20%, transparent 80%, var(--bg-primary) 100%)',
+          pointerEvents: 'none',
+        }} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div className="section-header reveal">
             <div className="section-eyebrow">// Free Sample</div>
             <h2 className="section-title">
