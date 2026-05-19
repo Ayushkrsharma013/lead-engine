@@ -282,7 +282,26 @@ async function executeDM(page, action) {
 
 // ─── Main run loop ────────────────────────────────────────────────────────────
 
+async function resetStuckExecuting() {
+  // Reset any rows stuck in "executing" (e.g. from a previous crash) back to "pending"
+  const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // older than 10 min
+  const { error } = await supabase
+    .from("linkedin_queue")
+    .update({ status: "pending" })
+    .eq("status", "executing")
+    .lt("updated_at", cutoff);
+  if (error) {
+    // updated_at may not exist on all deployments — fall back to resetting all executing rows
+    await supabase
+      .from("linkedin_queue")
+      .update({ status: "pending" })
+      .eq("status", "executing");
+  }
+}
+
 async function runOnce() {
+  await resetStuckExecuting();
+
   const stats = await getTodayStats();
 
   if (!isActiveHour()) {
@@ -302,7 +321,7 @@ async function runOnce() {
     console.log(`[runner] Connection cap reached (${MAX_CONNECTIONS}/day) — waiting until tomorrow`);
     return 0;
   }
-  if (action.action_type === "dm" && stats.dms_sent >= MAX_DMS) {
+  if ((action.action_type === "dm" || action.action_type === "follow_up") && stats.dms_sent >= MAX_DMS) {
     console.log(`[runner] DM cap reached (${MAX_DMS}/day) — waiting until tomorrow`);
     return 0;
   }

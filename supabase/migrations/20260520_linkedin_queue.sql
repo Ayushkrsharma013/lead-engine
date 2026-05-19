@@ -43,6 +43,11 @@ CREATE POLICY "service_role_all_linkedin_daily_stats"
   ON public.linkedin_daily_stats FOR ALL
   TO service_role USING (true) WITH CHECK (true);
 
+-- Prevent duplicate pending/executing actions for the same lead + action type
+CREATE UNIQUE INDEX IF NOT EXISTS linkedin_queue_no_duplicate_pending
+  ON linkedin_queue (lead_id, action_type)
+  WHERE status IN ('pending', 'executing');
+
 -- Allow sequence_messages.status = 'queued' for LinkedIn steps
 -- Guarded: sequence_messages may not exist in all environments
 DO $$

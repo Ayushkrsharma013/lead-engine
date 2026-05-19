@@ -1,5 +1,5 @@
 // app/api/outreach/queue/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   getQueueStatus,
   getPendingActions,
@@ -8,7 +8,12 @@ import {
 } from "@/lib/linkedin-queue";
 import { supabaseAdmin } from "@/lib/supabase";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const role = request.headers.get("x-user-role");
+  if (role !== "super_admin" && role !== "qa_agent") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const [status, pending, todayStats] = await Promise.all([
       getQueueStatus(),
@@ -42,7 +47,12 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const role = req.headers.get("x-user-role");
+  if (role !== "super_admin" && role !== "qa_agent") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body = await req.json() as {
       leadId: string;
