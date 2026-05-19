@@ -1,6 +1,7 @@
 // lib/agents/resolver.ts
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail } from "@/lib/resend";
+import { enqueueLinkedInAction } from "@/lib/linkedin-queue";
 import type { AgentActionRow } from "./types";
 
 // ── Action Dispatch ────────────────────────────────────────────────────────────
@@ -180,6 +181,45 @@ async function dispatchAction(action: AgentActionRow): Promise<string> {
       const { error: insErr } = await supabaseAdmin.from("sequence_executions").insert(rows);
       if (insErr) throw new Error(`Failed to enroll leads: ${insErr.message}`);
       return `${newIds.length} hot lead${newIds.length !== 1 ? "s" : ""} enrolled in "${seqName}"`;
+    }
+
+    case "queue_linkedin_connections": {
+      const candidates = Array.isArray(p.candidates) ? p.candidates : [];
+      if (!candidates.length) throw new Error("queue_linkedin_connections payload missing candidates");
+
+      let queued = 0;
+      for (const c of candidates as Array<Record<string, unknown>>) {
+        const leadId = String(c.leadId ?? "");
+        const profileUrl = String(c.profileUrl ?? "");
+        if (!leadId || !profileUrl) continue;
+        try {
+          await enqueueLinkedInAction({
+            leadId,
+            linkedinProfileUrl: profileUrl,
+            actionType: "connection_request",
+            message: c.message ? String(c.message) : undefined,
+          });
+          queued++;
+        } catch {
+          // continue with remaining candidates
+        }
+      }
+      return `Queued ${queued} LinkedIn connection request${queued !== 1 ? "s" : ""}`;
+    }
+
+    case "queue_linkedin_dm": {
+      const leadId = String(p.leadId ?? "");
+      const profileUrl = String(p.profileUrl ?? "");
+      const message = String(p.message ?? "");
+      if (!leadId || !profileUrl) throw new Error("queue_linkedin_dm payload missing leadId or profileUrl");
+
+      await enqueueLinkedInAction({
+        leadId,
+        linkedinProfileUrl: profileUrl,
+        actionType: "dm",
+        message: message || undefined,
+      });
+      return `LinkedIn DM queued for ${String(p.leadName ?? leadId)}`;
     }
 
     // Informational types — no DB changes, just mark executed
