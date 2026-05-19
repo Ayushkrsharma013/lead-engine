@@ -38,15 +38,44 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
     <div className="landing-page" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
       <BlogNavbar />
 
-      <main className="container" style={{ paddingTop: 100, paddingBottom: 80 }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(2rem, 3.5vw, 2.6rem)', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+      <main className="container" style={{ paddingTop: 96, paddingBottom: 80 }}>
+        {/* Hero */}
+        <section style={{ textAlign: 'center', marginBottom: 48, position: 'relative', paddingTop: 24, paddingBottom: 32 }}>
+          {/* Subtle accent glow behind the heading */}
+          <div style={{
+            position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)',
+            width: 500, height: 200,
+            background: 'radial-gradient(ellipse at center, rgba(232,66,10,0.08) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+          <span style={{
+            display: 'inline-block', padding: '4px 14px', borderRadius: 'var(--radius-full)',
+            fontSize: 11, fontWeight: 600,
+            background: 'var(--badge-bg)', color: 'var(--badge-text)',
+            border: '1px solid rgba(232,66,10,0.12)',
+            marginBottom: 20,
+            letterSpacing: '0.03em',
+            textTransform: 'uppercase',
+          }}>
+            Prospecting OS Blog
+          </span>
+          <h1 style={{
+            fontFamily: 'var(--font-heading)', fontWeight: 900,
+            fontSize: 'clamp(2rem, 3.5vw, 2.8rem)',
+            color: 'var(--text-primary)', margin: '0 auto',
+            letterSpacing: '-0.02em', maxWidth: 700,
+            lineHeight: 1.15,
+          }}>
             B2B Lead Generation Insights
           </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-secondary)', marginTop: 12, maxWidth: 520, margin: '12px auto 0' }}>
+          <p style={{
+            fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-secondary)',
+            marginTop: 14, maxWidth: 520, margin: '14px auto 0',
+            lineHeight: 1.5,
+          }}>
             Strategies, tools, and real-world tactics for AI-powered prospecting — from pipeline math to agency scaling.
           </p>
-        </div>
+        </section>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 48, flexWrap: 'wrap' }}>
           {CATEGORIES.map(c => {
