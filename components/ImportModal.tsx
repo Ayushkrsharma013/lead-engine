@@ -29,7 +29,7 @@ const API_HEADERS = {
 };
 
 async function fetchRuns(): Promise<ApifyRun[]> {
-  const res = await fetch("/api/leads/import", { headers: API_HEADERS });
+  const res = await fetch("/prospecting-os/api/leads/import", { headers: API_HEADERS });
   const data = await res.json();
   if (data.error) throw new Error(data.error);
   return data.runs || [];
@@ -78,7 +78,7 @@ export default function ImportModal({ open, onClose, onImported, importedRunIds,
     setMessage("");
 
     try {
-      const res = await fetch("/api/leads/import", {
+      const res = await fetch("/prospecting-os/api/leads/import", {
         method: "POST",
         headers: API_HEADERS,
         body: JSON.stringify({ runId: selectedRunId }),
