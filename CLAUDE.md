@@ -1396,3 +1396,29 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Commits**: 10 commits (Shell fix, blog nav/footer, hero, analytics+panel, sample particle, dropdown fix, cursor fix, ImportModal URL fix, import tracking)
 
 **Current build**: 78 routes, 0 TypeScript errors, 0 open bugs, 1 phase remaining
+
+---
+
+### 2026-05-20 — Leads Page UI Polish + AI Control Center
+
+**Leads Page UI Polish**:
+- `app/leads/page.tsx` — Removed Sync History button (import flow replaced it), CSV export now adds UTF-8 BOM + opens Google Sheets in new tab, stats tabs (All Leads/Hot/Warm/Cold) rebuilt with Framer Motion (`whileHover` scale+y, `whileTap`, animated count badges, active glow shadow, warm dot indicator, hover surface-2 transition, flex-wrap responsive)
+
+**AI Control Center**:
+- `components/LeadControlCenter.tsx` — **New** — 3 live stat cards above the leads table:
+  - Apify Credits card: remaining/today/estimated credits, actor health dot (green/amber/red), auto-refresh every 45s
+  - Expected Results card: estimated lead range, email coverage %, runtime, difficulty badge (low/medium/high) — calculated from active filter restrictiveness
+  - Last Run Stats card: fetched count, added, emails, LinkedIn match %, credits consumed (from `scrape_logs`)
+  - Animated run status bar: 6-step progress dots (Initializing → Querying → Enriching → Deduplicating → Saving → Finalizing) when Run Agent is active
+  - Filter advisory: amber warning banner when filters are too restrictive with suggestions to broaden
+- `app/api/leads/apify-usage/route.ts` — **New** — GET endpoint queries Apify `/users/me/usage` for credits, `/acts/{actor}` for health, Supabase `scrape_logs` for today's usage + last run telemetry
+- **New DB table**: `scrape_logs` (id UUID PK, filters_used JSONB, leads_fetched/added, duplicates_removed, emails_found, linkedin_matched, credits_consumed, runtime_seconds, match_accuracy, status, error_message)
+
+**DB changes**:
+- `apify_imports` table — tracks imported Apify runs (run_id PK, lead_count, status, imported_at)
+- `scrape_logs` table — post-scrape telemetry
+- Leads count: 222 → 287 (65 sample leads added across 2 batches)
+
+**Commits**: 3 commits (import tracking, leads UI polish, AI control center)
+
+**Current build**: 79 routes, 0 TypeScript errors, 0 open bugs
