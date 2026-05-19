@@ -11,6 +11,7 @@ import {
   logActivity,
   leadFromDB as leadFromRow,
 } from "./db";
+import { enqueueLinkedInAction, isAlreadyQueued } from "./linkedin-queue";
 import { sendEmail, buildProspectingEmailHtml } from "./resend";
 import { supabaseAdmin } from "./supabase";
 import type { Sequence, SequenceExecution, Lead } from "./types";
@@ -173,8 +174,35 @@ export async function processDueSteps(): Promise<CronResult> {
       .maybeSingle();
     if (existingMsg) { skipped++; continue; }
 
-    // Skip LinkedIn steps (handled by OpenOutreach)
+    // Queue LinkedIn steps in linkedin_queue for local runner execution
     if (step.channel === "linkedin") {
+      const leadRow = leadMap.get(exec.leadId);
+      const profileUrl = leadRow ? String(leadRow.linkedin || "") : "";
+
+      // Only enqueue if lead has a LinkedIn URL and isn't already queued
+      if (profileUrl) {
+        const alreadyQueued = await isAlreadyQueued(
+          exec.leadId,
+          step.type === "connection_request" ? "connection_request" : "dm"
+        );
+        if (!alreadyQueued) {
+          const resolvedMessage = leadRow
+            ? resolveTemplate(step.template, leadFromRow(leadRow))
+            : step.template;
+          const scheduledFor = new Date(
+            new Date(exec.startedAt).getTime() + step.day * 86400000
+          );
+          await enqueueLinkedInAction({
+            leadId: exec.leadId,
+            linkedinProfileUrl: profileUrl,
+            actionType: step.type === "connection_request" ? "connection_request" : "dm",
+            message: resolvedMessage,
+            scheduledFor,
+            sequenceExecutionId: exec.id,
+          });
+        }
+      }
+
       await insertSequenceMessage({
         executionId: exec.id,
         leadId: exec.leadId,
@@ -182,7 +210,7 @@ export async function processDueSteps(): Promise<CronResult> {
         channel: "linkedin",
         subject: step.type,
         body: step.template,
-        status: "skipped",
+        status: "queued",
         variant: exec.variant,
       });
       const nextStep = exec.currentStep + 1;

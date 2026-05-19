@@ -140,7 +140,7 @@ export interface SequenceMessage {
   channel: "email" | "linkedin";
   subject: string;
   body: string;
-  status: "sent" | "failed" | "bounced" | "skipped" | "replied";
+  status: "sent" | "failed" | "bounced" | "skipped" | "replied" | "queued";
   resendId?: string;
   variant?: string;
   createdAt?: string;
