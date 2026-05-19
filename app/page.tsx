@@ -293,9 +293,6 @@ export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
 
-  /* ─── Sample section particle canvas ──────────────────────────────────── */
-  const sampleCanvasRef = useRef<HTMLCanvasElement>(null);
-
   /* ─── ROI money canvas ─────────────────────────────────────────────────── */
   const roiCanvasRef = useRef<HTMLCanvasElement>(null);
   const roiParticlesRef = useRef<
@@ -348,139 +345,6 @@ export default function LandingPage() {
     raf = requestAnimationFrame(animate);
 
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
-  }, []);
-
-  /* ─── Sample section particle canvas ───────────────────────────────────── */
-  useEffect(() => {
-    const canvas = sampleCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const section = document.getElementById("sample");
-    if (!section) return;
-
-    const resize = () => {
-      const r = section.getBoundingClientRect();
-      canvas.width = r.width;
-      canvas.height = r.height;
-      canvas.style.width = r.width + "px";
-      canvas.style.height = r.height + "px";
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(section);
-    window.addEventListener("resize", resize);
-
-    const gridSize = 72;
-    const cols = Math.ceil(canvas.width / gridSize) + 1;
-    const rows = Math.ceil(canvas.height / gridSize) + 1;
-    interface Dot { baseX: number; baseY: number; ox: number; oy: number; phase: number; speed: number; r: number }
-    const dots: Dot[] = [];
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        dots.push({
-          baseX: x * gridSize,
-          baseY: y * gridSize,
-          ox: (Math.random() - 0.5) * 16,
-          oy: (Math.random() - 0.5) * 16,
-          phase: Math.random() * Math.PI * 2,
-          speed: 0.3 + Math.random() * 0.6,
-          r: 1 + Math.random() * 2.5,
-        });
-      }
-    }
-
-    // Mouse position tracking for repulsion
-    let mx = -999;
-    let my = -999;
-    const onMouse = (e: MouseEvent) => {
-      const r = section.getBoundingClientRect();
-      mx = e.clientX - r.left;
-      my = e.clientY - r.top;
-    };
-    const onLeave = () => { mx = -999; my = -999; };
-    section.addEventListener("mousemove", onMouse, { passive: true });
-    section.addEventListener("mouseleave", onLeave);
-
-    let raf: number;
-    const animate = () => {
-      const isDark = document.documentElement.getAttribute("data-theme") !== "light";
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!isDark) { raf = requestAnimationFrame(animate); return; }
-
-      const t = performance.now() * 0.001;
-      const accent = "rgba(232,66,10,";
-      const dim = "rgba(255,255,255,";
-      const repelRadius = 100;
-
-      for (const d of dots) {
-        let dx = Math.sin(t * d.speed + d.phase) * 10 + d.ox;
-        let dy = Math.cos(t * d.speed * 0.7 + d.phase) * 10 + d.oy;
-
-        // Mouse repulsion — push dots away from cursor
-        const px = d.baseX + dx;
-        const py = d.baseY + dy;
-        const mdx = px - mx;
-        const mdy = py - my;
-        const md = Math.hypot(mdx, mdy);
-        if (md < repelRadius && md > 0) {
-          const force = (1 - md / repelRadius) * 28;
-          dx += (mdx / md) * force;
-          dy += (mdy / md) * force;
-        }
-
-        const x = d.baseX + dx;
-        const y = d.baseY + dy;
-
-        ctx.beginPath();
-        ctx.arc(x, y, d.r, 0, Math.PI * 2);
-
-        // Accent dots for ~12% of particles
-        if (d.phase % 7 < 0.8) {
-          ctx.fillStyle = accent + "0.35)";
-        } else {
-          ctx.fillStyle = dim + "0.12)";
-        }
-        ctx.fill();
-
-        // Connect nearby dots with faint lines
-        for (let j = dots.indexOf(d) + 1; j < dots.length; j++) {
-          const n = dots[j];
-          let nx = n.baseX + Math.sin(t * n.speed + n.phase) * 10 + n.ox;
-          let ny = n.baseY + Math.cos(t * n.speed * 0.7 + n.phase) * 10 + n.oy;
-          const ndx = nx - mx;
-          const ndy = ny - my;
-          const nd = Math.hypot(ndx, ndy);
-          if (nd < repelRadius && nd > 0) {
-            const force = (1 - nd / repelRadius) * 28;
-            nx += (ndx / nd) * force;
-            ny += (ndy / nd) * force;
-          }
-          const dist = Math.hypot(x - nx, y - ny);
-          if (dist < gridSize * 1.4) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(nx, ny);
-            ctx.strokeStyle = dim + (0.04 * (1 - dist / (gridSize * 1.4))) + ")";
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-            break;
-          }
-        }
-      }
-
-      raf = requestAnimationFrame(animate);
-    };
-    raf = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener("resize", resize);
-      section.removeEventListener("mousemove", onMouse);
-      section.removeEventListener("mouseleave", onLeave);
-    };
   }, []);
 
   /* ─── ROI money canvas animation ───────────────────────────────────────── */
@@ -831,11 +695,11 @@ export default function LandingPage() {
               transform: "translateX(-50%)",
             }}
           >
-            <a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>How It Works</a>
-            <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>Pricing</a>
-            <a href="#roi" onClick={e => smoothScroll(e, "#roi")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>ROI Calculator</a>
-            <a href="#faq" onClick={e => smoothScroll(e, "#faq")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>FAQ</a>
-            <Link href="/blog" style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--accent)", textDecoration: "none", letterSpacing: "-0.01em" }}>Blog</Link>
+            <a href="#how-it-works" className="nav-link-item" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a>
+            <a href="#pricing" className="nav-link-item" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a>
+            <a href="#roi" className="nav-link-item" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a>
+            <a href="#faq" className="nav-link-item" onClick={e => smoothScroll(e, "#faq")}>FAQ</a>
+            <Link href="/blog" className="nav-link-item" style={{ color: "var(--accent)", fontWeight: 600 }}>Blog</Link>
           </nav>
 
           {/* Right side: theme toggle + CTA */}
@@ -1226,18 +1090,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FREE SAMPLE — GET 5 AI-SCORED LEADS ──────────────────── */}
-      <section id="sample" className="section" style={{ background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
-        {/* Particle dot-grid canvas — accent + faint connecting lines */}
-        <canvas
-          ref={sampleCanvasRef}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-          aria-hidden="true"
-        />
+      <section id="sample" className="section" style={{ background: 'var(--bg-primary)' }}>
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div className="section-header reveal">
             <div className="section-eyebrow">// Free Sample</div>
