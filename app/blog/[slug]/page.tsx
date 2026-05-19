@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { BlogPost } from '@/lib/types';
 import type { Metadata } from 'next';
+import BlogNavbar from '@/components/blog/BlogNavbar';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const revalidate = 60;
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.flow-forges.com';
+const BASE = process.env.NEXT_PUBLIC_SITE_URL
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://app.flow-forges.com');
 
 async function fetchPost(slug: string): Promise<BlogPost | null> {
   try {
@@ -55,27 +58,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div className="landing-page" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
-      {/* Navbar — matches landing page exactly */}
-      <nav className="navbar" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.15)' }}>
-        <div className="container">
-          <Link href="/" className="nav-logo" style={{ textDecoration: 'none' }}>
-            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width={28} height={28} style={{ borderRadius: 8 }} />
-            Prospecting <span className="accent">OS</span>
-          </Link>
-          <ul className="nav-links" style={{ listStyle: 'none' }}>
-            <li><Link href="/#how-it-works">How It Works</Link></li>
-            <li><Link href="/#pricing">Pricing</Link></li>
-            <li><Link href="/blog" style={{ color: 'var(--accent)', fontWeight: 600 }}>Blog</Link></li>
-          </ul>
-          <Link href="/book" className="nav-cta desktop-only" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-            Book a Free Strategy Call
-          </Link>
-        </div>
-      </nav>
+      <BlogNavbar />
 
       <article className="container" style={{ maxWidth: 760, paddingTop: 100, paddingBottom: 80 }}>
-        {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
           <span style={{
             padding: '4px 14px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 600,
@@ -92,7 +77,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           )}
         </div>
 
-        {/* Title */}
         <h1 style={{
           fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(2rem, 3.5vw, 2.8rem)',
           color: 'var(--text-primary)', margin: '0 0 12px', lineHeight: 1.15, letterSpacing: '-0.025em',
@@ -109,14 +93,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </p>
         )}
 
-        {/* Content */}
         <div
           className="blog-content"
           dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
           style={{ maxWidth: '100%', overflow: 'hidden' }}
         />
 
-        {/* Bottom CTA */}
         <div style={{
           marginTop: 56, padding: '40px 32px', borderRadius: 'var(--radius-xl)',
           background: 'var(--bg-card)', border: '1px solid var(--border-card)', textAlign: 'center',
@@ -142,7 +124,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </Link>
         </div>
 
-        {/* Footer links */}
         <div style={{
           marginTop: 36, display: 'flex', justifyContent: 'space-between',
           alignItems: 'center', flexWrap: 'wrap', gap: 16,
@@ -169,6 +150,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </div>
         </div>
       </article>
+      <LandingFooter />
     </div>
   );
 }

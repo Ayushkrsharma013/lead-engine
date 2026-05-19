@@ -259,10 +259,10 @@ export default function LandingPage() {
     handleUserMessage(t);
   }, [chatInput, handleUserMessage]);
 
-  /* ─── Navbar shadow on scroll ──────────────────────────────────────────── */
-  const [navShadow, setNavShadow] = useState(false);
+  /* ─── Navbar scroll animation (mark1-style pill shrink) ───────────────── */
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const onScroll = () => setNavShadow(window.scrollY > 10);
+    const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -620,40 +620,124 @@ export default function LandingPage() {
       <div className="cursor-dot" ref={dotRef} />
       <div className="cursor-ring" ref={ringRef} />
 
-      {/* ══════════ Navbar ══════════ */}
-      <nav className="navbar" aria-label="Prospecting OS — AI B2B Lead Generation Navigation" style={{ boxShadow: navShadow ? "0 1px 8px rgba(0,0,0,0.15)" : "none" }}>
-        <div className="container">
-          <a href="#" className="nav-logo" onClick={e => smoothScroll(e as never, "#")}>
+      {/* ══════════ Navbar — mark1-style pill shrink ══════════ */}
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, padding: "0 8px" }}>
+        <div
+          style={{
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 32,
+            transition: "all 500ms ease-out",
+            position: "relative",
+            ...(scrolled
+              ? {
+                  marginTop: 8,
+                  maxWidth: 1100,
+                  height: 56,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(14,13,10,0.85)",
+                  backdropFilter: "blur(20px)",
+                  WebkitBackdropFilter: "blur(20px)",
+                  boxShadow: "0 1px 40px rgba(0,0,0,0.4)",
+                  padding: "0 24px",
+                }
+              : {
+                  marginTop: 0,
+                  maxWidth: "100%",
+                  height: 72,
+                  borderRadius: 0,
+                  borderColor: "transparent",
+                  background: "transparent",
+                  backdropFilter: "none",
+                  WebkitBackdropFilter: "none",
+                  padding: "0 24px",
+                }),
+          }}
+        >
+          {/* Top glow line — visible only when scrolled */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(to right, transparent, rgba(232,66,10,0.15), transparent)",
+              opacity: scrolled ? 1 : 0,
+              transition: "opacity 500ms ease-out",
+            }}
+          />
+
+          {/* Logo */}
+          <a
+            href="#"
+            className="nav-logo"
+            onClick={e => smoothScroll(e as never, "#")}
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}
+          >
             <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS logo — AI-powered B2B lead generation system by Flow-Forges" width="28" height="28" style={{ borderRadius: 8 }} />
-            Prospecting <span className="accent">OS</span>
+            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 900, fontSize: "1.25rem", letterSpacing: "-0.02em", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+              Prospecting <span style={{ color: "var(--accent)" }}>OS</span>
+            </span>
           </a>
-          <ul className="nav-links">
-            <li><a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a></li>
-            <li><a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a></li>
-            <li><a href="#roi" onClick={e => smoothScroll(e, "#roi")}>ROI Calculator</a></li>
-            <li><a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a></li>
-            <li><a href="/blog" style={{ color: "var(--accent)", fontWeight: 500 }}>Blog</a></li>
-          </ul>
-          <Link href="/book" className="nav-cta desktop-only" aria-label="Book a free B2B prospecting strategy call with the Prospecting OS team" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-            Book a Free Strategy Call
-          </Link>
-          <div className="theme-toggle-wrapper">
-            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme">
-              <span className="toggle-icon moon">
-                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-              </span>
-              <span className="toggle-icon sun">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
-              </span>
-              <span className="toggle-thumb" />
+
+          {/* Desktop nav links — centered */}
+          <nav
+            className="desktop-only"
+            style={{
+              display: "flex",
+              gap: 28,
+              alignItems: "center",
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            <a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>How It Works</a>
+            <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>Pricing</a>
+            <a href="#roi" onClick={e => smoothScroll(e, "#roi")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>ROI Calculator</a>
+            <a href="#faq" onClick={e => smoothScroll(e, "#faq")} style={{ fontWeight: 500, fontSize: "0.9rem", color: "var(--text-secondary)", textDecoration: "none", letterSpacing: "-0.01em" }}>FAQ</a>
+            <Link href="/blog" style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--accent)", textDecoration: "none", letterSpacing: "-0.01em" }}>Blog</Link>
+          </nav>
+
+          {/* Right side: theme toggle + CTA */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto", flexShrink: 0 }}>
+            {/* Theme toggle — hides on scroll */}
+            <div
+              className="theme-toggle-wrapper"
+              style={{
+                opacity: scrolled ? 0 : 1,
+                transform: scrolled ? "scale(0.8)" : "scale(1)",
+                pointerEvents: scrolled ? "none" : "auto",
+                transition: "all 400ms ease-out",
+              }}
+            >
+              <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle light/dark theme">
+                <span className="toggle-icon moon">
+                  <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                </span>
+                <span className="toggle-icon sun">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
+                </span>
+                <span className="toggle-thumb" />
+              </button>
+            </div>
+
+            {/* Book CTA */}
+            <Link href="/book" className="nav-cta desktop-only" aria-label="Book a free B2B prospecting strategy call with the Prospecting OS team" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              Book a Free Strategy Call
+            </Link>
+
+            {/* Hamburger */}
+            <button className="nav-hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
-          <button className="nav-hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
         </div>
-      </nav>
+      </header>
 
       {/* Mobile Menu */}
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`}>
@@ -661,6 +745,7 @@ export default function LandingPage() {
         <a href="#pricing" onClick={e => { smoothScroll(e, "#pricing"); setMobileOpen(false); }}>Pricing</a>
         <a href="#roi" onClick={e => { smoothScroll(e, "#roi"); setMobileOpen(false); }}>ROI Calculator</a>
         <a href="#faq" onClick={e => { smoothScroll(e, "#faq"); setMobileOpen(false); }}>FAQ</a>
+        <Link href="/blog" onClick={() => setMobileOpen(false)}>Blog</Link>
         <Link href="/book" className="nav-cta" style={{ textDecoration: "none" }} onClick={() => setMobileOpen(false)}>Book a Free Strategy Call</Link>
       </div>
 

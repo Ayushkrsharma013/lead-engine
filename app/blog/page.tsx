@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import type { BlogPost } from '@/lib/types';
+import BlogNavbar from '@/components/blog/BlogNavbar';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const revalidate = 60;
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.flow-forges.com';
+const BASE = process.env.NEXT_PUBLIC_SITE_URL
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://app.flow-forges.com');
 
 async function fetchPosts(category?: string): Promise<BlogPost[]> {
   try {
@@ -11,6 +14,7 @@ async function fetchPosts(category?: string): Promise<BlogPost[]> {
       ? `${BASE}/prospecting-os/api/blog?category=${category}&limit=20`
       : `${BASE}/prospecting-os/api/blog?limit=20`;
     const res = await fetch(url, { next: { revalidate: 60 } });
+    if (!res.ok) return [];
     const data = await res.json();
     return data.posts || [];
   } catch {
@@ -32,28 +36,9 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
 
   return (
     <div className="landing-page" style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)' }}>
-      {/* Navbar — matches landing page exactly */}
-      <nav className="navbar" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.15)' }}>
-        <div className="container">
-          <Link href="/" className="nav-logo" style={{ textDecoration: 'none' }}>
-            <img src="/prospecting-os/assets/Logo_Icon.png" alt="Prospecting OS" width={28} height={28} style={{ borderRadius: 8 }} />
-            Prospecting <span className="accent">OS</span>
-          </Link>
-          <ul className="nav-links" style={{ listStyle: 'none' }}>
-            <li><Link href="/#how-it-works">How It Works</Link></li>
-            <li><Link href="/#pricing">Pricing</Link></li>
-            <li><Link href="/#faq">FAQ</Link></li>
-            <li><Link href="/blog" style={{ color: 'var(--accent)', fontWeight: 600 }}>Blog</Link></li>
-          </ul>
-          <Link href="/book" className="nav-cta desktop-only" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-            Book a Free Strategy Call
-          </Link>
-        </div>
-      </nav>
+      <BlogNavbar />
 
       <main className="container" style={{ paddingTop: 100, paddingBottom: 80 }}>
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(2rem, 3.5vw, 2.6rem)', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
             B2B Lead Generation Insights
@@ -63,7 +48,6 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
           </p>
         </div>
 
-        {/* Category pills */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 48, flexWrap: 'wrap' }}>
           {CATEGORIES.map(c => {
             const active = activeCategory === c.key;
@@ -89,7 +73,6 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
           })}
         </div>
 
-        {/* Posts grid */}
         {posts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '100px 0' }}>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-tertiary)' }}>No posts yet. Check back soon.</p>
@@ -161,7 +144,6 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
           </div>
         )}
 
-        {/* Email CTA — matches landing page sample section */}
         <div style={{
           textAlign: 'center', marginTop: 72, padding: '48px 32px',
           borderRadius: 'var(--radius-xl)', background: 'var(--bg-card)',
@@ -188,6 +170,7 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
           </Link>
         </div>
       </main>
+      <LandingFooter />
     </div>
   );
 }
