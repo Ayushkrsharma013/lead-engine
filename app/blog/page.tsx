@@ -92,18 +92,7 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
                     flexDirection: 'column',
                     transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast)',
                   }}
-                  onMouseEnter={e => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = 'rgba(232,66,10,0.25)';
-                    el.style.boxShadow = 'var(--card-shadow-hover)';
-                    el.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={e => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = 'var(--border-card)';
-                    el.style.boxShadow = 'none';
-                    el.style.transform = 'translateY(0)';
-                  }}
+                  className="blog-card"
                 >
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: '3px 12px', borderRadius: 'var(--radius-full)',
