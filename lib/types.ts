@@ -51,6 +51,7 @@ export interface FilterState {
   sources: string[];
   dateFrom: string;
   dateTo: string;
+  leadLimit: number;
 }
 
 export const DEFAULT_FILTERS: FilterState = {
@@ -64,6 +65,7 @@ export const DEFAULT_FILTERS: FilterState = {
   minScore: 0,
   sources: [],
   dateFrom: "",
+  leadLimit: 100,
   dateTo: "",
 };
 

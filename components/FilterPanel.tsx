@@ -452,6 +452,31 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
               </div>
             </Section>
 
+            {/* Lead Limit */}
+            <div className="px-3 py-2 space-y-1.5" style={{ borderTop: "1px solid var(--line)" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium" style={{ color: "var(--ink-2)" }}>
+                  Lead Limit: <strong style={{ color: "var(--accent-blue)" }}>{filters.leadLimit || 100}</strong>
+                </span>
+              </div>
+              <input
+                type="range"
+                min={10}
+                max={500}
+                step={10}
+                value={filters.leadLimit || 100}
+                onChange={e => onChange({ ...filters, leadLimit: Number(e.target.value) })}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, var(--accent-blue) 0%, var(--accent-blue) ${((filters.leadLimit || 100) - 10) / 490 * 100}%, var(--line) ${((filters.leadLimit || 100) - 10) / 490 * 100}%, var(--line) 100%)`,
+                  accentColor: "var(--accent-blue)",
+                }}
+              />
+              <div className="flex justify-between text-[9px]" style={{ color: "var(--ink-4)" }}>
+                <span>10</span><span>500</span>
+              </div>
+            </div>
+
             {/* Saved Filters */}
             {(onSaveFilter || (savedFilterNames && savedFilterNames.length > 0)) && (
               <div className="px-3 py-2 space-y-1.5 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>

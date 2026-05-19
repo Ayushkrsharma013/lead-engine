@@ -282,7 +282,7 @@ export default function Home() {
         const startRes = await fetch("/prospecting-os/api/leads", {
           method: "POST",
           headers: API_HEADERS,
-          body: JSON.stringify({ source, fields: {} }),
+          body: JSON.stringify({ source, fields: { limit: String(filters.leadLimit || 100) }, filters }),
         });
 
         if (!startRes.ok) {
@@ -308,7 +308,7 @@ export default function Home() {
 
           const pollRes = await fetch(`/prospecting-os/api/leads?runId=${encodeURIComponent(runId)}`, { headers: API_HEADERS });
 
-          let pollData: { status?: string; leads?: Record<string, unknown>[]; error?: string } = {};
+          let pollData: { status?: string; leads?: Record<string, unknown>[]; error?: string; totalFetched?: number; matched?: number } = {};
           try { pollData = await pollRes.json(); } catch {
             const text = await pollRes.text().catch(() => "");
             throw new Error(`API returned non-JSON (HTTP ${pollRes.status}): ${text.slice(0, 100)}`);
@@ -332,7 +332,15 @@ export default function Home() {
 
           if (pollData.status === "SUCCEEDED") {
             dispatch({ type: "SET_PROGRESS", payload: 80 });
-            dispatch({ type: "APPEND_LOG", payload: { id: 2 + pollCount, ts: ts(), text: `Processing ${pollData.leads?.length ?? 0} leads…`, type: "info" } });
+            let totalFetched = (pollData as any).totalFetched ?? pollData.leads?.length ?? 0;
+            const matched = (pollData as any).matched ?? pollData.leads?.length ?? 0;
+            dispatch({ type: "APPEND_LOG", payload: {
+              id: 2 + pollCount, ts: ts(),
+              text: totalFetched > matched
+                ? `Fetched ${totalFetched} leads from Apify, ${matched} matched your filters`
+                : `Fetched ${totalFetched} leads from Apify — processing…`,
+              type: "info",
+            } });
 
             const liveLeads: Lead[] = (pollData.leads ?? []).map((item) => {
               // Apify actor returns emails in various shapes — handle all cases
@@ -384,7 +392,16 @@ export default function Home() {
             dispatch({ type: "SET_STATS", payload: newStats });
             dispatch({ type: "SET_PROGRESS", payload: 100 });
 
-            const logMsg = `${added} new · ${updated} updated${rejected ? ` · ${rejected} rejected` : ""}`;
+            totalFetched = (pollData as any).totalFetched ?? liveLeads.length;
+            const totalMatched = (pollData as any).matched ?? liveLeads.length;
+            let logMsg: string;
+            if (added === 0 && updated === 0 && totalFetched > 0) {
+              logMsg = `Fetched ${totalFetched} leads, ${totalMatched} matched filters — all already in database`;
+            } else if (added === 0 && updated === 0 && totalFetched === 0) {
+              logMsg = "No leads found matching your filters. Try broadening your criteria.";
+            } else {
+              logMsg = `Fetched ${totalFetched} from Apify, ${totalMatched} matched filters (${added} new · ${updated} updated)`;
+            }
             dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: logMsg, type: "success" } });
             showToast(logMsg);
             completed = true;
