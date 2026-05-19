@@ -20,6 +20,7 @@ import FilterPanel from "@/components/FilterPanel";
 import LeadsTable from "@/components/LeadsTable";
 import GDriveModal from "@/components/GDriveModal";
 import ImportModal from "@/components/ImportModal";
+import LeadControlCenter from "@/components/LeadControlCenter";
 import { Progress } from "@/components/ui/progress";
 
 const API_HEADERS = {
@@ -205,6 +206,12 @@ export default function Home() {
   }, [dispatch]);
 
   const [scoreTab, setScoreTab] = useState<ScoreTab>("all");
+  const [lastScrapeLog, setLastScrapeLog] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    fetch("/prospecting-os/api/leads/apify-usage", {
+      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}` },
+    }).then(r => r.json()).then(d => setLastScrapeLog(d.lastLog)).catch(() => {});
+  }, []);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [newScrapeOpen, setNewScrapeOpen] = useState(false);
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
@@ -1008,6 +1015,18 @@ export default function Home() {
               </button>
             </div>
           )}
+
+          {/* AI Control Center */}
+          <LeadControlCenter
+            activeFilters={{
+              industries: filters.industries || [],
+              locations: filters.countries || [],
+              sizes: filters.companySizes || [],
+              minScore: filters.minScore || 0,
+            }}
+            running={running}
+            lastScrapeLog={lastScrapeLog as any}
+          />
 
           {/* Stats bar */}
           <StatsBar {...stats} accent={accent} />
