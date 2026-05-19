@@ -1422,3 +1422,26 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Commits**: 3 commits (import tracking, leads UI polish, AI control center)
 
 **Current build**: 79 routes, 0 TypeScript errors, 0 open bugs
+
+---
+
+### 2026-05-20 — Themed Date Picker + Apify 404 Fix + Save/Load Filters
+
+**Custom Date Picker**:
+- `components/ui/ThemedDatePicker.tsx` — **New** — react-day-picker v9+ with full CSS variable theming via `.rdp-*` classes in `app/globals.css`. Framer Motion popup (fade+scale), dark/light mode, Clear button, click-outside-to-close. Replaced native `<input type="date">` in FilterPanel.
+- `npm install react-day-picker` — new dependency
+
+**Apify 404 Fix**:
+- `app/leads/page.tsx` — `handleRun()` used `/api/leads` without `/prospecting-os` basePath prefix (same ImportModal bug). Fixed to `/prospecting-os/api/leads` — Apify scraper now starts correctly.
+
+**Save/Load Filters**:
+- `components/SaveFilterModal.tsx` — **New** — Modal with filter name input, accent-blue save button, glass/surface styling, backdrop blur
+- `app/api/filters/route.ts` — **New** — GET (list saved filters for user), POST (upsert by name)
+- `app/api/filters/[id]/route.ts` — **New** — DELETE (remove saved filter)
+- `components/FilterPanel.tsx` — Added save/load/delete buttons at bottom of filter sections, new props: `onSaveFilter`, `onLoadFilter`, `savedFilterNames`, `onDeleteFilter`
+- `app/leads/page.tsx` — Integrated SaveFilterModal, fetchSavedFilters, handleSave/Load/Delete callbacks
+- **New DB table**: `saved_filters` (id UUID PK, user_id UUID, name TEXT, filter_config JSONB, created_at, updated_at) with RLS enabled
+
+**Commits**: 1 commit (themed date picker + apify 404 fix + save/load filters)
+
+**Current build**: 80 routes, 0 TypeScript errors, 0 open bugs
