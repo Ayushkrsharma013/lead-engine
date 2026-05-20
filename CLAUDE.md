@@ -1542,15 +1542,18 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 - `emailStatus` → `email_status` (verified→verified, risky→likely, else→all)
 - If no seniority/function selected, defaults to broad B2B set (not hardcoded like before)
 
-**`app/api/leads/blitzapi/route.ts`** — Smart Scrape rewritten:
-- Actor: `x_guru~Leads-Scraper-apollo-zoominfo` (was wrong `blitzapi/linkedin-leads-finder` which is 404)
-- Cost: `$0.001/lead` (was incorrectly $0.008)
-- Budget: uses `ACTOR_MAX_TOTAL_CHARGE_USD` built-in actor param — no more manual multi-batch loop
-- Single run flow: start → poll → fetch dataset → merge → return stats
-- Full filter mapping: seniority, jobFunction, regions, companyDomains, salary, emailStatus, countries, industries, sizes
-- Response mapper updated for `x_guru` actor field names (`job_company_name`, `linkedin_url`, `person_location_name`, `job_company_website`, `job_company_size`, etc.)
-- Feedback keywords from `lead_feedback` table added to `job_titles` (include) / `exclude_keywords` (exclude)
+**`app/api/leads/blitzapi/route.ts`** — Rebuilt as **two-stage pipeline**:
+- **Stage 1 (Discovery)**: `x_guru~Leads-Scraper-apollo-zoominfo` — `$0.001/lead` — filter-based lead discovery using all FilterState fields
+- **Stage 2 (Enrichment)**: `dev_fusion~Linkedin-Profile-Scraper` — `$0.01/profile` — takes LinkedIn URLs from Stage 1 → returns verified email, phone, full work history
+- **Combined cost**: `$0.011/lead` — budget math: `maxAffordable = floor(totalBudget / 0.011)`, capped at 500
+- **Stage 2 is non-fatal**: if enrichment fails/times-out, Stage 1 leads are still saved (unenriched)
+- **Helper functions**: `startRun()`, `pollRun()` (70×4s = 280s max), `fetchDataset()`, `getFeedbackKeywords()`, `xguruToRaw()`, `devFusionToOverlay()`, `buildLead(raw, overlay?)`
+- **`xguruToRaw()`**: maps x_guru fields (`job_company_name`, `linkedin_url`/`person_linkedin_url`, `person_location_name`, `job_company_website`, `job_company_size`)
+- **`devFusionToOverlay()`**: maps dev_fusion fields with multiple name variants (`linkedInUrl`/`linkedin_url`/`profileUrl`, `emailAddress`/`workEmail`, `mobilePhone`/`phoneNumbers`)
+- **`buildLead(raw, overlay?)`**: merges both stages, score = 70 base + 15 (email) + 10 (linkedin) + 5 (phone)
+- Full filter mapping identical to `app/api/leads/route.ts` + feedback keywords from `lead_feedback` table
+- Response: `{ ok, totalFetched, totalNew, enrichedCount, stage1Cost, stage2Cost, totalCost, remainingBudget, reachedTarget }`
 
-**Verified**: `blitzapi/linkedin-leads-finder` does NOT exist on Apify (HTTP 404). No actor by that name in the Apify store. The feature is named "BlitzAPI" internally (route `/api/leads/blitzapi`) but uses `x_guru~Leads-Scraper-apollo-zoominfo` actor.
+**Verified**: `blitzapi/linkedin-leads-finder` does NOT exist on Apify (HTTP 404). Feature is named "BlitzAPI" internally but Stage 1 uses `x_guru~Leads-Scraper-apollo-zoominfo`.
 
 **Current build**: 81 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
