@@ -493,15 +493,21 @@ export default function Home() {
             totalFetched = (pollData as any).totalFetched ?? liveLeads.length;
             const totalMatched = (pollData as any).matched ?? liveLeads.length;
             let logMsg: string;
-            if (added === 0 && updated === 0 && totalFetched > 0) {
-              logMsg = `Fetched ${totalFetched} leads, ${totalMatched} matched filters — all already in database`;
-            } else if (added === 0 && updated === 0 && totalFetched === 0) {
+            let logType: "info" | "success" | "warn" = "success";
+            if (totalFetched === 0 || (added === 0 && updated === 0 && totalFetched === 0)) {
               logMsg = "No leads found matching your filters. Try broadening your criteria.";
+              logType = "warn";
+            } else if (added === 0 && updated === 0) {
+              logMsg = `Fetched ${totalFetched} leads — none matched your filters. Try removing some filter criteria.`;
+              logType = "warn";
+            } else if (added === 0 && updated > 0) {
+              logMsg = `Fetched ${totalFetched} from Apify, ${totalMatched} matched filters — all ${updated} already in your database. Adjust filters or use Smart Scrape for new prospects.`;
+              logType = "warn";
             } else {
               logMsg = `Fetched ${totalFetched} from Apify, ${totalMatched} matched filters (${added} new · ${updated} updated)`;
             }
-            dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: logMsg, type: "success" } });
-            showToast(logMsg);
+            dispatch({ type: "APPEND_LOG", payload: { id: 999, ts: ts(), text: logMsg, type: logType } });
+            showToast(logMsg, logType === "warn" ? "warn" : "success");
             completed = true;
             break;
           }

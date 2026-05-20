@@ -144,8 +144,9 @@ export async function POST(req: NextRequest) {
         "Business Dev": "business_development",
       };
 
+      // Over-fetch 3× target so dedup against existing DB still yields new leads
       input = {
-        max_results: Math.min(maxResults, 500),
+        max_results: Math.min(maxResults * 3, 500),
         include_emails: true,
         include_phones: false,
       };

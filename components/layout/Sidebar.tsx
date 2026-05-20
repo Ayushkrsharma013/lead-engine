@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Settings2,
   Sparkles, Send, Bot, UserPlus, Zap, Cpu, Shield,
   HardDrive, Search, Workflow, BarChart3, FileText,
-  Sun, Moon, LogOut, User, ChevronUp, PenTool,
+  Sun, Moon, LogOut, User, ChevronUp, PenTool, MapPin,
 } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import { createClient } from "@/lib/supabase/client";
@@ -44,6 +44,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "dashboard", module: "dashboard", label: "Command Center", icon: LayoutDashboard, href: "/dashboard" },
       { id: "leads", module: "leads", label: "Lead Intelligence", icon: Users, href: "/leads" },
+      { id: "gmaps-search", module: "gmaps-search", label: "Maps Prospecting", icon: MapPin, href: "/gmaps-search" },
     ],
   },
   {
