@@ -376,19 +376,22 @@ export default function Home() {
                 industry:    String(item.job_company_industry || item.industry || ""),
                 location:    String(item.location_name   || item.location || ""),
                 email,
-                emailStatus: (["verified","risky","not_found"].includes(String(item.email_status))
-                  ? String(item.email_status) : "not_found") as Lead["emailStatus"],
+                emailStatus: (["verified","risky","not_found"].includes(String(item.emailStatus || item.email_status))
+                  ? String(item.emailStatus || item.email_status) : email ? "verified" : "not_found") as Lead["emailStatus"],
                 linkedin,
                 website:     String(item.job_company_website || ""),
                 companySize: String(item.job_company_size || ""),
-                score:       Math.floor(70 + Math.random() * 28),
-                source,
+                score:       typeof item.score === "number" ? item.score : (email ? 85 : linkedin ? 80 : 70),
+                source:      (["linkedin","gmaps","amazon"].includes(typeof item.source === "string" ? item.source : source) ? (item.source || source) : "linkedin") as Lead["source"],
               };
             });
 
-            const { stored, added, updated, rejected } = await mergeLeadsInDB(liveLeads);
-            dispatch({ type: "MERGE_LEADS", payload: { stored, incoming: liveLeads, added, updated } });
-            const newStats = await computeStatsFromLeads(stored);
+            const { added, updated } = await mergeLeadsInDB(liveLeads);
+            // Force full refresh from Supabase so filters show new leads immediately
+            const freshLeads = await fetchLeadsFromDB();
+            dispatch({ type: "SET_LEADS", payload: freshLeads });
+            dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
+            const newStats = await computeStatsFromLeads(freshLeads);
             dispatch({ type: "SET_STATS", payload: newStats });
             dispatch({ type: "SET_PROGRESS", payload: 100 });
 

@@ -269,35 +269,51 @@ export async function GET(req: NextRequest) {
       const minScore = (postFilters.minScore as number) || 0;
       const wantedSources = (postFilters.sources as string[]) || [];
       const wantedEmailStatus = (postFilters.emailStatus as string[]) || [];
+      // Determine source from filters — default to "linkedin" for this actor
+      const leadSource = (wantedSources.length === 1 ? wantedSources[0] : "linkedin") as string;
 
-      const matchedLeads = rawLeads.filter((item: any) => {
-        // Score filter: Apify items don't have score; we assign one here for filtering
+      const matchedLeads = rawLeads.map((item: any) => {
+        // Normalize the Apify item into a lead-like object with proper fields
         const email = (item.email || item.emails?.[0]?.address || "").toString().toLowerCase().trim();
         const linkedin = (item.linkedin_url || "").toString().trim();
         const name = (item.full_name || item.name || "").toString().trim();
         const company = (item.job_company_name || item.company || "").toString().trim();
 
         // Skip leads with no name or company — likely junk
-        if (!name || !company) return false;
+        if (!name || !company) return null;
 
         // Skip leads without email or linkedin — can't use them
-        if (!email && !linkedin) return false;
+        if (!email && !linkedin) return null;
 
-        return true;
-      }).map((item: any) => {
-        // Normalize the Apify item into a lead-like object with a preliminary score
-        const email = (item.email || item.emails?.[0]?.address || "").toString().toLowerCase().trim();
+        // Compute score based on data completeness
         const hasEmail = !!email;
-        const hasLinkedin = !!(item.linkedin_url || "").toString().trim();
-        let preScore = 70;
-        if (hasEmail) preScore += 15;
-        if (hasLinkedin) preScore += 10;
+        const hasLinkedin = !!linkedin;
+        let score = 70;
+        if (hasEmail) score += 15;
+        if (hasLinkedin) score += 10;
+
         // Apply user's minScore filter
-        if (preScore < minScore) return null;
-        return { ...item, _preScore: preScore, _email: email };
+        if (score < minScore) return null;
+
+        // Determine email status
+        const emailStatus = hasEmail ? "verified" : "not_found";
+
+        // Return normalized lead with proper source, score, and emailStatus
+        return {
+          ...item,
+          source: leadSource,
+          score,
+          emailStatus,
+          email: email,
+          _preScore: score,
+          _email: email,
+        };
       }).filter(Boolean);
 
       const matched = matchedLeads.length;
+      if (matched > 0) {
+        console.log(`[leads] First imported lead: source=${matchedLeads[0].source} score=${matchedLeads[0].score} emailStatus=${matchedLeads[0].emailStatus}`);
+      }
 
       // Update scrape_logs with results
       try {
