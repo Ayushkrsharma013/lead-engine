@@ -1507,3 +1507,50 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Commits**: 4 commits (lead limit + filter mapping, date picker compact + apify error handling, score/source fix)
 
 **Current build**: 81 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
+
+---
+
+### 2026-05-20 — Deep Filter Panel + Apify Full Mapping + Smart Scrape (BlitzAPI)
+
+**What changed (commit `e74535b`)**:
+
+**`lib/types.ts`** — FilterState extended with 3 new fields:
+- `regions: string[]` → maps to `person_location_region` in Apify actor
+- `companyDomains: string` → maps to `company_website` in Apify actor (comma-separated)
+- `salary: string[]` → maps to `inferred_salary` in Apify actor
+
+**`lib/filters.ts`** — Client-side filter logic updated:
+- `applyFilters()`: region matching (location.includes(region)), company domain matching (website.includes(domain))
+- `countActiveFilters()`: counts regions.length + companyDomains presence + salary.length
+- `getActiveFilterChips()`: chips for regions, companyDomains, salary
+
+**`components/FilterPanel.tsx`** — Full deep filter UI:
+- **Regions section** (collapsed): 15 US states (New York, California, Texas, Florida, Illinois, Massachusetts, Washington, Georgia, Pennsylvania, Colorado, Virginia, North Carolina, Arizona, Oregon, Minnesota) + 10 EU cities (London, Berlin, Amsterdam, Paris, Stockholm, Dublin, Barcelona, Munich, Zurich, Copenhagen)
+- **Salary section** (collapsed): inferred salary chips — $55K+, $85K+, $110K+, $150K+, $200K+
+- **Company Domains** text input added inside Company section (comma-separated)
+- **COUNTRIES** expanded to 16 (added Germany, France, India, Netherlands, Singapore, Ireland, Sweden, Denmark, Switzerland, Israel, UAE)
+- **INDUSTRIES** expanded to 18 (added Cybersecurity, AI/ML, Legal Tech, InsurTech, Real Estate, Logistics, Manufacturing, Retail, Healthcare, Finance)
+- **SIZES** expanded to 8 (added 1001-5000, 5001-10000, 10001+)
+- Collapsed indicator dots updated for regions, companyDomains, salary
+
+**`app/api/leads/route.ts`** — POST filter-to-actor mapping now complete:
+- `seniority` → `job_title_seniority` (Owner/Founder→owner, C-Suite→cxo, VP→vp, Director→director, Manager→manager, Senior/Head→senior)
+- `jobFunction` → `job_departments` (Sales→sales, Marketing→marketing, Engineering→engineering, Product→product, Operations→operations, Finance→finance, HR/People→human_resources, Business Dev→business_development)
+- `regions` → `person_location_region`
+- `companyDomains` → `company_website` (array split by comma)
+- `salary` → `inferred_salary`
+- `emailStatus` → `email_status` (verified→verified, risky→likely, else→all)
+- If no seniority/function selected, defaults to broad B2B set (not hardcoded like before)
+
+**`app/api/leads/blitzapi/route.ts`** — Smart Scrape rewritten:
+- Actor: `x_guru~Leads-Scraper-apollo-zoominfo` (was wrong `blitzapi/linkedin-leads-finder` which is 404)
+- Cost: `$0.001/lead` (was incorrectly $0.008)
+- Budget: uses `ACTOR_MAX_TOTAL_CHARGE_USD` built-in actor param — no more manual multi-batch loop
+- Single run flow: start → poll → fetch dataset → merge → return stats
+- Full filter mapping: seniority, jobFunction, regions, companyDomains, salary, emailStatus, countries, industries, sizes
+- Response mapper updated for `x_guru` actor field names (`job_company_name`, `linkedin_url`, `person_location_name`, `job_company_website`, `job_company_size`, etc.)
+- Feedback keywords from `lead_feedback` table added to `job_titles` (include) / `exclude_keywords` (exclude)
+
+**Verified**: `blitzapi/linkedin-leads-finder` does NOT exist on Apify (HTTP 404). No actor by that name in the Apify store. The feature is named "BlitzAPI" internally (route `/api/leads/blitzapi`) but uses `x_guru~Leads-Scraper-apollo-zoominfo` actor.
+
+**Current build**: 81 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
