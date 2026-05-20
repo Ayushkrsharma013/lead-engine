@@ -46,6 +46,9 @@ export interface FilterState {
   industries: string[];
   companySizes: string[];
   countries: string[];
+  regions: string[];
+  companyDomains: string;
+  salary: string[];
   emailStatus: string[];
   minScore: number;
   sources: string[];
@@ -61,6 +64,9 @@ export const DEFAULT_FILTERS: FilterState = {
   industries: [],
   companySizes: [],
   countries: [],
+  regions: [],
+  companyDomains: "",
+  salary: [],
   emailStatus: [],
   minScore: 0,
   sources: [],

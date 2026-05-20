@@ -77,8 +77,21 @@ export function applyFilters(leads: Lead[], f: FilterState): Lead[] {
     // Company size
     if (f.companySizes.length && !f.companySizes.includes(lead.companySize)) return false;
 
-    // Geography
+    // Geography — countries
     if (f.countries.length && !f.countries.some(c => matchesCountry(lead.location, c))) return false;
+
+    // Geography — regions (US states, EU cities)
+    if (f.regions && f.regions.length > 0) {
+      const loc = lead.location.toLowerCase();
+      if (!f.regions.some(r => loc.includes(r.toLowerCase()))) return false;
+    }
+
+    // Company domains (website contains any of the specified domains)
+    if (f.companyDomains && f.companyDomains.trim()) {
+      const domains = f.companyDomains.split(",").map(d => d.trim().toLowerCase()).filter(Boolean);
+      const site = (lead.website || "").toLowerCase();
+      if (domains.length > 0 && !domains.some(d => site.includes(d))) return false;
+    }
 
     // Email status
     if (f.emailStatus.length && !f.emailStatus.includes(lead.emailStatus)) return false;
@@ -147,6 +160,9 @@ export function countActiveFilters(f: FilterState): number {
     f.industries.length,
     f.companySizes.length,
     f.countries.length,
+    (f.regions || []).length,
+    f.companyDomains ? 1 : 0,
+    (f.salary || []).length,
     f.emailStatus.length,
     f.minScore > 0 ? 1 : 0,
     f.sources.length,
@@ -166,6 +182,13 @@ export function getActiveFilterChips(
   f.industries.forEach(v   => chips.push({ label: v, group: "industries", value: v }));
   f.companySizes.forEach(v => chips.push({ label: v, group: "companySizes", value: v }));
   f.countries.forEach(v    => chips.push({ label: v, group: "countries", value: v }));
+  (f.regions || []).forEach(v => chips.push({ label: v, group: "regions", value: v }));
+  if (f.companyDomains) chips.push({
+    label: `Domain: ${f.companyDomains.length > 24 ? f.companyDomains.slice(0, 22) + "…" : f.companyDomains}`,
+    group: "companyDomains",
+    value: f.companyDomains,
+  });
+  (f.salary || []).forEach(v => chips.push({ label: `Salary: ${v}`, group: "salary", value: v }));
   f.emailStatus.forEach(v  => chips.push({
     label: v === "verified" ? "✓ Verified" : v === "risky" ? "⚠ Risky" : "✗ Not Found",
     group: "emailStatus", value: v,

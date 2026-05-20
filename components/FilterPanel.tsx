@@ -99,9 +99,27 @@ function Section({
 const SCORE_OPTIONS = [0, 70, 75, 80, 85, 90];
 const SENIORITY   = ["Owner / Founder", "C-Suite", "VP", "Director", "Manager", "Senior / Head"];
 const FUNCTIONS   = ["Sales", "Marketing", "Engineering", "Product", "Operations", "Finance", "HR / People", "Business Dev"];
-const INDUSTRIES  = ["SaaS / Software", "Fintech", "MarTech", "HealthTech", "E-commerce", "Consulting", "Media", "EdTech"];
-const SIZES       = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
-const COUNTRIES   = ["United States", "Canada", "United Kingdom", "Australia", "Remote"];
+const INDUSTRIES  = [
+  "SaaS / Software", "Fintech", "MarTech", "HealthTech", "E-commerce", "Consulting",
+  "Media", "EdTech", "Cybersecurity", "AI / ML", "Legal Tech", "InsurTech",
+  "Real Estate", "Logistics", "Manufacturing", "Retail", "Healthcare", "Finance",
+];
+const SIZES       = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"];
+const COUNTRIES   = [
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "India", "Netherlands", "Singapore", "Ireland", "Sweden",
+  "Denmark", "Switzerland", "Israel", "United Arab Emirates", "Remote",
+];
+const US_REGIONS  = [
+  "New York", "California", "Texas", "Florida", "Illinois",
+  "Massachusetts", "Washington", "Georgia", "Pennsylvania", "Colorado",
+  "Virginia", "North Carolina", "Arizona", "Oregon", "Minnesota",
+];
+const EU_REGIONS  = [
+  "London", "Berlin", "Amsterdam", "Paris", "Stockholm",
+  "Dublin", "Barcelona", "Munich", "Zurich", "Copenhagen",
+];
+const SALARY_OPTS = ["55,000", "85,000", "110,000", "150,000", "200,000"];
 const EMAIL_OPTS  = ["verified", "risky", "not_found"];
 const EMAIL_CONFIG: Record<string, { label: string; color: string }> = {
   verified:  { label: "Verified",   color: "var(--positive)" },
@@ -189,6 +207,9 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
                 {filters.industries.length > 0 && <IndicatorDot color={accent} />}
                 {filters.companySizes.length > 0 && <IndicatorDot color={accent} />}
                 {filters.countries.length > 0 && <IndicatorDot color={accent} />}
+                {(filters.regions || []).length > 0 && <IndicatorDot color={accent} />}
+                {filters.companyDomains && <IndicatorDot color={accent} />}
+                {(filters.salary || []).length > 0 && <IndicatorDot color={accent} />}
                 {filters.emailStatus.length > 0 && <IndicatorDot color={accent} />}
                 {filters.minScore > 0 && <IndicatorDot color={accent} />}
                 {(filters.dateFrom || filters.dateTo) && <IndicatorDot color={accent} />}
@@ -318,18 +339,71 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
             </Section>
 
             {/* Company */}
-            <Section title="Company" count={filters.industries.length + filters.companySizes.length} defaultOpen>
+            <Section
+              title="Company"
+              count={filters.industries.length + filters.companySizes.length + (filters.companyDomains ? 1 : 0)}
+              defaultOpen
+            >
               <SubLabel>Industry</SubLabel>
               <ChipGroup options={INDUSTRIES} selected={filters.industries} onToggle={v => toggle("industries", v)} accent={accent} />
               <SubLabel>Company Size</SubLabel>
               <ChipGroup options={SIZES} selected={filters.companySizes} onToggle={v => toggle("companySizes", v)} accent={accent} />
+              <SubLabel>Company Domains</SubLabel>
+              <input
+                type="text"
+                value={filters.companyDomains || ""}
+                onChange={e => onChange({ ...filters, companyDomains: e.target.value })}
+                placeholder="hubspot.com, salesforce.com"
+                className="w-full text-[11px] rounded-lg px-2.5 py-1.5 outline-none transition-all"
+                style={{
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--line)",
+                  color: "var(--ink)",
+                }}
+                onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--accent-blue)"; }}
+                onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "var(--line)"; }}
+              />
+              <p className="text-[9px] mt-1" style={{ color: "var(--ink-4)" }}>Comma-separated domains</p>
             </Section>
 
             {/* Geography */}
-            <Section title="Geography" count={filters.countries.length} defaultOpen={false}>
-              <div className="mt-2">
-                <ChipGroup options={COUNTRIES} selected={filters.countries} onToggle={v => toggle("countries", v)} accent={accent} />
+            <Section
+              title="Geography"
+              count={filters.countries.length + (filters.regions || []).length}
+              defaultOpen={false}
+            >
+              <SubLabel>Country</SubLabel>
+              <ChipGroup options={COUNTRIES} selected={filters.countries} onToggle={v => toggle("countries", v)} accent={accent} />
+              <SubLabel>US States</SubLabel>
+              <ChipGroup options={US_REGIONS} selected={filters.regions || []} onToggle={v => toggle("regions", v)} accent={accent} />
+              <SubLabel>EU Cities</SubLabel>
+              <ChipGroup options={EU_REGIONS} selected={filters.regions || []} onToggle={v => toggle("regions", v)} accent={accent} />
+            </Section>
+
+            {/* Salary */}
+            <Section title="Salary (inferred)" count={(filters.salary || []).length} defaultOpen={false}>
+              <SubLabel>Minimum Annual</SubLabel>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {SALARY_OPTS.map(opt => {
+                  const active = (filters.salary || []).includes(opt);
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => toggle("salary", opt)}
+                      className={active ? "filter-chip-active" : "filter-chip"}
+                      style={active ? {
+                        background: `linear-gradient(90deg, ${accent}18, ${accent}14)`,
+                        borderColor: `${accent}30`,
+                        color: accent,
+                        boxShadow: `0 0 8px ${accent}10`,
+                      } : undefined}
+                    >
+                      ${Number(opt.replace(/,/g, "")).toLocaleString()}+
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[9px] mt-1.5" style={{ color: "var(--ink-4)" }}>AI-inferred from role/company data</p>
             </Section>
 
             {/* Email Quality */}

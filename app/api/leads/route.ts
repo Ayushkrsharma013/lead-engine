@@ -111,11 +111,38 @@ export async function POST(req: NextRequest) {
     if (source === "linkedin") {
       // Map frontend filters to Apify actor input
       const f = (filters || {}) as Record<string, unknown>;
-      const countries = Array.isArray(f.countries) ? f.countries as string[] : [];
-      const industries = Array.isArray(f.industries) ? f.industries as string[] : [];
-      const titles = typeof f.keyword === "string" && f.keyword ? f.keyword : "";
-      const sizes = Array.isArray(f.companySizes) ? f.companySizes as string[] : [];
-      const maxResults = parseInt(fields?.limit || (f.leadLimit as string) || "100");
+      const countries   = Array.isArray(f.countries)    ? f.countries    as string[] : [];
+      const regions     = Array.isArray(f.regions)      ? f.regions      as string[] : [];
+      const industries  = Array.isArray(f.industries)   ? f.industries   as string[] : [];
+      const seniority   = Array.isArray(f.seniority)    ? f.seniority    as string[] : [];
+      const jobFunction = Array.isArray(f.jobFunction)  ? f.jobFunction  as string[] : [];
+      const sizes       = Array.isArray(f.companySizes) ? f.companySizes as string[] : [];
+      const salary      = Array.isArray(f.salary)       ? f.salary       as string[] : [];
+      const emailStatus = Array.isArray(f.emailStatus)  ? f.emailStatus  as string[] : [];
+      const companyDomains = typeof f.companyDomains === "string" ? f.companyDomains : "";
+      const titles      = typeof f.keyword === "string" && f.keyword ? f.keyword : "";
+      const maxResults  = parseInt(fields?.limit || String(f.leadLimit || "100"));
+
+      // ─── Seniority mapping ──────────────────────────────────────────────────
+      const SENIORITY_MAP: Record<string, string> = {
+        "Owner / Founder": "owner",
+        "C-Suite":         "cxo",
+        "VP":              "vp",
+        "Director":        "director",
+        "Manager":         "manager",
+        "Senior / Head":   "senior",
+      };
+      // ─── Job function mapping ───────────────────────────────────────────────
+      const FUNCTION_MAP: Record<string, string> = {
+        "Sales":        "sales",
+        "Marketing":    "marketing",
+        "Engineering":  "engineering",
+        "Product":      "product",
+        "Operations":   "operations",
+        "Finance":      "finance",
+        "HR / People":  "human_resources",
+        "Business Dev": "business_development",
+      };
 
       input = {
         max_results: Math.min(maxResults, 500),
@@ -123,35 +150,57 @@ export async function POST(req: NextRequest) {
         include_phones: false,
       };
 
-      // Map countries to Apify person_location_country
-      if (countries.length > 0) {
-        input.person_location_country = countries;
-      }
+      // Countries
+      if (countries.length > 0) input.person_location_country = countries;
 
-      // Map industries to search terms (actor uses keyword-based industry search)
-      if (industries.length > 0) {
-        input.search_terms = industries.join(" OR ");
-      }
+      // Regions (US states, EU cities)
+      if (regions.length > 0) input.person_location_region = regions;
 
-      // Map title keywords to job_titles
+      // Industries → search_terms
+      if (industries.length > 0) input.search_terms = industries.join(" OR ");
+
+      // Keyword → job_titles
       if (titles) {
         const titleArr = titles.split(",").map((t: string) => t.trim()).filter(Boolean);
         if (titleArr.length > 0) input.job_titles = titleArr;
       }
 
-      // Map company sizes
-      if (sizes.length > 0) {
-        input.employee_size = sizes;
+      // Company sizes
+      if (sizes.length > 0) input.employee_size = sizes;
+
+      // Seniority
+      const mappedSeniority = seniority.map(s => SENIORITY_MAP[s]).filter(Boolean);
+      input.job_title_seniority = mappedSeniority.length > 0
+        ? mappedSeniority
+        : ["owner", "cxo", "vp", "director", "manager"];
+
+      // Job function / departments
+      const mappedDepts = jobFunction.map(fn => FUNCTION_MAP[fn]).filter(Boolean);
+      input.job_departments = mappedDepts.length > 0
+        ? mappedDepts
+        : ["sales", "marketing", "engineering", "product", "business_development"];
+
+      // Salary
+      if (salary.length > 0) input.inferred_salary = salary;
+
+      // Company domains → company_website
+      if (companyDomains.trim()) {
+        const domainArr = companyDomains.split(",").map(d => d.trim()).filter(Boolean);
+        if (domainArr.length > 0) input.company_website = domainArr;
       }
 
-      // Always target B2B-relevant seniority and departments
-      input.job_title_seniority = ["owner", "cxo", "vp", "director", "manager"];
-      input.job_departments = ["sales", "marketing", "engineering", "product", "business_development"];
+      // Email status mapping
+      const emailStatusActor = emailStatus.includes("verified")
+        ? "verified"
+        : emailStatus.includes("risky")
+        ? "likely"
+        : "all";
+      input.email_status = emailStatusActor;
 
       // Store filters that Apify doesn't support for server-side post-filtering
       const unsupportedFilters = {
         minScore: typeof f.minScore === "number" ? f.minScore : 0,
-        emailStatus: Array.isArray(f.emailStatus) ? f.emailStatus as string[] : [],
+        emailStatus,
         sources: Array.isArray(f.sources) ? f.sources as string[] : [],
       };
 
