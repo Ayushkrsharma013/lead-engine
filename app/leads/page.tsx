@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Play, Download, X, RotateCcw, ChevronRight,
   Sparkles, Database, HardDrive, CloudDownload, Flame, RefreshCw,
-  ListChecks, GitBranch, ChevronDown,
+  ListChecks, GitBranch, ChevronDown, Zap, Settings2,
 } from "lucide-react";
 import SyncApifyModal from "@/components/SyncApifyModal";
 import NewScrapeModal from "@/components/NewScrapeModal";
@@ -208,11 +208,106 @@ export default function Home() {
 
   const [scoreTab, setScoreTab] = useState<ScoreTab>("all");
   const [lastScrapeLog, setLastScrapeLog] = useState<Record<string, unknown> | null>(null);
+
+  // BlitzAPI Smart Scrape state
+  const [blitzRunning, setBlitzRunning] = useState(false);
+  const [blitzResult, setBlitzResult] = useState<{ totalNew: number; totalCost: number; reachedTarget: boolean } | null>(null);
+  const [userQuota, setUserQuota] = useState(100);
+  const [userBudgetCents, setUserBudgetCents] = useState(500);
+  const [quotaBudgetOpen, setQuotaBudgetOpen] = useState(false);
+  const [editQuota, setEditQuota] = useState(100);
+  const [editBudget, setEditBudget] = useState(500);
+  const [savingSettings, setSavingSettings] = useState(false);
+
   useEffect(() => {
     fetch("/prospecting-os/api/leads/apify-usage", {
       headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}` },
     }).then(r => r.json()).then(d => setLastScrapeLog(d.lastLog)).catch(() => {});
+
+    // Load quota + budget from user settings
+    fetch("/prospecting-os/api/user/settings")
+      .then(r => r.json())
+      .then(d => {
+        if (d.leadQuotaTarget) { setUserQuota(d.leadQuotaTarget); setEditQuota(d.leadQuotaTarget); }
+        if (d.budgetCapCents) { setUserBudgetCents(d.budgetCapCents); setEditBudget(d.budgetCapCents); }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveQuotaBudget = async () => {
+    setSavingSettings(true);
+    try {
+      await fetch("/prospecting-os/api/user/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadQuotaTarget: editQuota, budgetCapCents: editBudget }),
+      });
+      setUserQuota(editQuota);
+      setUserBudgetCents(editBudget);
+      setQuotaBudgetOpen(false);
+      showToast("Quota & budget saved");
+    } catch { showToast("Failed to save settings", "error"); }
+    setSavingSettings(false);
+  };
+
+  const handleSmartScrape = useCallback(async () => {
+    if (blitzRunning) return;
+    setBlitzRunning(true);
+    setBlitzResult(null);
+    dispatch({ type: "CLEAR_LOG" });
+    dispatch({ type: "SET_PROGRESS", payload: 10 });
+
+    const ts = () =>
+      new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+    dispatch({ type: "APPEND_LOG", payload: { id: 0, ts: ts(), text: `Smart Scrape starting — target ${userQuota} leads, budget $${(userBudgetCents / 100).toFixed(2)}`, type: "info" } });
+
+    try {
+      const res = await fetch("/prospecting-os/api/leads/blitzapi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filters,
+          targetCount: userQuota,
+          budgetCapCents: userBudgetCents,
+        }),
+      });
+
+      dispatch({ type: "SET_PROGRESS", payload: 80 });
+      const data = await res.json() as {
+        ok?: boolean; error?: string;
+        totalFetched?: number; totalNew?: number; totalCost?: number;
+        remainingBudget?: number; reachedTarget?: boolean; batches?: number;
+      };
+
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+
+      const freshLeads = await fetchLeadsFromDB();
+      dispatch({ type: "SET_LEADS", payload: freshLeads });
+      const newStats = await computeStatsFromLeads(freshLeads);
+      dispatch({ type: "SET_STATS", payload: newStats });
+
+      const result = {
+        totalNew: data.totalNew ?? 0,
+        totalCost: data.totalCost ?? 0,
+        reachedTarget: data.reachedTarget ?? false,
+      };
+      setBlitzResult(result);
+      dispatch({ type: "SET_PROGRESS", payload: 100 });
+
+      const msg = result.reachedTarget
+        ? `Smart Scrape complete — ${result.totalNew} new leads, $${result.totalCost.toFixed(3)} spent`
+        : `Smart Scrape done — ${result.totalNew} new leads (budget/supply limit reached), $${result.totalCost.toFixed(3)} spent`;
+      dispatch({ type: "APPEND_LOG", payload: { id: 99, ts: ts(), text: msg, type: "success" } });
+      showToast(msg);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Smart Scrape failed";
+      dispatch({ type: "APPEND_LOG", payload: { id: 99, ts: ts(), text: `✗ ${msg}`, type: "warn" } });
+      showToast(msg, "error");
+      dispatch({ type: "SET_PROGRESS", payload: 0 });
+    }
+    setBlitzRunning(false);
+  }, [blitzRunning, filters, userQuota, userBudgetCents, dispatch, showToast]);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [newScrapeOpen, setNewScrapeOpen] = useState(false);
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
@@ -810,6 +905,88 @@ export default function Home() {
                 </>
               )}
             </button>
+
+            {/* Smart Scrape — BlitzAPI with quota + budget */}
+            <div className="relative shrink-0 flex items-center gap-0.5">
+              <button
+                onClick={handleSmartScrape}
+                disabled={blitzRunning || running}
+                title={`Smart Scrape: target ${userQuota} leads, budget $${(userBudgetCents / 100).toFixed(2)}`}
+                className="flex items-center gap-2 h-9 px-3 rounded-l-xl rounded-r-none text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: blitzRunning ? "rgba(232,168,64,0.12)" : "rgba(232,168,64,0.12)",
+                  color: "#E8A840",
+                  border: "1px solid rgba(232,168,64,0.35)",
+                  borderRight: "none",
+                  boxShadow: blitzRunning ? "none" : "0 0 14px rgba(232,168,64,0.18)",
+                }}
+              >
+                {blitzRunning ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(232,168,64,0.4)", borderTopColor: "#E8A840" }} />
+                    Scraping…
+                  </>
+                ) : (
+                  <>
+                    <Zap size={12} fill="currentColor" />
+                    Smart Scrape
+                  </>
+                )}
+              </button>
+              {/* Quota/budget config button */}
+              <div className="relative">
+                <button
+                  onClick={() => { setQuotaBudgetOpen(o => !o); setEditQuota(userQuota); setEditBudget(userBudgetCents); }}
+                  title="Configure quota & budget"
+                  className="flex items-center justify-center h-9 w-8 rounded-r-xl transition-all duration-200"
+                  style={{
+                    background: "rgba(232,168,64,0.08)",
+                    color: "#E8A840",
+                    border: "1px solid rgba(232,168,64,0.35)",
+                    boxShadow: "0 0 14px rgba(232,168,64,0.12)",
+                  }}
+                >
+                  <Settings2 size={11} />
+                </button>
+                <AnimatePresence>
+                  {quotaBudgetOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full right-0 mt-1 z-50 rounded-xl p-3 w-52"
+                      style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.35)" }}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "#E8A840" }}>Smart Scrape Settings</p>
+                      <label className="block text-[11px] mb-1" style={{ color: "var(--ink-3)" }}>Target leads</label>
+                      <input
+                        type="number" min={10} max={1000} value={editQuota}
+                        onChange={e => setEditQuota(Number(e.target.value))}
+                        className="w-full rounded-lg px-2 py-1 text-xs mb-2 outline-none"
+                        style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+                      />
+                      <label className="block text-[11px] mb-1" style={{ color: "var(--ink-3)" }}>Budget cap ($)</label>
+                      <input
+                        type="number" min={1} max={500} step={0.5}
+                        value={(editBudget / 100).toFixed(2)}
+                        onChange={e => setEditBudget(Math.round(Number(e.target.value) * 100))}
+                        className="w-full rounded-lg px-2 py-1 text-xs mb-3 outline-none"
+                        style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+                      />
+                      <button
+                        onClick={handleSaveQuotaBudget}
+                        disabled={savingSettings}
+                        className="w-full h-7 rounded-lg text-xs font-semibold transition-all"
+                        style={{ background: "rgba(232,168,64,0.2)", color: "#E8A840", border: "1px solid rgba(232,168,64,0.4)" }}
+                      >
+                        {savingSettings ? "Saving…" : "Save"}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
 
             {/* New Scrape — trigger live actor run */}
             <button

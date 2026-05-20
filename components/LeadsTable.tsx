@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Building2, MapPin, Trash2, Download, Users, ChevronUp, ChevronDown, ChevronsUpDown, Search, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ExternalLink, Building2, MapPin, Trash2, Download, Users, ChevronUp, ChevronDown, ChevronsUpDown, Search, Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import type { Lead, SortState, SortField, PaginationState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import Pagination from "./Pagination";
@@ -75,6 +75,79 @@ function Avatar({ name }: { name: string }) {
       }}
     >
       {initials}
+    </div>
+  );
+}
+
+// ─── Feedback buttons ─────────────────────────────────────────────────────────
+function FeedbackButtons({ lead }: { lead: Lead }) {
+  const [vote, setVote] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = useCallback(async (feedback: boolean) => {
+    if (busy || vote === feedback) return;
+    setBusy(true);
+    const prev = vote;
+    setVote(feedback);
+    try {
+      await fetch("/prospecting-os/api/lead-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: lead.id,
+          feedback,
+          title: lead.title,
+          industry: lead.industry,
+        }),
+      });
+    } catch {
+      setVote(prev);
+    }
+    setBusy(false);
+  }, [busy, vote, lead]);
+
+  return (
+    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={() => submit(true)}
+        disabled={busy}
+        title="Good lead"
+        className="w-6 h-6 flex items-center justify-center rounded-md transition-all"
+        style={{
+          background: vote === true ? "rgba(0,255,136,0.15)" : "transparent",
+          color: vote === true ? "var(--positive)" : "var(--ink-3)",
+          border: vote === true ? "1px solid rgba(0,255,136,0.3)" : "1px solid transparent",
+          opacity: busy ? 0.5 : 1,
+        }}
+        onMouseEnter={e => {
+          if (vote !== true) (e.currentTarget as HTMLElement).style.color = "var(--positive)";
+        }}
+        onMouseLeave={e => {
+          if (vote !== true) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+        }}
+      >
+        <ThumbsUp size={11} />
+      </button>
+      <button
+        onClick={() => submit(false)}
+        disabled={busy}
+        title="Poor lead"
+        className="w-6 h-6 flex items-center justify-center rounded-md transition-all"
+        style={{
+          background: vote === false ? "rgba(239,68,68,0.12)" : "transparent",
+          color: vote === false ? "#ef4444" : "var(--ink-3)",
+          border: vote === false ? "1px solid rgba(239,68,68,0.25)" : "1px solid transparent",
+          opacity: busy ? 0.5 : 1,
+        }}
+        onMouseEnter={e => {
+          if (vote !== false) (e.currentTarget as HTMLElement).style.color = "#ef4444";
+        }}
+        onMouseLeave={e => {
+          if (vote !== false) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
+        }}
+      >
+        <ThumbsDown size={11} />
+      </button>
     </div>
   );
 }
@@ -299,6 +372,9 @@ export default function LeadsTable({
                 <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>Src</span>
               </th>
               <SortHeader field="savedAt" label="Saved"  sort={sort} onSort={onSort} />
+              <th className="text-left px-3 py-3 whitespace-nowrap">
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>Fit</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -431,6 +507,11 @@ export default function LeadsTable({
                       )
                       : <span className="text-xs" style={{ color: "var(--ink-3)", opacity: 0.4 }}>—</span>
                     }
+                  </td>
+
+                  {/* Feedback */}
+                  <td className="px-3 py-3">
+                    <FeedbackButtons lead={lead} />
                   </td>
                 </tr>
               );

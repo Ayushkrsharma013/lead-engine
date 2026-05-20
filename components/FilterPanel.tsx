@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, SlidersHorizontal, Save, X } from "lucide-react";
 import ThemedDatePicker from "@/components/ui/ThemedDatePicker";
+import FilterSuggestion from "@/components/FilterSuggestion";
 import type { FilterState } from "@/lib/types";
 import { DEFAULT_FILTERS } from "@/lib/types";
 import { countActiveFilters } from "@/lib/filters";
@@ -475,6 +476,25 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
               <div className="flex justify-between text-[9px]" style={{ color: "var(--ink-4)" }}>
                 <span>10</span><span>500</span>
               </div>
+            </div>
+
+            {/* AI Filter Suggestions */}
+            <div className="px-3 pb-2 shrink-0">
+              <FilterSuggestion
+                currentKeyword={filters.keyword || ""}
+                onApply={(keyword, action) => {
+                  if (action === "add") {
+                    const current = filters.keyword ? filters.keyword.split(",").map(t => t.trim()).filter(Boolean) : [];
+                    if (!current.includes(keyword)) {
+                      onChange({ ...filters, keyword: [...current, keyword].join(", ") });
+                    }
+                  } else {
+                    // exclude: remove from keyword if present
+                    const current = filters.keyword ? filters.keyword.split(",").map(t => t.trim()).filter(Boolean) : [];
+                    onChange({ ...filters, keyword: current.filter(k => k !== keyword).join(", ") });
+                  }
+                }}
+              />
             </div>
 
             {/* Saved Filters */}
