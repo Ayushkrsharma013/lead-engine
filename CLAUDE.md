@@ -1486,3 +1486,24 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 - `resetStuckExecuting()` called at start of each `runOnce()` poll cycle — recovers rows orphaned by runner crashes
 
 **Current build**: 80 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
+
+---
+
+### 2026-05-20 (continued) — Apify Filter Mapping + Score/Source Fix + Lead Limit Slider
+
+**Apify Filter Mapping Pipeline**:
+- `app/api/leads/route.ts` — POST reads full `filters` object, maps to Apify actor input: industries→search_terms, countries→person_location_country, titles→job_titles, sizes→employee_size. GET applies server-side filtering (minScore, removes junk leads without name/company/email), returns `totalFetched` + `matched` + filtered leads with proper `source`, `score`, `emailStatus` fields. Debug log prints first lead's fields.
+- `app/leads/page.tsx` — Sends full `filters` object in POST body. Uses API-provided score/source/emailStatus instead of random values. Full Supabase refresh after merge so filters re-apply immediately.
+- `lib/types.ts` — Added `leadLimit: number` to FilterState + DEFAULT_FILTERS (100)
+- `components/FilterPanel.tsx` — Lead Limit slider (10–500, step 10) with gradient track, saved filters section at bottom
+
+**Root cause of "0 new" / hidden leads**: API returned leads with `_preScore` field but frontend assigned random `score = Math.floor(70 + Math.random() * 28)` which could fall below the user's `minScore` filter, making new leads invisible in the filtered view.
+
+**Date picker refinements**:
+- `components/ui/ThemedDatePicker.tsx` — Compact calendar (30x26px day cells, maxWidth 260px, 6px padding)
+- `app/globals.css` — `.rdp-*` CSS variables for compact layout, `.filter-date-input` accent-blue focus ring
+- `app/api/leads/route.ts` — Non-JSON response handling with try/catch
+
+**Commits**: 4 commits (lead limit + filter mapping, date picker compact + apify error handling, score/source fix)
+
+**Current build**: 81 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
