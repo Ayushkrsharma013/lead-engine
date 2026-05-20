@@ -44,9 +44,12 @@ mcp-server/dist/
 *.tsbuildinfo
 next-env.d.ts
 
-# agent-browser screenshots
+# agent-browser / QA screenshots and logs
 landing*.png
+*.png
 .ruflo/
+.playwright-mcp/
+runner/package-lock.json
 
 # brainstorm visual companion
 .superpowers/
