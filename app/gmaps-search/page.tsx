@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import {
   MapPin, Search, Star, Phone, Globe, Building2,
   CheckSquare, Square, Download, RefreshCw, ChevronRight,
-  AlertCircle, X, Zap, ExternalLink, TrendingUp, Layers,
+  AlertCircle, X, Zap, ExternalLink, TrendingUp, Layers, Send,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import Link from "next/link";
@@ -56,11 +56,12 @@ function Stars({ rating }: { rating: number }) {
 // ─── Business card ────────────────────────────────────────────────────────────
 
 function BusinessCard({
-  biz, selected, imported, onToggle,
+  biz, selected, imported, queued, onToggle,
 }: {
   biz: GMapsBusiness;
   selected: boolean;
   imported: boolean;
+  queued: boolean;
   onToggle: () => void;
 }) {
   const isOperational = biz.businessStatus === "OPERATIONAL";
@@ -90,6 +91,12 @@ function BusinessCard({
                 style={{ background: "rgba(0,255,136,0.12)", color: "#00ff88", border: "1px solid rgba(0,255,136,0.25)" }}
               >
                 Imported
+              </span>
+            )}
+            {queued && (
+              <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                style={{ background: "rgba(0,212,255,0.12)", color: "var(--accent-blue)", border: "1px solid rgba(0,212,255,0.25)" }}>
+                Queued
               </span>
             )}
           </div>
@@ -213,6 +220,9 @@ export default function GmapsSearchPage() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const [queuedIds, setQueuedIds] = useState<Set<string>>(new Set());
+  const [addingToOutreach, setAddingToOutreach] = useState(false);
+  const [outreachResult, setOutreachResult] = useState<{ queued?: number; skipped?: number; error?: string } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -344,6 +354,53 @@ export default function GmapsSearchPage() {
       setSelected(new Set());
     } catch { setError("Import failed — please try again."); }
     finally { setImporting(false); }
+  };
+
+  // ── Add to Outreach ────────────────────────────────────────────────────────
+
+  const handleAddToOutreach = async () => {
+    const toAdd = results.filter(r => selected.has(r.placeId));
+    if (!toAdd.length) return;
+    setAddingToOutreach(true);
+    setOutreachResult(null);
+
+    // Import any that haven't been imported yet first
+    const notImported = toAdd.filter(r => !importedIds.has(r.placeId));
+    if (notImported.length > 0) {
+      const endpoint = mode === "quick"
+        ? { url: "/prospecting-os/api/gmaps-search", method: "POST" }
+        : { url: "/prospecting-os/api/gmaps-scrape", method: "PATCH" };
+      try {
+        const importRes = await fetch(endpoint.url, {
+          method: endpoint.method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ places: notImported }),
+        });
+        if (importRes.ok) {
+          setImportedIds(prev => new Set([...prev, ...notImported.map(r => r.placeId)]));
+        }
+      } catch { /* non-critical — queue API will skip leads not in DB */ }
+    }
+
+    const leadIds = toAdd.map(r => `gmaps_${r.placeId}`);
+    try {
+      const res = await fetch("/prospecting-os/api/gmaps-outreach/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOutreachResult({ error: data.error || "Failed to add to outreach queue" });
+        return;
+      }
+      setOutreachResult({ queued: data.queued, skipped: data.skipped });
+      setQueuedIds(prev => new Set([...prev, ...toAdd.map(r => r.placeId)]));
+    } catch {
+      setOutreachResult({ error: "Network error — please try again" });
+    } finally {
+      setAddingToOutreach(false);
+    }
   };
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -533,6 +590,20 @@ export default function GmapsSearchPage() {
           </div>
         )}
 
+        {/* ── Outreach queue result ── */}
+        {outreachResult && (
+          <div className="text-[11px] px-3 py-2 rounded-xl flex items-center gap-2"
+            style={{
+              background: outreachResult.error ? "rgba(255,107,53,0.1)" : "rgba(0,212,255,0.08)",
+              color: outreachResult.error ? "var(--accent-orange)" : "var(--accent-blue)",
+              border: `1px solid ${outreachResult.error ? "rgba(255,107,53,0.2)" : "rgba(0,212,255,0.2)"}`,
+            }}>
+            {outreachResult.error
+              ? outreachResult.error
+              : `${outreachResult.queued} added to outreach queue — pending runner execution`}
+          </div>
+        )}
+
         {/* ── Deep scrape progress ── */}
         {loading && deepRunId && (
           <div className="rounded-xl p-5 flex flex-col items-center gap-4"
@@ -590,13 +661,22 @@ export default function GmapsSearchPage() {
                   </button>
                 )}
                 {selectedCount > 0 && (
-                  <button onClick={handleImport} disabled={importing}
-                    className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all duration-100 disabled:opacity-50"
-                    style={{ background: "var(--accent)", color: "#000" }}>
-                    {importing
-                      ? <><RefreshCw size={12} className="animate-spin" /> Importing…</>
-                      : <><Download size={12} /> Import {selectedCount} lead{selectedCount !== 1 ? "s" : ""}</>}
-                  </button>
+                  <>
+                    <button onClick={handleImport} disabled={importing}
+                      className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all duration-100 disabled:opacity-50"
+                      style={{ background: "var(--accent)", color: "#000" }}>
+                      {importing
+                        ? <><RefreshCw size={12} className="animate-spin" /> Importing…</>
+                        : <><Download size={12} /> Import {selectedCount} lead{selectedCount !== 1 ? "s" : ""}</>}
+                    </button>
+                    <button onClick={handleAddToOutreach} disabled={addingToOutreach || importing}
+                      className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all duration-100 disabled:opacity-50"
+                      style={{ background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.3)", color: "var(--accent-blue)" }}>
+                      {addingToOutreach
+                        ? <><RefreshCw size={12} className="animate-spin" /> Queuing…</>
+                        : <><Send size={12} /> Add to Outreach ({selectedCount})</>}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -606,6 +686,7 @@ export default function GmapsSearchPage() {
                 <BusinessCard key={biz.placeId} biz={biz}
                   selected={selected.has(biz.placeId)}
                   imported={importedIds.has(biz.placeId)}
+                  queued={queuedIds.has(biz.placeId)}
                   onToggle={() => toggleSelect(biz.placeId)}
                 />
               ))}

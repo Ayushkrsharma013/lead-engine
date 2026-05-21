@@ -222,6 +222,61 @@ async function dispatchAction(action: AgentActionRow): Promise<string> {
       return `LinkedIn DM queued for ${String(p.leadName ?? leadId)}`;
     }
 
+    case "gmaps_contact_form_fill": {
+      const leadId = String(p.leadId ?? "");
+      const websiteUrl = String(p.websiteUrl ?? "");
+      const phone = String(p.phone ?? "");
+      const message = String(p.message ?? "");
+      const stepNumber = Number(p.stepNumber ?? 1);
+      if (!leadId) throw new Error("gmaps_contact_form_fill payload missing leadId");
+      if (!message) throw new Error("gmaps_contact_form_fill payload missing message");
+
+      const { error } = await supabaseAdmin
+        .from("gmaps_outreach_queue")
+        .insert({
+          lead_id: leadId,
+          action_type: "contact_form_fill",
+          website_url: websiteUrl || null,
+          phone: phone || null,
+          message,
+          status: "pending",
+          step_number: stepNumber,
+          scheduled_for: new Date().toISOString(),
+        });
+      if (error) {
+        if (error.code === "23505") return `Contact form fill already queued for lead ${leadId}`;
+        throw new Error(`Failed to insert into gmaps_outreach_queue: ${error.message}`);
+      }
+      return `Contact form fill queued for lead ${leadId}`;
+    }
+
+    case "gmaps_sms_follow_up": {
+      const leadId = String(p.leadId ?? "");
+      const phone = String(p.phone ?? "");
+      const message = String(p.message ?? "");
+      const stepNumber = Number(p.stepNumber ?? 2);
+      if (!leadId) throw new Error("gmaps_sms_follow_up payload missing leadId");
+      if (!phone) throw new Error("gmaps_sms_follow_up payload missing phone");
+      if (!message) throw new Error("gmaps_sms_follow_up payload missing message");
+
+      const { error } = await supabaseAdmin
+        .from("gmaps_outreach_queue")
+        .insert({
+          lead_id: leadId,
+          action_type: "sms_follow_up",
+          phone,
+          message,
+          status: "pending",
+          step_number: stepNumber,
+          scheduled_for: new Date().toISOString(),
+        });
+      if (error) {
+        if (error.code === "23505") return `SMS follow-up already queued for lead ${leadId}`;
+        throw new Error(`Failed to insert into gmaps_outreach_queue: ${error.message}`);
+      }
+      return `SMS follow-up queued for lead ${leadId} (phone: ${phone})`;
+    }
+
     // Informational types — no DB changes, just mark executed
     case "resolve_duplicates":
     case "deprioritize_industry":

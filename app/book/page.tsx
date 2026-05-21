@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar, Clock, User, Mail, Building2, MessageSquare,
   ArrowLeft, ArrowRight, CheckCircle, Zap, ChevronLeft, ChevronRight,
@@ -117,7 +118,11 @@ function formatDate(year: number, month: number, day: number) {
    Page
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export default function BookPage() {
+function BookPageInner() {
+  const searchParams = useSearchParams();
+  const gmapsRef = searchParams.get("ref");
+  const gmapsLid = searchParams.get("lid");
+
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [meetingType, setMeetingType] = useState<MeetingType>("demo");
   const today = new Date();
@@ -233,7 +238,10 @@ export default function BookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: selectedDate, time: selectedTime, name: name.trim(),
-          email: email.trim(), company: company.trim(), notes: notes.trim(),
+          email: email.trim(), company: company.trim(),
+          notes: gmapsRef === "gmaps" && gmapsLid
+            ? (notes.trim() ? `${notes.trim()}  |  ref=gmaps&lid=${gmapsLid}` : `ref=gmaps&lid=${gmapsLid}`)
+            : notes.trim(),
           phone: phone.trim(),
           type: meetingType,
           duration: MEETING_TYPES[meetingType].duration,
@@ -758,5 +766,13 @@ export default function BookPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={null}>
+      <BookPageInner />
+    </Suspense>
   );
 }

@@ -11,6 +11,28 @@ import type { RunnerConfig } from "@/app/api/outreach/config/route";
 
 const BASE = "/prospecting-os";
 
+interface GmapsStats {
+  pipelineSize: number;
+  formsQueuedToday: number;
+  formsSentToday: number;
+  smsSentToday: number;
+  meetingsBooked: number;
+  conversionRate: string;
+  queue: Array<{
+    id: string;
+    lead_id: string;
+    action_type: string;
+    status: string;
+    step_number: number;
+    scheduled_for: string;
+    executed_at: string | null;
+    error: string | null;
+    leads: { name: string; company: string; industry: string; location: string };
+  }>;
+}
+
+type OutreachTab = "linkedin" | "gmaps";
+
 interface QueueResponse {
   status: QueueStatus;
   pending: LinkedInQueueItem[];
@@ -297,6 +319,9 @@ export default function OutreachPage() {
   const [data, setData] = useState<QueueResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<OutreachTab>("linkedin");
+  const [gmapsStats, setGmapsStats] = useState<GmapsStats | null>(null);
+  const [gmapsLoading, setGmapsLoading] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -310,17 +335,148 @@ export default function OutreachPage() {
     }
   }, []);
 
+  const fetchGmapsStats = useCallback(async () => {
+    setGmapsLoading(true);
+    try {
+      const res = await fetch(`${BASE}/api/gmaps-outreach/stats`);
+      if (res.ok) setGmapsStats(await res.json() as GmapsStats);
+    } catch { /* non-critical */ }
+    finally { setGmapsLoading(false); }
+  }, []);
+
   useEffect(() => {
     load();
     const interval = setInterval(() => load(true), 60_000);
     return () => clearInterval(interval);
   }, [load]);
 
+  useEffect(() => {
+    if (activeTab === "gmaps") fetchGmapsStats();
+  }, [activeTab, fetchGmapsStats]);
+
   const stats = data?.todayStats;
   const status = data?.status;
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--bg)" }}>
+      {/* Tab switcher */}
+      <div className="flex items-center gap-2 px-6 pt-4 shrink-0">
+        {(["linkedin", "gmaps"] as OutreachTab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="text-[12px] font-semibold px-4 py-2 rounded-lg transition-all duration-150"
+            style={{
+              background: activeTab === tab ? "var(--accent-blue)" : "var(--surface2)",
+              color: activeTab === tab ? "#000" : "var(--muted)",
+              border: `1px solid ${activeTab === tab ? "var(--accent-blue)" : "var(--border)"}`,
+            }}
+          >
+            {tab === "linkedin" ? "LinkedIn Queue" : "GMap Outreach"}
+          </button>
+        ))}
+      </div>
+
+      {/* GMap Outreach tab */}
+      {activeTab === "gmaps" && (
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+          {gmapsLoading && <p style={{ color: "var(--muted)", fontSize: 13 }}>Loading stats…</p>}
+          {!gmapsLoading && gmapsStats && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+                {[
+                  { label: "Pipeline Size", value: gmapsStats.pipelineSize, color: "var(--accent-blue)" },
+                  { label: "Forms Queued Today", value: gmapsStats.formsQueuedToday, color: "var(--accent-blue)" },
+                  { label: "Forms Sent Today", value: gmapsStats.formsSentToday, color: "var(--accent-green)" },
+                  { label: "SMS Sent Today", value: gmapsStats.smsSentToday, color: "var(--accent-green)" },
+                  { label: "Meetings Booked", value: gmapsStats.meetingsBooked, color: "var(--accent-orange)" },
+                ].map(card => (
+                  <div key={card.label}
+                    className="rounded-xl p-4 flex flex-col gap-1"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                    <span className="text-[11px]" style={{ color: "var(--muted)" }}>{card.label}</span>
+                    <span className="text-2xl font-bold tabular-nums" style={{ color: card.color }}>
+                      {card.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl p-4 flex items-center gap-3"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <span className="text-[13px]" style={{ color: "var(--muted)" }}>Conversion rate (forms sent → meetings):</span>
+                <span className="text-xl font-bold" style={{ color: "var(--accent-orange)" }}>
+                  {gmapsStats.conversionRate}
+                </span>
+              </div>
+              {gmapsStats.queue.length === 0 ? (
+                <p style={{ color: "var(--muted)", fontSize: 13 }}>
+                  No items in queue yet. Import Google Maps businesses and click &quot;Add to Outreach&quot;.
+                </p>
+              ) : (
+                <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                  <table className="w-full text-[12px]">
+                    <thead>
+                      <tr style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
+                        {["Business", "Industry", "Step", "Status", "Scheduled", "Executed"].map(h => (
+                          <th key={h} className="text-left px-3 py-2 font-semibold"
+                            style={{ color: "var(--muted)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gmapsStats.queue.map(item => {
+                        const statusColor = item.status === "done" ? "var(--accent-green)"
+                          : item.status === "failed" ? "var(--accent-orange)"
+                          : item.status === "skipped" ? "var(--muted)"
+                          : "var(--accent-blue)";
+                        const stepLabel = item.step_number === 1 ? "Form" : "SMS";
+                        return (
+                          <tr key={item.id}
+                            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+                            <td className="px-3 py-2 font-medium" style={{ color: "var(--text)" }}>
+                              {item.leads?.company || item.leads?.name || item.lead_id.slice(0, 12)}
+                            </td>
+                            <td className="px-3 py-2" style={{ color: "var(--muted)" }}>
+                              {item.leads?.industry ?? "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                                style={{
+                                  background: item.step_number === 1 ? "rgba(0,212,255,0.1)" : "rgba(124,58,237,0.1)",
+                                  color: item.step_number === 1 ? "var(--accent-blue)" : "var(--accent-purple)",
+                                }}>
+                                {stepLabel}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                                style={{ background: `${statusColor}18`, color: statusColor }}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 tabular-nums" style={{ color: "var(--muted)" }}>
+                              {new Date(item.scheduled_for).toLocaleDateString()}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums" style={{ color: "var(--muted)" }}>
+                              {item.executed_at ? new Date(item.executed_at).toLocaleDateString() : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+          {!gmapsLoading && !gmapsStats && (
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>Failed to load stats. Make sure you are logged in as super_admin.</p>
+          )}
+        </div>
+      )}
+
+      {/* LinkedIn Queue tab — existing content */}
+      {activeTab === "linkedin" && <div className="flex flex-col h-full" style={{ background: "var(--bg)" }}>
       <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg" style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)" }}>
@@ -454,6 +610,8 @@ export default function OutreachPage() {
         <RunnerSettings />
         <SetupGuide />
       </div>
+      </div>}
+
     </div>
   );
 }

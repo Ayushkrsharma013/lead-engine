@@ -1,10 +1,10 @@
 {
   "name": "linkedin-runner",
   "version": "1.0.0",
-  "description": "Local LinkedIn outreach runner — polls Supabase queue and executes actions via Playwright",
-  "main": "linkedin-runner.js",
+  "description": "Local LinkedIn + GMap outreach runners — poll Supabase queues and execute via Playwright/Twilio",
   "scripts": {
     "start": "node linkedin-runner.js",
+    "start:gmaps": "node gmaps-runner.js",
     "setup": "node linkedin-runner.js --setup"
   },
   "dependencies": {
@@ -12,6 +12,7 @@
     "dotenv": "^16.4.5",
     "playwright": "^1.44.0",
     "playwright-extra": "^4.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "twilio": "^5.0.0"
   }
 }
