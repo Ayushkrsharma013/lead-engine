@@ -1557,3 +1557,39 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Verified**: `blitzapi/linkedin-leads-finder` does NOT exist on Apify (HTTP 404). Feature is named "BlitzAPI" internally but Stage 1 uses `x_guru~Leads-Scraper-apollo-zoominfo`.
 
 **Current build**: 81 routes, 0 TypeScript errors, 0 open bugs, 0 phases remaining
+
+---
+
+### 2026-05-21 — GMap Outreach Agent (Contact Form Fill + SMS Follow-up Pipeline)
+
+**Goal**: Automated client acquisition pipeline targeting Google Maps businesses to sell the Missed Call Recovery Agent ($297 setup + $97/mo). Day 1 — Playwright fills business contact form; Day 3 — SMS via Twilio if no booking.
+
+**New files**:
+- `supabase/migrations/20260521_gmaps_outreach.sql` — `gmaps_outreach_queue` table + `gmaps_outreach_stats` view + RLS + seed row in `agents` table (`gmaps-outreach-agent`)
+- `lib/agents/gmaps-message.ts` — 3-tier message personalization: Tier A (≥4.5★ + ≥100 reviews), Tier B (≥4.0★ or ≥20 reviews), Tier C (default); `generateContactFormMessage()`, `generateSmsMessage()` (160-char limit), `buildBookingUrl()`, `parseRatingFromNotes()`, `parsePhoneFromNotes()`, `parseCityFromLocation()`
+- `lib/agents/gmaps-outreach-agent.ts` — `GmapsOutreachAgent implements AgentModule`; 5 steps: find new gmaps prospects (capped at daily_cap, skip already queued), generate messages + queue `gmaps_contact_form_fill`, schedule day-3 SMS follow-ups, detect bookings via `appointments.notes ILIKE '%lid={leadId}%'` → update lead status to "meeting", write to knowledge store
+- `app/api/gmaps-outreach/queue/route.ts` — POST — queue leads for outreach (super_admin/qa_agent); validates contact method (website or phone), generates personalized message, inserts into `gmaps_outreach_queue`; returns `{ queued, skipped, skipReasons }`
+- `app/api/gmaps-outreach/stats/route.ts` — GET — returns pipelineSize, formsQueuedToday, formsSentToday, smsSentToday, meetingsBooked, conversionRate, last 50 queue items joined with leads
+- `runner/gmaps-runner.js` — Local Playwright (stealth) + Twilio daemon; polls `gmaps_outreach_queue` every 5 min; fills contact forms (navigates homepage → finds /contact link if no form on root, fills name/email/textarea with human-paced typing 80-120ms/char, waits for success confirmation); sends SMS via Twilio REST API; respects active hours (weekdays 9 AM–6 PM), daily caps (MAX_FORM_FILLS_PER_DAY=30, MAX_SMS_PER_DAY=20), resets stuck "executing" rows every poll
+
+**Modified files**:
+- `lib/agents/dispatcher.ts` — registers `GmapsOutreachAgent` as 8th agent in AGENT_REGISTRY
+- `lib/agents/resolver.ts` — dispatches `gmaps_contact_form_fill` + `gmaps_sms_follow_up` action types → insert into `gmaps_outreach_queue`; handles duplicate 23505 gracefully
+- `app/book/page.tsx` — reads `?ref=gmaps&lid=` via `useSearchParams` (wrapped in `<Suspense>`); appends `ref=gmaps&lid={leadId}` to `appointments.notes` for booking attribution
+- `app/gmaps-search/page.tsx` — "Add to Outreach" button (auto-imports unimported businesses first, then POSTs to `/api/gmaps-outreach/queue`); QUEUED badge on BusinessCard; result toast
+- `app/outreach/page.tsx` — GMap Outreach tab alongside LinkedIn tab; 5 stat cards (pipeline size, forms queued today, forms sent today, SMS sent today, meetings booked) + conversion rate card + queue table (Business / Industry / Step / Status / Scheduled / Executed columns)
+- `runner/package.json` — added `twilio ^5.0.0` dep + `start:gmaps` script
+- `runner/.env.example` — added TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, BUSINESS_EMAIL, MAX_FORM_FILLS_PER_DAY, MAX_SMS_PER_DAY
+
+**Key conventions**:
+- `BOOKING_BASE = "https://app.flow-forges.com/prospecting-os/book?type=discovery&ref=gmaps&lid="` in gmaps-message.ts
+- Booking attribution: `appointments.notes ILIKE '%ref=gmaps%'` for stats; `ILIKE '%lid={leadId}%'` for per-lead detection
+- `writeKnowledge(key, value, agent)` — key first, agent last (not agent-first like the plan showed)
+- `getUserFromHeaders()` is async and takes NO args (reads from Next.js `headers()` internally)
+- Runner PROFILE_DIR: `~/.gmaps-runner/profile` (persistent Chrome session for stealth)
+
+**To run the local runner**: `cd runner && npm install && node gmaps-runner.js` (requires env vars in `runner/.env.example`)
+
+**Commit**: `ed27ced` — 12 files, +1,209 lines
+
+**Current build**: 86 routes, 0 TypeScript errors, 0 open bugs
