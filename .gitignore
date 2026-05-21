@@ -58,3 +58,11 @@ runner/package-lock.json
 runner/node_modules/
 runner/.env
 runner/.env.local
+
+# AI tool state directories
+.claude-flow/
+.agents/
+
+# helper batch scripts
+commit.bat
+push.bat
