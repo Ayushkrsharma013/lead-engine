@@ -4,7 +4,6 @@
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getUserFromHeaders } from "@/lib/auth";
 import {
   assessLeadQuality,
   parsePhoneFromNotes,
@@ -24,9 +23,9 @@ async function sendTelegram(text: string) {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromHeaders();
-  if (!user || !["super_admin", "qa_agent"].includes(user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const role = req.headers.get("x-user-role") ?? "";
+  if (role !== "super_admin" && role !== "qa_agent") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({})) as { leadIds?: string[]; dryRun?: boolean };
