@@ -19,19 +19,21 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({})) as { activeHours?: boolean };
   const now = new Date().toISOString();
 
-  // Upsert heartbeat sentinel into gmaps_outreach_queue
-  const { error } = await supabaseAdmin.from("gmaps_outreach_queue").upsert(
-    {
-      lead_id: "__heartbeat__",
-      action_type: "heartbeat",
-      status: "done",
-      step_number: 0,
-      scheduled_for: now,
-      executed_at: now,
-      message: JSON.stringify({ activeHours: body.activeHours ?? false }),
-    },
-    { onConflict: "lead_id, action_type" }
-  );
+  // Delete previous heartbeat, then insert new one
+  await supabaseAdmin
+    .from("gmaps_outreach_queue")
+    .delete()
+    .eq("lead_id", "__heartbeat__");
+
+  const { error } = await supabaseAdmin.from("gmaps_outreach_queue").insert({
+    lead_id: "__heartbeat__",
+    action_type: "heartbeat",
+    status: "done",
+    step_number: 0,
+    scheduled_for: now,
+    executed_at: now,
+    message: JSON.stringify({ activeHours: body.activeHours ?? false }),
+  });
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
