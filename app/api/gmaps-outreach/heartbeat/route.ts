@@ -19,24 +19,31 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({})) as { activeHours?: boolean };
   const now = new Date().toISOString();
 
-  // Delete previous heartbeat, then insert new one
+  // Store heartbeat in activity_log (no FK constraints, flexible schema)
   await supabaseAdmin
-    .from("gmaps_outreach_queue")
+    .from("activity_log")
     .delete()
-    .eq("lead_id", "__heartbeat__");
+    .eq("type", "gmaps_runner_heartbeat");
 
-  const { error } = await supabaseAdmin.from("gmaps_outreach_queue").insert({
-    lead_id: "__heartbeat__",
-    action_type: "heartbeat",
-    status: "done",
-    step_number: 0,
-    scheduled_for: now,
-    executed_at: now,
-    message: JSON.stringify({ activeHours: body.activeHours ?? false }),
+  const { error } = await supabaseAdmin.from("activity_log").insert({
+    type: "gmaps_runner_heartbeat",
+    text: now,
+    lead_id: null as any,
   });
 
   if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    // If activity_log also fails, try error_logs
+    await supabaseAdmin.from("error_logs").delete().eq("message", "gmaps_runner_heartbeat");
+    const { error: err2 } = await supabaseAdmin.from("error_logs").insert({
+      message: "gmaps_runner_heartbeat",
+      stack: now,
+      source: "gmaps-runner",
+      url: "",
+      metadata: { activeHours: body.activeHours ?? false },
+    });
+    if (err2) {
+      return NextResponse.json({ ok: false, error: err2.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ ok: true });
