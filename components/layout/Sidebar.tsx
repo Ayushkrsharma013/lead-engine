@@ -84,7 +84,7 @@ const NAV_SECTIONS: NavSection[] = [
     id: "outreach",
     label: "Outreach",
     items: [
-      { id: "outreach", module: "outreach", label: "LinkedIn Outreach", icon: Send, href: "/outreach" },
+      { id: "linkedin-outreach", module: "linkedin-outreach", label: "LinkedIn Outreach", icon: Send, href: "/outreach/linkedin" },
       { id: "gmaps-outreach", module: "gmaps-outreach", label: "GMap Outreach", icon: MapPin, href: "/outreach/gmaps" },
     ],
   },

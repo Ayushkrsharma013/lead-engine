@@ -215,6 +215,7 @@ export default function GmapsSearchPage() {
   const [location, setLocation] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [maxResults, setMaxResults] = useState(50);
+  const [websiteRequired, setWebsiteRequired] = useState(false);
 
   const [results, setResults] = useState<GMapsBusiness[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
@@ -306,7 +307,7 @@ export default function GmapsSearchPage() {
       const res = await fetch("/prospecting-os/api/gmaps-scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim(), location: location.trim(), maxResults, minRating }),
+        body: JSON.stringify({ query: query.trim(), location: location.trim(), maxResults, minRating, websiteRequired }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to start scrape. Check your APIFY_API_KEY."); setLoading(false); return; }
@@ -637,21 +638,47 @@ export default function GmapsSearchPage() {
               </div>
             </div>
             {mode === "deep" && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--ink-4)" }}>Max Results</span>
-                <div className="flex gap-1">
-                  {maxResultsOptions.map(n => (
-                    <button key={n} onClick={() => setMaxResults(n)}
-                      className="text-[11px] px-2.5 py-1 rounded-full transition-all duration-100 tabular-nums"
-                      style={{
-                        background: maxResults === n ? "rgba(232,168,64,0.15)" : "var(--surface-2)",
-                        border: `1px solid ${maxResults === n ? "rgba(232,168,64,0.35)" : "var(--line)"}`,
-                        color: maxResults === n ? "var(--accent)" : "var(--ink-3)",
-                      }}
-                    >{n}</button>
-                  ))}
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--ink-4)" }}>Max Results</span>
+                  <div className="flex gap-1">
+                    {maxResultsOptions.map(n => (
+                      <button key={n} onClick={() => setMaxResults(n)}
+                        className="text-[11px] px-2.5 py-1 rounded-full transition-all duration-100 tabular-nums"
+                        style={{
+                          background: maxResults === n ? "rgba(232,168,64,0.15)" : "var(--surface-2)",
+                          border: `1px solid ${maxResults === n ? "rgba(232,168,64,0.35)" : "var(--line)"}`,
+                          color: maxResults === n ? "var(--accent)" : "var(--ink-3)",
+                        }}
+                      >{n}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setWebsiteRequired(!websiteRequired)}
+                    className="relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-150 shrink-0"
+                    style={{
+                      background: websiteRequired ? "rgba(0,212,255,0.25)" : "var(--surface-2)",
+                      border: `1px solid ${websiteRequired ? "rgba(0,212,255,0.40)" : "var(--line)"}`,
+                    }}
+                  >
+                    <span
+                      className="inline-block w-4 h-4 rounded-full transition-transform duration-150"
+                      style={{
+                        background: websiteRequired ? "var(--accent-blue)" : "var(--ink-4)",
+                        transform: websiteRequired ? "translateX(22px)" : "translateX(4px)",
+                      }}
+                    />
+                  </button>
+                  <div>
+                    <span className="text-[11px] font-semibold" style={{ color: websiteRequired ? "var(--accent-blue)" : "var(--ink-3)" }}>
+                      Website Required
+                    </span>
+                    <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>Only businesses with active websites</p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>

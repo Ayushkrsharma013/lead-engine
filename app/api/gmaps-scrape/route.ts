@@ -100,6 +100,17 @@ function mapItemToLead(item: any, now: string): Lead | null {
   };
 }
 
+// ─── Helpers: rating → Apify format ─────────────────────────────────────────────
+
+function ratingToApify(min: number): string | undefined {
+  if (min >= 4.5) return "fourAndHalf";
+  if (min >= 4) return "four";
+  if (min >= 3.5) return "threeAndHalf";
+  if (min >= 3) return "three";
+  if (min >= 2) return "two";
+  return undefined;
+}
+
 // ─── POST — start Apify actor run ──────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -112,29 +123,32 @@ export async function POST(req: NextRequest) {
     location: string;
     maxResults?: number;
     minRating?: number;
+    websiteRequired?: boolean;
   };
 
-  const { query, location, maxResults = 50, minRating = 0 } = body;
+  const { query, location, maxResults = 50, minRating = 0, websiteRequired = false } = body;
 
   if (!query?.trim() || !location?.trim()) {
     return NextResponse.json({ error: "query and location are required" }, { status: 400 });
   }
 
-  const searchString = `${query.trim()} in ${location.trim()}`;
+  const searchTerm = query.trim();
+  const searchString = `${searchTerm} in ${location.trim()}`;
 
-  const input = {
-    searchStringsArray: [searchString],
+  const input: Record<string, unknown> = {
+    searchStringsArray: [searchTerm],
+    locationQuery: location.trim(),
     maxCrawledPlacesPerSearch: Math.min(maxResults, 200),
     language: "en",
+    categoryFilterWords: [searchTerm.toLowerCase()],
+    skipClosedPlaces: true,
     maxImages: 0,
     maxReviews: 0,
-    exportPlaceUrls: false,
-    additionalInfo: false,
-    // Store for post-filtering
-    _minRating: minRating,
-    _query: query.trim(),
-    _location: location.trim(),
   };
+
+  const stars = ratingToApify(minRating);
+  if (stars) input.placeMinimumStars = stars;
+  if (websiteRequired) input.website = "withWebsite";
 
   try {
     const startRes = await fetch(

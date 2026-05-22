@@ -193,7 +193,7 @@ export interface Notification {
 }
 
 export type ModuleName = "dashboard" | "leads" | "message-lab" | "scorer"
-  | "sequences" | "kanban" | "analytics" | "clients" | "outreach" | "agent" | "settings" | "gmaps-search" | "gmaps-outreach";
+  | "sequences" | "kanban" | "analytics" | "clients" | "outreach" | "linkedin-outreach" | "agent" | "settings" | "gmaps-search" | "gmaps-outreach";
 
 export interface MergeResult {
   stored: Lead[];
