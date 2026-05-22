@@ -2,7 +2,7 @@
 // Local GMap outreach runner — runs on your home machine (residential IP).
 // Polls gmaps_outreach_queue every 5 min.
 // contact_form_fill → Playwright navigates website, fills contact form.
-// sms_follow_up    → Twilio REST API (no Playwright).
+// sms_follow_up    → Remi outreach API (POST /api/outreach/start).
 // Never run this on a server.
 
 require("dotenv").config();
@@ -11,16 +11,12 @@ const os = require("os");
 
 const { chromium } = require("playwright-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const twilio = require("twilio");
 
 chromium.use(StealthPlugin());
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
 const BUSINESS_EMAIL = process.env.BUSINESS_EMAIL || "ayush@flow-forges.com";
 const REMI_URL = process.env.REMI_URL || 'https://agent.flow-forges.com';
 const OUTREACH_API_KEY = process.env.OUTREACH_API_KEY || '';
@@ -168,25 +164,6 @@ async function tryFillForm(page, message) {
   }, { timeout: 5000 }).catch(() => undefined);
 
   return true;
-}
-
-// ─── SMS Follow-up (Twilio) ───────────────────────────────────────────────────
-
-async function sendSms(phone, message) {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM) {
-    return { success: false, error: "Twilio credentials not configured in .env" };
-  }
-  try {
-    const client = twilio(TWILIO_SID, TWILIO_TOKEN);
-    const msg = await client.messages.create({
-      body: message,
-      from: TWILIO_FROM,
-      to: phone,
-    });
-    return { success: true, sid: msg.sid };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
 }
 
 // ─── Main poll cycle ──────────────────────────────────────────────────────────
