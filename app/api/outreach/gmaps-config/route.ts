@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -36,19 +37,34 @@ async function getConfig(): Promise<GmapsRunnerConfig> {
   return { ...DEFAULTS, ...(data.value as Partial<GmapsRunnerConfig>) };
 }
 
-export async function GET(request: Request) {
-  const role = request.headers.get("x-user-role") ?? "";
-  if (role !== "super_admin" && role !== "qa_agent") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+async function requireAdmin(): Promise<NextResponse | null> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles").select("role").eq("id", user.id).maybeSingle();
+
+    const role = profile?.role ?? "";
+    if (role !== "super_admin" && role !== "qa_agent") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return null;
+  } catch {
+    return NextResponse.json({ error: "Auth error" }, { status: 500 });
   }
+}
+
+export async function GET(request: Request) {
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
   return NextResponse.json(await getConfig());
 }
 
 export async function POST(request: Request) {
-  const role = request.headers.get("x-user-role") ?? "";
-  if (role !== "super_admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
 
   const body = await request.json() as Partial<GmapsRunnerConfig>;
   const current = await getConfig();
