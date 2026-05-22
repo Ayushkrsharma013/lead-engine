@@ -1593,3 +1593,69 @@ supabase/migrations/20260517_add_client_portal_fields.sql
 **Commit**: `ed27ced` — 12 files, +1,209 lines
 
 **Current build**: 86 routes, 0 TypeScript errors, 0 open bugs
+
+---
+
+### 2026-05-22 — GMap Outreach: Dedicated Page + Auto-Queue + Runner Heartbeat
+
+**Goal**: Give GMap Outreach its own dedicated page in the sidebar (same layout as LinkedIn Outreach), add an auto-routing algorithm that sends high-quality Google Maps leads to the outreach pipeline without manual intervention, and fix the runner "offline" status on the dashboard.
+
+**New files**:
+- `app/outreach/gmaps/page.tsx` — Dedicated GMap Outreach page: header with live/offline runner badge, 5 stat cards (Pipeline Size, Forms Queued/Sent Today, SMS Sent Today, Meetings Booked), queue status breakdown (Pending/Executing/Done/Failed/Skipped), conversion rate, queue table with step icons (Globe for Form, MessageSquare for SMS), runner settings accordion (cloud-saved form/SMS caps, active hours, delays, breaks), setup guide (5 steps), "How this works" section
+- `app/api/outreach/gmaps-config/route.ts` — GET/POST for gmaps runner settings stored in `knowledge_store` under `gmaps_runner.config`
+- `app/api/gmaps-outreach/auto-queue/route.ts` — POST — scans all gmaps leads not yet queued and auto-routes high-quality ones (score ≥75, rating ≥4.0, has website/phone, operational) to the outreach pipeline. Supports `dryRun` mode and per-lead detail output
+- `app/api/gmaps-outreach/health/route.ts` — GET — returns runner live status based on heartbeat sentinel in `activity_log` table
+- `app/api/gmaps-outreach/heartbeat/route.ts` — POST — called by local runner to signal it's alive; uses `GMAPS_RUNNER_SECRET` (fallback: `gmaps-runner-v1`); stores timestamp in `activity_log` table
+- `app/api/admin/migrate/route.ts` — POST — one-shot migration helper for production Supabase
+- `tests/scenarios/gmaps-outreach.sh` — E2E test suite: stats API, auto-queue dry run, queue API, config API, page rendering, sidebar navigation, auto-queue toggle
+
+**Modified files**:
+- `components/layout/Sidebar.tsx` — Added "GMap Outreach" entry under Outreach section (MapPin icon, `/outreach/gmaps`)
+- `lib/types.ts` — Added `"gmaps-outreach"` to ModuleName union type
+- `lib/agents/gmaps-message.ts` — Added `assessLeadQuality()` function with quality gate (score ≥75, rating ≥4.0, has website/phone, operational)
+- `app/gmaps-search/page.tsx` — Added "Auto-Queue High-Quality Leads" toggle (default ON), "Scan All & Auto-Queue" button, auto-queue result banner with "View Pipeline" link. Modified `handleImport` to auto-route high-quality leads after import when toggle is on
+- `app/api/gmaps-outreach/stats/route.ts` — Switched from `getUserFromHeaders()` to SSR cookie-based auth via `createSupabaseServerClient` + supabaseAdmin profile lookup
+- `app/api/gmaps-outreach/queue/route.ts` — Added GET (runner fetches pending items with daily counts) + PATCH (runner reports execution results); auth uses `GMAPS_RUNNER_SECRET` for runner endpoints
+- `app/api/gmaps-outreach/auto-queue/route.ts` — Auth switched to SSR cookie-based pattern
+- `middleware.ts` — Switched profiles query to use `supabaseAdmin` (service role key) instead of anon-key client to avoid RLS 500 errors that caused role fallback to "user"
+- `runner/gmaps-runner.js` — Complete rework: no longer needs direct Supabase connection; communicates via HTTP API (heartbeat, queue GET/PATCH); uses `GMAPS_RUNNER_SECRET` for auth; removed all Supabase helper functions (`getTodayCounts`, `markExecuting`, `markDone`, `markFailed`, `markSkipped`, `resetStuckExecuting`)
+
+**Architecture — Runner connectivity**:
+```
+Runner (local machine)        Deployed API (Vercel)          Supabase (production)
+     │                              │                              │
+     ├─ POST /heartbeat ──────────►│────── INSERT activity_log ──►│
+     ├─ GET  /queue ──────────────►│────── SELECT queue ─────────►│
+     ├─ PATCH /queue ─────────────►│────── UPDATE status ────────►│
+     │                              │                              │
+     └─ Playwright: fills forms ───┘
+     └─ Twilio: sends SMS ─────────┘
+```
+
+**Auto-queue quality gate**:
+| Criteria | Threshold |
+|---|---|
+| ICP Score | ≥ 75 |
+| Google Rating | ≥ 4.0 |
+| Contact method | Has website OR phone |
+| Operational | Not closed/suspended |
+| Status | Not already meeting/won/lost |
+
+**Runner heartbeat mechanism**:
+- Runner pings `POST /api/gmaps-outreach/heartbeat` every poll cycle (5 min)
+- Heartbeat stored as sentinel row in `activity_log` (type: `gmaps_runner_heartbeat`)
+- Health endpoint checks if heartbeat < 10 min old → `runnerLive: true`
+- GMap Outreach page polls health endpoint every 60s for live/offline badge
+
+**Auth fixes (3 iterations)**:
+1. First: `getUserFromHeaders()` → returned null when middleware profiles query failed (PGRST 500 from RLS)
+2. Second: `request.headers.get("x-user-role")` → worked but middleware role was "user" not "super_admin" due to profiles RLS
+3. Final: SSR cookie-based auth via `createSupabaseServerClient` + supabaseAdmin profile lookup — resilient to middleware issues, works in all environments
+
+**Runner env** — only needs: `CRON_SECRET=gmaps-runner-v1` (no Supabase or Twilio keys required; Twilio optional for SMS)
+
+**To start the runner**: `cd runner && node gmaps-runner.js`
+
+**Commits**: 8 commits across the session (`27d925b` through `25d938d`)
+**Build**: 86 routes, 0 TypeScript errors, 0 open bugs
+**Live verified**: Stats API 200, Auto-queue API 200, Heartbeat 200, Health 200 → runnerLive: true, Page rendering with all components
