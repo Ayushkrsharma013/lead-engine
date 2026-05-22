@@ -92,3 +92,55 @@ export function generateSmsMessage(params: {
   const msg = `Hi, I emailed ${businessName} about recovering missed calls with AI. Worth a quick 15-min call? ${url} — Ayush, Flow Forges`;
   return msg.slice(0, 160);
 }
+
+// ─── Auto-queue: quality gate ──────────────────────────────────────────────────
+
+const AUTO_QUEUE_MIN_SCORE = 75;
+const AUTO_QUEUE_MIN_RATING = 4.0;
+
+export interface QualityCheck {
+  qualifies: boolean;
+  reasons: string[];
+  score: number;
+  rating: number;
+  reviewCount: number;
+  hasWebsite: boolean;
+  hasPhone: boolean;
+  isOperational: boolean;
+}
+
+export function assessLeadQuality(lead: {
+  score?: number | null;
+  notes?: string | null;
+  website?: string | null;
+  status?: string | null;
+}): QualityCheck {
+  const score = lead.score ?? 0;
+  const notes = lead.notes ?? "";
+  const website = lead.website ?? "";
+  const status = lead.status ?? "new";
+  const { rating, reviewCount } = parseRatingFromNotes(notes);
+  const phone = parsePhoneFromNotes(notes);
+  const hasWebsite = website.length > 0;
+  const hasPhone = phone.length > 0;
+  const isOperational = !notes.includes("CLOSED") && !notes.includes("SUSPENDED");
+
+  const reasons: string[] = [];
+
+  if (score < AUTO_QUEUE_MIN_SCORE) reasons.push(`score ${score} < ${AUTO_QUEUE_MIN_SCORE}`);
+  if (rating < AUTO_QUEUE_MIN_RATING) reasons.push(`rating ${rating.toFixed(1)} < ${AUTO_QUEUE_MIN_RATING.toFixed(1)}`);
+  if (!hasWebsite && !hasPhone) reasons.push("no website or phone");
+  if (!isOperational) reasons.push("not operational");
+  if (status === "meeting" || status === "won" || status === "lost") reasons.push(`status is ${status}`);
+
+  return {
+    qualifies: reasons.length === 0,
+    reasons,
+    score,
+    rating,
+    reviewCount,
+    hasWebsite,
+    hasPhone,
+    isOperational,
+  };
+}

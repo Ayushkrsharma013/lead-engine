@@ -223,6 +223,9 @@ export default function GmapsSearchPage() {
   const [queuedIds, setQueuedIds] = useState<Set<string>>(new Set());
   const [addingToOutreach, setAddingToOutreach] = useState(false);
   const [outreachResult, setOutreachResult] = useState<{ queued?: number; skipped?: number; error?: string } | null>(null);
+  const [autoQueue, setAutoQueue] = useState(true);
+  const [autoQueueResult, setAutoQueueResult] = useState<{ queued: number; qualifyingCount: number; assessed: number } | null>(null);
+  const [scanningAll, setScanningAll] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -335,7 +338,7 @@ export default function GmapsSearchPage() {
   const handleImport = async () => {
     const toImport = results.filter(r => selected.has(r.placeId));
     if (!toImport.length) return;
-    setImporting(true); setImportResult(null);
+    setImporting(true); setImportResult(null); setAutoQueueResult(null);
 
     const endpoint = mode === "quick"
       ? { url: "/prospecting-os/api/gmaps-search", method: "POST" }
@@ -350,10 +353,50 @@ export default function GmapsSearchPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Import failed."); return; }
       setImportResult({ imported: data.imported, duplicates: data.duplicates });
-      setImportedIds(prev => new Set([...prev, ...toImport.map(r => r.placeId)]));
+      const newImportedIds = new Set([...importedIds, ...toImport.map(r => r.placeId)]);
+      setImportedIds(newImportedIds);
       setSelected(new Set());
+
+      // Auto-queue high-quality leads if toggle is on
+      if (autoQueue && data.imported > 0) {
+        const leadIds = toImport.map(r => `gmaps_${r.placeId}`);
+        try {
+          const aqRes = await fetch("/prospecting-os/api/gmaps-outreach/auto-queue", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ leadIds }),
+          });
+          const aqData = await aqRes.json();
+          if (aqRes.ok && aqData.queued > 0) {
+            setAutoQueueResult({ queued: aqData.queued, qualifyingCount: aqData.qualifyingCount, assessed: aqData.assessed });
+            setQueuedIds(prev => {
+              const next = new Set(prev);
+              aqData.details?.filter((d: any) => d.action === "queued").forEach((d: any) => next.add(d.leadId.replace("gmaps_", "")));
+              return next;
+            });
+          }
+        } catch { /* non-critical */ }
+      }
     } catch { setError("Import failed — please try again."); }
     finally { setImporting(false); }
+  };
+
+  // ── Scan all gmaps leads & auto-queue ─────────────────────────────────────
+
+  const handleScanAll = async () => {
+    setScanningAll(true); setAutoQueueResult(null);
+    try {
+      const res = await fetch("/prospecting-os/api/gmaps-outreach/auto-queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAutoQueueResult({ queued: data.queued, qualifyingCount: data.qualifyingCount, assessed: data.assessed });
+      }
+    } catch { /* non-critical */ }
+    finally { setScanningAll(false); }
   };
 
   // ── Add to Outreach ────────────────────────────────────────────────────────
@@ -452,6 +495,56 @@ export default function GmapsSearchPage() {
               </div>
             </button>
           ))}
+        </div>
+
+        {/* ── Auto-queue toggle + scan all ── */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setAutoQueue(!autoQueue)}
+              className="relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-150 shrink-0"
+              style={{
+                background: autoQueue ? "rgba(0,255,136,0.25)" : "var(--surface-2)",
+                border: `1px solid ${autoQueue ? "rgba(0,255,136,0.40)" : "var(--line)"}`,
+              }}
+            >
+              <span
+                className="inline-block w-4 h-4 rounded-full transition-transform duration-150"
+                style={{
+                  background: autoQueue ? "#00ff88" : "var(--ink-4)",
+                  transform: autoQueue ? "translateX(22px)" : "translateX(4px)",
+                }}
+              />
+            </button>
+            <div>
+              <span className="text-[12px] font-semibold" style={{ color: autoQueue ? "#00ff88" : "var(--ink-3)" }}>
+                Auto-Queue High-Quality Leads
+              </span>
+              <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
+                Score ≥75, ★ ≥4.0, has website/phone →
+                routed to{" "}
+                <span style={{ color: "var(--accent-green)" }}>GMap Outreach</span>
+                {" "}on import
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleScanAll}
+            disabled={scanningAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: "rgba(0,255,136,0.08)",
+              border: "1px solid rgba(0,255,136,0.20)",
+              color: "var(--accent-green)",
+            }}
+          >
+            {scanningAll ? (
+              <><RefreshCw size={12} className="animate-spin" /> Scanning…</>
+            ) : (
+              <><Zap size={12} /> Scan All &amp; Auto-Queue</>
+            )}
+          </button>
         </div>
 
         {/* ── Search panel ── */}
@@ -586,6 +679,25 @@ export default function GmapsSearchPage() {
               className="flex items-center gap-1 text-[11px] font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "#00ff88" }}>
               View in Lead Intelligence <ChevronRight size={12} />
+            </Link>
+          </div>
+        )}
+
+        {/* ── Auto-queue result ── */}
+        {autoQueueResult && (
+          <div className="flex items-center gap-3 rounded-xl p-4"
+            style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.22)" }}>
+            <Send size={16} style={{ color: "var(--accent-blue)" }} />
+            <span className="text-sm font-medium flex-1" style={{ color: "var(--accent-blue)" }}>
+              {autoQueueResult.queued} high-quality leads auto-routed to GMap Outreach
+              {autoQueueResult.assessed > autoQueueResult.qualifyingCount
+                ? ` (${autoQueueResult.qualifyingCount} qualified of ${autoQueueResult.assessed} assessed)`
+                : ""}
+            </span>
+            <Link href="/outreach/gmaps"
+              className="flex items-center gap-1 text-[11px] font-semibold hover:opacity-80 transition-opacity"
+              style={{ color: "var(--accent-blue)" }}>
+              View Pipeline <ChevronRight size={12} />
             </Link>
           </div>
         )}
