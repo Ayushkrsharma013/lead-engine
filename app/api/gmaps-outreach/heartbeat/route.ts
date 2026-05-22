@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-const RUNNER_SECRET = process.env.GMAPS_RUNNER_SECRET || process.env.CRON_SECRET || "gmaps-runner-v1";
+const RUNNER_SECRET = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization") || "";

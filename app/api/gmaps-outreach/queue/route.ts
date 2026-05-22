@@ -23,7 +23,7 @@ async function sendTelegram(text: string) {
 // GET — called by local runner to fetch pending queue items
 export async function GET(req: Request) {
   const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || process.env.CRON_SECRET || "gmaps-runner-v1";
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
   if (secret !== runnerSecret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 // PATCH — called by local runner to report execution results
 export async function PATCH(req: Request) {
   const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || process.env.CRON_SECRET || "gmaps-runner-v1";
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
   if (secret !== runnerSecret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
