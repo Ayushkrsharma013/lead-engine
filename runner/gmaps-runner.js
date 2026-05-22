@@ -9,7 +9,6 @@ require("dotenv").config();
 const path = require("path");
 const os = require("os");
 
-const { createClient } = require("@supabase/supabase-js");
 const { chromium } = require("playwright-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const twilio = require("twilio");
@@ -18,19 +17,16 @@ chromium.use(StealthPlugin());
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const CRON_SECRET = process.env.CRON_SECRET;
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
 const BUSINESS_EMAIL = process.env.BUSINESS_EMAIL || "ayush@flow-forges.com";
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("[gmaps-runner] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+if (!CRON_SECRET) {
+  console.error("[gmaps-runner] Missing CRON_SECRET — needed for API auth");
   process.exit(1);
 }
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MAX_FORM_FILLS = parseInt(process.env.MAX_FORM_FILLS_PER_DAY ?? "30", 10);
 const MAX_SMS = parseInt(process.env.MAX_SMS_PER_DAY ?? "20", 10);
@@ -53,51 +49,6 @@ function randomDelay(minMs, maxMs) {
   return new Promise(r => setTimeout(r, minMs + Math.random() * (maxMs - minMs)));
 }
 
-async function getTodayCounts() {
-  const today = new Date().toISOString().split("T")[0];
-  const { count: formsFilled } = await supabase
-    .from("gmaps_outreach_queue")
-    .select("*", { count: "exact", head: true })
-    .eq("action_type", "contact_form_fill")
-    .eq("status", "done")
-    .gte("executed_at", `${today}T00:00:00Z`);
-  const { count: smsSent } = await supabase
-    .from("gmaps_outreach_queue")
-    .select("*", { count: "exact", head: true })
-    .eq("action_type", "sms_follow_up")
-    .eq("status", "done")
-    .gte("executed_at", `${today}T00:00:00Z`);
-  return { formsFilled: formsFilled ?? 0, smsSent: smsSent ?? 0 };
-}
-
-async function markExecuting(id) {
-  await supabase.from("gmaps_outreach_queue")
-    .update({ status: "executing" }).eq("id", id);
-}
-
-async function markDone(id, logMessage) {
-  await supabase.from("gmaps_outreach_queue").update({
-    status: "done",
-    executed_at: new Date().toISOString(),
-    error: logMessage ?? null,
-  }).eq("id", id);
-}
-
-async function markFailed(id, error) {
-  await supabase.from("gmaps_outreach_queue").update({
-    status: "failed",
-    error: String(error).slice(0, 500),
-    executed_at: new Date().toISOString(),
-  }).eq("id", id);
-}
-
-async function markSkipped(id, reason) {
-  await supabase.from("gmaps_outreach_queue").update({
-    status: "skipped",
-    error: String(reason).slice(0, 200),
-  }).eq("id", id);
-}
-
 async function sendTelegramAlert(message) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -107,27 +58,6 @@ async function sendTelegramAlert(message) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text: `[GMap Runner] ${message}` }),
   }).catch(() => undefined);
-}
-
-async function logActivity(leadId, text) {
-  await supabase.from("activity_log").insert({
-    type: "notification",
-    text,
-    lead_id: leadId || null,
-  });
-}
-
-async function resetStuckExecuting() {
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { data } = await supabase
-    .from("gmaps_outreach_queue")
-    .update({ status: "pending" })
-    .eq("status", "executing")
-    .lt("scheduled_for", tenMinutesAgo)
-    .select("id");
-  if (data?.length) {
-    console.log(`[gmaps-runner] Reset ${data.length} stuck executing rows back to pending`);
-  }
 }
 
 // ─── Contact Form Fill (Playwright) ──────────────────────────────────────────
@@ -256,97 +186,110 @@ async function sendSms(phone, message) {
 
 async function writeHeartbeat() {
   try {
-    await supabase.from("knowledge_store").upsert(
-      {
-        key: "gmaps_runner.heartbeat",
-        value: { lastBeat: new Date().toISOString(), activeHours: isActiveHour() },
-        agent: "gmaps-runner",
-        updated_at: new Date().toISOString(),
+    const secret = process.env.CRON_SECRET || "gmaps-runner-heartbeat";
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://app.flow-forges.com"}/prospecting-os/api/gmaps-outreach/heartbeat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret}`,
       },
-      { onConflict: "key" }
-    );
+      body: JSON.stringify({ activeHours: isActiveHour() }),
+    });
   } catch (e) {
     // silent — heartbeat is non-critical
   }
 }
 
+async function callApi(method, path, body) {
+  const secret = process.env.CRON_SECRET || "gmaps-runner-heartbeat";
+  const base = process.env.API_BASE || (process.env.NEXT_PUBLIC_SITE_URL || "https://app.flow-forges.com") + "/prospecting-os";
+  const res = await fetch(`${base}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret}`,
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
+  return res.json();
+}
+
 async function runOnce() {
   await writeHeartbeat();
-  await resetStuckExecuting();
 
   if (!isActiveHour()) {
     console.log(`[gmaps-runner] Outside active hours (${ACTIVE_START}:00–${ACTIVE_END}:00, weekdays only) — skipping`);
     return;
   }
 
-  const { formsFilled, smsSent } = await getTodayCounts();
-
-  const { data: item } = await supabase
-    .from("gmaps_outreach_queue")
-    .select("*")
-    .eq("status", "pending")
-    .lte("scheduled_for", new Date().toISOString())
-    .order("step_number", { ascending: true })
-    .order("scheduled_for", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!item) {
-    console.log(`[gmaps-runner] No pending items — forms: ${formsFilled}/${MAX_FORM_FILLS}, SMS: ${smsSent}/${MAX_SMS}`);
+  // Fetch pending items + daily counts via API
+  let queueData;
+  try {
+    queueData = await callApi("GET", "/api/gmaps-outreach/queue");
+  } catch (e) {
+    console.log(`[gmaps-runner] API error: ${e.message}`);
     return;
   }
 
-  if (item.action_type === "contact_form_fill" && formsFilled >= MAX_FORM_FILLS) {
+  const items = queueData.items || [];
+  const counts = queueData.dailyCounts || { formsFilled: 0, smsSent: 0 };
+
+  if (items.length === 0) {
+    console.log(`[gmaps-runner] No pending items — forms: ${counts.formsFilled}/${MAX_FORM_FILLS}, SMS: ${counts.smsSent}/${MAX_SMS}`);
+    return;
+  }
+
+  const item = items[0];
+
+  if (item.action_type === "contact_form_fill" && counts.formsFilled >= MAX_FORM_FILLS) {
     console.log(`[gmaps-runner] Daily form fill cap reached (${MAX_FORM_FILLS}) — skipping`);
     return;
   }
-  if (item.action_type === "sms_follow_up" && smsSent >= MAX_SMS) {
+  if (item.action_type === "sms_follow_up" && counts.smsSent >= MAX_SMS) {
     console.log(`[gmaps-runner] Daily SMS cap reached (${MAX_SMS}) — skipping`);
     return;
   }
 
-  await markExecuting(item.id);
+  // Mark executing via API
+  try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "executing" }); } catch {}
   console.log(`[gmaps-runner] Processing ${item.action_type} for lead ${item.lead_id}`);
 
   if (item.action_type === "contact_form_fill") {
     if (!item.website_url) {
-      await markSkipped(item.id, "no_website_url");
-      await logActivity(item.lead_id, "GMap outreach: skipped — no website URL");
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "skipped", error: "no_website_url" }); } catch {}
+      console.log(`[gmaps-runner] Skipped — no website URL`);
       return;
     }
 
     const result = await fillContactForm(item.website_url, item.message);
 
     if (result.success) {
-      await markDone(item.id, null);
-      await logActivity(item.lead_id, `GMap outreach: contact form filled on ${item.website_url}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done" }); } catch {}
       await sendTelegramAlert(`Contact form sent to lead ${item.lead_id}`);
       console.log(`[gmaps-runner] Contact form filled for ${item.lead_id}`);
     } else if (result.error === "no_contact_form") {
-      await markSkipped(item.id, "no_contact_form");
-      await logActivity(item.lead_id, `GMap outreach: skipped — no contact form found on ${item.website_url}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "skipped", error: "no_contact_form" }); } catch {}
       console.log(`[gmaps-runner] No contact form found for ${item.lead_id}`);
     } else {
-      await markFailed(item.id, result.error);
-      await logActivity(item.lead_id, `GMap outreach: contact form failed — ${result.error}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: result.error }); } catch {}
       console.log(`[gmaps-runner] Contact form FAILED for ${item.lead_id}: ${result.error}`);
     }
 
   } else if (item.action_type === "sms_follow_up") {
     if (!item.phone) {
-      await markSkipped(item.id, "no_phone_number");
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "skipped", error: "no_phone_number" }); } catch {}
       return;
     }
 
     const result = await sendSms(item.phone, item.message);
 
     if (result.success) {
-      await markDone(item.id, `Twilio SID: ${result.sid}`);
-      await logActivity(item.lead_id, `GMap outreach: SMS follow-up sent to ${item.phone}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done", error: `Twilio SID: ${result.sid}` }); } catch {}
       await sendTelegramAlert(`SMS follow-up sent to lead ${item.lead_id}`);
       console.log(`[gmaps-runner] SMS sent to ${item.phone}, SID: ${result.sid}`);
     } else {
-      await markFailed(item.id, result.error);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: result.error }); } catch {}
       console.log(`[gmaps-runner] SMS FAILED for ${item.lead_id}: ${result.error}`);
     }
   }

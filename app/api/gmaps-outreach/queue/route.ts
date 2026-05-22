@@ -20,6 +20,80 @@ async function sendTelegram(text: string) {
   }).catch(() => undefined);
 }
 
+// GET — called by local runner to fetch pending queue items
+export async function GET(req: Request) {
+  const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || process.env.CRON_SECRET || "gmaps-runner-v1";
+  if (secret !== runnerSecret) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("gmaps_outreach_queue")
+    .select("*")
+    .eq("status", "pending")
+    .lte("scheduled_for", new Date().toISOString())
+    .order("step_number", { ascending: true })
+    .order("scheduled_for", { ascending: true })
+    .limit(5);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Get daily counts for cap enforcement
+  const today = new Date().toISOString().split("T")[0];
+  const { count: formsFilled } = await supabaseAdmin
+    .from("gmaps_outreach_queue")
+    .select("*", { count: "exact", head: true })
+    .eq("action_type", "contact_form_fill")
+    .eq("status", "done")
+    .gte("executed_at", `${today}T00:00:00Z`);
+  const { count: smsSent } = await supabaseAdmin
+    .from("gmaps_outreach_queue")
+    .select("*", { count: "exact", head: true })
+    .eq("action_type", "sms_follow_up")
+    .eq("status", "done")
+    .gte("executed_at", `${today}T00:00:00Z`);
+
+  return NextResponse.json({
+    items: data ?? [],
+    dailyCounts: { formsFilled: formsFilled ?? 0, smsSent: smsSent ?? 0 },
+  });
+}
+
+// PATCH — called by local runner to report execution results
+export async function PATCH(req: Request) {
+  const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || process.env.CRON_SECRET || "gmaps-runner-v1";
+  if (secret !== runnerSecret) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json() as {
+    id: string;
+    status: "executing" | "done" | "failed" | "skipped";
+    error?: string;
+  };
+
+  if (!body.id || !body.status) {
+    return NextResponse.json({ error: "id and status required" }, { status: 400 });
+  }
+
+  const update: Record<string, any> = { status: body.status };
+  if (body.status === "done" || body.status === "failed" || body.status === "skipped") {
+    update.executed_at = new Date().toISOString();
+  }
+  if (body.error) update.error = body.error;
+
+  const { error } = await supabaseAdmin
+    .from("gmaps_outreach_queue")
+    .update(update)
+    .eq("id", body.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: Request) {
   // SSR cookie auth — resilient to middleware header issues
   try {
