@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export async function middleware(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
@@ -31,14 +32,20 @@ export async function middleware(req: NextRequest) {
 
   if (user) {
     try {
-      const { data: profile, error: profileError } = await supabase
+      // Use service-role client for profiles query — bypasses RLS, avoids 500s
+      const supabaseAdmin = createClient(
+        supabaseUrl,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .select("id, email, full_name, role, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
 
       if (profileError || !profile) {
-        // Profile query failed or no row — fall back to user metadata
         requestHeaders.set("x-user-id", user.id);
         requestHeaders.set("x-user-email", user.email || "");
         requestHeaders.set("x-user-name", user.user_metadata?.full_name || "");
