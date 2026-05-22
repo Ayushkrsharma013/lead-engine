@@ -295,37 +295,36 @@ export default function GmapOutreachPage() {
 
   const fetchQueueStatus = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const { data } = await (await fetch(`${BASE}/api/gmaps-outreach/stats`)).json();
-      // Build queue status from the stats data
-      const stats = data as GmapsStats | undefined;
-      if (stats?.queue) {
-        const byStatus = (s: string) => stats.queue.filter((q: { status: string }) => q.status === s).length;
-        setQueueStatus({
-          status: {
-            pending: byStatus("pending"),
-            executing: byStatus("executing"),
-            done: byStatus("done"),
-            failed: byStatus("failed"),
-            skipped: byStatus("skipped"),
-          },
-          runnerLive: false, // determined by recent executed_at timestamps below
-          lastRunAt: null,
-        });
+      // Fetch health (heartbeat) + stats in parallel
+      const [healthRes, statsRes] = await Promise.all([
+        fetch(`${BASE}/api/gmaps-outreach/health`),
+        fetch(`${BASE}/api/gmaps-outreach/stats`),
+      ]);
 
-        // Runner is "live" if any item was executed in the last 10 minutes
-        const tenMinAgo = Date.now() - 10 * 60 * 1000;
-        const recentExec = stats.queue.some(
-          (q: { executed_at: string | null }) => q.executed_at && new Date(q.executed_at).getTime() > tenMinAgo
-        );
-        const lastExec = stats.queue
-          .filter((q: { executed_at: string | null }) => q.executed_at)
-          .sort((a, b) => new Date(b.executed_at!).getTime() - new Date(a.executed_at!).getTime())[0];
-        setQueueStatus(prev => prev ? {
-          ...prev,
-          runnerLive: recentExec,
-          lastRunAt: lastExec?.executed_at ?? null,
-        } : prev);
+      let runnerLive = false;
+      let lastRunAt: string | null = null;
+      if (healthRes.ok) {
+        const health = await healthRes.json();
+        runnerLive = health.runnerLive;
+        lastRunAt = health.lastBeat;
+      }
+
+      if (statsRes.ok) {
+        const stats = await statsRes.json() as GmapsStats;
+        if (stats?.queue) {
+          const byStatus = (s: string) => stats.queue.filter((q: { status: string }) => q.status === s).length;
+          setQueueStatus({
+            status: {
+              pending: byStatus("pending"),
+              executing: byStatus("executing"),
+              done: byStatus("done"),
+              failed: byStatus("failed"),
+              skipped: byStatus("skipped"),
+            },
+            runnerLive,
+            lastRunAt,
+          });
+        }
       }
     } catch { /* non-critical */ }
   }, []);

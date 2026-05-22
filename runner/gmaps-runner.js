@@ -254,7 +254,24 @@ async function sendSms(phone, message) {
 
 // ─── Main poll cycle ──────────────────────────────────────────────────────────
 
+async function writeHeartbeat() {
+  try {
+    await supabase.from("knowledge_store").upsert(
+      {
+        key: "gmaps_runner.heartbeat",
+        value: { lastBeat: new Date().toISOString(), activeHours: isActiveHour() },
+        agent: "gmaps-runner",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" }
+    );
+  } catch (e) {
+    // silent — heartbeat is non-critical
+  }
+}
+
 async function runOnce() {
+  await writeHeartbeat();
   await resetStuckExecuting();
 
   if (!isActiveHour()) {
