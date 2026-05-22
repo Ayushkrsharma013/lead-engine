@@ -22,6 +22,8 @@ const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
 const BUSINESS_EMAIL = process.env.BUSINESS_EMAIL || "ayush@flow-forges.com";
+const REMI_URL = process.env.REMI_URL || 'https://agent.flow-forges.com';
+const OUTREACH_API_KEY = process.env.OUTREACH_API_KEY || '';
 
 if (!CRON_SECRET) {
   console.error("[gmaps-runner] Missing CRON_SECRET — needed for API auth");
@@ -37,6 +39,11 @@ const POLL_INTERVAL = 5 * 60 * 1000;
 const PROFILE_DIR = path.join(os.homedir(), ".gmaps-runner", "profile");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function extractBusinessName(message) {
+  const m = message && message.match(/^Hi, I emailed (.+?) about recovering/);
+  return m ? m[1] : '';
+}
 
 function isActiveHour() {
   const h = new Date().getHours();
@@ -282,15 +289,45 @@ async function runOnce() {
       return;
     }
 
-    const result = await sendSms(item.phone, item.message);
+    const businessName = extractBusinessName(item.message);
+    const industry = item.industry || '';
 
-    if (result.success) {
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done", error: `Twilio SID: ${result.sid}` }); } catch {}
-      await sendTelegramAlert(`SMS follow-up sent to lead ${item.lead_id}`);
-      console.log(`[gmaps-runner] SMS sent to ${item.phone}, SID: ${result.sid}`);
+    let remiRes;
+    try {
+      remiRes = await fetch(`${REMI_URL}/api/outreach/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OUTREACH_API_KEY}`,
+        },
+        body: JSON.stringify({
+          phone: item.phone,
+          businessName,
+          industry,
+          city: item.city || '',
+        }),
+      });
+    } catch (fetchErr) {
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `remi_fetch_error: ${fetchErr.message}` }); } catch {}
+      console.error(`[gmaps-runner] Remi outreach/start network error for ${item.phone}: ${fetchErr.message}`);
+      return;
+    }
+
+    if (!remiRes.ok && remiRes.status !== 200) {
+      const body = await remiRes.text();
+      console.error(`[gmaps-runner] Remi outreach/start failed for ${item.phone}: ${remiRes.status} ${body}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `remi_error_${remiRes.status}` }); } catch {}
+      return;
+    }
+
+    const remiData = await remiRes.json();
+    if (remiData.skipped) {
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "skipped", error: remiData.reason }); } catch {}
+      console.log(`[gmaps-runner] Remi skipped outreach for ${item.lead_id}: ${remiData.reason}`);
     } else {
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: result.error }); } catch {}
-      console.log(`[gmaps-runner] SMS FAILED for ${item.lead_id}: ${result.error}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done", error: "outreach_started" }); } catch {}
+      await sendTelegramAlert(`Remi outreach started for lead ${item.lead_id}`);
+      console.log(`[gmaps-runner] Remi outreach started for ${item.phone}`);
     }
   }
 
