@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   assessLeadQuality,
   parsePhoneFromNotes,
@@ -23,9 +24,21 @@ async function sendTelegram(text: string) {
 }
 
 export async function POST(req: Request) {
-  const role = req.headers.get("x-user-role") ?? "";
-  if (role !== "super_admin" && role !== "qa_agent") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // SSR cookie auth — resilient to middleware header issues
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles").select("role").eq("id", user.id).maybeSingle();
+
+    const role = profile?.role ?? "";
+    if (role !== "super_admin" && role !== "qa_agent") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Auth error" }, { status: 500 });
   }
 
   const body = await req.json().catch(() => ({})) as { leadIds?: string[]; dryRun?: boolean };
