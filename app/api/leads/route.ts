@@ -382,6 +382,21 @@ export async function GET(req: NextRequest) {
           .eq("status", "started");
       } catch { /* log failure non-critical */ }
 
+      // Fire-and-forget: notify n8n lead delivery alert
+      if (matched > 0) {
+        fetch("https://automate.flow-forges.com/webhook/lead-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client_id: "scrape",
+            client_name: "Manual Scrape",
+            lead_count: matched,
+            hot_count: matchedLeads.filter((l: any) => (l.score || l._score || 0) >= 80).length,
+            avg_score: matchedLeads.reduce((s: number, l: any) => s + (l.score || l._score || 0), 0) / Math.max(matched, 1),
+          }),
+        }).catch(() => {});
+      }
+
       return NextResponse.json({
         status: "SUCCEEDED",
         leads: matchedLeads,

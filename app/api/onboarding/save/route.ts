@@ -47,5 +47,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
 
+  // Fire-and-forget: notify n8n welcome sequence
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("email, full_name, plan, subscription_status, onboarding_complete")
+    .eq("id", user.id)
+    .single();
+
+  if (profile) {
+    fetch("https://automate.flow-forges.com/webhook/welcome-sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    }).catch(() => {}); // n8n failure never blocks onboarding
+  }
+
   return NextResponse.json({ ok: true });
 }
