@@ -63,7 +63,7 @@ export default function ClientBillingPage() {
           <>
             <p className="text-[18px] font-bold" style={{ color: "var(--ink)" }}>{plan.name}</p>
             <p className="text-[14px] mt-0.5" style={{ color: "var(--ink-2)" }}>
-              ${plan.amount.toLocaleString()}{plan.interval === "month" ? "/mo" : " one-time"}
+              ${plan.setupAmount.toLocaleString()}{plan.monthlyAmount > 0 ? ` + $${plan.monthlyAmount.toLocaleString()}/mo` : " one-time"}
             </p>
             <ul className="mt-3 space-y-1">
               {plan.features.map((f, i) => (

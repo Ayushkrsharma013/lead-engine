@@ -14,17 +14,17 @@ import {
 } from "@/lib/onboarding";
 
 const PLANS_DATA: Record<string, { name: string; price: string; interval: string; features: string[]; popular?: boolean }> = {
-  diy: {
-    name: "DIY Setup", price: "$1,500", interval: "one-time",
-    features: ["Prospecting OS platform setup", "Sales Navigator integration", "Gemini AI scoring", "Google Sheets dashboard", "Telegram alerts", "1-week email support"],
+  pilot: {
+    name: "Founder's Pilot", price: "$1,499", interval: "setup + $499/mo",
+    features: ["100 ICP-verified leads/month", "3 outreach sequences", "Kanban pipeline", "Monthly strategy call", "Apify + Claude AI scoring", "Supabase dashboard", "Founder-managed delivery"],
   },
   growth: {
-    name: "Managed Growth", price: "$3,500", interval: "/month", popular: true,
-    features: ["Everything in DIY", "AI icebreaker per lead", "Company enrichment", "Daily Slack digest", "Duplicate suppression", "Monthly ICP call", "Dedicated Slack channel"],
+    name: "Growth", price: "$2,499", interval: "setup + $999/mo", popular: true,
+    features: ["Everything in Pilot", "200+ leads/month", "Email + LinkedIn sequences", "A/B testing", "Bi-weekly calls", "Dedicated Slack channel", "Reply monitoring & handoff"],
   },
-  scale: {
-    name: "Managed Scale", price: "$12,500", interval: "/month",
-    features: ["Everything in Growth", "Automated cold email", "3-touch follow-ups", "AI reply detection", "CRM sync", "A/B testing", "Weekly reports", "Dedicated strategist"],
+  micro: {
+    name: "Micro-Offer", price: "$997", interval: "one-time",
+    features: ["50 ICP-verified leads", "5 outreach sequences", "CSV delivery", "30-min ICP call", "Delivery in 5 business days"],
   },
 };
 
@@ -33,9 +33,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<OnboardingStep>("welcome");
   const [name, setName] = useState("");
   const [icp, setIcp] = useState<IcpPreferences>({ industries: [], companySizes: [], seniority: [], countries: [] });
-  const [apifyKey, setApifyKey] = useState("");
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState("growth");
+  const [selectedPlan, setSelectedPlan] = useState("pilot");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,8 +60,6 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           name,
           icp,
-          apifyKey,
-          anthropicKey,
           plan: selectedPlan,
           subscriptionStatus: "pending_payment",
           onboardingComplete: true,
@@ -71,7 +67,7 @@ export default function OnboardingPage() {
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (data.ok) {
-        router.push("/prospecting-os/checkout");
+        router.push("/checkout");
       } else {
         setError(data.error || "Failed to save. Please try again.");
       }
@@ -85,9 +81,9 @@ export default function OnboardingPage() {
     fetch("/prospecting-os/api/onboarding/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, icp, apifyKey, anthropicKey, onboardingComplete: true }),
+      body: JSON.stringify({ name, icp, onboardingComplete: true }),
     }).catch(() => {});
-    router.push("/prospecting-os/dashboard");
+    router.push("/dashboard");
   };
 
   const styles = {
@@ -233,59 +229,6 @@ export default function OnboardingPage() {
                 <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
                   Skip for now
                 </button>
-                <button onClick={() => setStep("apikey")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
-                  Continue <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: API Keys */}
-        {step === "apikey" && (
-          <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Connect Your Data Sources</h1>
-            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>API keys are stored securely and never shared.</p>
-
-            <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24, marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <Key size={16} style={{ color: styles.accent }} />
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, margin: 0 }}>Apify API Key</h3>
-                <span style={{ fontSize: "0.6rem", fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(232,66,10,0.15)", color: styles.accent }}>Required</span>
-              </div>
-              <p style={{ fontSize: "0.8rem", color: styles.textSecondary, margin: "0 0 12px" }}>
-                Powers lead scraping from LinkedIn, Google Maps, and Amazon. Get yours at{" "}
-                <a href="https://console.apify.com" target="_blank" rel="noopener noreferrer" style={{ color: styles.accent }}>console.apify.com</a>
-              </p>
-              <input type="password" value={apifyKey} onChange={e => setApifyKey(e.target.value)} placeholder="apify_api_..." style={inputStyle}
-                onFocus={e => { e.currentTarget.style.borderColor = styles.accent; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </div>
-
-            <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24, marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <Sparkles size={16} style={{ color: "#7c3aed" }} />
-                <h3 style={{ fontSize: "0.9rem", fontWeight: 700, margin: 0 }}>Anthropic API Key</h3>
-                <span style={{ fontSize: "0.6rem", fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(124,58,237,0.15)", color: "#a78bfa" }}>Optional</span>
-              </div>
-              <p style={{ fontSize: "0.8rem", color: styles.textSecondary, margin: "0 0 12px" }}>
-                Enables AI-powered lead scoring and personalized message generation.
-              </p>
-              <input type="password" value={anthropicKey} onChange={e => setAnthropicKey(e.target.value)} placeholder="sk-ant-..." style={inputStyle}
-                onFocus={e => { e.currentTarget.style.borderColor = "#7c3aed"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
-                onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
-              <button onClick={() => setStep("icp")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
-                <ArrowLeft size={14} /> Back
-              </button>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  Skip for now
-                </button>
                 <button onClick={() => setStep("plan")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
                   Continue <ArrowRight size={14} />
                 </button>
@@ -294,7 +237,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 4: Plan & Pay */}
+        {/* Step 3: Plan & Pay */}
         {step === "plan" && (
           <div>
             <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Choose Your Plan</h1>
@@ -348,7 +291,7 @@ export default function OnboardingPage() {
             </button>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button onClick={() => setStep("apikey")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => setStep("icp")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
                 <ArrowLeft size={14} /> Back
               </button>
               <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>

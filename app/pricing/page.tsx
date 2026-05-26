@@ -22,9 +22,9 @@ const itemVariant = {
 };
 
 function PlanCard({
-  planKey, name, amount, interval, features, popular, cta, href,
+  planKey, name, amount, interval, monthlyAmount, features, popular, cta, href,
 }: {
-  planKey: string; name: string; amount: number; interval: string;
+  planKey: string; name: string; amount: number; interval: string; monthlyAmount?: number;
   features: string[]; popular?: boolean; cta: string; href: string;
 }) {
   return (
@@ -56,21 +56,26 @@ function PlanCard({
 
       <span className="text-[11px] font-mono font-bold uppercase tracking-[0.12em] mb-3 opacity-50"
         style={{ color: "var(--text-tertiary, #7a7875)" }}>
-        {interval === "one_time" ? "ONE-TIME SETUP" : "MONTHLY"}
+        {interval === "one_time" ? "ONE-TIME" : interval === "setup_plus_monthly" ? "SETUP + MONTHLY" : "MONTHLY"}
       </span>
 
       <h3 className="text-2xl font-extrabold mb-1 tracking-tight" style={{ color: "var(--text-primary, #f5f4f1)", fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif" }}>
         {name}
       </h3>
 
-      <div className="flex items-baseline gap-1 mb-6">
+      <div className="flex items-baseline gap-1 mb-1">
         <span className="text-4xl font-black tracking-tight" style={{ color: "var(--text-primary, #f5f4f1)", fontFamily: "'Cabinet Grotesk', sans-serif" }}>
           ${amount.toLocaleString()}
         </span>
         <span className="text-sm" style={{ color: "var(--text-tertiary, #7a7875)" }}>
-          {interval === "one_time" ? "one-time" : "/mo"}
+          {interval === "one_time" ? "one-time" : interval === "setup_plus_monthly" ? "setup" : "/mo"}
         </span>
       </div>
+      {monthlyAmount && monthlyAmount > 0 ? (
+        <div className="text-sm mb-6" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
+          + ${monthlyAmount.toLocaleString()}/month
+        </div>
+      ) : <div className="mb-6" />}
 
       <ul className="flex-1 space-y-3 mb-8">
         {features.map((f, i) => (
@@ -214,19 +219,14 @@ export default function PricingPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <PlanCard
-            planKey="diy" name="DIY Setup" amount={1500} interval="one_time"
-            features={["Prospecting OS platform configured for you", "Sales Navigator integration configured", "Gemini AI scoring (7+ filter)", "Google Sheets dashboard", "Telegram alerts configured", "1-week email support post-handover"]}
+            planKey="pilot" name="Founder's Pilot" amount={1499} interval="setup_plus_monthly" monthlyAmount={499}
+            features={["100 ICP-verified leads/month", "3 personalized outreach sequences", "Kanban pipeline configured", "Monthly strategy call", "Founder-managed delivery", "Apify lead scraping", "Anthropic Claude AI scoring", "Supabase-powered dashboard"]}
             cta="Get Started" href="/book"
           />
           <PlanCard
-            planKey="growth" name="Managed Growth" amount={3500} interval="month" popular
-            features={["Everything in DIY", "AI icebreaker per lead (unique)", "Company & LinkedIn enrichment", "Daily Slack digest with hot leads", "Duplicate suppression", "Monthly ICP refinement call", "Dedicated Slack channel", "500+ leads/month, 7+ score threshold"]}
+            planKey="growth" name="Growth" amount={2499} interval="setup_plus_monthly" monthlyAmount={999} popular
+            features={["Everything in Pilot, plus:", "200+ leads/month", "Email + LinkedIn sequences", "A/B testing of 2 variants", "Bi-weekly strategy calls", "Dedicated Slack channel", "Reply monitoring & warm handoff"]}
             cta="Book a Demo" href="/book"
-          />
-          <PlanCard
-            planKey="scale" name="Managed Scale" amount={12500} interval="month"
-            features={["Everything in Managed Growth", "Automated cold email sending", "3-touch follow-up sequences", "AI reply detection & routing", "HubSpot / Salesforce CRM sync", "A/B message testing", "Weekly performance report", "Dedicated AI strategist"]}
-            cta="Talk to Us" href="/book"
           />
         </div>
       </motion.section>

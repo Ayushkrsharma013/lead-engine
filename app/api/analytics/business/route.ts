@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createServerClient } from "@supabase/ssr";
 import { detectCurrency, convertINR, type CurrencyCode, ALL_CURRENCIES } from "@/lib/currency";
-import { getPlanPrice, type PlanKey } from "@/lib/stripe";
+import { getPlanMonthlyAmount, type PlanKey } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     for (const p of allProfiles) {
       if (p.subscription_status === "active") {
         activeSubscribers++;
-        const price = getPlanPrice(p.plan || "", "INR");
+        const price = getPlanMonthlyAmount(p.plan || "");
         mrrInr += price;
         plans[p.plan || "unknown"] = (plans[p.plan || "unknown"] || 0) + 1;
       }

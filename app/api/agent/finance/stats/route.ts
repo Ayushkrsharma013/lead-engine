@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
 
   const mrr = active.reduce((sum, p) => {
     const plan = PLANS[p.plan as PlanKey];
-    if (!plan || plan.interval !== "month") return sum;
-    return sum + plan.amount;
+    if (!plan || !plan.monthlyAmount) return sum;
+    return sum + plan.monthlyAmount;
   }, 0);
 
   // MRR trend (last 6 months from monthly_summary logs)

@@ -97,7 +97,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
           {profile?.plan && (
             <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase"
               style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }}>
-              {profile.plan === "diy" ? "DIY Setup" : profile.plan === "growth" ? "Managed Growth" : profile.plan === "scale" ? "Managed Scale" : profile.plan}
+              {profile.plan === "pilot" ? "Founder's Pilot" : profile.plan === "growth" ? "Growth" : profile.plan === "micro" ? "Micro-Offer" : profile.plan}
             </span>
           )}
         </div>

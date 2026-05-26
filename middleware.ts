@@ -130,6 +130,46 @@ export async function middleware(req: NextRequest) {
     // super_admin on client-portal is fine (they can view what clients see)
   }
 
+  // ─── Subscription enforcement ──────────────────────────────────
+
+  const paidRoutes = [
+    "/dashboard", "/leads", "/message-lab", "/scorer",
+    "/sequences", "/kanban", "/analytics", "/clients",
+    "/outreach", "/settings", "/agent", "/admin",
+  ];
+
+  const isPaidRoute = paidRoutes.some(p =>
+    normalizedPath === p || normalizedPath.startsWith(p + "/")
+  );
+
+  if (user && isPaidRoute) {
+    const graceRoutes = ["/onboarding", "/checkout", "/book"];
+    const isGrace = graceRoutes.some(r =>
+      normalizedPath === r || normalizedPath.startsWith(r + "/")
+    );
+
+    if (!isGrace) {
+      try {
+        const supabaseAdmin = createClient(
+          supabaseUrl,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        );
+        const { data: sub } = await supabaseAdmin
+          .from("profiles")
+          .select("subscription_status")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!sub || sub.subscription_status !== "active") {
+          return NextResponse.redirect(new URL(basePath + "/checkout", req.url));
+        }
+      } catch {
+        // Fail open — don't block access on DB errors
+      }
+    }
+  }
+
   // ─── Public/auth route handling ──────────────────────────────────
 
   if (isPublicRoute || isStaticAsset || isApiRoute || isClientPortalLogin) {

@@ -49,7 +49,7 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState("");
 
   // New user form state
-  const [form, setForm] = useState({ email: "", display_name: "", role: "client", plan: "diy", notes: "", send_invite: true });
+  const [form, setForm] = useState({ email: "", display_name: "", role: "client", plan: "pilot", notes: "", send_invite: true });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
@@ -69,9 +69,9 @@ export default function AdminUsersPage() {
       const active = allUsers.filter(u => u.subscription_status === "active" && u.role === "client");
       const pending = allUsers.filter(u => u.subscription_status === "pending_payment");
       const mrr = active.reduce((sum, u) => {
-        const plan = PLANS[(u.plan as PlanKey) || "diy"];
-        if (!plan || plan.interval !== "month") return sum;
-        return sum + plan.amount;
+        const plan = PLANS[(u.plan as PlanKey) || "pilot"];
+        if (!plan || !plan.monthlyAmount) return sum;
+        return sum + plan.monthlyAmount;
       }, 0);
       setStats({ total: allUsers.length, active: active.length, pending: pending.length, mrr });
     } catch { setError("Failed to load users"); }
@@ -119,7 +119,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       setToast("User created");
       setModal(null);
-      setForm({ email: "", display_name: "", role: "client", plan: "diy", notes: "", send_invite: true });
+      setForm({ email: "", display_name: "", role: "client", plan: "pilot", notes: "", send_invite: true });
       fetchUsers();
     } else {
       const err = await res.json();
@@ -228,7 +228,7 @@ export default function AdminUsersPage() {
                 const sColors = STATUS_COLORS[u.subscription_status || "inactive"] || STATUS_COLORS.inactive;
                 const isActive = u.subscription_status === "active";
                 const isPending = u.subscription_status === "pending_payment";
-                const plan = PLANS[(u.plan as PlanKey) || "diy"];
+                const plan = PLANS[(u.plan as PlanKey) || "pilot"];
 
                 return (
                   <tr key={u.id} className="transition-colors duration-150" style={{ borderBottom: "1px solid var(--line)" }}
@@ -354,9 +354,9 @@ export default function AdminUsersPage() {
                   <select value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}
                     className="w-full h-10 rounded-xl px-3 text-[13px] outline-none capitalize"
                     style={{ background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink)" }}>
-                    <option value="diy">DIY Setup</option>
-                    <option value="growth">Managed Growth</option>
-                    <option value="scale">Managed Scale</option>
+                    <option value="pilot">Founder's Pilot</option>
+                    <option value="growth">Growth</option>
+                    <option value="micro">Micro-Offer</option>
                   </select>
                 </div>
               </div>

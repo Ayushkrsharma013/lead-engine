@@ -32,8 +32,8 @@ const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテ�
 
 const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   {
-    q: "Do I need a LinkedIn Sales Navigator subscription?",
-    a: "Yes — LinkedIn Sales Navigator is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.",
+    q: "Do I need a Apify lead scraping subscription?",
+    a: "Yes — Apify lead scraping is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.",
     cat: "setup",
   },
   {
@@ -73,7 +73,7 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "Does this work for clients outside the US and UK?",
-    a: "Yes — Sales Navigator is global. We've run pipelines targeting APAC, EMEA, and LATAM. The ICP scoring and icebreaker generation work regardless of geography. The only constraint is that your target clients need a LinkedIn presence.",
+    a: "Yes — Apify scrapers is global. We've run pipelines targeting APAC, EMEA, and LATAM. The ICP scoring and icebreaker generation work regardless of geography. The only constraint is that your target clients need a LinkedIn presence.",
     cat: "results",
   },
   {
@@ -137,10 +137,11 @@ export default function LandingPage() {
   }, [theme]);
 
   /* ─── Typewriter ───────────────────────────────────────────────────────── */
-  const [typewriterText, setTypewriterText] = useState(FULL_TEXT);
+  const [typewriterText, setTypewriterText] = useState("");
+  const [heroMounted, setHeroMounted] = useState(false);
 
   useEffect(() => {
-    setTypewriterText("");
+    setHeroMounted(true);
     let i = 0;
     const timer = setInterval(() => {
       if (i < FULL_TEXT.length) {
@@ -150,15 +151,15 @@ export default function LandingPage() {
         clearInterval(timer);
       }
     }, 60 + Math.random() * 45);
-    const timeout = setTimeout(() => clearInterval(timer), FULL_TEXT.length * 120 + 1000);
-    return () => { clearInterval(timer); clearTimeout(timeout); };
+    return () => clearInterval(timer);
   }, []);
 
   /* ─── Live counter ─────────────────────────────────────────────────────── */
-  const [counter, setCounter] = useState(47);
+  const [counter, setCounter] = useState(0);
   const [bump, setBump] = useState(false);
 
   useEffect(() => {
+    setCounter(47);
     const interval = setInterval(() => {
       setCounter(c => {
         const next = c + Math.floor(Math.random() * 5) + 1;
@@ -606,7 +607,7 @@ export default function LandingPage() {
   const roiMonthlyCost = Math.max(0, Math.round(roiHours * 4.33 * roiRate));
   const roiManualLeads = Math.max(0, Math.round(roiMeetings * 4.33 * 12));
   const roiRevenue = Math.max(0, Math.round(500 * 0.03 * roiDeal - roiMonthlyCost));
-  const roiMultiple = Math.max(0, (500 * 0.03 * roiDeal) / 3500).toFixed(1);
+  const roiMultiple = Math.max(0, (500 * 0.03 * roiDeal) / 997).toFixed(1);
   const filteredFaqItems = faqFilter === "all" ? FAQ_ITEMS : FAQ_ITEMS.filter(item => item.cat === faqFilter);
 
   /* ─── Render ───────────────────────────────────────────────────────────── */
@@ -758,21 +759,24 @@ export default function LandingPage() {
               AI Lead Generation
             </div>
             <h1>
-              <span className="typewriter-text hero-heading-main">
-                {typewriterText.length <= HERO_SPLIT_AT
-                  ? typewriterText
-                  : typewriterText.slice(0, HERO_SPLIT_AT)
-                }
-              </span>
-              {typewriterText.length > HERO_SPLIT_AT && (
-                <span className="typewriter-text hero-heading-gradient">
-                  {typewriterText.slice(HERO_SPLIT_AT)}
-                </span>
+              {heroMounted ? (
+                <>
+                  <span className="typewriter-text hero-heading-main">
+                    {typewriterText.slice(0, HERO_SPLIT_AT)}
+                  </span>
+                  {typewriterText.length > HERO_SPLIT_AT && (
+                    <span className="typewriter-text hero-heading-gradient">
+                      {typewriterText.slice(HERO_SPLIT_AT)}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="typewriter-text hero-heading-main">{FULL_TEXT}</span>
               )}
               <span className="typewriter-cursor">|</span>
             </h1>
             <p className="hero-subtitle">
-              LinkedIn Sales Navigator + Gemini AI — find, score, enrich, and deliver 500+ qualified B2B leads to your Slack or Telegram every morning. No manual research. Built by{" "}
+              Apify lead scraping + Anthropic Claude AI — find, score, enrich, and deliver 500+ qualified B2B leads to your Slack or Telegram every morning. No manual research. Built by{" "}
               <a href="https://flow-forges.com" aria-label="Flow-Forges" style={{ color: "var(--accent)", fontWeight: 500 }}>Flow-Forges</a>.
             </p>
             <div className="hero-ctas">
@@ -829,7 +833,7 @@ export default function LandingPage() {
               <div className="how-step-body">
                 <span className="how-step-badge">SALES NAVIGATOR</span>
                 <h4 className="how-step-title">Pull your ICP from LinkedIn</h4>
-                <p className="how-step-desc">Sales Navigator runs a saved search for your exact ICP every morning — by title, industry, company size, geography. Results export automatically into the pipeline. No CSV uploads, no manual browsing.</p>
+                <p className="how-step-desc">Apify scrapers runs a saved search for your exact ICP every morning — by title, industry, company size, geography. Results export automatically into the pipeline. No CSV uploads, no manual browsing.</p>
                 <div className="how-step-sample">
                   <span className="sample-key">Search:</span> &quot;Head of Marketing&quot; · SaaS · 51–200 · US<br />
                   <span className="sample-arrow">→</span> 847 results pulled · 06:00 AM daily
@@ -861,7 +865,7 @@ export default function LandingPage() {
               <div className="how-step-body">
                 <span className="how-step-badge">GEMINI AI</span>
                 <h4 className="how-step-title">Every lead scored 1–10 with reasoning</h4>
-                <p className="how-step-desc">Gemini AI scores each lead against your ICP with a written justification — not just a number. You see exactly why a lead scored 8.5 vs 4.2. Only leads scoring 7+ advance to enrichment. You never touch a cold lead again.</p>
+                <p className="how-step-desc">Anthropic Claude AI scores each lead against your ICP with a written justification — not just a number. You see exactly why a lead scored 8.5 vs 4.2. Only leads scoring 7+ advance to enrichment. You never touch a cold lead again.</p>
                 <div className="how-step-sample">
                   Alex M. · VP Marketing · Acme SaaS · 120 emp<br />
                   <span style={{ color: "var(--accent)", fontWeight: 700 }}>Score: 8.5 / 10</span><br />
@@ -878,7 +882,7 @@ export default function LandingPage() {
               <div className="how-step-body">
                 <span className="how-step-badge">AUTO ENRICH</span>
                 <h4 className="how-step-title">Company data + a personalized icebreaker</h4>
-                <p className="how-step-desc">Each qualified lead is enriched with company news, recent LinkedIn posts, funding events, and tech stack data. Gemini then writes a unique, context-specific icebreaker for that lead — not a template. No two icebreakers are the same.</p>
+                <p className="how-step-desc">Each qualified lead is enriched with company news, recent LinkedIn posts, funding events, and tech stack data. Claude then writes a unique, context-specific icebreaker for that lead — not a template. No two icebreakers are the same.</p>
                 <div className="how-step-sample">
                   <span className="sample-key">Icebreaker generated:</span><br />
                   &quot;Saw your post about scaling your CS team post-Series B — congrats on the funding. We built a support automation for a similar-stage company that cut ticket volume 70%...&quot;
@@ -893,7 +897,7 @@ export default function LandingPage() {
               <div className="how-step-body">
                 <span className="how-step-badge">AUTO DELIVER</span>
                 <h4 className="how-step-title">Hot leads delivered where you work</h4>
-                <p className="how-step-desc">Qualified, scored, enriched leads with icebreakers arrive in your Slack channel, Telegram, or directly into HubSpot/Google Sheets — every morning by 8 AM. Reply directly, copy the icebreaker, close the deal.</p>
+                <p className="how-step-desc">Qualified, scored, enriched leads with icebreakers arrive in your Slack channel, Telegram, or directly into HubSpot/Supabase — every morning by 8 AM. Reply directly, copy the icebreaker, close the deal.</p>
                 <div className="how-step-sample">
                   <span style={{ color: "var(--success)", fontWeight: 700 }}>NEW HOT LEAD</span> · Score 8.5<br />
                   Alex M. · VP Marketing · Acme SaaS<br />
@@ -923,71 +927,74 @@ export default function LandingPage() {
           </div>
 
           <div className="pricing-grid">
-            {/* DIY Setup */}
+            {/* Founder's Pilot */}
             <div className="pricing-card reveal">
-              <div className="pricing-plan-badge">ONE-TIME</div>
-              <h3>DIY Setup</h3>
-              <div className="price">$1,500</div>
-              <span className="price-period">one-time setup fee</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>We configure and hand over the full Prospecting OS platform. You run it yourself with your own API keys and Sales Navigator.</p>
+              <div className="pricing-plan-badge">FOUNDER-LED</div>
+              <h3>Founder's Pilot</h3>
+              <div className="price">$1,499</div>
+              <span className="price-period">setup + $499/month</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>I built the engine. I run it for you. 100 ICP-verified leads delivered monthly with personalized outreach sequences.</p>
               <ul className="pricing-features">
-                <li>Prospecting OS platform configured for you</li>
-                <li>Sales Navigator integration configured</li>
-                <li>Gemini AI scoring (7+ filter)</li>
-                <li>Google Sheets dashboard</li>
-                <li>Telegram alerts configured</li>
-                <li>1-week email support post-handover</li>
-                <li className="pricing-feature-no">No AI icebreakers</li>
-                <li className="pricing-feature-no">No ongoing management</li>
+                <li>100 ICP-verified leads/month</li>
+                <li>3 personalized outreach sequences (Email or LinkedIn)</li>
+                <li>Kanban pipeline configured & managed</li>
+                <li>Monthly strategy call with founder</li>
+                <li>Apify + Anthropic Claude AI scoring</li>
+                <li>Supabase-powered dashboard</li>
+                <li>Founder-managed delivery</li>
               </ul>
-              <Link href="/book" className="btn-secondary" style={{ textDecoration: "none" }} aria-label="Get the DIY Setup workflow — $1,500 one-time">Get the Workflow</Link>
-              <Link href="/tools/icebreaker-generator" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
-                Or generate a free icebreaker →
-              </Link>
-            </div>
-
-            {/* Managed Growth — Featured */}
-            <div className="pricing-card popular reveal">
-              <div className="popular-badge">MOST POPULAR</div>
-              <h3>Managed Growth</h3>
-              <div className="price">$3,500</div>
-              <span className="price-period">per month</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Fully managed pipeline. We run everything — scraping, scoring, enrichment, and delivery. You just reply to hot leads.</p>
-              <ul className="pricing-features">
-                <li>Everything in DIY Setup, plus:</li>
-                <li>AI icebreaker per lead (unique, not templated)</li>
-                <li>Company &amp; LinkedIn enrichment</li>
-                <li>Daily Slack digest with hot leads</li>
-                <li>Duplicate suppression across batches</li>
-                <li>Monthly ICP refinement call</li>
-                <li>Dedicated Slack channel with us</li>
-                <li>500+ leads/month, 7+ score threshold</li>
-              </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Managed Growth AI prospecting">Book a Demo</Link>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Apply for the Founder's Pilot">Apply for Pilot</Link>
               <Link href="/tools/free-audit" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
                 Or try our free pipeline audit first →
               </Link>
             </div>
 
-            {/* Managed Scale */}
-            <div className="pricing-card reveal">
-              <div className="pricing-plan-badge">ENTERPRISE</div>
-              <h3>Managed Scale</h3>
-              <div className="price">$12,500</div>
-              <span className="price-period">per month</span>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Full AI outbound engine. Auto-sends cold emails, detects replies, syncs with your CRM, and A/B tests messaging — all autonomous.</p>
+            {/* Growth */}
+            <div className="pricing-card popular reveal">
+              <div className="popular-badge">MOST POPULAR</div>
+              <h3>Growth</h3>
+              <div className="price">$2,499</div>
+              <span className="price-period">setup + $999/month</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Full multi-channel outbound. Email + LinkedIn sequences, A/B testing, bi-weekly strategy calls, and dedicated Slack access.</p>
               <ul className="pricing-features">
-                <li>Everything in Managed Growth, plus:</li>
-                <li>Automated cold email sending (warmed domain)</li>
-                <li>3-touch follow-up sequences</li>
-                <li>AI reply detection &amp; routing</li>
-                <li>HubSpot / Salesforce CRM sync</li>
-                <li>A/B message testing</li>
-                <li>Weekly performance report</li>
-                <li>Dedicated AI strategist (monthly call)</li>
+                <li>Everything in Pilot, plus:</li>
+                <li>200+ leads/month</li>
+                <li>Email + LinkedIn multi-channel sequences</li>
+                <li>A/B testing of 2 variants</li>
+                <li>Bi-weekly strategy calls</li>
+                <li>Dedicated Slack channel</li>
+                <li>Reply monitoring & warm handoff within 24 hrs</li>
               </ul>
-              <button className="btn-secondary" onClick={openChat} aria-label="Talk to us about the Managed Scale AI SDR plan">Talk to Us</button>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Growth plan">Book a Demo</Link>
+              <Link href="/tools/icebreaker-generator" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
+                Or generate a free icebreaker →
+              </Link>
             </div>
+          </div>
+
+          {/* Micro-Offer Banner */}
+          <div className="micro-offer-banner reveal" style={{
+            marginTop: 32,
+            background: "linear-gradient(135deg, rgba(232,66,10,0.06) 0%, rgba(232,66,10,0.02) 100%)",
+            border: "1px solid rgba(232,66,10,0.2)",
+            borderRadius: 16,
+            padding: "28px 32px",
+            textAlign: "center",
+            maxWidth: 480,
+            margin: "32px auto 0",
+          }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", animation: "pulse-dot 2s ease-in-out infinite" }} />
+              <span style={{ fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent)" }}>
+                Low-Risk Trial
+              </span>
+            </div>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>Founder's Pilot Micro-Offer</h3>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: 12 }}>50 ICP-verified leads + 5 sequences. One-time. No recurring.</p>
+            <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--accent)", marginBottom: 12 }}>$997 <span style={{ fontSize: "0.85rem", color: "var(--text-tertiary)" }}>one-time</span></div>
+            <Link href="/book?offer=micro" style={{ display: "inline-block", padding: "10px 24px", borderRadius: 9999, background: "var(--accent)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
+              Grab the Micro-Offer →
+            </Link>
           </div>
 
           <p className="pricing-disclaimer">All plans billed in USD. Setup fees non-refundable. Monthly plans cancel anytime with 14-day notice.</p>
@@ -1035,55 +1042,23 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Beta feedback strip */}
+          {/* Early access section */}
           <div className="beta-feedback-section">
-            <div className="beta-feedback-label reveal">EARLY ACCESS FEEDBACK</div>
+            <div className="beta-feedback-label reveal">JOIN THE FOUNDER'S PILOT</div>
             <div className="testimonials-grid">
-
-              <div className="testimonial-card reveal" style={{ transitionDelay: "0.05s" }}>
-                <p className="quote">
-                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>We ran this</em>
-                  {" "}on 300 LinkedIn contacts from our saved search. 47 scored 7+. We&apos;d been manually reviewing 300 contacts over 2 days. This did it in 40 minutes and the icebreakers were actually good.
+              <div className="testimonial-card reveal" style={{ textAlign: "center" }}>
+                <p className="quote" style={{ fontSize: "1rem", lineHeight: 1.6 }}>
+                  Currently in early access with select B2B teams. Pilot clients lock in lifetime pricing and get direct access to the founder who built the engine.
                 </p>
-                <div className="testimonial-author">
-                  <div className="author-avatar beta-avatar">BU</div>
-                  <div className="author-info">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — B2B SaaS, Austin TX · Tested May 2026</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="testimonial-card reveal" style={{ transitionDelay: "0.15s" }}>
-                <p className="quote">
-                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>The scoring with reasoning</em>
-                  {" "}was the thing I didn&apos;t expect. It&apos;s not just a number — it told me why this person was a 4 vs why that one was an 8. Changed how I think about ICP.
+                <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", marginTop: 12 }}>
+                  Initial pilot clients include B2B SaaS companies, growth agencies, and consulting firms.
                 </p>
-                <div className="testimonial-author">
-                  <div className="author-avatar beta-avatar">GA</div>
-                  <div className="author-info">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — Growth agency, London UK · Tested April 2026</span>
-                  </div>
-                </div>
               </div>
-
-              <div className="testimonial-card reveal" style={{ transitionDelay: "0.25s" }}>
-                <p className="quote">
-                  <em style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>Icebreaker quality</em>
-                  {" "}surprised me. I&apos;ve used Clay, Apollo outreach, all of them. These felt like I wrote them after 10 minutes of research on each person. Because the system actually did.
-                </p>
-                <div className="testimonial-author">
-                  <div className="author-avatar beta-avatar">CF</div>
-                  <div className="author-info">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--text-tertiary)" }}>Beta user — Consulting firm, Singapore · Tested May 2026</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
 
           <div className="beta-cta-row reveal">
-            <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Want to be in the next cohort?</p>
+            <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Ready to join the pilot?</p>
             <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for Beta Access</Link>
           </div>
         </div>
@@ -1218,7 +1193,7 @@ export default function LandingPage() {
               </div>
 
               <div className="roi-output-multiple">
-                <span className="roi-output-label">ROI vs Managed Growth plan ($3,500/mo)</span>
+                <span className="roi-output-label">ROI vs Growth plan ($997/mo)</span>
                 <span key={roiMultiple} className="roi-multiple-number roi-value-animated">{roiMultiple}x</span>
                 <span className="roi-output-sub">return on investment</span>
               </div>
@@ -1375,7 +1350,7 @@ export default function LandingPage() {
                 >
                   <span style={{ fontSize: "0.68rem", fontFamily: "var(--font-mono)", color: "var(--accent)", letterSpacing: "0.1em", marginBottom: 6 }}>LM-03</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>AI Icebreaker Generator</span>
-                  <span style={{ fontSize: "0.76rem", color: "var(--text-tertiary)", lineHeight: 1.5 }}>3 free Gemini icebreakers. No signup.</span>
+                  <span style={{ fontSize: "0.76rem", color: "var(--text-tertiary)", lineHeight: 1.5 }}>3 free Claude icebreakers. No signup.</span>
                 </Link>
               </div>
             </div>
@@ -1402,7 +1377,7 @@ export default function LandingPage() {
             <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
           </nav>
           <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>
-            Prospecting OS is a productized AI system built on Apify, Gemini AI, and LinkedIn Sales Navigator.
+            Prospecting OS is a productized AI system built on Apify, Anthropic Claude AI, and Apify lead scraping.
             Results vary based on ICP configuration and industry. Pro plan includes a 50-lead/month performance guarantee.
           </p>
         </div>
@@ -1497,10 +1472,10 @@ export default function LandingPage() {
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "url": "https://app.flow-forges.com/prospecting-os",
-            "description": "Prospecting OS is an AI-powered B2B lead generation system that uses LinkedIn Sales Navigator and Gemini AI to automatically source, score, enrich, and deliver qualified leads to your Slack, Telegram, or CRM — every morning.",
+            "description": "Prospecting OS is an AI-powered B2B lead generation system that uses Apify lead scraping and Anthropic Claude AI to automatically source, score, enrich, and deliver qualified leads to your Slack, Telegram, or CRM — every morning.",
             "offers": [
-              { "@type": "Offer", "name": "Basic — One-Time Setup", "price": "1500", "priceCurrency": "USD", "description": "Prospecting OS platform configured, Sales Navigator integration, Gemini AI scoring, Google Sheets dashboard, Telegram alerts, 1-week support.", "eligibleRegion": "Worldwide" },
-              { "@type": "Offer", "name": "Pro — Managed AI Prospecting", "price": "3500", "priceCurrency": "USD", "description": "Everything in Basic + AI icebreakers, company enrichment, daily Slack digest, duplicate check, monthly ICP refinement, dedicated Slack channel.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Founder's Pilot", "price": "1499", "priceCurrency": "USD", "description": "100 ICP-verified leads/month, 3 outreach sequences, Kanban pipeline, monthly strategy call, founder-managed delivery.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Growth", "price": "2499", "priceCurrency": "USD", "description": "Everything in Pilot + 200+ leads/month, multi-channel sequences, A/B testing, bi-weekly calls, dedicated Slack.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Advanced — Full AI SDR", "price": "10000", "priceCurrency": "USD", "description": "Everything in Pro + auto cold email sending, 3-touch follow-up, AI reply detection, HubSpot CRM sync, A/B testing, weekly reports.", "eligibleRegion": "Worldwide" },
             ],
             "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "27", "bestRating": "5", "worstRating": "1" },
@@ -1516,11 +1491,11 @@ export default function LandingPage() {
             "@context": "https://schema.org",
             "@type": "FAQPage",
             "mainEntity": [
-              { "@type": "Question", "name": "What is the best AI tool for B2B lead generation?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS is an AI-powered B2B lead generation system that combines LinkedIn Sales Navigator, Gemini AI scoring, and automated enrichment to deliver 500+ qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1–10 — only 7+ advance to your inbox." } },
-              { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Sales Navigator exports your ICP automatically, (2) the system filters for decision-makers only, (3) Gemini AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
+              { "@type": "Question", "name": "What is the best AI tool for B2B lead generation?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS is an AI-powered B2B lead generation system that combines Apify lead scraping, Anthropic Claude AI scoring, and automated enrichment to deliver 500+ qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1–10 — only 7+ advance to your inbox." } },
+              { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Apify scrapers exports your ICP automatically, (2) the system filters for decision-makers only, (3) Anthropic Claude AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
               { "@type": "Question", "name": "What is an AI SDR and is it better than hiring a human SDR?", "acceptedAnswer": { "@type": "Answer", "text": "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000–$6,000/month and delivers ~50 leads. Prospecting OS delivers 500+ scored leads for a fraction of that cost, running 24/7 with zero manual effort." } },
-              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Pro plan. Basic plan clients typically see 100–200 leads/month depending on their Sales Navigator search configuration and ICP specificity." } },
-              { "@type": "Question", "name": "Do I need a LinkedIn Sales Navigator subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. LinkedIn Sales Navigator is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
+              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Pro plan. Basic plan clients typically see 100–200 leads/month depending on their Apify scrapers search configuration and ICP specificity." } },
+              { "@type": "Question", "name": "Do I need a Apify lead scraping subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
               { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Basic plan: 4–6 hours. Pro plan: 2–3 business days. Advanced (with email infrastructure and CRM integration): 1–2 weeks." } },
               { "@type": "Question", "name": "What industries does AI B2B lead generation work for?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India." } },
               { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. If the Pro plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },
@@ -1555,15 +1530,15 @@ export default function LandingPage() {
             "totalTime": "PT4H",
             "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "2500" },
             "tool": [
-              { "@type": "HowToTool", "name": "LinkedIn Sales Navigator" },
-              { "@type": "HowToTool", "name": "Gemini AI" },
+              { "@type": "HowToTool", "name": "Apify lead scraping" },
+              { "@type": "HowToTool", "name": "Anthropic Claude AI" },
               { "@type": "HowToTool", "name": "Apify" },
               { "@type": "HowToTool", "name": "Slack or Telegram" },
             ],
             "step": [
-              { "@type": "HowToStep", "name": "Source", "text": "LinkedIn Sales Navigator automatically exports leads matching your Ideal Customer Profile (ICP) — industry, company size, geography, job title.", "position": 1 },
+              { "@type": "HowToStep", "name": "Source", "text": "Apify lead scraping automatically exports leads matching your Ideal Customer Profile (ICP) — industry, company size, geography, job title.", "position": 1 },
               { "@type": "HowToStep", "name": "Filter", "text": "The system filters out non-decision-makers. Only founders, C-suite, VPs, and Directors pass through.", "position": 2 },
-              { "@type": "HowToStep", "name": "Score", "text": "Gemini AI scores each lead 1–10 against your ICP criteria. Only leads scoring 7 or above advance to enrichment.", "position": 3 },
+              { "@type": "HowToStep", "name": "Score", "text": "Anthropic Claude AI scores each lead 1–10 against your ICP criteria. Only leads scoring 7 or above advance to enrichment.", "position": 3 },
               { "@type": "HowToStep", "name": "Enrich", "text": "Company data is enriched automatically. A unique, personalized icebreaker is generated for each lead using AI.", "position": 4 },
               { "@type": "HowToStep", "name": "Deliver", "text": "Hot leads are delivered to your Telegram, Slack, or CRM every morning — scored, enriched, and ready to contact.", "position": 5 },
             ],

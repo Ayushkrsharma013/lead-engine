@@ -42,7 +42,7 @@ export default function ClientIcebreakersPage() {
   }
 
   return (
-    <PlanGate module="icebreakers" plan={profile?.plan as PlanKey || null} role={profile?.role} planName="Managed Growth">
+    <PlanGate module="icebreakers" plan={profile?.plan as PlanKey || null} role={profile?.role} planName="Growth">
       <div className="max-w-5xl space-y-4 animate-fade-in">
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Icebreakers</h1>

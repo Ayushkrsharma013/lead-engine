@@ -1,63 +1,69 @@
-// PLANS — product definitions
-// Payments handled by Xflow Pay; Stripe is not used.
-// All amounts in INR (base currency). Multi-currency conversion via lib/currency.ts.
-
-import { convertINR, type CurrencyCode, ALL_CURRENCIES } from "./currency";
+// PLANS — product definitions for Prospecting OS
+// All amounts in USD. Payments via XflowPay + Easebuzz (one-time) and XflowPay VBAN ACH (monthly).
+// Base pricing: Pilot ($1,499 + $499/mo), Growth ($2,499 + $999/mo), Micro ($997 one-time).
 
 export const PLANS = {
-  diy: {
-    name: "DIY Setup",
-    amount: 1500,
-    interval: "one_time" as const,
+  pilot: {
+    name: "Founder's Pilot",
+    setupAmount: 1499,
+    monthlyAmount: 499,
+    displaySetup: "$1,499",
+    displayMonthly: "$499/month",
     features: [
-      "Prospecting OS platform configured for you",
-      "Sales Navigator integration configured",
-      "Gemini AI scoring (7+ filter)",
-      "Google Sheets dashboard",
-      "Telegram alerts configured",
-      "1-week email support post-handover",
+      "100 ICP-verified leads/month",
+      "3 personalized outreach sequences (Email or LinkedIn)",
+      "Kanban pipeline configured",
+      "Monthly strategy call",
+      "Founder-managed delivery",
+      "Apify lead scraping configured",
+      "Anthropic Claude AI scoring",
+      "Supabase-powered dashboard",
     ],
   },
   growth: {
-    name: "Managed Growth",
-    amount: 3500,
-    interval: "month" as const,
+    name: "Growth",
+    setupAmount: 2499,
+    monthlyAmount: 999,
+    displaySetup: "$2,499",
+    displayMonthly: "$999/month",
     features: [
-      "Everything in DIY Setup",
-      "AI icebreaker per lead",
-      "Company & LinkedIn enrichment",
-      "Daily Slack digest with hot leads",
-      "Duplicate suppression",
-      "Monthly ICP refinement call",
+      "Everything in Pilot, plus:",
+      "200+ leads/month",
+      "Email + LinkedIn sequences",
+      "A/B testing of 2 variants",
+      "Bi-weekly strategy calls",
       "Dedicated Slack channel",
+      "Reply monitoring & warm handoff within 24 hrs",
     ],
   },
-  scale: {
-    name: "Managed Scale",
-    amount: 12500,
-    interval: "month" as const,
+  micro: {
+    name: "Founder's Pilot Micro-Offer",
+    setupAmount: 997,
+    monthlyAmount: 0,
+    displaySetup: "$997",
+    displayMonthly: "one-time",
     features: [
-      "Everything in Managed Growth",
-      "Automated cold email sending",
-      "3-touch follow-up sequences",
-      "AI reply detection & routing",
-      "HubSpot / Salesforce CRM sync",
-      "A/B message testing",
-      "Weekly performance report",
-      "Dedicated AI strategist",
+      "50 ICP-verified leads (one-time)",
+      "5 personalized outreach sequences",
+      "CSV + sequence document delivery",
+      "30-min ICP definition call",
+      "Delivery within 5 business days",
     ],
   },
 };
 
 export type PlanKey = keyof typeof PLANS;
 
-export function getPlanPrice(plan: PlanKey | string, currency?: CurrencyCode): number {
-  const p = PLANS[plan as PlanKey] || PLANS.diy;
-  if (!currency || currency === "INR") return p.amount;
-  return convertINR(p.amount, currency);
+export function getPlanSetupAmount(plan: PlanKey | string): number {
+  const p = PLANS[plan as PlanKey];
+  return p?.setupAmount ?? PLANS.pilot.setupAmount;
 }
 
-export function getPlanPrices(plan: PlanKey | string): Record<CurrencyCode, number> {
-  const p = PLANS[plan as PlanKey] || PLANS.diy;
-  return Object.fromEntries(ALL_CURRENCIES.map(c => [c, c === "INR" ? p.amount : convertINR(p.amount, c)])) as Record<CurrencyCode, number>;
+export function getPlanMonthlyAmount(plan: PlanKey | string): number {
+  const p = PLANS[plan as PlanKey];
+  return p?.monthlyAmount ?? PLANS.pilot.monthlyAmount;
+}
+
+export function getPlanPrice(plan: PlanKey | string): number {
+  return getPlanSetupAmount(plan);
 }

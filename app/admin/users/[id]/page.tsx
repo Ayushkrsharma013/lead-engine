@@ -83,7 +83,7 @@ export default function UserDetailPage() {
   if (!profile) return null;
 
   const rColors = ROLE_COLORS[profile.role] || ROLE_COLORS.user;
-  const plan = PLANS[(profile.plan as PlanKey) || "diy"];
+  const plan = PLANS[(profile.plan as PlanKey) || "pilot"];
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
@@ -188,7 +188,7 @@ export default function UserDetailPage() {
             </div>
             <p className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>{plan?.name || "No plan"}</p>
             <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>
-              ${plan?.amount?.toLocaleString()}{plan?.interval === "month" ? "/mo" : " one-time"}
+              ${plan?.setupAmount?.toLocaleString()}{plan?.monthlyAmount ? ` + $${plan.monthlyAmount.toLocaleString()}/mo` : " one-time"}
             </p>
             {profile.payment_ref && (
               <p className="text-[11px] mt-2 font-mono" style={{ color: "var(--ink-4)" }}>Ref: {profile.payment_ref}</p>
@@ -203,9 +203,9 @@ export default function UserDetailPage() {
               className="w-full h-10 rounded-xl px-3 text-[13px] outline-none"
               style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)" }}>
               <option value="">No plan</option>
-              <option value="diy">DIY Setup — $1,500 one-time</option>
-              <option value="growth">Managed Growth — $3,500/mo</option>
-              <option value="scale">Managed Scale — $12,500/mo</option>
+              <option value="pilot">Founder's Pilot — $1,499 setup + $499/mo</option>
+              <option value="growth">Growth — $2,499 setup + $999/mo</option>
+              <option value="micro">Micro-Offer — $997 one-time</option>
             </select>
           </div>
           <button onClick={handleSave} disabled={saving}

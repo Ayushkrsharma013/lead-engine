@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'name and email are required' }, { status: 400 })
   }
 
-  const clientPlan = plan || 'diy'
+  const clientPlan = plan || 'pilot'
   const tempPassword = generateTempPassword()
   const username = generateUsername(company || name)
 

@@ -11,9 +11,9 @@ export function generatePaymentRef(userId: string, plan: PlanKey): string {
 }
 
 export function getPlanAmount(plan: PlanKey): number {
-  return PLANS[plan]?.amount ?? 0;
+  return PLANS[plan]?.setupAmount ?? 0;
 }
 
 export function getPlanInterval(plan: PlanKey): string {
-  return PLANS[plan]?.interval ?? "one_time";
+  return plan === "micro" ? "one_time" : "month";
 }

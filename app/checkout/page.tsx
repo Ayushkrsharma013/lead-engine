@@ -40,6 +40,7 @@ export default function CheckoutPage() {
   const supabase = createClient();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cardLoading, setCardLoading] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -129,10 +130,10 @@ export default function CheckoutPage() {
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>{plan.name}</span>
                 <span className="text-[18px] font-bold" style={{ color: "var(--accent-ink, #F0C060)" }}>
-                  ${plan.amount.toLocaleString()}
+                  ${plan.setupAmount.toLocaleString()}
                 </span>
                 <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>
-                  {plan.interval === "month" ? "/ month" : "one-time"}
+                  {plan.monthlyAmount > 0 ? `+ $${plan.monthlyAmount.toLocaleString()} / month` : "one-time"}
                 </span>
               </div>
 
@@ -163,43 +164,76 @@ export default function CheckoutPage() {
           )}
         </motion.div>
 
-        {/* Payment instructions — only when pending */}
+        {/* Payment — only when pending */}
         <AnimatePresence>
           {isPending && (
             <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.4 }}
-              className="rounded-2xl p-6" style={{ background: "var(--surface-2, #0E0E0E)", border: "1px solid var(--line)" }}
+              className="rounded-2xl p-6 space-y-4" style={{ background: "var(--surface-2, #0E0E0E)", border: "1px solid var(--line)" }}
             >
-              <h3 className="flex items-center gap-2 text-[13px] font-semibold mb-4" style={{ color: "var(--ink)" }}>
+              <h3 className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
                 <Banknote size={15} style={{ color: "var(--accent, #E8A840)" }} />
-                Payment Instructions
+                Complete Your Payment
               </h3>
 
-              <div className="space-y-3 mb-5">
-                <Step num={1} title="Transfer the amount" desc="Send the plan amount to our bank account via ACH / wire." />
-                <Step num={2} title="Share the reference" desc="Include the payment reference above in the transfer notes." />
-                <Step num={3} title="We activate your plan" desc="Your plan goes live within 24 hours. You'll get a confirmation email." />
-              </div>
+              {/* Primary: Card Payment */}
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const res = await fetch("/prospecting-os/api/payment/create-checkout", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ plan: profile.plan, userId: profile.id, email: profile.email }),
+                    });
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else if (data.method === "manual") {
+                      setLoading(false);
+                    }
+                  } catch { setLoading(false); }
+                }}
+                disabled={cardLoading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-[13px] font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: "var(--accent, #E8A840)", color: "#000" }}
+              >
+                {cardLoading ? <Loader2 size={15} className="animate-spin" /> : null}
+                Pay with Credit Card
+              </button>
 
-              <div className="flex items-center gap-3 p-4 rounded-xl"
-                style={{ background: "rgba(232,168,64,0.06)", border: "1px solid rgba(232,168,64,0.15)" }}>
-                <Clock size={15} style={{ color: "var(--accent, #E8A840)" }} />
-                <div>
-                  <p className="text-[12px] font-semibold" style={{ color: "var(--ink)" }}>What happens next?</p>
-                  <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
-                    Once you send the payment, our finance team verifies the reference and activates your plan. You'll receive an email confirmation with dashboard access.
-                  </p>
+              {/* Secondary: Manual ACH/Wire */}
+              <details className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+                <summary className="cursor-pointer py-1 hover:text-[var(--ink-2)]">Manual Bank Transfer (ACH / Wire)</summary>
+                <div className="mt-3 p-4 rounded-xl space-y-2" style={{ background: "var(--bg, #000)", border: "1px solid var(--line)" }}>
+                  <div className="flex justify-between text-[11px]">
+                    <span style={{ color: "var(--ink-4)" }}>Bank</span>
+                    <span style={{ color: "var(--ink-2)" }}>JPMorgan Chase Bank, N.A</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span style={{ color: "var(--ink-4)" }}>Account</span>
+                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>20000045886271</code>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span style={{ color: "var(--ink-4)" }}>Routing (ACH)</span>
+                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>028000024</code>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span style={{ color: "var(--ink-4)" }}>Reference</span>
+                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>{profile.payment_ref}</code>
+                  </div>
+                  <p className="text-[10px] mt-2" style={{ color: "var(--ink-4)" }}>Include the reference in transfer notes. Activation within 24 hours.</p>
                 </div>
-              </div>
+              </details>
 
-              <div className="flex items-center gap-3 mt-5">
+              <div className="flex items-center gap-3 mt-4">
                 <Link
                   href="/book"
                   className="flex-1 text-center py-3 rounded-full text-[13px] font-semibold no-underline transition-all hover:opacity-90"
-                  style={{ background: "var(--accent, #E8A840)", color: "#000" }}
+                  style={{ background: "transparent", color: "var(--ink-2)", border: "1px solid var(--line)" }}
                 >
-                  Book a Call — Questions? <ArrowRight size={13} className="inline ml-1" />
+                  Book a Call — Questions?
                 </Link>
                 <button
                   onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}

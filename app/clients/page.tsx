@@ -10,9 +10,9 @@ import { useApp } from "@/lib/AppContext";
 import type { PlanKey } from "@/lib/types";
 
 const PLANS: { key: PlanKey; label: string }[] = [
-  { key: "diy", label: "DIY Setup" },
-  { key: "growth", label: "Managed Growth" },
-  { key: "scale", label: "Managed Scale" },
+  { key: "pilot", label: "Founder's Pilot" },
+  { key: "growth", label: "Growth" },
+  { key: "micro", label: "Micro-Offer" },
 ];
 
 interface ClientStats {
@@ -68,7 +68,7 @@ export default function ClientsPage() {
   const [formIndustry, setFormIndustry] = useState("");
   const [formRetainer, setFormRetainer] = useState("");
   const [formEmail, setFormEmail] = useState("");
-  const [formPlan, setFormPlan] = useState<PlanKey>("diy");
+  const [formPlan, setFormPlan] = useState<PlanKey>("pilot");
 
   // Credentials result
   const [newCredentials, setNewCredentials] = useState<{
@@ -100,7 +100,7 @@ export default function ClientsPage() {
 
   const resetForm = () => {
     setFormName(""); setFormCompany(""); setFormIndustry(""); setFormRetainer("");
-    setFormEmail(""); setFormPlan("diy"); setNewCredentials(null);
+    setFormEmail(""); setFormPlan("pilot"); setNewCredentials(null);
   };
 
   const handleSave = async () => {
@@ -165,7 +165,7 @@ export default function ClientsPage() {
 
   const planBadge = (plan?: string) => {
     if (!plan) return null;
-    const label = plan === "diy" ? "DIY" : plan === "growth" ? "Growth" : plan === "scale" ? "Scale" : plan;
+    const label = plan === "pilot" ? "Pilot" : plan === "growth" ? "Growth" : plan === "micro" ? "Micro" : plan;
     return (
       <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold"
         style={{ background: "rgba(232,168,64,0.10)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }}>

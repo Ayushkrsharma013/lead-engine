@@ -94,7 +94,7 @@ export default function ClientSequencesPage() {
       module="sequences"
       plan={(profile?.plan as PlanKey) || null}
       role={profile?.role}
-      planName="Managed Scale"
+      planName="Growth"
     >
       <div className="max-w-5xl space-y-4 animate-fade-in">
         <div>

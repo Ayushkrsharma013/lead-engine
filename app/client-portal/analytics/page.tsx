@@ -51,7 +51,7 @@ export default function ClientAnalyticsPage() {
   }
 
   return (
-    <PlanGate module="analytics" plan={profile?.plan as PlanKey || null} role={profile?.role} planName="Managed Growth">
+    <PlanGate module="analytics" plan={profile?.plan as PlanKey || null} role={profile?.role} planName="Growth">
       <div className="max-w-5xl space-y-5 animate-fade-in">
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Analytics</h1>

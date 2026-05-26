@@ -1,10 +1,9 @@
-export type OnboardingStep = "welcome" | "icp" | "apikey" | "plan";
+export type OnboardingStep = "welcome" | "icp" | "plan";
 
 export const ONBOARDING_STEPS: { key: OnboardingStep; label: string; num: number }[] = [
   { key: "welcome", label: "Welcome", num: 1 },
   { key: "icp", label: "ICP Setup", num: 2 },
-  { key: "apikey", label: "API Keys", num: 3 },
-  { key: "plan", label: "Plan & Pay", num: 4 },
+  { key: "plan", label: "Plan & Pay", num: 3 },
 ];
 
 export const INDUSTRY_OPTIONS = [

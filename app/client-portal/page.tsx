@@ -72,13 +72,11 @@ function PipelineInsight({ core }: { core: { total: number; hot: number; contact
 }
 
 function UpgradeCTA({ plan, total }: { plan: PlanKey; total: number }) {
-  if (plan === "scale") return null;
+  if (plan !== "pilot") return null;
 
-  const target = plan === "diy" ? "growth" : "scale";
-  const label = target === "growth" ? "Managed Growth" : "Managed Scale";
-  const features = target === "growth"
-    ? ["AI Icebreakers for every lead", "Pipeline analytics & status tracking", "Slack digest — morning lead summaries"]
-    : ["Automated outreach sequences", "CRM sync with HubSpot/Salesforce", "A/B testing & conversion analytics"];
+  const target = "growth";
+  const label = "Growth";
+  const features = ["200+ leads/month", "Email + LinkedIn sequences", "A/B testing", "Bi-weekly strategy calls", "Dedicated Slack channel"];
 
   return (
     <div className="rounded-xl p-5" style={{
@@ -280,7 +278,7 @@ export default function ClientPortalOverview() {
 
   const { core, recentLeads, plan, industryBreakdown, statusBreakdown, icebreakers, slackConfigured, weeklyFlow, activeSequences, conversionFunnel } = dash;
 
-  const planLabel = plan === "diy" ? "DIY Setup" : plan === "growth" ? "Managed Growth" : plan === "scale" ? "Managed Scale" : "No plan";
+  const planLabel = plan === "pilot" ? "Founder's Pilot" : plan === "growth" ? "Growth" : plan === "micro" ? "Micro-Offer" : "No plan";
   const hasGrowth = dash.allowedModules.includes('icebreakers');
   const hasScale = dash.allowedModules.includes('sequences');
 
@@ -349,7 +347,7 @@ export default function ClientPortalOverview() {
       <PipelineInsight core={core} />
 
       {/* Upgrade CTA — DIY only */}
-      {plan === "diy" && <UpgradeCTA plan="diy" total={core.total} />}
+      {plan === "pilot" && <UpgradeCTA plan="pilot" total={core.total} />}
 
       {/* Growth+ sections */}
       {hasGrowth && (

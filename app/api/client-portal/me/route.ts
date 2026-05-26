@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         is_active: true,
       },
       workspace: null,
-      allowedModules: PLAN_MODULES.diy || [],
+      allowedModules: PLAN_MODULES.pilot || [],
     })
   }
 
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
   const allowedModules = (profile.role === 'qa_agent' || profile.role === 'super_admin')
     ? Object.values(PLAN_MODULES).flat()
-    : PLAN_MODULES[(profile.plan as PlanKey) || 'diy'] ?? []
+    : PLAN_MODULES[(profile.plan as PlanKey) || 'pilot'] ?? []
 
   return NextResponse.json({ profile, workspace, allowedModules })
 }

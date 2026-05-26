@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback, type Dispatch } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useState, useCallback, type Dispatch } from "react";
 import { supabase } from "./supabase";
 import {
   fetchLeadsFromDB, mergeLeadsInDB, deleteLeadsFromDB, computeStatsFromLeads,
@@ -327,6 +327,11 @@ export function useApp() {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState, initFromStorage);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Persist theme, sidebar, and source settings to localStorage
   useEffect(() => {
@@ -391,7 +396,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
-      {children}
+      <div style={{ visibility: isClient ? "visible" : "hidden" }}>
+        {children}
+      </div>
     </AppContext.Provider>
   );
 }

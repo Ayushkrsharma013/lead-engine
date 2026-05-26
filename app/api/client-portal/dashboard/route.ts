@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   const plan: PlanKey = profile
-    ? ((profile.plan as PlanKey) || 'diy')
-    : ((user.user_metadata?.plan as PlanKey) || 'diy')
+    ? ((profile.plan as PlanKey) || 'pilot')
+    : ((user.user_metadata?.plan as PlanKey) || 'pilot')
 
   const profileData = profile || {
     id: userId,

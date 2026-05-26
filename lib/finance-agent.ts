@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "./supabase";
 import { sendEmail } from "./resend";
 import { tgSend, tgEdit, fmt, fmtDate, isConfigured, InlineKeyboard } from "./telegram-bot";
-import { PLANS, getPlanPrice, type PlanKey } from "./stripe";
+import { PLANS, getPlanSetupAmount, type PlanKey } from "./stripe";
 import { convertINR, formatCurrency, ALL_CURRENCIES } from "./currency";
 
 const supabase = supabaseAdmin;
@@ -29,9 +29,9 @@ export async function jobPaymentRequestWatcher(): Promise<number> {
 
     if (existing) continue;
 
-    const planKey = (profile.plan as PlanKey) || "diy";
-    const plan = PLANS[planKey] || PLANS.diy;
-    const planLabel = plan ? `${plan.name} — ${fmt(plan.amount)}${plan.interval === "month" ? "/mo" : " one-time"}` : String(profile.plan);
+    const planKey = (profile.plan as PlanKey) || "pilot";
+    const plan = PLANS[planKey] || PLANS.pilot;
+    const planLabel = plan ? `${plan.name} — ${fmt(plan.setupAmount)}${plan.monthlyAmount > 0 ? "/mo" : " one-time"}` : String(profile.plan);
 
     const text = [
       `💰 <b>New Payment Request</b>`,
@@ -96,8 +96,8 @@ export async function jobInvoiceReminderEscalation(): Promise<number> {
     if (alreadySent) continue;
 
     const payload = (log.payload || {}) as { email?: string; plan?: string; payment_ref?: string };
-    const planKey = (payload.plan as PlanKey) || "diy";
-    const plan = PLANS[planKey] || PLANS.diy;
+    const planKey = (payload.plan as PlanKey) || "pilot";
+    const plan = PLANS[planKey] || PLANS.pilot;
     const hoursAgo = Math.round((Date.now() - new Date(String(log.created_at)).getTime()) / 3600000);
 
     const text = [
@@ -157,8 +157,8 @@ export async function jobFiveDayFollowUp(): Promise<number> {
 
     if (sent) continue;
 
-    const planKey = (profile.plan as PlanKey) || "diy";
-    const plan = PLANS[planKey] || PLANS.diy;
+    const planKey = (profile.plan as PlanKey) || "pilot";
+    const plan = PLANS[planKey] || PLANS.pilot;
     const daysAgo = Math.round((Date.now() - new Date(String(profile.created_at || Date.now())).getTime()) / 86400000);
 
     const emailDraft = await generateFollowUpEmail(String(profile.email), plan.name, daysAgo);
@@ -275,7 +275,7 @@ export async function jobActivateProfile(profileId: string): Promise<{ success: 
 
   await supabase.from("activity_log").insert({
     type: "notification",
-    text: `Finance Agent: activated ${profile.email} on ${PLANS[(profile.plan as PlanKey) || "diy"]?.name || "unknown"} plan`,
+    text: `Finance Agent: activated ${profile.email} on ${PLANS[(profile.plan as PlanKey) || "pilot"]?.name || "unknown"} plan`,
     created_at: now,
   });
 
@@ -285,7 +285,7 @@ export async function jobActivateProfile(profileId: string): Promise<{ success: 
     .eq("profile_id", profileId)
     .eq("status", "pending");
 
-  const plan = PLANS[(profile.plan as PlanKey) || "diy"] || PLANS.diy;
+  const plan = PLANS[(profile.plan as PlanKey) || "pilot"] || PLANS.pilot;
   await sendEmail({
     to: String(profile.email),
     subject: "🚀 Your Prospecting OS plan is now active!",
@@ -343,9 +343,9 @@ export async function jobMonthlySummary(): Promise<boolean> {
   });
 
   const mrr = active.reduce((sum, p) => {
-    const plan = PLANS[(p.plan as PlanKey) || "diy"];
-    if (!plan || plan.interval !== "month") return sum;
-    return sum + plan.amount;
+    const plan = PLANS[(p.plan as PlanKey) || "pilot"];
+    if (!plan || !plan.monthlyAmount) return sum;
+    return sum + plan.monthlyAmount;
   }, 0);
 
   const mrrByCurrency = ALL_CURRENCIES.map(c => `${formatCurrency(convertINR(mrr, c), c)}`)
