@@ -32,13 +32,13 @@ const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテ�
 
 const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   {
-    q: "Do I need a Apify lead scraping subscription?",
+    q: "Do I need an Apify lead scraping subscription?",
     a: "Yes — Apify lead scraping is the core data engine for Prospecting OS. A basic individual plan (currently $99/month) is sufficient. During onboarding, the Prospecting OS team helps you configure your ICP search filters to maximize lead quality and volume.",
     cat: "setup",
   },
   {
     q: "How long does it take to go live?",
-    a: "DIY Setup: 4–6 hours from payment to live pipeline. Managed Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Managed Scale: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
+    a: "Founder's Pilot: 4–6 hours from payment to live pipeline. Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Growth: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
     cat: "setup",
   },
   {
@@ -48,27 +48,27 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "Will automated LinkedIn prospecting get my domain blacklisted?",
-    a: "No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Managed Scale plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.",
+    a: "No. Prospecting OS uses human-like rate limiting, proper email warm-up sequences, and compliant scraping patterns. The Growth plan uses a dedicated secondary sending domain for all cold outreach, keeping your primary domain reputation fully protected.",
     cat: "results",
   },
   {
     q: "What is the performance guarantee?",
-    a: "On the Managed Growth plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked.",
+    a: "On the Growth plan: if you don't receive at least 50 qualified, AI-scored leads in your first calendar month, your second month is completely free. The team also performs a full ICP refinement session at no additional cost. No questions asked.",
     cat: "setup",
   },
   {
-    q: "Can I upgrade from DIY Setup to Managed Growth later?",
-    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Managed Growth features are activated on your existing Prospecting OS setup. You only pay the difference in plan cost from the upgrade date.",
+    q: "Can I upgrade from Founder's Pilot to Growth later?",
+    a: "Yes. Upgrades are seamless — no migration, no rebuild. The Growth features are activated on your existing Prospecting OS setup. You only pay the difference in plan cost from the upgrade date.",
     cat: "setup",
   },
   {
     q: "What is an AI SDR and how is it different from hiring a human SDR?",
-    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Managed Growth plan at $3,500/month — running 24/7, with no sick days, no training ramp, and no turnover.",
+    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Growth plan at $999/month — running 24/7, with no sick days, no training ramp, and no turnover.",
     cat: "results",
   },
   {
     q: "Does Prospecting OS integrate with HubSpot or other CRMs?",
-    a: "Yes, on the Managed Scale plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.",
+    a: "Yes, on the Growth plan. HubSpot CRM sync is included, with AI reply detection that automatically updates contact records based on email responses. Custom CRM integrations (Salesforce, Pipedrive, Close) are available on request.",
     cat: "results",
   },
   {
@@ -78,7 +78,7 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "Who owns the lead data?",
-    a: "You do. All leads are delivered to your own Google Sheet — we never store, sell, or access your lead data outside of the active pipeline run. For Managed Growth and Scale plans, your data lives in your workspace, not ours.",
+    a: "You do. All leads are delivered to your own dashboard — we never store, sell, or access your lead data outside of the active pipeline run. For Growth and Scale plans, your data lives in your workspace, not ours.",
     cat: "results",
   },
   {
@@ -831,7 +831,7 @@ export default function LandingPage() {
                 <div className="how-step-line" />
               </div>
               <div className="how-step-body">
-                <span className="how-step-badge">SALES NAVIGATOR</span>
+                <span className="how-step-badge">APIFY</span>
                 <h4 className="how-step-title">Pull your ICP from LinkedIn</h4>
                 <p className="how-step-desc">Apify scrapers runs a saved search for your exact ICP every morning — by title, industry, company size, geography. Results export automatically into the pipeline. No CSV uploads, no manual browsing.</p>
                 <div className="how-step-sample">
@@ -863,7 +863,7 @@ export default function LandingPage() {
                 <div className="how-step-line" />
               </div>
               <div className="how-step-body">
-                <span className="how-step-badge">GEMINI AI</span>
+                <span className="how-step-badge">CLAUDE AI</span>
                 <h4 className="how-step-title">Every lead scored 1–10 with reasoning</h4>
                 <p className="how-step-desc">Anthropic Claude AI scores each lead against your ICP with a written justification — not just a number. You see exactly why a lead scored 8.5 vs 4.2. Only leads scoring 7+ advance to enrichment. You never touch a cold lead again.</p>
                 <div className="how-step-sample">
@@ -911,7 +911,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ Pricing ══════════ */}
-      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — DIY Setup, Managed Growth, Managed Scale" style={{ background: "var(--bg-secondary)" }}>
+      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — Founder's Pilot and Growth" style={{ background: "var(--bg-secondary)" }}>
         <div className="container">
           <div className="section-header reveal">
             <div className="section-eyebrow">// Pricing</div>
@@ -1059,7 +1059,7 @@ export default function LandingPage() {
 
           <div className="beta-cta-row reveal">
             <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Ready to join the pilot?</p>
-            <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for Beta Access</Link>
+            <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for the Pilot</Link>
           </div>
         </div>
       </section>
@@ -1495,7 +1495,7 @@ export default function LandingPage() {
               { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Apify scrapers exports your ICP automatically, (2) the system filters for decision-makers only, (3) Anthropic Claude AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
               { "@type": "Question", "name": "What is an AI SDR and is it better than hiring a human SDR?", "acceptedAnswer": { "@type": "Answer", "text": "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000–$6,000/month and delivers ~50 leads. Prospecting OS delivers 500+ scored leads for a fraction of that cost, running 24/7 with zero manual effort." } },
               { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Pro plan. Basic plan clients typically see 100–200 leads/month depending on their Apify scrapers search configuration and ICP specificity." } },
-              { "@type": "Question", "name": "Do I need a Apify lead scraping subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
+              { "@type": "Question", "name": "Do I need an Apify lead scraping subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
               { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Basic plan: 4–6 hours. Pro plan: 2–3 business days. Advanced (with email infrastructure and CRM integration): 1–2 weeks." } },
               { "@type": "Question", "name": "What industries does AI B2B lead generation work for?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India." } },
               { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. If the Pro plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },

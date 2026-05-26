@@ -2,15 +2,15 @@
 import { motion } from 'framer-motion'
 
 const FEATURES = [
-  { label: 'Pricing', pros: '$1,500 one-time / $3,500/mo', sdr: '$4,000–6,000/mo salary', apollo: '$99–$149/mo', clay: '$149–$800/mo', uplead: '$99–$299/mo' },
+  { label: 'Pricing', pros: '$1,499+$499 / $2,499+$999/mo', sdr: '$4,000–6,000/mo salary', apollo: '$99–$149/mo', clay: '$149–$800/mo', uplead: '$99–$299/mo' },
   { label: 'Lead volume', pros: '500+ / month', sdr: '40–60 / month', apollo: 'Unlimited export (no scoring)', clay: 'Unlimited (manual workflows)', uplead: '200–1,000 / month' },
-  { label: 'AI ICP scoring', pros: '✓ Gemini AI — 1–10 with reasoning', sdr: '✗ Manual judgment', apollo: '✗ No scoring', clay: '⚠ DIY via Clay AI', uplead: '✗ No scoring' },
+  { label: 'AI ICP scoring', pros: '✓ Claude AI — 1–10 with reasoning', sdr: '✗ Manual judgment', apollo: '✗ No scoring', clay: '⚠ DIY via Clay AI', uplead: '✗ No scoring' },
   { label: 'Personalized icebreaker', pros: '✓ Unique per lead, context-aware', sdr: '⚠ Human-written, slow', apollo: '✗ No', clay: '⚠ Template-based', uplead: '✗ No' },
   { label: 'Company enrichment', pros: '✓ News, funding, LinkedIn, tech stack', sdr: '⚠ Inconsistent', apollo: '⚠ Basic firmographics', clay: '✓ Via integrations', uplead: '⚠ Basic firmographics' },
   { label: 'Daily Slack/Telegram delivery', pros: '✓ Hot leads every morning by 8 AM', sdr: '✗ Manual reporting', apollo: '✗ No', clay: '✗ No', uplead: '✗ No' },
   { label: 'No-hire required', pros: '✓ Zero headcount', sdr: '✗ Full hire + ramp + benefits', apollo: '✓', clay: '✓ But high setup time', uplead: '✓' },
-  { label: 'Setup time', pros: '4 hours (DIY) / 2–3 days (Managed)', sdr: '30–90 days (hire + ramp)', apollo: 'Immediate', clay: '1–4 weeks (complex)', uplead: 'Immediate' },
-  { label: 'Data privacy', pros: '✓ Your Google Sheet — we never store', sdr: 'N/A', apollo: '⚠ Apollo stores all data', clay: '⚠ Clay stores all data', uplead: '⚠ Uplead stores all data' },
+  { label: 'Setup time', pros: '4 hours (Pilot) / 2–3 days (Growth)', sdr: '30–90 days (hire + ramp)', apollo: 'Immediate', clay: '1–4 weeks (complex)', uplead: 'Immediate' },
+  { label: 'Data privacy', pros: '✓ Your dashboard — we never store', sdr: 'N/A', apollo: '⚠ Apollo stores all data', clay: '⚠ Clay stores all data', uplead: '⚠ Uplead stores all data' },
   { label: 'Performance guarantee', pros: '✓ 50 leads or month 2 free', sdr: '✗ No guarantee', apollo: '✗ No', clay: '✗ No', uplead: '✗ No' },
 ]
 

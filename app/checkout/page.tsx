@@ -44,12 +44,16 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/prospecting-os/login?redirect=/checkout"); return; }
-
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!prof) { setLoading(false); return; }
-      setProfile(prof as UserProfile);
+      const res = await fetch("/prospecting-os/api/me");
+      if (res.status === 401) {
+        router.replace("/prospecting-os/login?redirect=/checkout");
+        return;
+      }
+      if (!res.ok) { setLoading(false); return; }
+      const prof = await res.json();
+      if (prof?.id) {
+        setProfile(prof as UserProfile);
+      }
       setLoading(false);
     }
     init();

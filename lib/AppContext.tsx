@@ -326,10 +326,31 @@ export function useApp() {
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState, initFromStorage);
+  // Always start with initialState — avoid SSR/client hydration mismatch.
+  // localStorage values are applied in the useEffect below after mount.
+  const [state, dispatch] = useReducer(reducer, initialState);
   const [isClient, setIsClient] = useState(false);
 
+  // Apply persisted settings from localStorage on client mount only
   useEffect(() => {
+    try {
+      const theme = localStorage.getItem("leados_theme");
+      if (theme === "light") dispatch({ type: "SET_THEME", payload: "light" });
+      const sidebar = localStorage.getItem("leados_sidebar");
+      if (sidebar === "closed") dispatch({ type: "TOGGLE_SIDEBAR" });
+      const sourcesRaw = localStorage.getItem("leados_sources");
+      if (sourcesRaw) {
+        try {
+          const sources = JSON.parse(sourcesRaw);
+          dispatch({ type: "SET_ENABLED_SOURCES", payload: { ...DEFAULT_ENABLED_SOURCES, ...sources } });
+        } catch { /* ignore */ }
+      }
+      const anthropicKey = localStorage.getItem("proos_anthropic_key") || "";
+      const geminiKey = localStorage.getItem("proos_gemini_key") || "";
+      const openaiKey = localStorage.getItem("proos_openai_key") || "";
+      const apiKey = anthropicKey || geminiKey || openaiKey || "";
+      if (apiKey) dispatch({ type: "SET_API_KEY", payload: apiKey });
+    } catch { /* ignore */ }
     setIsClient(true);
   }, []);
 
