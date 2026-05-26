@@ -9,7 +9,7 @@ export function LandingFooter() {
     >
       <div className="container">
         <p>
-          (c) 2026{" "}
+          &copy; 2026{" "}
           <a
             href="https://flow-forges.com"
             aria-label="Flow-Forges AI automation agency"
@@ -53,8 +53,8 @@ export function LandingFooter() {
             margin: "0 auto",
           }}
         >
-          Prospecting OS is a productized AI system built on Apify, Gemini AI,
-          and LinkedIn Sales Navigator. Results vary based on ICP configuration
+          Prospecting OS is a productized AI system built on Apify, Anthropic Claude AI,
+          and Apify lead scraping. Results vary based on ICP configuration
           and industry. Pro plan includes a 50-lead/month performance guarantee.
         </p>
       </div>

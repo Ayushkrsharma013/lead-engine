@@ -119,7 +119,7 @@ export function AuditForm() {
           style={{ color: 'var(--text-secondary)', fontSize: 15, margin: '0 0 24px', lineHeight: 1.65 }}
         >
           Check your inbox — you&apos;ll receive a confirmation email shortly.
-          Your scored Google Sheet will be ready within{' '}
+          Your scored report will be ready within{' '}
           <strong style={{ color: 'var(--text-primary)' }}>24 hours</strong>.
         </motion.p>
         <motion.a
@@ -209,7 +209,7 @@ export function AuditForm() {
           onFocus={handleFocus} onBlur={handleBlur}
         >
           <option value="">Select...</option>
-          {['None — all manual', 'Apollo.io', 'Clay', 'Uplead', 'Sales Navigator (manual)', 'ZoomInfo', 'Other'].map(o => <option key={o} value={o}>{o}</option>)}
+          {['None — all manual', 'Apollo.io', 'Clay', 'Uplead', 'Apify scrapers', 'ZoomInfo', 'Other'].map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       </div>
 
@@ -259,7 +259,7 @@ export function AuditForm() {
           )}
         </motion.div>
         <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 8 }}>
-          No CSV? No problem — we&apos;ll scrape your ICP from Sales Navigator using your description above.
+          No CSV? No problem — we&apos;ll scrape your ICP from Apify using your description above.
         </p>
       </div>
 

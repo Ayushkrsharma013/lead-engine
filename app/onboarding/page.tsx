@@ -13,7 +13,8 @@ import {
   type IcpPreferences,
 } from "@/lib/onboarding";
 
-const PLANS_DATA: Record<string, { name: string; price: string; interval: string; features: string[]; popular?: boolean }> = {
+// Keep in sync with lib/stripe.ts PLANS
+const PLANS_DATA: Record<string, { name: string; price: string; interval: string; features: string[]; popular?: boolean; enterprise?: boolean }> = {
   pilot: {
     name: "Founder's Pilot", price: "$1,499", interval: "setup + $499/mo",
     features: ["100 ICP-verified leads/month", "3 outreach sequences", "Kanban pipeline", "Monthly strategy call", "Apify + Claude AI scoring", "Supabase dashboard", "Founder-managed delivery"],
@@ -21,6 +22,10 @@ const PLANS_DATA: Record<string, { name: string; price: string; interval: string
   growth: {
     name: "Growth", price: "$2,499", interval: "setup + $999/mo", popular: true,
     features: ["Everything in Pilot", "200+ leads/month", "Email + LinkedIn sequences", "A/B testing", "Bi-weekly calls", "Dedicated Slack channel", "Reply monitoring & handoff"],
+  },
+  scale: {
+    name: "Scale", price: "$4,999", interval: "setup + $1,999/mo", enterprise: true,
+    features: ["Everything in Growth", "500+ leads/month", "Email + LinkedIn + GMap multi-channel", "A/B testing of 5 variants", "Weekly strategy calls", "Dedicated Slack + Telegram", "CRM sync (HubSpot/Salesforce)", "Priority support within 4 hrs"],
   },
   micro: {
     name: "Micro-Offer", price: "$997", interval: "one-time",
@@ -257,6 +262,11 @@ export default function OnboardingPage() {
                     {plan.popular && (
                       <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: styles.accent, color: "#fff", fontSize: "0.65rem", fontWeight: 700 }}>
                         MOST POPULAR
+                      </span>
+                    )}
+                    {plan.enterprise && (
+                      <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: "rgba(124,58,237,0.15)", color: "#a78bfa", border: "1px solid rgba(124,58,237,0.3)", fontSize: "0.65rem", fontWeight: 700 }}>
+                        ENTERPRISE
                       </span>
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>

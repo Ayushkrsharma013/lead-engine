@@ -97,7 +97,7 @@ export function ComparisonTable() {
 
       <div style={{ textAlign: 'center', marginTop: 40 }}>
         <motion.a
-          href="/prospecting-os/book"
+          href="/book"
           whileHover={{ scale: 1.02, boxShadow: '0 0 32px rgba(232,66,10,0.4)' }}
           whileTap={{ scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}

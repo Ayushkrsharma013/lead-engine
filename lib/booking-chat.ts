@@ -248,15 +248,15 @@ export function getNextStep(
 function getGeneralResponse(msg: string): string {
   const m = msg.toLowerCase().trim();
   if (m.includes("how it works") || m.includes("how does it"))
-    return "1. Source leads via Sales Navigator\n2. Filter decision-makers only\n3. Score with AI (1–10 scale)\n4. Enrich with company context\n5. Deliver to your inbox daily\n\nWant a demo? Just say \"Book a Demo\"!";
+    return "1. Source leads via Apify scrapers (LinkedIn, GMap, Amazon)\n2. Filter decision-makers only\n3. Score with Claude AI (1–10 with reasoning)\n4. Enrich with company context + icebreaker\n5. Deliver to your workspace dashboard daily\n\nWant a demo? Just say \"Book a Demo\"!";
   if (m.includes("pricing") || m.includes("price") || m.includes("cost"))
-    return "**Basic:** $2,500 (one-time)\n**Pro:** $3,500/month (most popular)\n**Advanced:** $10K+/month\n\nWhich interests you?";
+    return "**Founder's Pilot:** $1,499 setup + $499/mo\n**Growth:** $2,499 setup + $999/mo (most popular)\n**Scale:** $4,999 setup + $1,999/mo\n\nAlso available: Micro-Offer at $997 one-time. Which interests you?";
   if (m.includes("go-live") || m.includes("timeline"))
-    return "Basic: ~4–6 hours\nPro: 2–3 days\nAdvanced: 1–2 weeks\n\nMost clients are live within the first week!";
+    return "Founder's Pilot: ~4–6 hours\nGrowth: 2–3 days\nScale: 1–2 weeks\n\nMost clients are live within the first week!";
   if (m.includes("guarantee") || m.includes("risk"))
-    return "No 50 qualified leads on Pro in month 1? Month 2 is free. We'll refine your ICP at no cost.";
+    return "No 50 qualified leads on Growth in month 1? Month 2 is free. We'll refine your ICP at no cost.";
   if (m.includes("sales navigator") || m.includes("linkedin"))
-    return "Yes — Sales Navigator ($99/mo) powers the pipeline. We'll help configure your filters during onboarding.";
+    return "Yes — Apify scrapers power the pipeline across LinkedIn, Google Maps, and Amazon. We'll help configure your filters during onboarding.";
   if (m.includes("explore") || m.includes("platform"))
     return "You're on the platform right now! Scroll up to see how Prospecting OS finds 500+ scored leads every month — or check out the pricing section.";
   return "I'm Pros Bot — your AI assistant. Ask me about:\n\n• How the platform works\n• Pricing plans\n• Go-live timelines\n\nOr say **\"Book a Demo\"** and I'll get you scheduled!";

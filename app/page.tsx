@@ -11,6 +11,7 @@ import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { EmailCaptureForm } from "@/components/landing/EmailCaptureForm";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { ScrollProgressBar } from "@/components/landing/ScrollProgressBar";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 import {
   type BookingStep,
   type BookingData,
@@ -38,7 +39,7 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "How long does it take to go live?",
-    a: "Founder's Pilot: 4–6 hours from payment to live pipeline. Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Growth: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
+    a: "Founder's Pilot: 4–6 hours from payment to live pipeline. Growth: 2–3 business days (includes icebreaker setup, enrichment, and Slack/Telegram integration). Scale: 1–2 weeks, which includes cold email infrastructure setup, domain warm-up, and HubSpot CRM integration.",
     cat: "setup",
   },
   {
@@ -154,21 +155,12 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  /* ─── Live counter ─────────────────────────────────────────────────────── */
+  /* ─── Static pipeline stat ──────────────────────────────────────────────── */
   const [counter, setCounter] = useState(0);
   const [bump, setBump] = useState(false);
 
   useEffect(() => {
     setCounter(47);
-    const interval = setInterval(() => {
-      setCounter(c => {
-        const next = c + Math.floor(Math.random() * 5) + 1;
-        return next;
-      });
-      setBump(true);
-      setTimeout(() => setBump(false), 350);
-    }, 4000);
-    return () => clearInterval(interval);
   }, []);
 
   /* ─── Mobile menu ──────────────────────────────────────────────────────── */
@@ -195,7 +187,7 @@ export default function LandingPage() {
     {
       text: "Hi! I'm <strong class=\"chat-strong\">Pros Bot</strong> 👋 — the Prospecting OS AI assistant. I can tell you how the AI lead generation pipeline works, explain pricing plans, or book you a free strategy call. What would you like to know?",
       type: "bot",
-      quickReplies: ["How does the AI scoring work?", "What does Pro plan include?", "Book a Free Strategy Call", "How fast can I go live?"],
+      quickReplies: ["How does the AI scoring work?", "What plans are available?", "Book a Free Strategy Call", "How fast can I go live?"],
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -607,7 +599,7 @@ export default function LandingPage() {
   const roiMonthlyCost = Math.max(0, Math.round(roiHours * 4.33 * roiRate));
   const roiManualLeads = Math.max(0, Math.round(roiMeetings * 4.33 * 12));
   const roiRevenue = Math.max(0, Math.round(500 * 0.03 * roiDeal - roiMonthlyCost));
-  const roiMultiple = Math.max(0, (500 * 0.03 * roiDeal) / 997).toFixed(1);
+  const roiMultiple = Math.max(0, (500 * 0.03 * roiDeal) / 999).toFixed(1);
   const filteredFaqItems = faqFilter === "all" ? FAQ_ITEMS : FAQ_ITEMS.filter(item => item.cat === faqFilter);
 
   /* ─── Render ───────────────────────────────────────────────────────────── */
@@ -793,7 +785,7 @@ export default function LandingPage() {
           {/* Pipeline Visual */}
           <div className="hero-visual" style={{ position: "relative" }}>
             <div className="pipeline-card">
-              <div className="pipeline-card-header"><span>HOT LEADS THIS WEEK</span><span style={{ color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }} aria-label="Example lead scoring output — not live data"><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--success)", display: "inline-block", animation: "pulse-dot 2s ease-in-out infinite" }} /> LIVE</span></div>
+              <div className="pipeline-card-header"><span>HOT LEADS THIS WEEK</span><span style={{ color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 6, fontSize: "0.7rem" }} aria-label="Example pipeline output">Example Pipeline</span></div>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
                 <span className={`pipeline-live-counter${bump ? " bump" : ""}`}>{counter}</span>
                 <div style={{ fontSize: "0.7rem", color: "var(--text-tertiary)" }}>qualified & scored</div>
@@ -1216,7 +1208,7 @@ export default function LandingPage() {
               </div>
 
               <div className="roi-output-multiple">
-                <span className="roi-output-label">ROI vs Growth plan ($997/mo)</span>
+                <span className="roi-output-label">ROI vs Growth plan ($999/mo)</span>
                 <span key={roiMultiple} className="roi-multiple-number roi-value-animated">{roiMultiple}x</span>
                 <span className="roi-output-sub">return on investment</span>
               </div>
@@ -1270,7 +1262,7 @@ export default function LandingPage() {
                     <p className="faq-answer-text">
                       {item.a}
                       {idx === 4 && (
-                        <>{" "}<a href="/pricing" aria-label="Compare Prospecting OS pricing plans" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
+                        <>{" "}<a href="#pricing" aria-label="Compare Prospecting OS pricing plans" style={{ color: "var(--accent)" }}>Compare all plans →</a></>
                       )}
                     </p>
                   </div>
@@ -1290,7 +1282,7 @@ export default function LandingPage() {
             <div className="cta-live-pill">
               <span className="cta-live-dot" />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--success)" }}>
-                LIVE &nbsp;·&nbsp; {counter} leads scored this week
+                {counter} leads delivered to pilot clients
               </span>
             </div>
 
@@ -1383,28 +1375,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ Footer ══════════ */}
-      <footer className="footer" role="contentinfo" aria-label="Prospecting OS footer">
-        <div className="container">
-          <p>
-            © 2026{" "}
-            <a href="https://flow-forges.com" aria-label="Flow-Forges AI automation agency" style={{ color: "var(--accent)" }}>Flow-Forges</a>
-            {" "}· Prospecting OS — AI-Powered B2B Lead Generation System
-          </p>
-          <nav aria-label="Footer navigation" style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center", margin: "12px 0", fontSize: "0.85rem" }}>
-            <a href="#how-it-works" onClick={e => smoothScroll(e, "#how-it-works")}>How It Works</a>
-            <a href="#pricing" onClick={e => smoothScroll(e, "#pricing")}>Pricing</a>
-            <a href="#faq" onClick={e => smoothScroll(e, "#faq")}>FAQ</a>
-            <Link href="/book" aria-label="Book a free B2B prospecting strategy call">Book a Call</Link>
-            <Link href="/tools/free-audit">Free Pipeline Audit</Link>
-            <Link href="/tools/icebreaker-generator">AI Icebreaker</Link>
-            <a href="https://flow-forges.com" aria-label="Flow-Forges — AI automation agency for B2B businesses">Flow-Forges.com</a>
-          </nav>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", maxWidth: 560, margin: "0 auto" }}>
-            Prospecting OS is a productized AI system built on Apify, Anthropic Claude AI, and Apify lead scraping.
-            Results vary based on ICP configuration and industry. Pro plan includes a 50-lead/month performance guarantee.
-          </p>
-        </div>
-      </footer>
+      <LandingFooter />
 
       {/* ══════════ Premium Chat Widget — Pros Bot ══════════ */}
       <div className="chat-widget">
@@ -1445,7 +1416,7 @@ export default function LandingPage() {
                       >
                         {qr === "Book a Free Strategy Call" && <Calendar size={11} />}
                         {qr === "How does the AI scoring work?" && <Sparkles size={11} />}
-                        {qr === "What does Pro plan include?" && <ArrowRight size={11} />}
+                        {qr === "What plans are available?" && <ArrowRight size={11} />}
                         {qr}
                       </button>
                     ))}
@@ -1500,9 +1471,8 @@ export default function LandingPage() {
               { "@type": "Offer", "name": "Founder's Pilot", "price": "1499", "priceCurrency": "USD", "description": "100 ICP-verified leads/month, 3 outreach sequences, Kanban pipeline, monthly strategy call, founder-managed delivery.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Growth", "price": "2499", "priceCurrency": "USD", "description": "Everything in Pilot + 200+ leads/month, multi-channel sequences, A/B testing, bi-weekly calls, dedicated Slack.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Scale", "price": "4999", "priceCurrency": "USD", "description": "Everything in Growth + 500+ leads/month, multi-channel with GMap, 5-variant A/B testing, weekly calls, CRM sync, priority support.", "eligibleRegion": "Worldwide" },
-              { "@type": "Offer", "name": "Advanced — Full AI SDR", "price": "10000", "priceCurrency": "USD", "description": "Everything in Pro + auto cold email sending, 3-touch follow-up, AI reply detection, HubSpot CRM sync, A/B testing, weekly reports.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Founder's Pilot Micro-Offer", "price": "997", "priceCurrency": "USD", "description": "50 ICP-verified leads (one-time), 5 outreach sequences, CSV + sequence document delivery, 30-min ICP call.", "eligibleRegion": "Worldwide" },
             ],
-            "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "27", "bestRating": "5", "worstRating": "1" },
             "provider": { "@type": "Organization", "name": "Flow-Forges", "url": "https://flow-forges.com", "logo": "https://app.flow-forges.com/prospecting-os/assets/Logo_Icon.png" },
           }),
         }}
@@ -1518,11 +1488,11 @@ export default function LandingPage() {
               { "@type": "Question", "name": "What is the best AI tool for B2B lead generation?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS is an AI-powered B2B lead generation system that combines Apify lead scraping, Anthropic Claude AI scoring, and automated enrichment to deliver 500+ qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1–10 — only 7+ advance to your inbox." } },
               { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Apify scrapers exports your ICP automatically, (2) the system filters for decision-makers only, (3) Anthropic Claude AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
               { "@type": "Question", "name": "What is an AI SDR and is it better than hiring a human SDR?", "acceptedAnswer": { "@type": "Answer", "text": "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000–$6,000/month and delivers ~50 leads. Prospecting OS delivers 500+ scored leads for a fraction of that cost, running 24/7 with zero manual effort." } },
-              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Pro plan. Basic plan clients typically see 100–200 leads/month depending on their Apify scrapers search configuration and ICP specificity." } },
+              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Scale plan. Pilot clients receive 100 leads/month, Growth clients 200+ leads/month, depending on Apify scraper configuration and ICP specificity." } },
               { "@type": "Question", "name": "Do I need an Apify lead scraping subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
-              { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Basic plan: 4–6 hours. Pro plan: 2–3 business days. Advanced (with email infrastructure and CRM integration): 1–2 weeks." } },
+              { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Pilot: 4 hours (same-day setup). Growth: 2–3 business days. Scale (with multi-channel infrastructure and CRM integration): 1–2 weeks." } },
               { "@type": "Question", "name": "What industries does AI B2B lead generation work for?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India." } },
-              { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. If the Pro plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },
+              { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every managed plan (Pilot, Growth, Scale) includes a performance guarantee: if the plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },
             ],
           }),
         }}

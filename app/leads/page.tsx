@@ -646,9 +646,7 @@ export default function Home() {
     a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     a.download = filename;
     a.click();
-    // Open Google Sheets to import the file
-    window.open("https://docs.google.com/spreadsheets/u/0/create?usp=sheets_home", "_blank");
-    showToast(`${toExport.length} leads exported — open in Google Sheets`);
+    showToast(`${toExport.length} leads exported as CSV`);
   };
 
   const driveLeads = selected.length ? sorted.filter(l => selected.includes(l.id)) : sorted;

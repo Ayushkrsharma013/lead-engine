@@ -135,9 +135,9 @@ function NavLeaf({
           layoutId="sidebar-active-pill"
           className="absolute inset-0 rounded-lg"
           style={{
-            background: "linear-gradient(90deg, rgba(232,168,64,0.10), rgba(232,168,64,0.18))",
-            border: "1px solid rgba(232,168,64,0.15)",
-            boxShadow: "0 1px 8px rgba(232,168,64,0.05)",
+            background: "linear-gradient(90deg, rgba(232,66,10,0.10), rgba(232,66,10,0.18))",
+            border: "1px solid rgba(232,66,10,0.15)",
+            boxShadow: "0 1px 8px rgba(232,66,10,0.05)",
           }}
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         />
@@ -147,12 +147,12 @@ function NavLeaf({
       {!active && (
         <>
           <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-            style={{ background: "linear-gradient(90deg, rgba(237,234,226,0.02), rgba(232,168,64,0.06))" }} />
+            style={{ background: "linear-gradient(90deg, rgba(237,234,226,0.02), rgba(232,66,10,0.06))" }} />
           {/* Right-edge accent */}
           <div className="absolute inset-y-0 right-0 w-10 rounded-r-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-            style={{ background: "linear-gradient(270deg, rgba(232,168,64,0.12), transparent)" }} />
+            style={{ background: "linear-gradient(270deg, rgba(232,66,10,0.12), transparent)" }} />
           <div className="absolute right-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            style={{ top: 8, bottom: 8, width: 2, background: "rgba(232,168,64,0.30)" }} />
+            style={{ top: 8, bottom: 8, width: 2, background: "rgba(232,66,10,0.30)" }} />
         </>
       )}
 
@@ -389,7 +389,7 @@ export default function ProSidebar() {
                   style={{
                     background: "var(--accent-soft)",
                     color: "var(--accent)",
-                    border: "1px solid rgba(201,168,124,0.20)",
+                    border: "1px solid rgba(232,66,10,0.20)",
                   }}
                 >
                   OS
@@ -483,7 +483,7 @@ export default function ProSidebar() {
               paddingLeft: collapsed ? 0 : 12,
               width: collapsed ? 36 : "calc(100% - 12px)",
               margin: collapsed ? "0 auto" : "0 6px",
-              background: profileOpen ? "rgba(232,168,64,0.08)" : "transparent",
+              background: profileOpen ? "rgba(232,66,10,0.08)" : "transparent",
               border: "none",
               cursor: "pointer",
             }}
@@ -493,8 +493,8 @@ export default function ProSidebar() {
               className="shrink-0 rounded-full flex items-center justify-center"
               style={{
                 width: 22, height: 22,
-                background: "linear-gradient(135deg, rgba(232,168,64,0.20), rgba(232,168,64,0.08))",
-                border: "1px solid rgba(232,168,64,0.25)",
+                background: "linear-gradient(135deg, rgba(232,66,10,0.20), rgba(232,66,10,0.08))",
+                border: "1px solid rgba(232,66,10,0.25)",
               }}
             >
               {profile?.avatar ? (
@@ -564,8 +564,8 @@ export default function ProSidebar() {
                   <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
                     <span style={{
                       fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 9999,
-                      background: "rgba(232,168,64,0.10)", color: "var(--accent)",
-                      border: "1px solid rgba(232,168,64,0.15)",
+                      background: "rgba(232,66,10,0.10)", color: "var(--accent)",
+                      border: "1px solid rgba(232,66,10,0.15)",
                     }}>
                       {userRole === "super_admin" ? "Super Admin" : userRole === "client" ? "Client" : "User"}
                     </span>
@@ -579,7 +579,7 @@ export default function ProSidebar() {
                     onClick={() => { setProfileOpen(false); router.push("/settings"); }}
                     className="flex items-center gap-2.5 rounded-lg transition-colors duration-150 w-full"
                     style={{
-                      height: 34, padding: "0 10px", background: pathname === "/settings" ? "rgba(232,168,64,0.08)" : "transparent",
+                      height: 34, padding: "0 10px", background: pathname === "/settings" ? "rgba(232,66,10,0.08)" : "transparent",
                       border: "none", cursor: "pointer", color: pathname === "/settings" ? "var(--accent)" : "var(--ink-3)",
                     }}
                   >
@@ -642,9 +642,9 @@ export default function ProSidebar() {
           width: 2px;
           background: linear-gradient(
             180deg,
-            rgba(232,168,64,0.15) 0%,
-            rgba(232,168,64,0.06) 60%,
-            rgba(232,168,64,0.02) 100%
+            rgba(232,66,10,0.15) 0%,
+            rgba(232,66,10,0.06) 60%,
+            rgba(232,66,10,0.02) 100%
           );
           border-radius: 1px;
         }
@@ -659,8 +659,8 @@ export default function ProSidebar() {
           top: 12px;
           width: 10px;
           height: 12px;
-          border-left: 2px solid rgba(232,168,64,0.12);
-          border-bottom: 2px solid rgba(232,168,64,0.12);
+          border-left: 2px solid rgba(232,66,10,0.12);
+          border-bottom: 2px solid rgba(232,66,10,0.12);
           border-radius: 0 0 0 7px;
         }
         /* Last item — shorter vertical line (stop at elbow junction) */
@@ -675,7 +675,7 @@ export default function ProSidebar() {
         }
         /* Active / hover treatment to make branches more visible */
         .tree-item:hover::before {
-          border-color: rgba(232,168,64,0.28);
+          border-color: rgba(232,66,10,0.28);
         }
       `}</style>
 
@@ -730,7 +730,7 @@ function SidebarBottomButton({
         width: collapsed ? 36 : "calc(100% - 12px)",
         margin: collapsed ? "0 auto" : "0 6px",
         color: active ? "var(--accent)" : "var(--ink-3)",
-        background: active ? "rgba(232,168,64,0.08)" : "transparent",
+        background: active ? "rgba(232,66,10,0.08)" : "transparent",
       }}
     >
       <Icon size={15} className="relative z-10" />

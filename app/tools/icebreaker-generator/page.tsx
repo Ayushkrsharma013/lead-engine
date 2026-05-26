@@ -22,7 +22,7 @@ export default function IcebreakerGeneratorPage() {
               padding: '4px 14px', borderRadius: 9999, marginBottom: 24,
               textTransform: 'uppercase',
             }}>
-              // Powered by Gemini 2.5 Flash
+              // Powered by Claude AI
             </span>
           </motion.div>
 
@@ -44,7 +44,7 @@ export default function IcebreakerGeneratorPage() {
             transition={{ delay: 0.16, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={{ fontSize: 17, color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 12px' }}
           >
-            Enter your prospect&apos;s info. Gemini AI reads their context and writes a
+            Enter your prospect&apos;s info. Claude AI reads their context and writes a
             unique, context-specific opening line — not a template.
           </motion.p>
 
@@ -81,7 +81,7 @@ export default function IcebreakerGeneratorPage() {
           >
             {[
               { step: '01', title: 'Enter prospect context', desc: "Add their name, title, company, and any recent activity you've spotted — a post, news article, or job opening." },
-              { step: '02', title: 'Gemini reads the room', desc: 'Our AI synthesizes their context and generates an opening line that references something real about them — never a template.' },
+              { step: '02', title: 'Claude AI reads the room', desc: 'Our AI synthesizes their context and generates an opening line that references something real about them — never a template.' },
               { step: '03', title: 'Copy and send', desc: 'Your icebreaker is ready in under 5 seconds. Copy it directly into LinkedIn or your cold email tool.' },
             ].map((item) => (
               <motion.div

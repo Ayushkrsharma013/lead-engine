@@ -9,21 +9,21 @@ const basePath = "/prospecting-os";
 export const metadata: Metadata = {
   title: "Prospecting OS — AI-Powered B2B Lead Generation System | 500+ Scored Leads/Month",
   description:
-    "Prospecting OS automates B2B lead generation using LinkedIn Sales Navigator + Gemini AI. Get 500+ scored, enriched leads per month delivered to Slack or Telegram. Used by agencies, SaaS founders, and consultants worldwide.",
+    "Prospecting OS automates B2B lead generation using Apify scrapers + Anthropic Claude AI. Get 500+ scored, enriched leads per month delivered to Slack or Telegram. Used by agencies, SaaS founders, and consultants worldwide.",
   keywords: [
     "AI lead generation",
     "B2B prospecting automation",
     "AI SDR alternative",
-    "LinkedIn Sales Navigator automation",
+    "Apify lead scraping",
     "automated cold outreach",
-    "Gemini AI lead scoring",
-    "AI lead generation automation",
+    "Claude AI lead scoring",
+    "Supabase-powered dashboard",
     "replace SDR with AI",
   ],
   openGraph: {
     title: "Prospecting OS — AI B2B Lead Generation. 500+ Scored Leads/Month.",
     description:
-      "Stop doing manual prospecting. Let AI find, score, and deliver your ideal clients every morning. Built on LinkedIn Sales Navigator + Gemini AI.",
+      "Stop doing manual prospecting. Let AI find, score, and deliver your ideal clients every morning. Built on Apify + Anthropic Claude AI + Supabase.",
     url: "https://app.flow-forges.com/prospecting-os",
     siteName: "Prospecting OS by Flow-Forges",
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Prospecting OS — AI B2B Lead Generation System",
     description:
-      "500+ scored B2B leads/month. Zero manual research. Powered by LinkedIn Sales Navigator + Gemini AI. Built for agencies, SaaS & consultants.",
+      "500+ scored B2B leads/month. Zero manual research. Powered by Apify lead scraping and Anthropic Claude AI. Built for agencies, SaaS & consultants.",
     images: ["https://app.flow-forges.com/prospecting-os/assets/og-image.png"],
   },
   alternates: {

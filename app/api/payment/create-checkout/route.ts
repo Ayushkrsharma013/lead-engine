@@ -18,6 +18,10 @@ const PLAN_URLS: Record<string, { easebuzz?: string; skydo?: string }> = {
     easebuzz: process.env.EASEBUZZ_GROWTH_URL,
     skydo: process.env.SKYDO_GROWTH_URL,
   },
+  scale: {
+    easebuzz: process.env.EASEBUZZ_SCALE_URL,
+    skydo: process.env.SKYDO_SCALE_URL,
+  },
   micro: {
     easebuzz: process.env.EASEBUZZ_MICRO_URL,
     skydo: process.env.SKYDO_MICRO_URL,

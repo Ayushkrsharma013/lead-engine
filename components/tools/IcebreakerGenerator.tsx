@@ -282,7 +282,7 @@ export function IcebreakerGenerator() {
                 ))}
               </div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: 13, margin: 0 }}>
-                Gemini is reading their context...
+                Claude AI is reading their context...
               </p>
             </motion.div>
           )}

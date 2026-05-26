@@ -120,11 +120,11 @@ function buildConfirmationEmail(name: string, company: string, requestId: string
 
       <p style="color:#b0aeaa;line-height:1.7;margin:0 0 24px;">
         We're queuing your pipeline audit for <strong style="color:#f5f4f1;">${company}</strong>.
-        Within <strong style="color:#f5f4f1;">24 hours</strong>, you'll receive a Google Sheet link with every contact scored, reasoned, and icebreaker-ready.
+        Within <strong style="color:#f5f4f1;">24 hours</strong>, you'll receive a scored report with every contact scored, reasoned, and icebreaker-ready.
       </p>
 
       <div style="background:#1a1917;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:0 0 24px;">
-        <p style="font-size:12px;color:#7a7875;margin:0 0 8px;font-family:monospace;">What's coming in your Google Sheet:</p>
+        <p style="font-size:12px;color:#7a7875;margin:0 0 8px;font-family:monospace;">What's in your report:</p>
         <ul style="color:#b0aeaa;font-size:14px;margin:0;padding-left:20px;line-height:2;">
           <li>ICP score (1–10) with written reasoning for every contact</li>
           <li>Contacts below 7 filtered out — only hot leads delivered</li>

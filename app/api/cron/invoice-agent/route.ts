@@ -5,9 +5,13 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { notifyInvoiceEvent } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+  const auth = req.headers.get("authorization");
+  if (auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const overdueCount = await markOverdueInvoices();

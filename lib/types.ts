@@ -277,7 +277,7 @@ export interface ApifySyncLog {
 
 export type UserRole = 'super_admin' | 'client' | 'user' | 'qa_agent'
 
-export type PlanKey = 'pilot' | 'growth' | 'micro'
+export type PlanKey = 'pilot' | 'growth' | 'scale' | 'micro'
 
 export const PLAN_MODULES: Record<PlanKey, string[]> = {
   pilot: [
@@ -295,7 +295,7 @@ export const PLAN_MODULES: Record<PlanKey, string[]> = {
     'billing',
     'settings',
   ],
-  micro: [
+  scale: [
     'overview',
     'leads-view',
     'leads-full',
@@ -308,6 +308,11 @@ export const PLAN_MODULES: Record<PlanKey, string[]> = {
     'weekly-report',
     'billing',
     'settings',
+  ],
+  micro: [
+    'overview',
+    'leads-view',
+    'billing',
   ],
 }
 

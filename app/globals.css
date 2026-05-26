@@ -18,15 +18,15 @@
   --ink-2:         #B0B0B0;
   --ink-3:         #808080;
   --ink-4:         #555555;
-  --accent:        #E8A840;
-  --accent-soft:   rgba(232,168,64,.12);
-  --accent-ink:    #F0C060;
+  --accent:        #e8420a;
+  --accent-soft:   rgba(232,66,10,.12);
+  --accent-ink:    #e8420a;
   --positive:      #6BCB77;
   --positive-soft: rgba(107,203,119,.12);
   --negative:      #E06060;
   --negative-soft: rgba(224,96,96,.12);
-  --info:          #D4A040;
-  --info-soft:     rgba(212,160,64,.12);
+  --info:          #e8420a;
+  --info-soft:     rgba(232,66,10,.12);
   --shadow-sm:     0 1px 2px rgba(0,0,0,0.6);
   --shadow-md:     0 4px 12px rgba(0,0,0,0.55);
   --shadow-lg:     0 12px 32px rgba(0,0,0,0.65);
@@ -46,9 +46,9 @@
   --ink-2:         #4B463E;
   --ink-3:         #807A6F;
   --ink-4:         #A8A299;
-  --accent:        #8B6F3F;
-  --accent-soft:   rgba(139,111,63,.10);
-  --accent-ink:    #5E4A29;
+  --accent:        #e8420a;
+  --accent-soft:   rgba(232,66,10,.10);
+  --accent-ink:    #e8420a;
   --positive:      #5C7A4F;
   --positive-soft: rgba(92,122,79,.12);
   --negative:      #A85B4A;
@@ -154,11 +154,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 }
 .filter-chip:hover {
   border-color: var(--line-strong); color: var(--ink-2);
-  background: linear-gradient(90deg, rgba(237,234,226,0.02), rgba(201,168,124,0.05));
+  background: linear-gradient(90deg, rgba(237,234,226,0.02), rgba(232,66,10,0.05));
 }
 
 [data-theme="light"] .filter-chip { background: transparent; border-color: var(--line); color: var(--ink-3); }
-[data-theme="light"] .filter-chip:hover { border-color: var(--line-strong); color: var(--ink-2); background: linear-gradient(90deg, rgba(28,24,18,0.02), rgba(139,111,63,0.06)); }
+[data-theme="light"] .filter-chip:hover { border-color: var(--line-strong); color: var(--ink-2); background: linear-gradient(90deg, rgba(28,24,18,0.02), rgba(232,66,10,0.06)); }
 
 .filter-chip-active {
   font-family: 'Geist', sans-serif;
@@ -184,9 +184,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 .section-count {
   font-size: 10px; padding: 0 0.375rem; line-height: 1rem; border-radius: 999px;
   font-weight: 600;
-  background: rgba(201,168,124,0.08);
+  background: rgba(232,66,10,0.08);
   color: var(--accent);
-  border: 1px solid rgba(201,168,124,0.15);
+  border: 1px solid rgba(232,66,10,0.15);
 }
 
 /* ─── Filter date inputs ────────────────────────────────────────────────── */
@@ -212,7 +212,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 [data-theme="dark"] .filter-date-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 [data-theme="light"] .filter-date-input { background: var(--surface-2); border-color: var(--line); }
 [data-theme="light"] .filter-date-input:hover { border-color: var(--accent); background: var(--surface); }
-[data-theme="light"] .filter-date-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(139,111,63,0.12); }
+[data-theme="light"] .filter-date-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(232,66,10,0.12); }
 [data-theme="light"] .filter-date-input::-webkit-calendar-picker-indicator { filter: none; }
 
 /* ─── React Day Picker theming ───────────────────────────────────────────── */
@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 .glass-card {
   background: var(--surface-2);
   border: 1px solid var(--line);
-  box-shadow: var(--shadow-lg), 0 0 60px rgba(232,168,64,0.03);
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(232,66,10,0.03);
   position: relative;
   z-index: 1;
 }
@@ -277,9 +277,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    rgba(232,168,64,0.04) 0%,
+    rgba(232,66,10,0.04) 0%,
     transparent 40%,
-    rgba(232,168,64,0.02) 100%
+    rgba(232,66,10,0.02) 100%
   );
   pointer-events: none;
 }

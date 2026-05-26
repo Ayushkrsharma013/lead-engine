@@ -58,7 +58,7 @@ export default function FreeAuditPage() {
           >
             Upload a CSV of up to 50 LinkedIn contacts from your actual prospect list.
             Our AI scores each one against your ICP, writes a personalized icebreaker,
-            and delivers a Google Sheet — within 24 hours. Zero cost. No strings.
+            and delivers a scored report — within 24 hours. Zero cost. No strings.
           </motion.p>
 
           <motion.div
@@ -117,12 +117,12 @@ export default function FreeAuditPage() {
               {
                 icon: '02',
                 title: 'Personalized icebreaker',
-                desc: "Gemini reads each lead's recent LinkedIn activity, company news, and funding history to write a unique cold outreach opening. Not a template — a real icebreaker.",
+                desc: "Claude AI reads each lead's recent LinkedIn activity, company news, and funding history to write a unique cold outreach opening. Not a template — a real icebreaker.",
               },
               {
                 icon: '03',
-                title: 'Google Sheet delivery',
-                desc: 'All scored leads land in your own Google Sheet within 24 hours. Name, title, company, score, reasoning, icebreaker. Copy and paste directly into your outreach.',
+                title: 'Report delivery',
+                desc: 'All scored leads delivered to your inbox within 24 hours. Name, title, company, score, reasoning, icebreaker. Copy and paste directly into your outreach.',
               },
             ].map((card) => (
               <motion.div
@@ -175,7 +175,7 @@ export default function FreeAuditPage() {
               // Submit your audit request
             </p>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 32px' }}>
-              Fill in your details and attach your prospect CSV. We&apos;ll run the AI pipeline and email you the scored Google Sheet within 24 hours.
+              Fill in your details and attach your prospect CSV. We&apos;ll run the AI pipeline and email you the scored report within 24 hours.
             </p>
             <AuditForm />
           </motion.div>
@@ -189,7 +189,7 @@ export default function FreeAuditPage() {
             // Sample output
           </p>
           <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: 32, fontSize: 15 }}>
-            Here&apos;s exactly what lands in your Google Sheet within 24 hours.
+            Here&apos;s exactly what lands in your report within 24 hours.
           </p>
 
           <motion.div
