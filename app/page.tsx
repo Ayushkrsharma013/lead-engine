@@ -911,7 +911,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ Pricing ══════════ */}
-      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — Founder's Pilot and Growth" style={{ background: "var(--bg-secondary)" }}>
+      <section className="section" id="pricing" aria-label="Prospecting OS pricing plans — Founder's Pilot, Growth, and Scale" style={{ background: "var(--bg-secondary)" }}>
         <div className="container">
           <div className="section-header reveal">
             <div className="section-eyebrow">// Pricing</div>
@@ -968,6 +968,29 @@ export default function LandingPage() {
               <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Growth plan">Book a Demo</Link>
               <Link href="/tools/icebreaker-generator" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
                 Or generate a free icebreaker →
+              </Link>
+            </div>
+
+            {/* Scale */}
+            <div className="pricing-card reveal">
+              <div className="pricing-plan-badge" style={{ background: "rgba(124,58,237,0.12)", color: "#a78bfa", border: "1px solid rgba(124,58,237,0.25)" }}>ENTERPRISE</div>
+              <h3>Scale</h3>
+              <div className="price">$4,999</div>
+              <span className="price-period">setup + $1,999/month</span>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", margin: "8px 0 16px" }}>Full enterprise outbound. 500+ leads, multi-channel, CRM sync, weekly calls, and priority support. For teams that need pipeline at scale.</p>
+              <ul className="pricing-features">
+                <li>Everything in Growth, plus:</li>
+                <li>500+ leads/month</li>
+                <li>Email + LinkedIn + GMap multi-channel</li>
+                <li>A/B testing of 5 variants</li>
+                <li>Weekly strategy calls</li>
+                <li>Dedicated Slack + Telegram</li>
+                <li>CRM sync (HubSpot/Salesforce)</li>
+                <li>Priority support within 4 hrs</li>
+              </ul>
+              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Book a demo for Scale plan">Book a Demo</Link>
+              <Link href="/tools/free-audit" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
+                Or try our free pipeline audit first →
               </Link>
             </div>
           </div>
@@ -1476,6 +1499,7 @@ export default function LandingPage() {
             "offers": [
               { "@type": "Offer", "name": "Founder's Pilot", "price": "1499", "priceCurrency": "USD", "description": "100 ICP-verified leads/month, 3 outreach sequences, Kanban pipeline, monthly strategy call, founder-managed delivery.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Growth", "price": "2499", "priceCurrency": "USD", "description": "Everything in Pilot + 200+ leads/month, multi-channel sequences, A/B testing, bi-weekly calls, dedicated Slack.", "eligibleRegion": "Worldwide" },
+              { "@type": "Offer", "name": "Scale", "price": "4999", "priceCurrency": "USD", "description": "Everything in Growth + 500+ leads/month, multi-channel with GMap, 5-variant A/B testing, weekly calls, CRM sync, priority support.", "eligibleRegion": "Worldwide" },
               { "@type": "Offer", "name": "Advanced — Full AI SDR", "price": "10000", "priceCurrency": "USD", "description": "Everything in Pro + auto cold email sending, 3-touch follow-up, AI reply detection, HubSpot CRM sync, A/B testing, weekly reports.", "eligibleRegion": "Worldwide" },
             ],
             "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "27", "bestRating": "5", "worstRating": "1" },

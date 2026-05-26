@@ -36,6 +36,23 @@ export const PLANS = {
       "Reply monitoring & warm handoff within 24 hrs",
     ],
   },
+  scale: {
+    name: "Scale",
+    setupAmount: 4999,
+    monthlyAmount: 1999,
+    displaySetup: "$4,999",
+    displayMonthly: "$1,999/month",
+    features: [
+      "Everything in Growth, plus:",
+      "500+ leads/month",
+      "Email + LinkedIn + GMap multi-channel",
+      "A/B testing of 5 variants",
+      "Weekly strategy calls",
+      "Dedicated Slack + Telegram",
+      "CRM sync (HubSpot/Salesforce)",
+      "Priority support within 4 hrs",
+    ],
+  },
   micro: {
     name: "Founder's Pilot Micro-Offer",
     setupAmount: 997,
