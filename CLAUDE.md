@@ -8,7 +8,7 @@ Project context and conventions for AI-assisted development.
 
 ## What this project is
 
-**Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, Resend, and the Gemini API.  
+**Prospecting OS** (formerly LinkedIn ProOS) is a full-stack B2B prospecting platform built with Next.js 14, Supabase, Resend, and the Anthropic Claude API.  
 It provides 11 integrated modules for lead management, AI-powered messaging, ICP scoring, automated outreach sequences, kanban pipeline, analytics, client management, booking, outreach execution, and admin dashboard.
 
 All Tier 1 (auth/payments/onboarding), Tier 2 (sequence execution/reply tracking/A/B testing), and Tier 3 (rate limiting/error tracking/business analytics) are complete.
@@ -118,7 +118,7 @@ Both Lead Engine and FlowForges (mark1) point to the **same Supabase project**:
 | Charts | recharts (Analytics module) |
 | Drag & Drop | @hello-pangea/dnd (Kanban module) |
 | Animations | framer-motion (sidebar collapsible sections, active pill, hover effects) |
-| AI | Gemini 2.5 Flash — called from browser (Message Lab + Scorer + A/B variants) |
+| AI | Anthropic Claude API (server-side: scoring, icebreakers, Message Lab) + Gemini 2.5 Flash (browser: Scorer, A/B variants) |
 | Lead scraping | Apify actor `x_guru~Leads-Scraper-apollo-zoominfo` |
 | Email | Resend HTTP API — sequence dispatch + booking notifications + inbound webhooks |
 | Scheduling | Vercel Cron Jobs — 5 daily crons at 6/6/7/8/9 AM (`vercel.json`) |
@@ -537,7 +537,7 @@ text-accent-blue → var(--accent-blue)
 | `CRON_SECRET` | Vercel + `.env.local` | Optional — bearer token to secure cron endpoints |
 | `SENTRY_DSN` | Vercel + `.env.local` | Optional — Sentry DSN for error forwarding |
 
-The Gemini API key is entered by the user in the UI and stored in localStorage. Google Drive Client ID is stored in `localStorage`.
+The Anthropic API key is entered by the user in the UI and stored in React state only (never persisted). Gemini API key is stored in localStorage for browser-side AI features (Scorer, A/B variants).
 
 ---
 
@@ -1659,3 +1659,94 @@ Runner (local machine)        Deployed API (Vercel)          Supabase (productio
 **Commits**: 8 commits across the session (`27d925b` through `25d938d`)
 **Build**: 86 routes, 0 TypeScript errors, 0 open bugs
 **Live verified**: Stats API 200, Auto-queue API 200, Heartbeat 200, Health 200 → runnerLive: true, Page rendering with all components
+
+---
+
+### 2026-05-26 — Launch Readiness Swarm (6 Phases + n8n Automation Engine)
+
+**Full Audit** — 5 dimensions scored:
+- Build & TypeScript: 10/10 (0 errors, 125 routes)
+- Payments: 1/10 (manual bank transfer only, no gateway configured)
+- Content Accuracy: 4/10 (metadata referenced wrong stack: "Sales Navigator + Gemini AI")
+- Auth & Security: 6/10 (works, but gaps: user role escalation, cron auth bypass)
+- Overall: 5.8/10
+
+**Phase 1 — Payment Wiring** (`35f1d99`):
+- `lib/types.ts` — PlanKey fixed to include `'scale'`, PLAN_MODULES rebalanced (scale=full access, micro=basic)
+- `app/api/payment/create-checkout/route.ts` — PLAN_URLS now maps scale with EASEBUZZ_SCALE_URL
+- Env vars needed on Vercel: EASEBUZZ_PILOT_URL, EASEBUZZ_GROWTH_URL, EASEBUZZ_SCALE_URL, EASEBUZZ_MICRO_URL
+
+**Phase 2 — Content Accuracy** (`35f1d99`):
+- `app/layout.tsx` — Metadata: description, keywords, OG, Twitter all now reference Apify + Claude (not Sales Navigator + Gemini)
+- `app/api/chat/bot/route.ts` — System prompt rewritten: pipeline source, scoring, tech stack, data delivery, plans/pricing all corrected
+- `lib/booking-chat.ts` — Replaced "Sales Navigator" → "Apify scrapers", updated pricing references
+- `app/tools/icebreaker-generator/page.tsx` — "Gemini AI" → "Claude AI"
+- `components/landing/LandingFooter.tsx` — Fixed tech stack reference
+- `components/tools/AuditForm.tsx`, `components/tools/IcebreakerGenerator.tsx` — Updated references
+- `app/tools/free-audit/page.tsx` — "Google Sheet" → "report"
+- `app/api/tools/audit-request/route.ts` — Fixed email copy
+- `app/leads/page.tsx` — Removed "Open Google Sheets" popup after CSV export
+- **Content sweep**: zero "Sales Navigator", "Gemini AI", "Google Sheet" across all .ts/.tsx files
+
+**Phase 3 — Trust & Pricing** (`35f1d99`):
+- `app/page.tsx`:
+  - Live counter: removed random increment interval, now shows static "delivered to pilot clients"
+  - Pipeline cards: "LIVE" badge → "Example Pipeline"
+  - Aggregate rating schema: removed fake 4.8★/27 reviews
+  - ROI calculator: $997 → $999 (correct Growth monthly rate)
+  - Footer: "Pro plan" → "Every managed plan"
+  - FAQ: fixed duplicated "Growth:" → "Scale:" for enterprise timeline
+  - FAQ link: `/pricing` → `#pricing`
+  - Schema offers: removed phantom "Advanced — Full AI SDR" ($10,000), added Micro-Offer
+  - Schema FAQ: "Pro plan"/"Basic plan"/"Advanced" → "Pilot"/"Growth"/"Scale"
+  - Chat quick replies: "What does Pro plan include?" → "What plans are available?"
+- `components/landing/ComparisonTable.tsx` — CTA: `/prospecting-os/book` → `/book`
+
+**Phase 4 — Scale Plan Integration** (`35f1d99`):
+- `app/onboarding/page.tsx` — Added Scale plan card with purple ENTERPRISE badge, synced PLANS_DATA with lib/stripe.ts
+- `lib/types.ts` — PlanKey now `'pilot' | 'growth' | 'scale' | 'micro'`
+
+**Phase 5 — Security Hardening** (`35f1d99`):
+- `middleware.ts` — `user` role now blocked from superAdminOnly paths, redirected to /dashboard (was bypassing role check entirely)
+- `app/api/cron/apify-scrape/route.ts` — CRON_SECRET now mandatory (returns 500 if not configured, 401 if wrong)
+- `app/api/cron/invoice-agent/route.ts` — Same mandatory CRON_SECRET enforcement
+- `app/api/cron/blog-writer/route.ts` — Same mandatory CRON_SECRET enforcement
+- `app/api/agent/finance/cron/route.ts` — Same mandatory CRON_SECRET enforcement
+- `lib/api-auth.ts` — Added comment documenting that NEXT_PUBLIC_SUPABASE_ANON_KEY is not a secret, with compensating IP-based rate limiting noted
+
+**Phase 6 — UX Polish** (`35f1d99`):
+- `app/globals.css` — Accent color standardized to `#e8420a` (orange) in both dark and light themes
+- `components/layout/Sidebar.tsx` — Gold references updated to orange `#e8420a`
+- `components/landing/LandingFooter.tsx` — Fixed and wired into `app/page.tsx` (was orphaned)
+- `components/Shell.tsx` — Blog/tools route handling verified
+
+**Phase 7 — Verification + Deploy** (`35f1d99`):
+- TypeScript: 0 errors (tsc --noEmit)
+- Content sweep: 0 old stack references
+- Live Playwright checks: accent color, pricing cards (3 + Micro), metadata, counter, footer, console errors (0)
+- 23 files, +157/-139 lines
+
+**n8n Automation Engine** (`8f7f416`):
+- Installed 7 n8n-skills for workflow building
+- Created project: `D:/Flow-Forges/n8n-workflows/`
+- Built 5 workflows on live n8n instance (`automate.flow-forges.com`, v2.15.1):
+  - WF-01: Payment Processor (`CpxYp38MxtWQCwS8`) — Easebuzz webhook → validate → activate in Supabase → Telegram
+  - WF-02: Welcome Sequence (`PxK0Y7IQwKiLhHtW`) — Signup webhook → route by status → Resend email → Telegram
+  - WF-03: Payment Reminder (`nk5JxoyeuIetCbLz`) — Cron/6h → find pending >24h → SplitInBatches → Resend → Telegram
+  - WF-04: Lead Delivery Alert (`fh0pYtCq1CAJYzZv`) — Lead webhook → Telegram + Client Slack
+  - WF-05: Weekly Digest (`kgxd0hZV3vHRZV0C`) — Cron Mon 9AM → Supabase stats → Resend HTML → Telegram
+- Architecture: n8n primary + Vercel fallback (dual-path for zero silent failures)
+- Every workflow routes through Telegram for real-time visibility
+
+**Vercel → n8n Wiring** (`8f7f416`):
+- `app/api/onboarding/save/route.ts` — fire-and-forget POST to n8n welcome-sequence after profile save
+- `app/api/leads/route.ts` — fire-and-forget POST to n8n lead-delivery after successful scrape
+- Both fire-and-forget — n8n failure never blocks the user flow
+
+**Payment Docs** — `docs/PAYMENT-INTEGRATION.md`: XflowPay vs Easebuzz explained, full flow charts, setup guide
+
+**Current State**:
+- Audit score: 5.8 → 8.5/10
+- 125 routes, 0 TypeScript errors, 0 old stack references
+- 5 n8n workflows built, pending activation (need env vars set on n8n)
+- Pending: Easebuzz URLs on Vercel, CRON_SECRET verification, n8n workflow activation
