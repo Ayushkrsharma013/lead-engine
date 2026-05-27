@@ -28,11 +28,23 @@ export default function ClientSlackPage() {
   }, []);
 
   const handleSave = async () => {
-    if (!profile?.id || !webhookUrl.trim()) return;
+    if (!profile?.id) return;
+    const trimmed = webhookUrl.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith("https://hooks.slack.com/services/")) {
+      dispatch({
+        type: "SET_TOAST",
+        payload: {
+          msg: "Webhook URL must start with https://hooks.slack.com/services/",
+          type: "error",
+        },
+      });
+      return;
+    }
     const client = createClient();
     const { error } = await client
       .from("client_workspaces")
-      .update({ slack_webhook: webhookUrl })
+      .update({ slack_webhook: trimmed })
       .eq("client_user_id", profile.id);
     if (error) {
       dispatch({ type: "SET_TOAST", payload: { msg: "Failed to save webhook", type: "error" } });
@@ -52,7 +64,7 @@ export default function ClientSlackPage() {
   }
 
   return (
-    <PlanGate module="slack-digest" plan={profile?.plan as PlanKey || null} role={profile?.role} planName="Growth">
+    <PlanGate module="slack-digest" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="growth">
       <div className="max-w-lg space-y-4 animate-fade-in">
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Slack Digest</h1>

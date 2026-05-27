@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { PLANS } from "@/lib/stripe";
 import type { UserProfile, ClientWorkspace, PlanKey } from "@/lib/types";
 
@@ -33,11 +33,17 @@ export default function UserDetailPage() {
   const [qaSessions, setQaSessions] = useState<Array<{ id: string; surface: string; test_suite: string; status: string; started_at: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"profile" | "plan" | "activity" | "qa">("profile");
-  const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
   const [toast, setToast] = useState("");
 
   // Editable fields
   const [edit, setEdit] = useState({ display_name: "", role: "", plan: "", notes: "", is_active: true });
+
+  // Confirmation modals
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false);
+  const [roleConfirmInput, setRoleConfirmInput] = useState("");
+  const [showPlanConfirm, setShowPlanConfirm] = useState(false);
 
   const fetchUser = useCallback(async () => {
     const res = await fetch(`/prospecting-os/api/admin/users/${userId}`);
@@ -55,20 +61,63 @@ export default function UserDetailPage() {
       is_active: data.profile.is_active !== false,
     });
     setLoading(false);
-  }, [userId]);
+  }, [userId, router]);
 
   useEffect(() => { fetchUser(); }, [fetchUser]);
 
-  const handleSave = async () => {
-    setSaving(true);
+  // 2.2 Split saves: profile fields only
+  const doSaveProfile = async () => {
+    setSavingProfile(true);
     const res = await fetch(`/prospecting-os/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(edit),
+      body: JSON.stringify({
+        display_name: edit.display_name,
+        role: edit.role,
+        notes: edit.notes,
+        is_active: edit.is_active,
+      }),
     });
     if (res.ok) { setToast("Profile updated"); fetchUser(); }
     else { setToast("Update failed"); }
-    setSaving(false);
+    setSavingProfile(false);
+    setShowRoleConfirm(false);
+    setRoleConfirmInput("");
+    setTimeout(() => setToast(""), 2500);
+  };
+
+  // 2.1 Confirmation dialog for super_admin role change
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    const isElevatingToSuperAdmin = edit.role === "super_admin" && profile.role !== "super_admin";
+    if (isElevatingToSuperAdmin) {
+      setShowRoleConfirm(true);
+      return;
+    }
+    await doSaveProfile();
+  };
+
+  // 2.2 + 2.3 Split saves: plan only, with confirmation
+  const handleSavePlan = () => {
+    if (!profile) return;
+    if (edit.plan && edit.plan !== profile.plan) {
+      setShowPlanConfirm(true);
+      return;
+    }
+    doSavePlan();
+  };
+
+  const doSavePlan = async () => {
+    setSavingPlan(true);
+    const res = await fetch(`/prospecting-os/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: edit.plan || null }),
+    });
+    if (res.ok) { setToast("Plan updated"); fetchUser(); }
+    else { setToast("Plan update failed"); }
+    setSavingPlan(false);
+    setShowPlanConfirm(false);
     setTimeout(() => setToast(""), 2500);
   };
 
@@ -84,6 +133,7 @@ export default function UserDetailPage() {
 
   const rColors = ROLE_COLORS[profile.role] || ROLE_COLORS.user;
   const plan = PLANS[(profile.plan as PlanKey) || "pilot"];
+  void workspace;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
@@ -151,6 +201,11 @@ export default function UserDetailPage() {
               <option value="qa_agent">QA Agent</option>
               <option value="user">User</option>
             </select>
+            {edit.role === "super_admin" && profile.role !== "super_admin" && (
+              <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--negative)" }}>
+                <AlertTriangle size={12} /> Elevating to Super Admin grants full system access. Confirmation required.
+              </p>
+            )}
           </div>
           <div>
             <label className="text-[10px] font-bold uppercase tracking-[0.10em] mb-1.5 block" style={{ color: "var(--ink-4)" }}>Notes</label>
@@ -163,11 +218,11 @@ export default function UserDetailPage() {
               style={{ accentColor: "var(--accent)" }} />
             Active account
           </label>
-          <button onClick={handleSave} disabled={saving}
+          <button onClick={handleSaveProfile} disabled={savingProfile}
             className="flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all disabled:opacity-40"
             style={{ background: "var(--accent)", color: "#000" }}>
-            {saving ? <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <Save size={14} />}
-            Save Changes
+            {savingProfile ? <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <Save size={14} />}
+            Save Profile
           </button>
         </div>
       )}
@@ -203,15 +258,21 @@ export default function UserDetailPage() {
               className="w-full h-10 rounded-xl px-3 text-[13px] outline-none"
               style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)" }}>
               <option value="">No plan</option>
-              <option value="pilot">Founder's Pilot — $1,499 setup + $499/mo</option>
+              <option value="pilot">Founder&apos;s Pilot — $1,499 setup + $499/mo</option>
               <option value="growth">Growth — $2,499 setup + $999/mo</option>
+              <option value="scale">Scale — $4,999 setup + $1,999/mo</option>
               <option value="micro">Micro-Offer — $997 one-time</option>
             </select>
+            {edit.plan && edit.plan !== profile.plan && (
+              <p className="text-[11px] mt-1.5" style={{ color: "var(--accent)" }}>
+                Plan change requires confirmation.
+              </p>
+            )}
           </div>
-          <button onClick={handleSave} disabled={saving}
+          <button onClick={handleSavePlan} disabled={savingPlan}
             className="flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all disabled:opacity-40"
             style={{ background: "var(--accent)", color: "#000" }}>
-            {saving ? <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <Save size={14} />}
+            {savingPlan ? <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <Save size={14} />}
             Update Plan
           </button>
         </div>
@@ -279,6 +340,82 @@ export default function UserDetailPage() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* ── Role Elevation Confirmation Modal ── */}
+      {showRoleConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+          onClick={() => { setShowRoleConfirm(false); setRoleConfirmInput(""); }}>
+          <div onClick={e => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl p-6 space-y-4"
+            style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", boxShadow: "var(--shadow-md)" }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(224,96,96,0.10)", color: "var(--negative)" }}>
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>Elevate to Super Admin?</h3>
+                <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>This grants full system access.</p>
+              </div>
+            </div>
+            <p className="text-[12px]" style={{ color: "var(--ink-2)" }}>
+              Type the user&apos;s email to confirm: <strong style={{ color: "var(--ink)" }}>{profile.email}</strong>
+            </p>
+            <input value={roleConfirmInput} onChange={e => setRoleConfirmInput(e.target.value)}
+              autoFocus
+              placeholder={profile.email}
+              className="w-full h-10 rounded-xl px-3 text-[13px] outline-none"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)" }} />
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button onClick={() => { setShowRoleConfirm(false); setRoleConfirmInput(""); }}
+                className="px-4 py-2 rounded-full text-[12px] font-medium"
+                style={{ background: "transparent", color: "var(--ink-3)", border: "1px solid var(--line)" }}>
+                Cancel
+              </button>
+              <button onClick={doSaveProfile}
+                disabled={roleConfirmInput.trim().toLowerCase() !== profile.email.toLowerCase() || savingProfile}
+                className="px-5 py-2 rounded-full text-[12px] font-semibold disabled:opacity-40"
+                style={{ background: "var(--negative)", color: "#fff" }}>
+                {savingProfile ? "Saving…" : "Confirm Elevation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Plan Change Confirmation Modal ── */}
+      {showPlanConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+          onClick={() => setShowPlanConfirm(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl p-6 space-y-4"
+            style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", boxShadow: "var(--shadow-md)" }}>
+            <h3 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>Change plan?</h3>
+            <p className="text-[12px]" style={{ color: "var(--ink-2)" }}>
+              Current: <strong>{PLANS[(profile.plan as PlanKey) || "pilot"]?.name || "No plan"}</strong>
+              <br />
+              New: <strong>{edit.plan ? PLANS[edit.plan as PlanKey]?.name : "No plan"}</strong>
+            </p>
+            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+              Plan changes update the workspace and may affect billing. Continue?
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button onClick={() => setShowPlanConfirm(false)}
+                className="px-4 py-2 rounded-full text-[12px] font-medium"
+                style={{ background: "transparent", color: "var(--ink-3)", border: "1px solid var(--line)" }}>
+                Cancel
+              </button>
+              <button onClick={doSavePlan} disabled={savingPlan}
+                className="px-5 py-2 rounded-full text-[12px] font-semibold disabled:opacity-40"
+                style={{ background: "var(--accent)", color: "#000" }}>
+                {savingPlan ? "Saving…" : "Confirm Change"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

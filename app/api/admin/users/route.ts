@@ -5,6 +5,22 @@ import { PLANS } from '@/lib/stripe'
 import { generatePaymentRef } from '@/lib/xflow'
 import type { PlanKey } from '@/lib/types'
 
+type ProfileRow = {
+  id: string
+  email: string
+  display_name: string | null
+  role: string | null
+  plan: string | null
+  subscription_status: string | null
+  is_active: boolean | null
+  [k: string]: unknown
+}
+
+function escapeIlike(input: string): string {
+  // Strip Postgres ILIKE/OR-list special chars to keep `q` safe inside .or()
+  return input.replace(/[%_,()]/g, '').trim()
+}
+
 export async function GET(req: NextRequest) {
   const h = req.headers
   const role = h.get('x-user-role')
@@ -24,12 +40,36 @@ export async function GET(req: NextRequest) {
 
   if (filterRole) query = query.eq('role', filterRole)
   if (status) query = query.eq('subscription_status', status)
-  if (search) query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+  if (search) {
+    const safe = escapeIlike(search)
+    if (safe) query = query.or(`email.ilike.%${safe}%,display_name.ilike.%${safe}%`)
+  }
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ users: data })
+  // Compute stats (total / active / pending / MRR) server-side over the FULL,
+  // unfiltered profile set so the cards stay stable while filters change.
+  const { data: allProfiles, error: statsError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, role, plan, subscription_status, is_active')
+
+  let stats = { total: 0, active: 0, pending: 0, mrr: 0 }
+  if (!statsError && allProfiles) {
+    const rows = allProfiles as ProfileRow[]
+    const total = rows.length
+    const active = rows.filter(r => r.subscription_status === 'active' && r.role === 'client').length
+    const pending = rows.filter(r => r.subscription_status === 'pending_payment').length
+    const mrr = rows.reduce((sum, r) => {
+      if (r.subscription_status !== 'active' || r.role !== 'client') return sum
+      const plan = PLANS[(r.plan as PlanKey) || 'pilot']
+      if (!plan || !plan.monthlyAmount) return sum
+      return sum + plan.monthlyAmount
+    }, 0)
+    stats = { total, active, pending, mrr }
+  }
+
+  return NextResponse.json({ users: data, stats })
 }
 
 export async function POST(req: NextRequest) {

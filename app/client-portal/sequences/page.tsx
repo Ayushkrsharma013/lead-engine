@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
-import { createClient } from "@/lib/supabase/client";
-import { Play, Pause, ChevronRight, Calendar } from "lucide-react";
+import { Play, ChevronRight, Calendar } from "lucide-react";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
 interface ActiveExecution {
@@ -35,42 +34,22 @@ export default function ClientSequencesPage() {
       const d = await meRes.json();
       setProfile(d.profile);
 
-      // Fetch active sequence executions joined with sequences
-      const client = createClient();
-      const { data, error: queryError } = await client
-        .from("sequence_executions")
-        .select("*, sequences!inner(id, name, steps)")
-        .eq("status", "active")
-        .order("started_at", { ascending: false });
-
-      if (queryError) {
-        setError(queryError.message);
-      } else if (data) {
-        const mapped: ActiveExecution[] = data.map(
-          (r: Record<string, unknown>) => {
-            const seq = r.sequences as Record<string, unknown> || {};
-            const steps = (seq.steps as unknown[]) || [];
-            return {
-              id: String(r.id),
-              sequence_id: String(r.sequence_id),
-              lead_id: String(r.lead_id),
-              current_step: Number(r.current_step),
-              status: String(r.status),
-              variant: String(r.variant || ""),
-              started_at: String(r.started_at),
-              sequence_name: String(seq.name || "Unknown"),
-              steps_count: steps.length,
-            };
-          }
-        );
-        setExecutions(mapped);
+      const seqRes = await fetch(
+        "/prospecting-os/api/client-portal/sequences?status=active"
+      );
+      if (!seqRes.ok) {
+        const err = await seqRes.json().catch(() => ({}));
+        setError(err.error || "Failed to load sequences");
+      } else {
+        const seqData = await seqRes.json();
+        setExecutions(seqData.executions || []);
       }
       setLoading(false);
     }
     init();
   }, []);
 
-  // Group executions by sequence name
+  // Group executions by sequence id
   const grouped = executions.reduce<
     Record<string, { name: string; executions: ActiveExecution[] }>
   >((acc, ex) => {
@@ -94,7 +73,7 @@ export default function ClientSequencesPage() {
       module="sequences"
       plan={(profile?.plan as PlanKey) || null}
       role={profile?.role}
-      planName="Growth"
+      requiredPlan="scale"
     >
       <div className="max-w-5xl space-y-4 animate-fade-in">
         <div>
@@ -142,7 +121,6 @@ export default function ClientSequencesPage() {
                   border: "1px solid var(--line)",
                 }}
               >
-                {/* Sequence header */}
                 <div
                   className="px-5 py-3 flex items-center justify-between"
                   style={{ borderBottom: "1px solid var(--line)" }}
@@ -155,10 +133,7 @@ export default function ClientSequencesPage() {
                         border: "1px solid rgba(232,168,64,0.15)",
                       }}
                     >
-                      <Play
-                        size={14}
-                        style={{ color: "var(--accent)" }}
-                      />
+                      <Play size={14} style={{ color: "var(--accent)" }} />
                     </div>
                     <div>
                       <span
@@ -188,12 +163,9 @@ export default function ClientSequencesPage() {
                   </span>
                 </div>
 
-                {/* Execution rows */}
                 <table className="w-full">
                   <thead>
-                    <tr
-                      style={{ borderBottom: "1px solid var(--line)" }}
-                    >
+                    <tr style={{ borderBottom: "1px solid var(--line)" }}>
                       {["Lead", "Step", "Status", "Started", ""].map((h) => (
                         <th
                           key={h}
@@ -236,11 +208,9 @@ export default function ClientSequencesPage() {
                           <span
                             className="px-2 py-0.5 rounded-full font-medium text-[10px]"
                             style={{
-                              background:
-                                "rgba(168,201,154,0.10)",
+                              background: "rgba(168,201,154,0.10)",
                               color: "var(--positive)",
-                              border:
-                                "1px solid rgba(168,201,154,0.18)",
+                              border: "1px solid rgba(168,201,154,0.18)",
                             }}
                           >
                             {ex.status}
@@ -250,13 +220,8 @@ export default function ClientSequencesPage() {
                           className="px-5 py-3 text-[11px]"
                           style={{ color: "var(--ink-4)" }}
                         >
-                          <Calendar
-                            size={10}
-                            className="inline mr-1"
-                          />
-                          {new Date(
-                            ex.started_at
-                          ).toLocaleDateString("en-US", {
+                          <Calendar size={10} className="inline mr-1" />
+                          {new Date(ex.started_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                           })}
