@@ -189,7 +189,7 @@ export default function FreeAuditPage() {
       </section>
 
       {/* Sample output preview */}
-      <section style={{ padding: '0 0 96px', background: 'var(--bg-secondary)' }}>
+      <section style={{ padding: '64px 0 96px', background: 'var(--bg-secondary)' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px' }}>
           <p style={{ textAlign: 'center', fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace', color: 'var(--accent)', marginBottom: 12 }}>
             // Sample output
