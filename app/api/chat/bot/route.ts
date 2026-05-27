@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents: history,
-          generationConfig: { maxOutputTokens: 300, temperature: 0.7, topP: 0.9 },
+          generationConfig: { maxOutputTokens: 800, temperature: 0.7, topP: 0.9 },
         }),
       }
     );

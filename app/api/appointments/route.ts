@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabase";
 import { createCalendarEvent, isCalendarConnected } from "@/lib/google-calendar";
 import { sendTelegramNotification, sendEmailNotification, sendAttendeeConfirmation, sendCancellationEmail } from "@/lib/notify";
 import type { MeetingType, AppointmentInput, Appointment } from "@/lib/types";
@@ -215,7 +215,13 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("[appointments] insert failed:", error.message);
-      return NextResponse.json({ ok: true, note: error.message });
+      return NextResponse.json(
+        {
+          error: "Could not save your booking. Please try again or email support@flow-forges.com.",
+          code: "BOOKING_FAILED",
+        },
+        { status: 500 }
+      );
     }
 
     // Create Google Calendar event (non-blocking)

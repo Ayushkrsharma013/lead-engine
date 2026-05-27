@@ -79,6 +79,7 @@ export async function middleware(req: NextRequest) {
 
   const publicRoutes = [
     "/",
+    "/about",
     "/book",
     "/book/admin",
     "/login",
@@ -89,6 +90,10 @@ export async function middleware(req: NextRequest) {
     "/progress",
     "/integrations",
     "/blog",
+    "/privacy",
+    "/terms",
+    "/refund-policy",
+    "/contact",
   ];
 
   const isPublicRoute = publicRoutes.some((route) => {
