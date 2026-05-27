@@ -1,10 +1,13 @@
 'use client'
 import { motion } from 'framer-motion'
+import { Navbar } from '@/components/Navbar'
+import { LandingFooter } from '@/components/landing/LandingFooter'
 import { AuditForm } from '@/components/tools/AuditForm'
 
 export default function FreeAuditPage() {
   return (
     <div className="landing-page">
+      <Navbar />
 
       {/* Hero */}
       <section style={{ padding: '80px 0 48px', textAlign: 'center' }}>
@@ -254,7 +257,7 @@ export default function FreeAuditPage() {
             The free audit runs on the same pipeline our Managed Growth clients get — 500+ scored leads, enriched and icebreaker-ready, delivered to Slack every morning.
           </p>
           <motion.a
-            href="/prospecting-os/book"
+            href="/book"
             whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(232,66,10,0.45)' }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 22 }}
@@ -270,6 +273,7 @@ export default function FreeAuditPage() {
         </div>
       </section>
 
+      <LandingFooter />
     </div>
   )
 }

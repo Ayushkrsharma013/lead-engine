@@ -1,10 +1,13 @@
 'use client'
 import { motion } from 'framer-motion'
+import { Navbar } from '@/components/Navbar'
+import { LandingFooter } from '@/components/landing/LandingFooter'
 import { IcebreakerGenerator } from '@/components/tools/IcebreakerGenerator'
 
 export default function IcebreakerGeneratorPage() {
   return (
     <div className="landing-page">
+      <Navbar />
 
       {/* Hero */}
       <section style={{ padding: '80px 0 48px', textAlign: 'center' }}>
@@ -128,7 +131,7 @@ export default function IcebreakerGeneratorPage() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <motion.a
-              href="/prospecting-os/book"
+              href="/book"
               whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(232,66,10,0.45)' }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 400, damping: 22 }}
@@ -142,7 +145,7 @@ export default function IcebreakerGeneratorPage() {
               Book a Free Demo →
             </motion.a>
             <a
-              href="/prospecting-os/tools/free-audit"
+              href="/tools/free-audit"
               style={{ color: 'var(--text-tertiary)', fontSize: 14, textDecoration: 'none' }}
             >
               Or get 50 leads audited free →
@@ -151,6 +154,7 @@ export default function IcebreakerGeneratorPage() {
         </div>
       </section>
 
+      <LandingFooter />
     </div>
   )
 }
