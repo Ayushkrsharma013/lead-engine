@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { ToolDropdown } from '@/components/tools/ToolDropdown'
 
 type GenState = 'idle' | 'generating' | 'done' | 'error' | 'limit_reached'
 
@@ -146,13 +147,12 @@ export function IcebreakerGenerator() {
 
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'block', marginBottom: 5 }}>Industry</label>
-          <select style={{ ...fieldStyle, cursor: 'pointer' }} value={input.industry}
-            onChange={e => set('industry', e.target.value)} onFocus={onFocus} onBlur={onBlur}>
-            <option value="">Select industry</option>
-            {['SaaS', 'Digital Agency', 'E-commerce', 'FinTech', 'HealthTech', 'Consulting', 'Recruitment', 'Other'].map(o => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
+          <ToolDropdown
+            value={input.industry}
+            options={['SaaS', 'Digital Agency', 'E-commerce', 'FinTech', 'HealthTech', 'Consulting', 'Recruitment', 'Other']}
+            onChange={v => set('industry', v)}
+            placeholder="Select industry"
+          />
         </div>
 
         <div>

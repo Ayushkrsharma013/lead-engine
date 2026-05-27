@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { ToolDropdown } from '@/components/tools/ToolDropdown'
 
 type FormState = 'idle' | 'uploading' | 'success' | 'error'
 
@@ -180,38 +181,32 @@ export function AuditForm() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'block', marginBottom: 6 }}>Sales team size</label>
-          <select
-            style={{ ...fieldStyle, cursor: 'pointer' }}
-            value={form.teamSize} onChange={e => set('teamSize', e.target.value)}
-            onFocus={handleFocus} onBlur={handleBlur}
-          >
-            <option value="">Select...</option>
-            {['Just me', '2–5', '6–15', '16–50', '50+'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
+          <ToolDropdown
+            value={form.teamSize}
+            options={['Just me', '2–5', '6–15', '16–50', '50+']}
+            onChange={v => set('teamSize', v)}
+            placeholder="Select team size..."
+          />
         </div>
         <div>
           <label style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'block', marginBottom: 6 }}>Hours/week on prospecting</label>
-          <select
-            style={{ ...fieldStyle, cursor: 'pointer' }}
-            value={form.weeklyHours} onChange={e => set('weeklyHours', e.target.value)}
-            onFocus={handleFocus} onBlur={handleBlur}
-          >
-            <option value="">Select...</option>
-            {['Under 5 hrs', '5–10 hrs', '10–20 hrs', '20+ hrs'].map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
+          <ToolDropdown
+            value={form.weeklyHours}
+            options={['Under 5 hrs', '5–10 hrs', '10–20 hrs', '20+ hrs']}
+            onChange={v => set('weeklyHours', v)}
+            placeholder="Select hours..."
+          />
         </div>
       </div>
 
       <div>
         <label style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'block', marginBottom: 6 }}>Current prospecting tool (if any)</label>
-        <select
-          style={{ ...fieldStyle, cursor: 'pointer' }}
-          value={form.currentTool} onChange={e => set('currentTool', e.target.value)}
-          onFocus={handleFocus} onBlur={handleBlur}
-        >
-          <option value="">Select...</option>
-          {['None — all manual', 'Apollo.io', 'Clay', 'Uplead', 'Apify scrapers', 'ZoomInfo', 'Other'].map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
+        <ToolDropdown
+          value={form.currentTool}
+          options={['None — all manual', 'Apollo.io', 'Clay', 'Uplead', 'Apify scrapers', 'ZoomInfo', 'Other']}
+          onChange={v => set('currentTool', v)}
+          placeholder="Select tool..."
+        />
       </div>
 
       <div>

@@ -13,7 +13,7 @@ export default function FreeAuditPage() {
       <Navbar />
 
       {/* Hero */}
-      <section style={{ padding: '80px 0 48px', textAlign: 'center' }}>
+      <section style={{ padding: '120px 0 48px', textAlign: 'center' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px' }}>
 
           <motion.div
