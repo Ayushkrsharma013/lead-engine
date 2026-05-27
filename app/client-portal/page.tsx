@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Users, Zap, TrendingUp, Mail, CalendarCheck, Download, ChevronRight, MessageSquare, GitBranch, BarChart3, Slack, Layers, Settings, Inbox } from "lucide-react";
 import type { UserProfile, PlanKey, ClientWorkspace } from "@/lib/types";
@@ -250,42 +250,36 @@ export default function ClientPortalOverview() {
 
   const { core, recentLeads, plan, industryBreakdown, statusBreakdown, icebreakers, slackConfigured, weeklyFlow, activeSequences, conversionFunnel } = dash;
 
-  const planLabel = plan === "pilot"
-    ? "Founder's Pilot"
-    : plan === "growth"
-    ? "Growth"
-    : plan === "scale"
-    ? "Scale"
-    : plan === "micro"
-    ? "Micro-Offer"
-    : "No plan";
-  const hasGrowth = dash.allowedModules.includes('icebreakers');
-  const hasScale = dash.allowedModules.includes('sequences');
+  const planLabel = useMemo(() => plan === "pilot"
+    ? "Founder's Pilot" : plan === "growth"
+    ? "Growth" : plan === "scale"
+    ? "Scale" : plan === "micro"
+    ? "Micro-Offer" : "No plan", [plan]);
+  const hasGrowth = useMemo(() => dash.allowedModules.includes('icebreakers'), [dash.allowedModules]);
+  const hasScale = useMemo(() => dash.allowedModules.includes('sequences'), [dash.allowedModules]);
 
-  const handleExportCSV = async () => {
+  const StatCards = useMemo(() => [
+    { label: "Total Leads", value: core.total.toLocaleString(), icon: Users, color: "var(--accent)" },
+    { label: "Hot (80+)", value: String(core.hot), icon: Zap, color: "var(--negative)" },
+    { label: "Avg Score", value: String(core.avgScore), icon: TrendingUp, color: "var(--positive)" },
+    { label: "Contacted", value: String(core.contacted), icon: Mail, color: "var(--info)" },
+    { label: "Meetings", value: String(core.meetings), icon: CalendarCheck, color: "var(--accent-blue)" },
+  ], [core.total, core.hot, core.avgScore, core.contacted, core.meetings]);
+
+  const handleExportCSV = useCallback(async () => {
     const res = await fetch("/prospecting-os/api/client-portal/leads?limit=1000");
     if (!res.ok) return;
     const data = await res.json();
     const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
     for (const l of data.leads) {
-      rows.push(
-        [
-          csvEscape(l.name),
-          csvEscape(l.title),
-          csvEscape(l.company),
-          csvEscape(l.industry),
-          csvEscape(l.score),
-          csvEscape(l.status || "new"),
-          csvEscape(l.email),
-        ].join(",")
-      );
+      rows.push([csvEscape(l.name), csvEscape(l.title), csvEscape(l.company), csvEscape(l.industry), csvEscape(l.score), csvEscape(l.status || "new"), csvEscape(l.email)].join(","));
     }
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "my-leads.csv"; a.click();
     URL.revokeObjectURL(url);
-  };
+  }, []);
 
   return (
     <div className="max-w-5xl space-y-5 animate-fade-in">
@@ -301,13 +295,7 @@ export default function ClientPortalOverview() {
 
       {/* Core stat cards — all plans */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {([
-          { label: "Total Leads", value: core.total.toLocaleString(), icon: Users, color: "var(--accent)" },
-          { label: "Hot (80+)", value: String(core.hot), icon: Zap, color: "var(--negative)" },
-          { label: "Avg Score", value: String(core.avgScore), icon: TrendingUp, color: "var(--positive)" },
-          { label: "Contacted", value: String(core.contacted), icon: Mail, color: "var(--info)" },
-          { label: "Meetings", value: String(core.meetings), icon: CalendarCheck, color: "var(--accent-blue)" },
-        ]).map(stat => (
+        {StatCards.map(stat => (
           <div key={stat.label} className="rounded-xl p-4"
             style={{ background: cardBg, border: "1px solid var(--line)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
             <div className="flex items-center justify-between mb-2">
@@ -438,9 +426,7 @@ export default function ClientPortalOverview() {
             </thead>
             <tbody>
               {recentLeads.slice(0, 5).map(l => (
-                <tr key={l.id} className="transition-colors duration-150" style={{ borderBottom: "1px solid var(--line)" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.02)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
+                <tr key={l.id} className="portal-lead-row transition-colors duration-150" style={{ borderBottom: "1px solid var(--line)" }}>
                   <td className="px-4 py-2.5 text-[12px] font-medium" style={{ color: "var(--ink)" }}>{l.name || "—"}</td>
                   <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>{l.company || "—"}</td>
                   <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>{l.industry || "—"}</td>

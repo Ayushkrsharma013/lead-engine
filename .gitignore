@@ -66,3 +66,4 @@ runner/.env.local
 # helper batch scripts
 commit.bat
 push.bat
+playwright-screenshots/

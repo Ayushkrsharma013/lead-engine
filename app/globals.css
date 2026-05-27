@@ -302,3 +302,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; filter: in
 .glass-input::placeholder {
   color: var(--ink-4);
 }
+
+.portal-lead-row:hover {
+  background: rgba(237,234,226,0.02);
+}

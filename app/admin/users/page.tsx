@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
           { label: "Total Users", value: String(stats.total), icon: Users },
           { label: "Active Clients", value: String(stats.active), icon: UserCheck },
           { label: "Pending Payment", value: String(stats.pending), icon: Loader2 },
-          { label: "MRR", value: `$${(stats.mrr || 0).toLocaleString()}`, icon: Mail },
+          { label: "MRR", value: `$${(stats.mrr || 0).toLocaleString('en-US')}`, icon: Mail },
         ]).map(s => (
           <div key={s.label} className="rounded-xl p-4"
             style={{ background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>
