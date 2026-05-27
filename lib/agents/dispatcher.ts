@@ -12,6 +12,7 @@ import { ClientReporterAgent } from "./client-reporter";
 import { DataJanitorAgent } from "./data-janitor";
 import { MessageCoachAgent } from "./message-coach";
 import { GmapsOutreachAgent } from "./gmaps-outreach-agent";
+import { MicroDeliveryAgent } from "./micro-delivery";
 
 // Finance Watcher is NOT here — it has its own cron at 9 AM
 const AGENT_REGISTRY: AgentModule[] = [
@@ -23,6 +24,7 @@ const AGENT_REGISTRY: AgentModule[] = [
   new DataJanitorAgent(),
   new MessageCoachAgent(),
   new GmapsOutreachAgent(),
+  new MicroDeliveryAgent(),
 ];
 
 const AGENT_TIMEOUT_MS = 25_000;
