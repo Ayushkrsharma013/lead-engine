@@ -135,11 +135,21 @@ export default function AgentCommandCenter() {
   const handleRunAll = async () => {
     setRunning(true);
     try {
-      await fetch("/prospecting-os/api/agents/run");
-      setTimeout(() => { fetchData(); setRunning(false); }, 3000);
-    } catch {
-      setRunning(false);
+      const res = await fetch("/prospecting-os/api/agents/run");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Poll for completion — check every 2s, max 30s
+      let attempts = 0;
+      while (attempts < 15) {
+        await new Promise(r => setTimeout(r, 2000));
+        await fetchData();
+        const stillRunning = agents.some(a => a.last_run_status === "running");
+        if (!stillRunning) break;
+        attempts++;
+      }
+    } catch (e) {
+      setError(`Run failed: ${String(e)}`);
     }
+    setRunning(false);
   };
 
   const handleResolve = useCallback(async (actionId: string, decision: "approve" | "reject") => {
@@ -159,6 +169,8 @@ export default function AgentCommandCenter() {
         setActions(prev => prev.map(a =>
           a.id === actionId ? { ...a, status: newStatus } : a
         ));
+        // Refresh notifications, activity feed, and knowledge store
+        await fetchData();
       }
     } catch (e) {
       setActionMessages(prev => ({ ...prev, [actionId]: { success: false, text: String(e) } }));
@@ -678,7 +690,12 @@ export default function AgentCommandCenter() {
                 </thead>
                 <tbody>
                   {knowledge
-                    .filter(k => !knowledgeFilter || k.key.toLowerCase().includes(knowledgeFilter.toLowerCase()) || k.agent.toLowerCase().includes(knowledgeFilter.toLowerCase()))
+                    .filter(k => {
+                      if (!knowledgeFilter) return true;
+                      const q = knowledgeFilter.toLowerCase();
+                      const valStr = typeof k.value === "object" ? JSON.stringify(k.value).toLowerCase() : String(k.value).toLowerCase();
+                      return k.key.toLowerCase().includes(q) || k.agent.toLowerCase().includes(q) || valStr.includes(q);
+                    })
                     .map(k => {
                       const valStr = typeof k.value === "object" ? JSON.stringify(k.value) : String(k.value);
                       const isWinner = k.key.startsWith("ab_winner.");

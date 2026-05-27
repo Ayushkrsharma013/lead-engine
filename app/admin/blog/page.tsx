@@ -114,10 +114,7 @@ export default function AdminBlogPage() {
       setToast("Post updated");
       setTimeout(() => setToast(""), 3000);
       await fetchData();
-      const updated = posts.find(p => p.slug === selectedPost.slug);
-      if (updated) {
-        setSelectedPost({ ...updated, ...editValues });
-      }
+      setSelectedPost(prev => prev ? { ...prev, ...editValues } : null);
     } catch (e) {
       setToast(`Error: ${String(e)}`);
       setTimeout(() => setToast(""), 4000);
@@ -143,7 +140,8 @@ export default function AdminBlogPage() {
         }),
       });
       const data = await res.json();
-      const reply = data.reply || data.text || data.message || "No suggestions returned.";
+      const raw = data.reply || data.text || data.message || "No suggestions returned.";
+      const reply = raw.length > 200 ? raw.slice(0, 200) + "..." : raw;
       setToast(reply);
       setTimeout(() => setToast(""), 12000);
     } catch {

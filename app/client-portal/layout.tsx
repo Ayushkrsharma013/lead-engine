@@ -31,17 +31,19 @@ export default function ClientPortalLayout({ children }: { children: React.React
   const supabase = createClient();
 
   useEffect(() => {
+    let ignore = false;
     async function init() {
-      // Don't check auth on the login page itself
       if (pathname === "/client-portal/login") {
-        setLoading(false);
+        if (!ignore) setLoading(false);
         return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
+      if (ignore) return;
       if (!user) { router.replace("/client-portal/login"); return; }
 
       const res = await fetch("/prospecting-os/api/client-portal/me");
+      if (ignore) return;
       if (!res.ok) { router.replace("/client-portal/login"); return; }
       const data = await res.json();
       const prof = data.profile as UserProfile;
@@ -51,12 +53,15 @@ export default function ClientPortalLayout({ children }: { children: React.React
         return;
       }
 
-      setProfile(prof);
-      setAllowedModules(data.allowedModules as string[]);
-      setLoading(false);
+      if (!ignore) {
+        setProfile(prof);
+        setAllowedModules(data.allowedModules as string[]);
+        setLoading(false);
+      }
     }
     init();
-  }, []);
+    return () => { ignore = true; };
+  }, [pathname, router, supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -97,7 +102,15 @@ export default function ClientPortalLayout({ children }: { children: React.React
           {profile?.plan && (
             <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase"
               style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }}>
-              {profile.plan === "pilot" ? "Founder's Pilot" : profile.plan === "growth" ? "Growth" : profile.plan === "micro" ? "Micro-Offer" : profile.plan}
+              {profile.plan === "pilot"
+                ? "Founder's Pilot"
+                : profile.plan === "growth"
+                ? "Growth"
+                : profile.plan === "scale"
+                ? "Scale"
+                : profile.plan === "micro"
+                ? "Micro-Offer"
+                : profile.plan}
             </span>
           )}
         </div>

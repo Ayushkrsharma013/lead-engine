@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Zap, TrendingUp, Mail, CalendarCheck, Download, ArrowRight, ChevronRight, MessageSquare, GitBranch, BarChart3, Slack, Layers, CheckCircle2, Settings, Inbox } from "lucide-react";
+import { Users, Zap, TrendingUp, Mail, CalendarCheck, Download, ChevronRight, MessageSquare, GitBranch, BarChart3, Slack, Layers, Settings, Inbox } from "lucide-react";
 import type { UserProfile, PlanKey, ClientWorkspace } from "@/lib/types";
+import { UpgradeCTA } from "@/components/client-portal/UpgradeCTA";
 
 const cardBg = "linear-gradient(180deg, var(--surface), rgba(12,13,11,0.6))";
 
@@ -43,6 +44,14 @@ const FUNNEL_COLORS = [
   "var(--ink-4)",
 ];
 
+// Defends against CSV/formula injection (=, +, -, @, tab, CR) and escapes quotes.
+function csvEscape(value: unknown): string {
+  const s = value === null || value === undefined ? "" : String(value);
+  const needsPrefix = /^[=+\-@\t\r]/.test(s);
+  const safe = (needsPrefix ? "'" + s : s).replace(/"/g, '""');
+  return `"${safe}"`;
+}
+
 function PipelineInsight({ core }: { core: { total: number; hot: number; contacted: number; avgScore: number; meetings: number } }) {
   if (core.total === 0) return null;
   const hotRate = Math.round((core.hot / core.total) * 100);
@@ -66,43 +75,6 @@ function PipelineInsight({ core }: { core: { total: number; hot: number; contact
         <p className="text-[10px] mt-1.5" style={{ color: "var(--ink-4)" }}>
           {contactRate}% contacted &nbsp;·&nbsp; avg score {core.avgScore}/100 &nbsp;·&nbsp; {core.meetings} meeting{core.meetings !== 1 ? "s" : ""} booked
         </p>
-      </div>
-    </div>
-  );
-}
-
-function UpgradeCTA({ plan, total }: { plan: PlanKey; total: number }) {
-  if (plan !== "pilot") return null;
-
-  const target = "growth";
-  const label = "Growth";
-  const features = ["200+ leads/month", "Email + LinkedIn sequences", "A/B testing", "Bi-weekly strategy calls", "Dedicated Slack channel"];
-
-  return (
-    <div className="rounded-xl p-5" style={{
-      background: "linear-gradient(135deg, rgba(232,168,64,0.06), rgba(232,168,64,0.02))",
-      border: "1px solid rgba(232,168,64,0.15)",
-    }}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--accent)" }}>
-            Upgrade to {label}
-          </p>
-          <ul className="space-y-1">
-            {features.map(f => (
-              <li key={f} className="flex items-center gap-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
-                <CheckCircle2 size={12} style={{ color: "var(--accent)", opacity: 0.5 }} /> {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <Link
-          href="/book"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all shrink-0"
-          style={{ background: "var(--accent)", color: "#000" }}
-        >
-          Upgrade <ArrowRight size={12} />
-        </Link>
       </div>
     </div>
   );
@@ -278,7 +250,15 @@ export default function ClientPortalOverview() {
 
   const { core, recentLeads, plan, industryBreakdown, statusBreakdown, icebreakers, slackConfigured, weeklyFlow, activeSequences, conversionFunnel } = dash;
 
-  const planLabel = plan === "pilot" ? "Founder's Pilot" : plan === "growth" ? "Growth" : plan === "micro" ? "Micro-Offer" : "No plan";
+  const planLabel = plan === "pilot"
+    ? "Founder's Pilot"
+    : plan === "growth"
+    ? "Growth"
+    : plan === "scale"
+    ? "Scale"
+    : plan === "micro"
+    ? "Micro-Offer"
+    : "No plan";
   const hasGrowth = dash.allowedModules.includes('icebreakers');
   const hasScale = dash.allowedModules.includes('sequences');
 
@@ -288,7 +268,17 @@ export default function ClientPortalOverview() {
     const data = await res.json();
     const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
     for (const l of data.leads) {
-      rows.push(`"${l.name}","${l.title}","${l.company}","${l.industry}",${l.score},"${l.status || "new"}","${l.email}"`);
+      rows.push(
+        [
+          csvEscape(l.name),
+          csvEscape(l.title),
+          csvEscape(l.company),
+          csvEscape(l.industry),
+          csvEscape(l.score),
+          csvEscape(l.status || "new"),
+          csvEscape(l.email),
+        ].join(",")
+      );
     }
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -346,8 +336,8 @@ export default function ClientPortalOverview() {
       {/* Pipeline insight — all plans */}
       <PipelineInsight core={core} />
 
-      {/* Upgrade CTA — DIY only */}
-      {plan === "pilot" && <UpgradeCTA plan="pilot" total={core.total} />}
+      {/* Upgrade CTA — pilot → growth */}
+      {plan === "pilot" && <UpgradeCTA currentPlan={plan} targetPlan="growth" />}
 
       {/* Growth+ sections */}
       {hasGrowth && (
@@ -381,8 +371,8 @@ export default function ClientPortalOverview() {
         </div>
       )}
 
-      {/* Upgrade CTA — Growth → Scale */}
-      {plan === "growth" && <UpgradeCTA plan="growth" total={core.total} />}
+      {/* Upgrade CTA — growth → scale */}
+      {plan === "growth" && <UpgradeCTA currentPlan={plan} targetPlan="scale" />}
 
       {/* Scale sections */}
       {hasScale && <WeeklyFlow data={weeklyFlow} />}

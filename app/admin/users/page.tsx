@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users, Plus, Search, MoreHorizontal, Copy, UserCheck,
-  Eye, Edit2, Ban, X, Mail, Loader2,
+  Eye, Ban, X, Mail, Loader2, AlertTriangle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PLANS } from "@/lib/stripe";
@@ -36,6 +36,7 @@ function avChip(email: string): string {
 export default function AdminUsersPage() {
   const router = useRouter();
   const supabase = createClient();
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,14 +44,27 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, mrr: 0 });
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [modal, setModal] = useState<"create" | null>(null);
+  const [confirm, setConfirm] = useState<
+    | { kind: "deactivate"; user: UserProfile }
+    | { kind: "impersonate"; user: UserProfile }
+    | null
+  >(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const [toast, setToast] = useState("");
 
   // New user form state
   const [form, setForm] = useState({ email: "", display_name: "", role: "client", plan: "pilot", notes: "", send_invite: true });
   const [submitting, setSubmitting] = useState(false);
+
+  // 2.8 — Debounce search input by 300ms
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -58,33 +72,56 @@ export default function AdminUsersPage() {
       const params = new URLSearchParams();
       if (roleFilter !== "all") params.set("role", roleFilter);
       if (statusFilter !== "all") params.set("status", statusFilter);
-      if (search.trim()) params.set("q", search.trim());
+      if (debouncedSearch) params.set("q", debouncedSearch);
 
       const res = await fetch(`/prospecting-os/api/admin/users?${params}`);
       if (!res.ok) { setError("Failed to load users"); setLoading(false); return; }
       const data = await res.json();
-      const allUsers = data.users as UserProfile[];
+      const allUsers = (data.users || []) as UserProfile[];
       setUsers(allUsers);
 
-      const active = allUsers.filter(u => u.subscription_status === "active" && u.role === "client");
-      const pending = allUsers.filter(u => u.subscription_status === "pending_payment");
-      const mrr = active.reduce((sum, u) => {
-        const plan = PLANS[(u.plan as PlanKey) || "pilot"];
-        if (!plan || !plan.monthlyAmount) return sum;
-        return sum + plan.monthlyAmount;
-      }, 0);
-      setStats({ total: allUsers.length, active: active.length, pending: pending.length, mrr });
+      // 2.6 — Stats now come from API; fall back to client-side compute if missing
+      if (data.stats) {
+        setStats({
+          total: Number(data.stats.total) || 0,
+          active: Number(data.stats.active) || 0,
+          pending: Number(data.stats.pending) || 0,
+          mrr: Number(data.stats.mrr) || 0,
+        });
+      } else {
+        const active = allUsers.filter(u => u.subscription_status === "active" && u.role === "client");
+        const pending = allUsers.filter(u => u.subscription_status === "pending_payment");
+        const mrr = active.reduce((sum, u) => {
+          const plan = PLANS[(u.plan as PlanKey) || "pilot"];
+          if (!plan || !plan.monthlyAmount) return sum;
+          return sum + plan.monthlyAmount;
+        }, 0);
+        setStats({ total: allUsers.length, active: active.length, pending: pending.length, mrr });
+      }
+      setError("");
     } catch { setError("Failed to load users"); }
     setLoading(false);
-  }, [roleFilter, statusFilter, search]);
+  }, [roleFilter, statusFilter, debouncedSearch]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) router.replace("/prospecting-os/login");
     });
-  }, []);
+  }, [supabase, router]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  // 2.9 — Close menu on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   const handleActivate = async (id: string) => {
     const res = await fetch(`/prospecting-os/api/admin/users/${id}/activate`, { method: "POST" });
@@ -92,19 +129,51 @@ export default function AdminUsersPage() {
     setTimeout(() => setToast(""), 2500);
   };
 
-  const handleImpersonate = async (id: string) => {
-    const res = await fetch(`/prospecting-os/api/admin/users/${id}/impersonate`, { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      await navigator.clipboard.writeText(data.url);
-      setToast("Impersonation link copied — open in incognito");
-    }
-    setTimeout(() => setToast(""), 2500);
+  // 2.10 — Impersonate goes through confirmation modal first
+  const requestImpersonate = (u: UserProfile) => {
+    setMenuOpen(null);
+    setConfirm({ kind: "impersonate", user: u });
   };
 
-  const handleDeactivate = async (id: string) => {
-    const res = await fetch(`/prospecting-os/api/admin/users/${id}`, { method: "DELETE" });
-    if (res.ok) { setToast("User deactivated"); fetchUsers(); }
+  const performImpersonate = async () => {
+    if (!confirm || confirm.kind !== "impersonate") return;
+    setConfirmBusy(true);
+    try {
+      const res = await fetch(`/prospecting-os/api/admin/users/${confirm.user.id}/impersonate`, { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        await navigator.clipboard.writeText(data.url);
+        setToast("Impersonation link copied — open in incognito only");
+      } else {
+        setToast("Failed to generate impersonation link");
+      }
+    } catch { setToast("Impersonation request failed"); }
+    setConfirmBusy(false);
+    setConfirm(null);
+    setTimeout(() => setToast(""), 3500);
+  };
+
+  // 2.4 — Deactivate goes through confirmation modal
+  const requestDeactivate = (u: UserProfile) => {
+    setMenuOpen(null);
+    setConfirm({ kind: "deactivate", user: u });
+  };
+
+  // 2.5 — Use PATCH { is_active: false } instead of DELETE
+  const performDeactivate = async () => {
+    if (!confirm || confirm.kind !== "deactivate") return;
+    setConfirmBusy(true);
+    try {
+      const res = await fetch(`/prospecting-os/api/admin/users/${confirm.user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: false, subscription_status: "cancelled" }),
+      });
+      if (res.ok) { setToast("User deactivated"); fetchUsers(); }
+      else { setToast("Deactivation failed"); }
+    } catch { setToast("Deactivation failed"); }
+    setConfirmBusy(false);
+    setConfirm(null);
     setTimeout(() => setToast(""), 2500);
   };
 
@@ -120,9 +189,10 @@ export default function AdminUsersPage() {
       setToast("User created");
       setModal(null);
       setForm({ email: "", display_name: "", role: "client", plan: "pilot", notes: "", send_invite: true });
-      fetchUsers();
+      // 2.7 — Wait 500ms before refetching so the new row is visible
+      setTimeout(() => fetchUsers(), 500);
     } else {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       setToast(err.error || "Creation failed");
     }
     setSubmitting(false);
@@ -131,7 +201,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-5 animate-fade-in">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Users</h1>
@@ -148,7 +218,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      {/* ── Stat cards ── */}
+      {/* Stat cards */}
       <div className="grid grid-cols-4 gap-3">
         {([
           { label: "Total Users", value: String(stats.total), icon: Users },
@@ -169,7 +239,7 @@ export default function AdminUsersPage() {
         ))}
       </div>
 
-      {/* ── Filters ── */}
+      {/* Filters */}
       <div className="flex items-center gap-3">
         {["all", "super_admin", "client", "qa_agent", "user"].map(r => (
           <button key={r} onClick={() => setRoleFilter(r)}
@@ -205,7 +275,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       {error && <p className="text-[12px]" style={{ color: "var(--negative)" }}>{error}</p>}
 
       <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
@@ -226,7 +296,6 @@ export default function AdminUsersPage() {
               users.map(u => {
                 const rColors = ROLE_COLORS[u.role] || ROLE_COLORS.user;
                 const sColors = STATUS_COLORS[u.subscription_status || "inactive"] || STATUS_COLORS.inactive;
-                const isActive = u.subscription_status === "active";
                 const isPending = u.subscription_status === "pending_payment";
                 const plan = PLANS[(u.plan as PlanKey) || "pilot"];
 
@@ -272,7 +341,7 @@ export default function AdminUsersPage() {
                         <MoreHorizontal size={14} style={{ color: "var(--ink-3)" }} />
                       </button>
                       {menuOpen === u.id && (
-                        <div className="absolute right-4 top-full mt-1 z-50 rounded-xl p-1.5 min-w-[160px] animate-scale-in"
+                        <div ref={menuRef} className="absolute right-4 top-full mt-1 z-50 rounded-xl p-1.5 min-w-[160px] animate-scale-in"
                           style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", boxShadow: "var(--shadow-md)" }}>
                           <button onClick={() => { setMenuOpen(null); router.push(`/admin/users/${u.id}`); }}
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-white/[0.04]"
@@ -286,13 +355,13 @@ export default function AdminUsersPage() {
                               <UserCheck size={13} /> Activate Plan
                             </button>
                           )}
-                          <button onClick={() => { setMenuOpen(null); handleImpersonate(u.id); }}
+                          <button onClick={() => requestImpersonate(u)}
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-white/[0.04]"
                             style={{ color: "var(--accent-ink)" }}>
                             <Copy size={13} /> Impersonate
                           </button>
                           {u.is_active && (
-                            <button onClick={() => { setMenuOpen(null); handleDeactivate(u.id); }}
+                            <button onClick={() => requestDeactivate(u)}
                               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-white/[0.04]"
                               style={{ color: "var(--negative)" }}>
                               <Ban size={13} /> Deactivate
@@ -309,7 +378,7 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {/* ── Create User Modal ── */}
+      {/* Create User Modal */}
       {modal === "create" && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={() => setModal(null)}>
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} />
@@ -354,8 +423,9 @@ export default function AdminUsersPage() {
                   <select value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}
                     className="w-full h-10 rounded-xl px-3 text-[13px] outline-none capitalize"
                     style={{ background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink)" }}>
-                    <option value="pilot">Founder's Pilot</option>
+                    <option value="pilot">Founder&apos;s Pilot</option>
                     <option value="growth">Growth</option>
+                    <option value="scale">Scale</option>
                     <option value="micro">Micro-Offer</option>
                   </select>
                 </div>
@@ -390,7 +460,77 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* ── Toast ── */}
+      {/* Confirmation Modal — Deactivate / Impersonate */}
+      {confirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={() => !confirmBusy && setConfirm(null)}>
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} />
+          <div className="relative w-full max-w-md rounded-3xl p-6 animate-scale-in"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: confirm.kind === "deactivate" ? "rgba(224,96,96,0.10)" : "rgba(232,168,64,0.10)",
+                  border: `1px solid ${confirm.kind === "deactivate" ? "rgba(224,96,96,0.25)" : "rgba(232,168,64,0.25)"}`,
+                }}>
+                <AlertTriangle size={18} style={{ color: confirm.kind === "deactivate" ? "var(--negative)" : "var(--accent)" }} />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>
+                  {confirm.kind === "deactivate" ? "Deactivate user?" : "Impersonate user?"}
+                </h2>
+                <p className="text-[12px] mt-1" style={{ color: "var(--ink-3)" }}>
+                  {confirm.user.display_name || confirm.user.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl p-3 mb-5 text-[12px]"
+              style={{ background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink-2)", lineHeight: 1.55 }}>
+              {confirm.kind === "deactivate" ? (
+                <>
+                  This will set <strong>is_active = false</strong> and mark the subscription as <strong>cancelled</strong>.
+                  The auth user is preserved — you can reactivate later from the user detail page.
+                  Sequences and scheduled actions for this user will stop running.
+                </>
+              ) : (
+                <>
+                  Generates a one-time magic link for this user&apos;s account and copies it to your clipboard.
+                  <br /><br />
+                  <strong>Open the link in an incognito window</strong> to avoid mixing sessions with your super-admin account.
+                  Every impersonation is logged in the audit trail.
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button onClick={() => !confirmBusy && setConfirm(null)} disabled={confirmBusy}
+                className="flex-1 h-10 rounded-full text-[13px] font-medium transition-colors disabled:opacity-40"
+                style={{ background: "transparent", border: "1px solid var(--line)", color: "var(--ink-3)" }}>
+                Cancel
+              </button>
+              <button
+                onClick={confirm.kind === "deactivate" ? performDeactivate : performImpersonate}
+                disabled={confirmBusy}
+                className="flex-1 h-10 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                style={{
+                  background: confirm.kind === "deactivate" ? "var(--negative)" : "var(--accent)",
+                  color: confirm.kind === "deactivate" ? "#fff" : "#000",
+                }}>
+                {confirmBusy ? (
+                  <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                ) : confirm.kind === "deactivate" ? (
+                  <>Deactivate <Ban size={13} /></>
+                ) : (
+                  <>Generate link <Copy size={13} /></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium animate-toast-in"
           style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", boxShadow: "var(--shadow-md)", color: "var(--ink)" }}>
