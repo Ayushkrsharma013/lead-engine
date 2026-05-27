@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import {
   Globe, Filter, FileText, PenLine, Bell, ArrowRight,
   ArrowDown, Menu, X, Send, Sparkles, Calendar, CheckCircle2,
@@ -12,6 +11,7 @@ import { EmailCaptureForm } from "@/components/landing/EmailCaptureForm";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { ScrollProgressBar } from "@/components/landing/ScrollProgressBar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { softwareAppSchema, faqSchema } from "@/lib/seo/schema";
 import {
   type BookingStep,
   type BookingData,
@@ -1455,64 +1455,55 @@ export default function LandingPage() {
       <EmailCaptureModal />
 
       {/* ══════════ JSON-LD Schema ══════════ */}
-      <Script
+      {/* Organization + Website schemas live in app/layout.tsx (root) */}
+      <script
+        type="application/ld+json"
         id="schema-software"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "Prospecting OS",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web",
-            "url": "https://app.flow-forges.com/prospecting-os",
-            "description": "Prospecting OS is an AI-powered B2B lead generation system that uses Apify lead scraping and Anthropic Claude AI to automatically source, score, enrich, and deliver qualified leads to your Slack, Telegram, or CRM — every morning.",
-            "offers": [
-              { "@type": "Offer", "name": "Founder's Pilot", "price": "1499", "priceCurrency": "USD", "description": "100 ICP-verified leads/month, 3 outreach sequences, Kanban pipeline, monthly strategy call, founder-managed delivery.", "eligibleRegion": "Worldwide" },
-              { "@type": "Offer", "name": "Growth", "price": "2499", "priceCurrency": "USD", "description": "Everything in Pilot + 200+ leads/month, multi-channel sequences, A/B testing, bi-weekly calls, dedicated Slack.", "eligibleRegion": "Worldwide" },
-              { "@type": "Offer", "name": "Scale", "price": "4999", "priceCurrency": "USD", "description": "Everything in Growth + 500+ leads/month, multi-channel with GMap, 5-variant A/B testing, weekly calls, CRM sync, priority support.", "eligibleRegion": "Worldwide" },
-              { "@type": "Offer", "name": "Founder's Pilot Micro-Offer", "price": "997", "priceCurrency": "USD", "description": "50 ICP-verified leads (one-time), 5 outreach sequences, CSV + sequence document delivery, 30-min ICP call.", "eligibleRegion": "Worldwide" },
-            ],
-            "provider": { "@type": "Organization", "name": "Flow-Forges", "url": "https://flow-forges.com", "logo": "https://app.flow-forges.com/prospecting-os/assets/Logo_Icon.png" },
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema()) }}
       />
-      <Script
+      <script
+        type="application/ld+json"
         id="schema-faq"
-        type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-              { "@type": "Question", "name": "What is the best AI tool for B2B lead generation?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS is an AI-powered B2B lead generation system that combines Apify lead scraping, Anthropic Claude AI scoring, and automated enrichment to deliver 500+ qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1–10 — only 7+ advance to your inbox." } },
-              { "@type": "Question", "name": "How do I automate LinkedIn prospecting?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Apify scrapers exports your ICP automatically, (2) the system filters for decision-makers only, (3) Anthropic Claude AI scores each lead 1–10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning." } },
-              { "@type": "Question", "name": "What is an AI SDR and is it better than hiring a human SDR?", "acceptedAnswer": { "@type": "Answer", "text": "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000–$6,000/month and delivers ~50 leads. Prospecting OS delivers 500+ scored leads for a fraction of that cost, running 24/7 with zero manual effort." } },
-              { "@type": "Question", "name": "How many leads can AI generate per month?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS delivers 500+ qualified, AI-scored B2B leads per month on the Scale plan. Pilot clients receive 100 leads/month, Growth clients 200+ leads/month, depending on Apify scraper configuration and ICP specificity." } },
-              { "@type": "Question", "name": "Do I need an Apify lead scraping subscription to use Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding." } },
-              { "@type": "Question", "name": "How long does it take to go live with Prospecting OS?", "acceptedAnswer": { "@type": "Answer", "text": "Pilot: 4 hours (same-day setup). Growth: 2–3 business days. Scale (with multi-channel infrastructure and CRM integration): 1–2 weeks." } },
-              { "@type": "Question", "name": "What industries does AI B2B lead generation work for?", "acceptedAnswer": { "@type": "Answer", "text": "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India." } },
-              { "@type": "Question", "name": "Is there a money-back guarantee?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every managed plan (Pilot, Growth, Scale) includes a performance guarantee: if the plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost." } },
-            ],
-          }),
+          __html: JSON.stringify(
+            faqSchema([
+              {
+                q: "What is the best AI tool for B2B lead generation?",
+                a: "Prospecting OS is an AI-powered B2B lead generation system that combines Apify lead scraping, Anthropic Claude AI scoring, and automated enrichment to deliver 100-500 qualified, scored leads per month. Unlike generic lead scrapers, it filters for decision-makers only and scores each lead 1-10 — only 7+ advance to your inbox.",
+              },
+              {
+                q: "How do I automate LinkedIn prospecting?",
+                a: "Prospecting OS automates LinkedIn prospecting in 5 steps: (1) Apify scrapers export your ICP automatically, (2) the system filters for decision-makers only, (3) Anthropic Claude AI scores each lead 1-10, (4) company enrichment and a personalized icebreaker are generated, and (5) hot leads are delivered to Telegram, Slack, or your CRM every morning.",
+              },
+              {
+                q: "What is an AI SDR and is it better than hiring a human SDR?",
+                a: "An AI SDR (Sales Development Representative) is an automated system that performs the research, scoring, enrichment, and outreach tasks traditionally done by a human SDR. A human SDR costs $4,000-$6,000/month and delivers ~50 leads. Prospecting OS delivers 100-500 scored leads for a fraction of that cost, running 24/7 with zero manual effort.",
+              },
+              {
+                q: "How many leads can AI generate per month?",
+                a: "Prospecting OS delivers 100-500 qualified, AI-scored B2B leads per month depending on plan. Pilot clients receive 100 leads/month, Growth clients 200+ leads/month, Scale clients 500+ leads/month, depending on Apify scraper configuration and ICP specificity.",
+              },
+              {
+                q: "Do I need an Apify lead scraping subscription to use Prospecting OS?",
+                a: "Yes. Apify lead scraping is the data engine. A basic plan at $99/month is all you need. The Prospecting OS team helps you configure your ICP search filters during onboarding.",
+              },
+              {
+                q: "How long does it take to go live with Prospecting OS?",
+                a: "Pilot: 4 hours (same-day setup). Growth: 2-3 business days. Scale (with multi-channel infrastructure and CRM integration): 1-2 weeks.",
+              },
+              {
+                q: "What industries does AI B2B lead generation work for?",
+                a: "Prospecting OS works best for B2B agencies, SaaS companies, consulting firms, and professional services businesses — any company whose ideal clients are active on LinkedIn. It has been used by teams in the US, UK, Australia, Singapore, and India.",
+              },
+              {
+                q: "Is there a money-back guarantee?",
+                a: "Yes. Every managed plan (Pilot, Growth, Scale) includes a performance guarantee: if the plan does not deliver at least 50 qualified leads in the first month, month 2 is completely free. The team will also refine your ICP at no additional cost.",
+              },
+            ])
+          ),
         }}
       />
-      <Script
-        id="schema-org"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "name": "Flow-Forges",
-            "url": "https://flow-forges.com",
-            "logo": "https://app.flow-forges.com/prospecting-os/assets/Logo_Icon.png",
-            "sameAs": ["https://app.flow-forges.com/prospecting-os"],
-            "contactPoint": { "@type": "ContactPoint", "contactType": "sales", "url": "https://app.flow-forges.com/prospecting-os/book", "areaServed": "Worldwide", "availableLanguage": "English" },
-          }),
-        }}
-      />
-      <Script
+      <script
         id="schema-howto"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -1526,13 +1517,12 @@ export default function LandingPage() {
             "tool": [
               { "@type": "HowToTool", "name": "Apify lead scraping" },
               { "@type": "HowToTool", "name": "Anthropic Claude AI" },
-              { "@type": "HowToTool", "name": "Apify" },
               { "@type": "HowToTool", "name": "Slack or Telegram" },
             ],
             "step": [
               { "@type": "HowToStep", "name": "Source", "text": "Apify lead scraping automatically exports leads matching your Ideal Customer Profile (ICP) — industry, company size, geography, job title.", "position": 1 },
               { "@type": "HowToStep", "name": "Filter", "text": "The system filters out non-decision-makers. Only founders, C-suite, VPs, and Directors pass through.", "position": 2 },
-              { "@type": "HowToStep", "name": "Score", "text": "Anthropic Claude AI scores each lead 1–10 against your ICP criteria. Only leads scoring 7 or above advance to enrichment.", "position": 3 },
+              { "@type": "HowToStep", "name": "Score", "text": "Anthropic Claude AI scores each lead 1-10 against your ICP criteria. Only leads scoring 7 or above advance to enrichment.", "position": 3 },
               { "@type": "HowToStep", "name": "Enrich", "text": "Company data is enriched automatically. A unique, personalized icebreaker is generated for each lead using AI.", "position": 4 },
               { "@type": "HowToStep", "name": "Deliver", "text": "Hot leads are delivered to your Telegram, Slack, or CRM every morning — scored, enriched, and ready to contact.", "position": 5 },
             ],

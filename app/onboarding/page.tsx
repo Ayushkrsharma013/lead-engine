@@ -57,9 +57,8 @@ export default function OnboardingPage() {
     setLoading(true);
     setError("");
     try {
-      // Save onboarding data + set subscription to pending_payment
-      // Finance Agent picks this up via cron and alerts Telegram
-      const res = await fetch("/prospecting-os/api/onboarding/save", {
+      // 1) Save onboarding data + mark pending_payment so reconciliation works
+      const saveRes = await fetch("/prospecting-os/api/onboarding/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -70,12 +69,47 @@ export default function OnboardingPage() {
           onboardingComplete: true,
         }),
       });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (data.ok) {
-        router.push("/checkout");
-      } else {
-        setError(data.error || "Failed to save. Please try again.");
+      const saveData = (await saveRes.json()) as { ok?: boolean; error?: string };
+      if (!saveData.ok) {
+        setError(saveData.error || "Failed to save. Please try again.");
+        setLoading(false);
+        return;
       }
+
+      // 2) Micro fast-path: skip the /checkout review screen; create the
+      //    payment intent immediately and bounce the user to the gateway.
+      //    All other plans go to /checkout for the existing review UI.
+      if (selectedPlan === "micro") {
+        try {
+          const meRes = await fetch("/prospecting-os/api/me");
+          const me = meRes.ok ? await meRes.json() : null;
+
+          const ckRes = await fetch("/prospecting-os/api/payment/create-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              plan: "micro",
+              userId: me?.id,
+              email: me?.email,
+            }),
+          });
+          const ck = (await ckRes.json()) as { url?: string; method?: string };
+
+          if (ck.url) {
+            window.location.href = ck.url;
+            return;
+          }
+          // No gateway URL configured — fall through to /checkout for manual flow
+          router.push("/checkout");
+          return;
+        } catch {
+          router.push("/checkout");
+          return;
+        }
+      }
+
+      // Standard path
+      router.push("/checkout");
     } catch {
       setError("Something went wrong. Please try again.");
     }
@@ -246,7 +280,11 @@ export default function OnboardingPage() {
         {step === "plan" && (
           <div>
             <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Choose Your Plan</h1>
-            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>Payment via Xflow Pay. Our team will send an invoice and activate your plan within 24 hours.</p>
+            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>
+              {selectedPlan === "micro"
+                ? "Pay $997 once. 50 ICP-verified leads delivered within 5 business days."
+                : "Payment via Xflow Pay. Our team will send an invoice and activate your plan within 24 hours."}
+            </p>
 
             <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
               {Object.entries(PLANS_DATA).map(([key, plan]) => {
@@ -297,7 +335,11 @@ export default function OnboardingPage() {
               opacity: loading ? 0.7 : 1, marginBottom: 16,
             }}>
               {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <CreditCard size={16} />}
-              {loading ? "Saving..." : "Request Manual Payment"}
+              {loading
+                ? "Saving..."
+                : selectedPlan === "micro"
+                  ? "Pay $997 — Get 50 Leads in 5 Days"
+                  : "Request Manual Payment"}
             </button>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

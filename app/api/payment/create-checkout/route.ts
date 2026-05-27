@@ -5,26 +5,31 @@ import { PLANS } from "@/lib/stripe";
 export const dynamic = "force-dynamic";
 
 // Payment provider URLs — set in Vercel env vars
-// Easebuzz (primary): EASEBUZZ_PILOT_URL, EASEBUZZ_GROWTH_URL, EASEBUZZ_MICRO_URL
-// Skydo (fallback): SKYDO_PILOT_URL, SKYDO_GROWTH_URL, SKYDO_MICRO_URL
-// XflowPay VBAN (manual): always available as backup
+// Easebuzz (primary):    EASEBUZZ_PILOT_URL, EASEBUZZ_GROWTH_URL, EASEBUZZ_SCALE_URL, EASEBUZZ_MICRO_URL
+// Skydo (fallback):      SKYDO_PILOT_URL,    SKYDO_GROWTH_URL,    SKYDO_SCALE_URL,    SKYDO_MICRO_URL
+// Stripe Payment Links:  STRIPE_PAYMENT_LINK_PILOT, STRIPE_PAYMENT_LINK_GROWTH, STRIPE_PAYMENT_LINK_SCALE, STRIPE_PAYMENT_LINK_MICRO
+// XflowPay VBAN (manual): always available as ultimate backup
 
-const PLAN_URLS: Record<string, { easebuzz?: string; skydo?: string }> = {
+const PLAN_URLS: Record<string, { easebuzz?: string; skydo?: string; stripe?: string }> = {
   pilot: {
     easebuzz: process.env.EASEBUZZ_PILOT_URL,
     skydo: process.env.SKYDO_PILOT_URL,
+    stripe: process.env.STRIPE_PAYMENT_LINK_PILOT,
   },
   growth: {
     easebuzz: process.env.EASEBUZZ_GROWTH_URL,
     skydo: process.env.SKYDO_GROWTH_URL,
+    stripe: process.env.STRIPE_PAYMENT_LINK_GROWTH,
   },
   scale: {
     easebuzz: process.env.EASEBUZZ_SCALE_URL,
     skydo: process.env.SKYDO_SCALE_URL,
+    stripe: process.env.STRIPE_PAYMENT_LINK_SCALE,
   },
   micro: {
     easebuzz: process.env.EASEBUZZ_MICRO_URL,
     skydo: process.env.SKYDO_MICRO_URL,
+    stripe: process.env.STRIPE_PAYMENT_LINK_MICRO,
   },
 };
 
@@ -51,17 +56,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Try Easebuzz first, fall back to Skydo, then manual VBAN
+    // Try Easebuzz → Skydo → Stripe Payment Link → manual VBAN
     const urls = PLAN_URLS[plan] || {};
-    const paymentUrl = urls.easebuzz || urls.skydo || null;
+    const paymentUrl = urls.easebuzz || urls.skydo || urls.stripe || null;
 
     if (paymentUrl) {
+      // Stripe Payment Links don't accept arbitrary query params — pass only client_reference_id + prefilled_email
+      if (urls.stripe && paymentUrl === urls.stripe) {
+        const url = new URL(paymentUrl);
+        url.searchParams.set("client_reference_id", txnid);
+        if (email) url.searchParams.set("prefilled_email", email);
+        return NextResponse.json({ url: url.toString(), method: "card", txnid });
+      }
+
+      // Easebuzz / Skydo: legacy query-param flow
       const url = new URL(paymentUrl);
       url.searchParams.set("txnid", txnid);
       url.searchParams.set("amount", String(selected.setupAmount));
       if (email) url.searchParams.set("email", email);
       if (userId) url.searchParams.set("client_reference_id", userId);
-      return NextResponse.json({ url: url.toString(), method: "card" });
+      return NextResponse.json({ url: url.toString(), method: "card", txnid });
     }
 
     // Fallback: return VBAN details for manual ACH/wire

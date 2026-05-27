@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, ArrowRight, Loader2, Shield, ExternalLink, Mail, Clock, Banknote } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PLANS } from "@/lib/stripe";
 import type { UserProfile, PlanKey } from "@/lib/types";
+import { trackPayment } from "@/lib/analytics";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Checkout / Billing Page — Client-facing payment flow (Xflow Pay)
@@ -37,10 +38,15 @@ function CopyButton({ text }: { text: string }) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [cardLoading, setCardLoading] = useState(false);
+  const [activationPolling, setActivationPolling] = useState(false);
+  const [activated, setActivated] = useState(false);
+
+  const justPaid = searchParams.get("paid") === "true";
 
   useEffect(() => {
     async function init() {
@@ -58,6 +64,68 @@ export default function CheckoutPage() {
     }
     init();
   }, []);
+
+  // Fire payment-conversion event when arriving back with ?paid=true
+  useEffect(() => {
+    if (!profile) return;
+    if (!justPaid) return;
+    const planKey = profile.plan as PlanKey | undefined;
+    if (!planKey || !PLANS[planKey as keyof typeof PLANS]) return;
+    const plan = PLANS[planKey as keyof typeof PLANS];
+    const txnid =
+      searchParams.get("txnid") ||
+      profile.payment_ref ||
+      `manual-${profile.id}`;
+    trackPayment({ plan: planKey, amount: plan.setupAmount, txnid });
+  }, [profile, justPaid, searchParams]);
+
+  // Phase 3.1 — When user lands with ?paid=true, poll /api/me every 5s (up to 60s)
+  // until subscription_status === "active". Webhook flips this on payment confirmation.
+  useEffect(() => {
+    if (!justPaid) return;
+    if (!profile) return;
+    if (profile.subscription_status === "active") {
+      setActivated(true);
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 12; // 12 × 5s = 60s
+    setActivationPolling(true);
+
+    const tick = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const res = await fetch("/prospecting-os/api/me");
+        if (res.ok) {
+          const fresh = await res.json();
+          if (fresh?.id) {
+            setProfile(fresh as UserProfile);
+            if (fresh.subscription_status === "active") {
+              setActivated(true);
+              setActivationPolling(false);
+              return;
+            }
+          }
+        }
+      } catch {
+        // swallow — try again on next tick
+      }
+      if (attempts >= maxAttempts) {
+        setActivationPolling(false);
+        return;
+      }
+      setTimeout(tick, 5000);
+    };
+
+    const t = setTimeout(tick, 5000);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [justPaid, profile?.subscription_status]);
 
   if (loading) {
     return (
@@ -168,9 +236,58 @@ export default function CheckoutPage() {
           )}
         </motion.div>
 
+        {/* Phase 3.1 — Post-payment activation polling card */}
+        <AnimatePresence>
+          {justPaid && activationPolling && !activated && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              className="rounded-2xl p-6 text-center"
+              style={{ background: "rgba(232,168,64,0.04)", border: "1px solid rgba(232,168,64,0.18)" }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{ background: "rgba(232,168,64,0.10)", border: "1px solid rgba(232,168,64,0.20)" }}>
+                <Loader2 size={18} className="animate-spin" style={{ color: "var(--accent, #E8A840)" }} />
+              </div>
+              <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--ink)" }}>Activating your account...</p>
+              <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+                Payment received. We are provisioning your client portal — this usually takes a few seconds.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Phase 3.1 — Micro-offer activation success */}
+        <AnimatePresence>
+          {justPaid && activated && profile.plan === "micro" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              className="rounded-2xl p-6 text-center"
+              style={{ background: "rgba(107,203,119,0.04)", border: "1px solid rgba(107,203,119,0.20)" }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{ background: "rgba(107,203,119,0.10)", border: "1px solid rgba(107,203,119,0.20)" }}>
+                <Check size={18} style={{ color: "var(--positive, #6BCB77)" }} />
+              </div>
+              <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--ink)" }}>Your micro-offer is active</p>
+              <p className="text-[12px] mb-4" style={{ color: "var(--ink-3)" }}>
+                Sign in to your client portal to view your 50 ICP-verified leads. We will email your login credentials within the next minute.
+              </p>
+              <Link
+                href="/client-portal/login"
+                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[13px] font-semibold no-underline transition-all"
+                style={{ background: "var(--accent, #E8A840)", color: "#000" }}
+              >
+                Open Client Portal <ArrowRight size={13} />
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Payment — only when pending */}
         <AnimatePresence>
-          {isPending && (
+          {isPending && !justPaid && (
             <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.4 }}
@@ -184,7 +301,7 @@ export default function CheckoutPage() {
               {/* Primary: Card Payment */}
               <button
                 onClick={async () => {
-                  setLoading(true);
+                  setCardLoading(true);
                   try {
                     const res = await fetch("/prospecting-os/api/payment/create-checkout", {
                       method: "POST",
@@ -194,10 +311,10 @@ export default function CheckoutPage() {
                     const data = await res.json();
                     if (data.url) {
                       window.location.href = data.url;
-                    } else if (data.method === "manual") {
-                      setLoading(false);
+                    } else {
+                      setCardLoading(false);
                     }
-                  } catch { setLoading(false); }
+                  } catch { setCardLoading(false); }
                 }}
                 disabled={cardLoading}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-[13px] font-semibold transition-all hover:opacity-90 disabled:opacity-50"
@@ -251,9 +368,9 @@ export default function CheckoutPage() {
           )}
         </AnimatePresence>
 
-        {/* Active state — quick links */}
+        {/* Active state — quick links (hidden when micro success card is showing) */}
         <AnimatePresence>
-          {isActive && (
+          {isActive && !(justPaid && activated && profile.plan === "micro") && (
             <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.4 }}

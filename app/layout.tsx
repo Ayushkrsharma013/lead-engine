@@ -3,6 +3,10 @@ import "./globals.css";
 import "./landing.css";
 import { AppProvider } from "@/lib/AppContext";
 import { Shell } from "@/components/Shell";
+import JsonLd from "@/components/seo/JsonLd";
+import { organizationSchema, websiteSchema } from "@/lib/seo/schema";
+import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
+import CookieConsent from "@/components/analytics/CookieConsent";
 
 const basePath = "/prospecting-os";
 
@@ -83,9 +87,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800,900&display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased bg-bg text-ink font-geist">
+        <JsonLd id="schema-organization" data={organizationSchema()} />
+        <JsonLd id="schema-website" data={websiteSchema()} />
         <AppProvider>
           <Shell>{children}</Shell>
         </AppProvider>
+        <AnalyticsProvider />
+        <CookieConsent />
       </body>
     </html>
   );

@@ -45,6 +45,23 @@ export function LandingFooter() {
             Flow-Forges.com
           </a>
         </nav>
+        <nav
+          aria-label="Legal and contact"
+          style={{
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
+            justifyContent: "center",
+            margin: "8px 0 12px",
+            fontSize: "0.78rem",
+            color: "var(--ink-3)",
+          }}
+        >
+          <Link href="/privacy" style={{ color: "var(--ink-3)" }}>Privacy Policy</Link>
+          <Link href="/terms" style={{ color: "var(--ink-3)" }}>Terms of Service</Link>
+          <Link href="/refund-policy" style={{ color: "var(--ink-3)" }}>Refund Policy</Link>
+          <Link href="/contact" style={{ color: "var(--ink-3)" }}>Contact</Link>
+        </nav>
         <p
           style={{
             fontSize: "0.72rem",
