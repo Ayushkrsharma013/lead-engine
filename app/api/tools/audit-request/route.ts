@@ -85,13 +85,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Database error. Please try again.' }, { status: 500 })
   }
 
+  // Fire-and-forget: send confirmation email + Telegram notification
   const request = { id: requestId }
-
-  await sendEmail({
+  sendEmail({
     to: email,
     subject: 'Free Pipeline Audit — Request Received',
     html: buildConfirmationEmail(name, company, request.id),
-  })
+  }).catch(e => console.error('Audit confirmation email failed:', e))
 
   const telegramMsg = [
     `NEW FREE AUDIT REQUEST`,
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     `ID: ${request.id}`,
   ].join('\n')
 
-  await notifyTelegram(telegramMsg)
+  notifyTelegram(telegramMsg).catch(e => console.error('Audit Telegram notify failed:', e))
 
   return NextResponse.json({ success: true })
 }

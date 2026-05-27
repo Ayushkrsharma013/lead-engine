@@ -3,6 +3,9 @@ import { motion } from 'framer-motion'
 import { Navbar } from '@/components/Navbar'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 import { AuditForm } from '@/components/tools/AuditForm'
+import Link from 'next/link'
+
+const MotionLink = motion(Link);
 
 export default function FreeAuditPage() {
   return (
@@ -256,7 +259,7 @@ export default function FreeAuditPage() {
           <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: 15 }}>
             The free audit runs on the same pipeline our Managed Growth clients get — 500+ scored leads, enriched and icebreaker-ready, delivered to Slack every morning.
           </p>
-          <motion.a
+          <MotionLink
             href="/book"
             whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(232,66,10,0.45)' }}
             whileTap={{ scale: 0.97 }}
@@ -269,7 +272,7 @@ export default function FreeAuditPage() {
             }}
           >
             Book a Free Strategy Call →
-          </motion.a>
+          </MotionLink>
         </div>
       </section>
 

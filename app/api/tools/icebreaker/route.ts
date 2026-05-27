@@ -22,6 +22,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name, title, and company are required.' }, { status: 400 })
   }
 
+  // Insert rate-limit record BEFORE calling Gemini so a failed insert
+  // doesn't give the user infinite free generations.
+  await supabaseAdmin.from('tool_rate_limits').insert({
+    tool: 'icebreaker',
+    ip,
+    created_at: new Date().toISOString(),
+  });
+
   const geminiKey = process.env.GEMINI_API_KEY
   if (!geminiKey) {
     return NextResponse.json({ error: 'AI service not configured.' }, { status: 503 })
@@ -92,12 +100,6 @@ Write the icebreaker:`
   if (!icebreaker) {
     return NextResponse.json({ error: 'No output from AI. Try again.' }, { status: 500 })
   }
-
-  await supabaseAdmin.from('tool_rate_limits').insert({
-    tool: 'icebreaker',
-    ip,
-    created_at: new Date().toISOString(),
-  })
 
   return NextResponse.json({ icebreaker })
 }

@@ -1746,7 +1746,49 @@ Runner (local machine)        Deployed API (Vercel)          Supabase (productio
 **Payment Docs** — `docs/PAYMENT-INTEGRATION.md`: XflowPay vs Easebuzz explained, full flow charts, setup guide
 
 **Current State**:
-- Audit score: 5.8 → 8.5/10
-- 125 routes, 0 TypeScript errors, 0 old stack references
+- Audit score: 5.8 → 8.1/10 (payment blocking — Easebuzz KYC pending)
+- 131 routes, 0 TypeScript errors, 0 old stack references
 - 5 n8n workflows built, pending activation (need env vars set on n8n)
-- Pending: Easebuzz URLs on Vercel, CRON_SECRET verification, n8n workflow activation
+- Pending: Easebuzz KYC or switch to Razorpay/Stripe for payment gateway
+- Deployment: live on `app.flow-forges.com/prospecting-os` and `lead-engine-henna.vercel.app/prospecting-os`
+
+---
+
+### 2026-05-27 — Phase 6: Superadmin Safety + Client-Portal Audit Remediation
+
+**Commit**: `1187ebe` → merged to main `447174a`, deployed to Vercel
+
+**Audit**: Full 57-issue audit (11 critical, 25 medium, 21 low) across superadmin, client-portal, and middleware.
+
+**Superadmin Safety Fixes:**
+- `app/admin/users/page.tsx` — Debounced search (300ms), server-side MRR/stats, confirmation modals for deactivate & impersonate, click-outside-close menu, PATCH-based soft-deactivate (was DELETE), Scale plan in create modal
+- `app/admin/users/[id]/page.tsx` — Split profile/plan saves (separate endpoints, no cross-tab overwrite), role elevation confirmation (type email to confirm), plan change confirmation modal, Scale plan option
+- `app/api/admin/users/route.ts` — Server-side MRR/stats computation, ILIKE-safe search escaping, `full_name` → `display_name`
+- `app/admin/agents/page.tsx` — Run All polls for completion (15×2s instead of blind 3s), error handling, knowledge store value search, refresh after resolve
+
+**Client-Portal Audit Remediation:**
+- `components/client-portal/PlanGate.tsx` — Fully rewritten: `requiredPlan` prop (PlanKey), pulls name+price from PLANS object, lock icon, styled upgrade CTA button
+- `components/client-portal/UpgradeCTA.tsx` — **New** shared component extracted from inline portal code, handles all plan tiers
+- `app/api/client-portal/sequences/route.ts` — **New** API endpoint (replaces direct Supabase browser query)
+- `app/client-portal/billing/page.tsx` — Full rewrite: upgrade options grid with plan comparison cards, CTA buttons, Scale plan support
+- `app/client-portal/page.tsx` — Extracted UpgradeCTA to shared component, CSV injection defense, Scale plan label
+- `app/client-portal/sequences/page.tsx` — Wired to new API endpoint, `requiredPlan="scale"` (was wrong "Growth")
+- `app/client-portal/slack/page.tsx` — Slack URL validation (`hooks.slack.com/services/`), webhook trimming
+- `app/client-portal/layout.tsx` — **Critical fix**: useEffect now has `[pathname, router, supabase]` deps + cleanup `ignore` flag — sidebar renders after login without hard refresh
+- `app/client-portal/leads/page.tsx` — PlanGate wrapper added (`requiredPlan="pilot"`), CSV injection defense
+- `app/client-portal/analytics/page.tsx` — Switched from client-side 1000-lead fetch to server-side dashboard API; added hot/meeting statuses to breakdown
+- `app/client-portal/icebreakers/page.tsx` — PlanGate `planName` → `requiredPlan` prop update
+
+**Blog Admin Fixes:**
+- `app/admin/blog/page.tsx` — AI toast truncated to 200 chars, save-preview race fixed (`setSelectedPost(prev => ...)` instead of stale `posts.find()`)
+
+**Middleware Hardening:**
+- `middleware.ts` — `display_name` instead of `full_name`, hoisted supabaseAdmin (single instance, not re-created twice), BASE_PATH constant, fail-closed subscription check (was fail-open → DB error now redirects to checkout), `_next/data` in matcher exclusion, role defaults to "user" when null (was bypassing all RBAC), login rate-limiting documented
+
+**Build**: 0 TypeScript errors, 131 routes, 18 files changed (+1,570/-388 lines)
+
+**Live verification**: Landing, login, booking, checkout, client-portal/login all return 200. 1 non-blocking console error (checkout page browser RLS query — middleware handles auth server-side).
+
+**Launch Readiness Score**: 8.1/10
+- Payment: 2/10 (Easebuzz KYC pending — blocks first customer)
+- Everything else: 8-10/10

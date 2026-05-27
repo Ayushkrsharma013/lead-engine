@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 
 type GenState = 'idle' | 'generating' | 'done' | 'error' | 'limit_reached'
 
@@ -25,10 +26,12 @@ const LIMIT_MAX = 3
 
 function getCount(): number {
   if (typeof window === 'undefined') return 0
-  return parseInt(localStorage.getItem(LIMIT_KEY) ?? '0', 10)
+  try { return parseInt(localStorage.getItem(LIMIT_KEY) ?? '0', 10) }
+  catch { return 0 }
 }
 function incrementCount() {
-  localStorage.setItem(LIMIT_KEY, String(getCount() + 1))
+  try { localStorage.setItem(LIMIT_KEY, String(getCount() + 1)) }
+  catch { /* quota exceeded / private browsing — silently skip */ }
 }
 
 export function IcebreakerGenerator() {
@@ -63,11 +66,15 @@ export function IcebreakerGenerator() {
     setResult('')
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
       const res = await fetch('/prospecting-os/api/tools/icebreaker', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
-      })
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
       const data = await res.json()
       if (data.icebreaker) {
         setResult(data.icebreaker)
@@ -367,10 +374,10 @@ export function IcebreakerGenerator() {
                 >
                   Book a Free Demo →
                 </motion.a>
-                <a href="/prospecting-os/tools/free-audit"
+                <Link href="/tools/free-audit"
                   style={{ color: 'var(--text-tertiary)', fontSize: 13, textDecoration: 'none' }}>
                   Or get 50 leads audited free →
-                </a>
+                </Link>
               </div>
             </motion.div>
           )}

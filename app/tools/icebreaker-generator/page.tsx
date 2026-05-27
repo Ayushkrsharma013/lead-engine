@@ -3,6 +3,9 @@ import { motion } from 'framer-motion'
 import { Navbar } from '@/components/Navbar'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 import { IcebreakerGenerator } from '@/components/tools/IcebreakerGenerator'
+import Link from 'next/link'
+
+const MotionLink = motion(Link);
 
 export default function IcebreakerGeneratorPage() {
   return (
@@ -70,7 +73,7 @@ export default function IcebreakerGeneratorPage() {
       </section>
 
       {/* How it works — 3 steps */}
-      <section style={{ padding: '0 0 80px', background: 'var(--bg-secondary)' }}>
+      <section style={{ padding: '64px 0 80px', background: 'var(--bg-secondary)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px' }}>
           <p style={{ textAlign: 'center', fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace', color: 'var(--accent)', marginBottom: 32 }}>
             // How it works
@@ -93,9 +96,11 @@ export default function IcebreakerGeneratorPage() {
                   hidden: { opacity: 0, y: 20 },
                   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
                 }}
+                whileHover={{ y: -6, borderColor: 'rgba(232,66,10,0.3)', boxShadow: '0 8px 30px rgba(232,66,10,0.08)' }}
+                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
                 style={{
                   background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 16, padding: '24px 20px',
+                  borderRadius: 16, padding: '24px 20px', cursor: 'default',
                 }}
               >
                 <span style={{
@@ -130,7 +135,7 @@ export default function IcebreakerGeneratorPage() {
             Prospecting OS generates personalized icebreakers for your entire pipeline automatically — every lead enriched and outreach-ready, delivered daily.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <motion.a
+            <MotionLink
               href="/book"
               whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(232,66,10,0.45)' }}
               whileTap={{ scale: 0.97 }}
@@ -143,13 +148,13 @@ export default function IcebreakerGeneratorPage() {
               }}
             >
               Book a Free Demo →
-            </motion.a>
-            <a
+            </MotionLink>
+            <Link
               href="/tools/free-audit"
               style={{ color: 'var(--text-tertiary)', fontSize: 14, textDecoration: 'none' }}
             >
               Or get 50 leads audited free →
-            </a>
+            </Link>
           </div>
         </div>
       </section>
