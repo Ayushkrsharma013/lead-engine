@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import ProsBotPanel from "@/components/ProsBotPanel";
 import { MEETING_TYPES, type MeetingType } from "@/lib/types";
+import { trackBooking } from "@/lib/analytics";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -259,6 +260,8 @@ function BookPageInner() {
       if (selectedDate && selectedTime) {
         setBookedSlots(prev => { const next = new Set(prev); next.add(`${selectedDate}|${selectedTime}`); return next; });
       }
+      // Fire conversion event (email is hashed inside trackBooking via Web Crypto)
+      trackBooking({ type: meetingType, email: email.trim() }).catch(() => { /* never block UX */ });
       setStep(5);
     } catch {
       setError("Something went wrong. Please try again.");

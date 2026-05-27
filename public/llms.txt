@@ -1,0 +1,38 @@
+# Prospecting OS
+
+> AI-powered B2B lead generation system. A 5-step pipeline (Source → Filter → Score → Enrich → Deliver) ships 100–500 ICP-verified leads to Slack, Telegram, or your CRM every morning, scored by Anthropic Claude AI and paired with personalized icebreakers. Built and operated by Flow-Forges (founder: Ayush Kumar Sharma).
+
+Prospecting OS replaces a manual SDR workflow with an automated pipeline. Apify scrapers source leads from LinkedIn, Google Maps, and other public B2B sources. Anthropic Claude scores each lead against the customer's ICP and writes a one-line icebreaker. Verified, scored, and enriched leads land in the customer's Slack or Telegram (and optionally their CRM) every morning. Pricing is plan-based: Pilot ($1,499 setup + $499/mo), Growth ($2,499 setup + $999/mo), Scale ($4,999 setup + $1,999/mo), and a one-time Micro report at $997.
+
+## How it works
+
+- [The 5-step pipeline](https://app.flow-forges.com/prospecting-os/#how-it-works): Source (Apify scrapers) → Filter (industry, geography, size) → Score (Claude scores 0–100 against the ICP) → Enrich (verified email, LinkedIn, company context) → Deliver (Slack / Telegram / CRM).
+- [Free pipeline audit](https://app.flow-forges.com/prospecting-os/tools/free-audit): Submit a CSV and ICP description; Flow-Forges returns a written audit of your current prospecting setup.
+- [Free icebreaker generator](https://app.flow-forges.com/prospecting-os/tools/icebreaker-generator): Generate one personalized cold-email opener per lead, free, capped at 3 generations per day.
+
+## Plans
+
+- [Pricing](https://app.flow-forges.com/prospecting-os/#pricing): Four plans — Pilot, Growth, Scale, and a one-time Micro report.
+- [Pilot — $1,499 setup + $499/mo](https://app.flow-forges.com/prospecting-os/#pricing): Up to 100 scored leads/month, Slack or Telegram delivery, monthly ICP review.
+- [Growth — $2,499 setup + $999/mo](https://app.flow-forges.com/prospecting-os/#pricing): Up to 250 scored leads/month, multi-channel delivery, weekly ICP review, Claude icebreakers.
+- [Scale — $4,999 setup + $1,999/mo](https://app.flow-forges.com/prospecting-os/#pricing): Up to 500 scored leads/month, A/B-tested sequences, dedicated ICP analyst, CRM integration.
+- [Micro — $997 one-time](https://app.flow-forges.com/prospecting-os/#pricing): One report, 100 ICP-verified leads with icebreakers, no recurring commitment.
+
+## About
+
+- [About / founder](https://app.flow-forges.com/prospecting-os/about): Why Prospecting OS exists, who builds it, and how to reach the team.
+- [Book a strategy call](https://app.flow-forges.com/prospecting-os/book): 30-minute call with the founder to evaluate fit on real ICP data.
+- [Contact](https://app.flow-forges.com/prospecting-os/contact): hello@flow-forges.com.
+
+## Documentation
+
+- [Blog](https://app.flow-forges.com/prospecting-os/blog): Articles on B2B prospecting, AI lead scoring, and pipeline operations.
+- [Privacy policy](https://app.flow-forges.com/prospecting-os/privacy)
+- [Terms of service](https://app.flow-forges.com/prospecting-os/terms)
+- [Refund policy](https://app.flow-forges.com/prospecting-os/refund-policy)
+
+## Optional
+
+- [Sitemap](https://app.flow-forges.com/prospecting-os/sitemap.xml)
+- [Free pipeline audit](https://app.flow-forges.com/prospecting-os/tools/free-audit)
+- [Free icebreaker generator](https://app.flow-forges.com/prospecting-os/tools/icebreaker-generator)

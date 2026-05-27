@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, Mail, Lock, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { trackSignup } from "@/lib/analytics";
 
 function SignUpForm() {
   const router = useRouter();
@@ -30,6 +31,9 @@ function SignUpForm() {
     });
 
     if (authError) { setError(authError.message); setSubmitting(false); return; }
+
+    // Fire signup conversion (email hashed inside trackSignup via Web Crypto)
+    trackSignup({ email: email.trim() }).catch(() => { /* never block UX */ });
 
     router.push("/onboarding");
     router.refresh();

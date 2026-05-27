@@ -35,8 +35,8 @@ function LoadingScreen() {
   );
 }
 
-const MARKETING_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/tools"];
-const CLEAN_ROUTES = ["/", "/book", "/login", "/signup", "/onboarding", "/client-portal", "/tools", "/progress", "/integrations", "/blog"];
+const MARKETING_ROUTES = ["/", "/about", "/book", "/login", "/signup", "/onboarding", "/tools", "/privacy", "/terms", "/refund-policy", "/contact"];
+const CLEAN_ROUTES = ["/", "/about", "/book", "/login", "/signup", "/onboarding", "/client-portal", "/tools", "/progress", "/integrations", "/blog", "/privacy", "/terms", "/refund-policy", "/contact"];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { state } = useApp();

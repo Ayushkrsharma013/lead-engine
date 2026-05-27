@@ -1,16 +1,66 @@
+# Prospecting OS — robots.txt
+# AI agents — see /llms.txt for an LLM-friendly site map and product summary.
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
 
+# OpenAI ChatGPT browsing + training crawler
 User-agent: GPTBot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
 
-User-agent: PerplexityBot
-Allow: /
-
+# Anthropic Claude crawler
 User-agent: ClaudeBot
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
 
-User-agent: Googlebot-Extended
+# Anthropic legacy crawler name
+User-agent: anthropic-ai
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
+
+# Google Gemini / Vertex AI training opt-in
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
+
+# Common Crawl (used by many AI training pipelines)
+User-agent: CCBot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /client-portal/
+Disallow: /agent/
 
 Sitemap: https://app.flow-forges.com/prospecting-os/sitemap.xml
