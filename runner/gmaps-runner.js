@@ -2,7 +2,7 @@
 // Local GMap outreach runner — runs on your home machine (residential IP).
 // Polls gmaps_outreach_queue every 5 min.
 // contact_form_fill → Playwright navigates website, fills contact form.
-// sms_follow_up    → Remi outreach API (POST /api/outreach/start).
+// sms_follow_up    → inserts into Supabase gmaps_outreach_queue; n8n picks up on schedule.
 // Never run this on a server.
 
 require("dotenv").config();
@@ -18,11 +18,15 @@ chromium.use(StealthPlugin());
 
 const CRON_SECRET = process.env.CRON_SECRET;
 const BUSINESS_EMAIL = process.env.BUSINESS_EMAIL || "ayush@flow-forges.com";
-const REMI_URL = process.env.REMI_URL || 'https://agent.flow-forges.com';
-const OUTREACH_API_KEY = process.env.OUTREACH_API_KEY || '';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
 
 if (!CRON_SECRET) {
   console.error("[gmaps-runner] Missing CRON_SECRET — needed for API auth");
+  process.exit(1);
+}
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error("[gmaps-runner] Missing SUPABASE_URL / SUPABASE_KEY — needed for SMS queue");
   process.exit(1);
 }
 
@@ -267,45 +271,44 @@ async function runOnce() {
     }
 
     const businessName = extractBusinessName(item.message);
-    const industry = item.industry || '';
+    const industry = item.industry || 'dental';
 
-    let remiRes;
+    // Insert into Supabase gmaps_outreach_queue — n8n picks it up on schedule
+    let insertRes;
     try {
-      remiRes = await fetch(`${REMI_URL}/api/outreach/start`, {
+      insertRes = await fetch(`${SUPABASE_URL}/rest/v1/gmaps_outreach_queue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${OUTREACH_API_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: 'return=minimal',
         },
         body: JSON.stringify({
-          phone: item.phone,
-          businessName,
+          phone_number: item.phone,
+          business_name: businessName,
           industry,
-          city: item.city || '',
+          action: 'sms_follow_up',
+          status: 'pending',
+          source: String(item.lead_id || ''),
         }),
       });
     } catch (fetchErr) {
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `remi_fetch_error: ${fetchErr.message}` }); } catch {}
-      console.error(`[gmaps-runner] Remi outreach/start network error for ${item.phone}: ${fetchErr.message}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `supabase_fetch_error: ${fetchErr.message}` }); } catch {}
+      console.error(`[gmaps-runner] Supabase queue insert failed for ${item.phone}: ${fetchErr.message}`);
       return;
     }
 
-    if (!remiRes.ok && remiRes.status !== 200) {
-      const body = await remiRes.text();
-      console.error(`[gmaps-runner] Remi outreach/start failed for ${item.phone}: ${remiRes.status} ${body}`);
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `remi_error_${remiRes.status}` }); } catch {}
+    if (!insertRes.ok) {
+      const body = await insertRes.text();
+      console.error(`[gmaps-runner] Supabase queue insert error for ${item.phone}: ${insertRes.status} ${body}`);
+      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "failed", error: `supabase_error_${insertRes.status}` }); } catch {}
       return;
     }
 
-    const remiData = await remiRes.json();
-    if (remiData.skipped) {
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "skipped", error: remiData.reason }); } catch {}
-      console.log(`[gmaps-runner] Remi skipped outreach for ${item.lead_id}: ${remiData.reason}`);
-    } else {
-      try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done", error: "outreach_started" }); } catch {}
-      await sendTelegramAlert(`Remi outreach started for lead ${item.lead_id}`);
-      console.log(`[gmaps-runner] Remi outreach started for ${item.phone}`);
-    }
+    try { await callApi("PATCH", "/api/gmaps-outreach/queue", { id: item.id, status: "done", error: "queued_for_sms" }); } catch {}
+    await sendTelegramAlert(`SMS queued for lead ${item.lead_id} (${item.phone}) — n8n will send shortly`);
+    console.log(`[gmaps-runner] SMS queued in Supabase for ${item.phone} (lead ${item.lead_id})`);
   }
 
   await randomDelay(2000, 5000);
