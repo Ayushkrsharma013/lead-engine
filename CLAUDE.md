@@ -586,6 +586,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 | Tools | Icebreaker + Free Audit with Navbar, Footer, custom dropdowns, rate-limit fixes | 2026-05-27 |
 | N8N | 5 n8n workflows built, Vercel→n8n wired, credentials pushed to Hetzner | 2026-05-26/27 |
 | Audit-29 | Landing credibility fixes — counter pill, hero CTA→icebreaker, testimonials, icebreaker API→Claude | 2026-05-29 |
+| Security-Audit | Super-admin + notification channel security audit — 3 critical, 3 high, 4 medium, 3 low fixed | 2026-05-29 |
 
 ### Credentials
 - Super admin: ayushkumarsharma013@gmail.com / Pro2026!Secure
@@ -737,3 +738,32 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 **Launch Readiness Score**: 8.1/10
 - Payment: 2/10 (Easebuzz KYC pending — blocks first customer)
 - Everything else: 8-10/10
+
+---
+
+### 2026-05-29 — Super-Admin & Notification Channel Security Audit (15 issues)
+
+**Full audit** across `app/admin/`, `app/api/admin/`, `middleware.ts`, `lib/notify.ts`.
+
+**Critical fixes (3):**
+- `app/api/admin/agents/route.ts` — Auth check was completely missing; entire agent/action/knowledge-store data was publicly accessible. Added `x-user-role` guard (super_admin or qa_agent).
+- `middleware.ts` — `new Headers(req.headers)` copied client-supplied headers; unauthenticated requests with `x-user-role: super_admin` bypassed all API guards. Fixed: always `delete` all five `x-user-*` headers before the profile lookup.
+- `app/api/admin/migrate/route.ts` — `CRON_SECRET || "flow-forges-migrate"` fallback made the endpoint trivially guessable. Now requires `CRON_SECRET` to be explicitly set.
+
+**High fixes (3):**
+- `lib/notify.ts` — Added `esc()` HTML-escaping function; applied to all user-supplied fields (`b.name`, `b.email`, `b.notes`, `b.company`, `b.phone`, `b.type`, credentials) across every email template.
+- `middleware.ts` — Subscription check (`status !== 'active'` → /checkout) applied to super_admin too, creating potential lockout. Fixed with `isPrivilegedRole` bypass for super_admin and qa_agent.
+- `lib/notify.ts` — `notifyInvoiceEvent` used IDR (Indonesian Rupiah) formatter. Fixed to USD.
+
+**Medium fixes (4):**
+- `app/api/admin/users/route.ts` + `page.tsx` — Server-side pagination with `page`/`limit`/`count`; UI shows Prev/Next and "X–Y of N".
+- `app/admin/users/[id]/page.tsx` — Workspace data (`leads_count`, `last_sync_at`, `slack_webhook`, `icp_config`) now rendered in Plan tab (was fetched then voided).
+- `app/api/admin/users/[id]/route.ts` — Removed redundant DELETE handler (PATCH soft-deactivate is the only path now).
+- `app/admin/agents/page.tsx` — Notification log: arbitrary `slice(0,20)` replaced with "Show all N" toggle; API action limit raised to 100.
+
+**Low fixes (3):**
+- `lib/notify.ts` — `NOTIFY_EMAIL` hardcoded personal email fallback removed; returns early if env var not set.
+- `lib/notify.ts` — `sendReminderEmail` dead code removed (was exported but never called/scheduled).
+- `app/api/admin/users/[id]/activate/route.ts` — Inserts `activity_log` row attributing manual plan activation to the admin who triggered it.
+
+**Build**: 0 TypeScript errors, 10 files changed.

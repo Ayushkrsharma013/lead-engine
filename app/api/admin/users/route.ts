@@ -32,11 +32,15 @@ export async function GET(req: NextRequest) {
   const filterRole = searchParams.get('role')
   const status = searchParams.get('status')
   const search = searchParams.get('q')
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
+  const offset = (page - 1) * limit
 
   let query = supabaseAdmin
     .from('profiles')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (filterRole) query = query.eq('role', filterRole)
   if (status) query = query.eq('subscription_status', status)
@@ -45,7 +49,7 @@ export async function GET(req: NextRequest) {
     if (safe) query = query.or(`email.ilike.%${safe}%,display_name.ilike.%${safe}%`)
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Compute stats (total / active / pending / MRR) server-side over the FULL,
@@ -69,7 +73,7 @@ export async function GET(req: NextRequest) {
     stats = { total, active, pending, mrr }
   }
 
-  return NextResponse.json({ users: data, stats })
+  return NextResponse.json({ users: data, stats, total: count ?? 0, page, limit })
 }
 
 export async function POST(req: NextRequest) {

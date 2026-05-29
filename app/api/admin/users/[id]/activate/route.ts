@@ -29,5 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: result.error || 'Activation failed' }, { status: 400 })
   }
 
+  // Audit log — record which admin triggered the activation
+  const adminUserId = h.get('x-user-id')
+  await supabaseAdmin.from('activity_log').insert({
+    user_id: adminUserId,
+    type: 'agent_action',
+    text: `Manually activated plan for ${result.email} (user ${params.id})`,
+  })
+
   return NextResponse.json({ success: true, email: result.email })
 }

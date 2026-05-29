@@ -86,26 +86,3 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ profile: data })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const h = req.headers
-  const role = h.get('x-user-role')
-  if (role !== 'super_admin') {
-    return NextResponse.json({ error: 'Forbidden — super_admin only' }, { status: 403 })
-  }
-
-  // Soft delete: deactivate, don't delete auth user
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .update({
-      is_active: false,
-      subscription_status: 'cancelled',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', params.id)
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  return NextResponse.json({ profile: data, deactivated: true })
-}

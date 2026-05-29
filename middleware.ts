@@ -8,6 +8,12 @@ const BASE_PATH = "/prospecting-os";
 
 export async function middleware(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
+  // Always sanitize x-user-* headers — never trust client-supplied values
+  requestHeaders.delete("x-user-id");
+  requestHeaders.delete("x-user-email");
+  requestHeaders.delete("x-user-name");
+  requestHeaders.delete("x-user-role");
+  requestHeaders.delete("x-user-avatar");
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   const path = req.nextUrl.pathname;
 
@@ -165,8 +171,10 @@ export async function middleware(req: NextRequest) {
     const isGrace = graceRoutes.some(r =>
       normalizedPath === r || normalizedPath.startsWith(r + "/")
     );
+    // super_admin and qa_agent bypass subscription enforcement
+    const isPrivilegedRole = role === "super_admin" || role === "qa_agent";
 
-    if (!isGrace) {
+    if (!isGrace && !isPrivilegedRole) {
       try {
         const { data: sub } = await supabaseAdmin
           .from("profiles")

@@ -133,7 +133,6 @@ export default function UserDetailPage() {
 
   const rColors = ROLE_COLORS[profile.role] || ROLE_COLORS.user;
   const plan = PLANS[(profile.plan as PlanKey) || "pilot"];
-  void workspace;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-5 animate-fade-in">
@@ -275,6 +274,34 @@ export default function UserDetailPage() {
             {savingPlan ? <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <Save size={14} />}
             Update Plan
           </button>
+
+          {workspace && (
+            <div className="rounded-xl p-4 space-y-2 mt-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: "var(--ink-4)" }}>Client Workspace</p>
+              <div className="grid grid-cols-2 gap-2 text-[12px]">
+                <div>
+                  <span style={{ color: "var(--ink-4)" }}>Leads synced</span>
+                  <p className="font-semibold" style={{ color: "var(--ink)" }}>{workspace.leads_count ?? 0}</p>
+                </div>
+                <div>
+                  <span style={{ color: "var(--ink-4)" }}>Last sync</span>
+                  <p className="font-semibold" style={{ color: "var(--ink)" }}>{workspace.last_sync_at ? fmtDate(workspace.last_sync_at) : "—"}</p>
+                </div>
+                <div>
+                  <span style={{ color: "var(--ink-4)" }}>Slack webhook</span>
+                  <p className="font-semibold truncate" style={{ color: workspace.slack_webhook ? "var(--positive)" : "var(--ink-3)" }}>
+                    {workspace.slack_webhook ? "Configured" : "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <span style={{ color: "var(--ink-4)" }}>ICP config</span>
+                  <p className="font-semibold" style={{ color: workspace.icp_config ? "var(--positive)" : "var(--ink-3)" }}>
+                    {workspace.icp_config ? "Set" : "Default"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

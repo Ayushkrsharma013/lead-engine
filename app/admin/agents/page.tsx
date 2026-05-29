@@ -182,6 +182,7 @@ export default function AgentCommandCenter() {
   const enabled = agents.filter((a) => a.enabled);
   const pendingActions = actions.filter((a) => a.status === "pending");
   const latestRuns = runs.slice(0, 20);
+  const [showAllNotifs, setShowAllNotifs] = useState(false);
   const notifActions = actions.filter((a) => a.status !== "pending");
 
   // ─── Chart data ──────────────────────────────────────────────────────────
@@ -624,6 +625,12 @@ export default function AgentCommandCenter() {
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
               Notification Log ({notifActions.length})
             </span>
+            {notifActions.length > 20 && (
+              <button onClick={() => setShowAllNotifs(v => !v)}
+                style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                {showAllNotifs ? "Show less" : `Show all ${notifActions.length}`}
+              </button>
+            )}
           </div>
           {notifActions.length === 0 ? (
             <div style={{ textAlign: "center", padding: "14px 0", fontSize: 12, color: "var(--ink-3)" }}>No notifications yet</div>
@@ -638,7 +645,7 @@ export default function AgentCommandCenter() {
                   </tr>
                 </thead>
                 <tbody>
-                  {notifActions.slice(0, 20).map((a) => (
+                  {(showAllNotifs ? notifActions : notifActions.slice(0, 20)).map((a) => (
                     <tr key={a.id} style={{ borderBottom: "1px solid var(--line)" }}>
                       <td style={{ padding: "8px 12px", fontSize: 12, color: "var(--ink)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.description}</td>
                       <td style={{ padding: "8px 12px", fontSize: 11, color: "var(--ink-3)", fontFamily: "monospace" }}>{a.agent_name}</td>

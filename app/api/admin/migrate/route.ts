@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   const secret = req.headers.get("x-migrate-secret") || "";
-  if (secret !== (process.env.CRON_SECRET || "flow-forges-migrate")) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -62,8 +62,8 @@ export async function sendTelegramNotification(b: BookingDetails): Promise<void>
 
 export async function sendEmailNotification(b: BookingDetails): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.NOTIFY_EMAIL || "ayushkumarsharma013@gmail.com";
-  if (!apiKey) return;
+  const toEmail = process.env.NOTIFY_EMAIL;
+  if (!apiKey || !toEmail) return;
 
   const tz = b.timezone || "UTC";
   const subject = `New Demo Booked — ${b.name}${b.company ? ` from ${b.company}` : ""}`;
@@ -92,12 +92,12 @@ export async function sendEmailNotification(b: BookingDetails): Promise<void> {
             <!-- Prospect Details -->
             <p style="margin:0 0 20px;color:#b0aeaa;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Prospect Details</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#141310;border-radius:12px;overflow:hidden;">
-              ${row("Name", b.name)}
-              ${row("Email", `<a href="mailto:${b.email}" style="color:#e8420a;text-decoration:none;">${b.email}</a>`)}
-              ${b.company ? row("Company", b.company) : ""}
-              ${b.phone ? row("Phone", b.phone) : ""}
-              ${b.type ? row("Type", b.type) : ""}
-              ${b.notes ? row("Notes", b.notes) : ""}
+              ${row("Name", esc(b.name))}
+              ${row("Email", `<a href="mailto:${esc(b.email)}" style="color:#e8420a;text-decoration:none;">${esc(b.email)}</a>`)}
+              ${b.company ? row("Company", esc(b.company)) : ""}
+              ${b.phone ? row("Phone", esc(b.phone)) : ""}
+              ${b.type ? row("Type", esc(b.type)) : ""}
+              ${b.notes ? row("Notes", esc(b.notes)) : ""}
             </table>
 
             <!-- Meeting Time -->
@@ -184,17 +184,17 @@ export async function sendAttendeeConfirmation(b: BookingDetails): Promise<void>
           <td style="padding:32px 36px;">
 
             <p style="margin:0 0 24px;color:#f5f4f1;font-size:15px;line-height:1.6;">
-              Hi ${b.name},<br><br>
+              Hi ${esc(b.name)},<br><br>
               Thank you for booking a demo with Prospecting OS. Your meeting has been confirmed for the following time:
             </p>
 
             <!-- Meeting Details -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#141310;border-radius:12px;overflow:hidden;">
-              ${row("Date", b.date)}
-              ${row("Time", `${b.time} <span style="color:#7a7875;font-size:12px;">(${tz})</span>`)}
-              ${row("Type", meetingType)}
+              ${row("Date", esc(b.date))}
+              ${row("Time", `${esc(b.time)} <span style="color:#7a7875;font-size:12px;">(${esc(tz)})</span>`)}
+              ${row("Type", esc(meetingType))}
               ${b.duration ? row("Duration", `${b.duration} minutes`) : ""}
-              ${b.company ? row("Company", b.company) : ""}
+              ${b.company ? row("Company", esc(b.company)) : ""}
             </table>
 
             <!-- Add to Calendar -->
@@ -277,15 +277,15 @@ export async function sendCancellationEmail(b: BookingDetails): Promise<void> {
           <td style="padding:32px 36px;">
 
             <p style="margin:0 0 24px;color:#f5f4f1;font-size:15px;line-height:1.6;">
-              Hi ${b.name},<br><br>
+              Hi ${esc(b.name)},<br><br>
               Your demo with Prospecting OS has been cancelled as requested.
             </p>
 
             <!-- Cancelled Details -->
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#141310;border-radius:12px;overflow:hidden;">
-              ${row("Date", b.date)}
-              ${row("Time", b.time)}
-              ${b.type ? row("Type", b.type) : ""}
+              ${row("Date", esc(b.date))}
+              ${row("Time", esc(b.time))}
+              ${b.type ? row("Type", esc(b.type)) : ""}
             </table>
 
             <!-- Book Again -->
@@ -329,94 +329,6 @@ export async function sendCancellationEmail(b: BookingDetails): Promise<void> {
     });
   } catch (err) {
     console.warn("[notify] Cancellation email failed:", err);
-  }
-}
-
-// ─── Reminder Email (not yet scheduled, defined for future use) ──────────────
-
-export async function sendReminderEmail(b: BookingDetails): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  const tz = b.timezone || "UTC";
-  const subject = "Reminder: Your Demo is in 1 Hour — Prospecting OS";
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#0e0d0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0d0a;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
-
-        <!-- Header -->
-        <tr>
-          <td style="background:#e8420a;padding:28px 36px;">
-            <p style="margin:0;color:#fff;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Prospecting OS</p>
-            <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:800;">Demo Reminder</h1>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:32px 36px;">
-
-            <p style="margin:0 0 24px;color:#f5f4f1;font-size:15px;line-height:1.6;">
-              Hi ${b.name},<br><br>
-              This is a reminder that your demo with Prospecting OS starts in 1 hour.
-            </p>
-
-            <!-- Meeting Details -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#141310;border-radius:12px;overflow:hidden;">
-              ${row("Date", b.date)}
-              ${row("Time", `${b.time} <span style="color:#7a7875;font-size:12px;">(${tz})</span>`)}
-              ${b.type ? row("Type", b.type) : ""}
-              ${b.duration ? row("Duration", `${b.duration} minutes`) : ""}
-            </table>
-
-            <!-- Calendar Link -->
-            ${b.calendarLink ? `
-            <div style="text-align:center;margin-top:32px;">
-              <a href="${b.calendarLink}" style="display:inline-block;background:#e8420a;color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:999px;">
-                Open in Calendar &rarr;
-              </a>
-            </div>` : ""}
-
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
-            <p style="margin:0;color:#7a7875;font-size:12px;text-align:center;">
-              Prospecting OS &middot; <a href="https://app.flow-forges.com/prospecting-os" style="color:#e8420a;text-decoration:none;">app.flow-forges.com</a>
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-
-  try {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Prospecting OS <notifications@flow-forges.com>",
-        to: [b.email],
-        subject,
-        html,
-      }),
-    });
-  } catch (err) {
-    console.warn("[notify] Reminder email failed:", err);
   }
 }
 
@@ -483,7 +395,7 @@ export async function sendClientCredentialsEmail(p: ClientCredentialsParams): Pr
           <td style="padding:32px 36px;">
 
             <p style="margin:0 0 24px;color:#f5f4f1;font-size:15px;line-height:1.6;">
-              Hi ${p.clientName},<br><br>
+              Hi ${esc(p.clientName)},<br><br>
               Your Prospecting OS client portal has been set up. Use the credentials below to log in and access your lead pipeline, analytics, and reports.
             </p>
 
@@ -492,19 +404,19 @@ export async function sendClientCredentialsEmail(p: ClientCredentialsParams): Pr
               <tr>
                 <td style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
                   <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Client ID</p>
-                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${p.clientId}</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${esc(p.clientId)}</p>
                 </td>
               </tr>
               <tr>
                 <td style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
                   <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Username / Email</p>
-                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;">${p.username}</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;">${esc(p.username)}</p>
                 </td>
               </tr>
               <tr>
                 <td style="padding:20px 24px;">
                   <p style="margin:0;color:#7a7875;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Temporary Password</p>
-                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${p.tempPassword}</p>
+                  <p style="margin:4px 0 0;color:#f5f4f1;font-size:14px;font-family:monospace;">${esc(p.tempPassword)}</p>
                 </td>
               </tr>
             </table>
@@ -563,7 +475,7 @@ export async function notifyInvoiceEvent(
   event: 'sent' | 'paid' | 'overdue' | 'reminder',
   inv: { invoice_number: string; client_name: string; total: number; due_date: string }
 ): Promise<void> {
-  const formatIDR = (n: number) => new Intl.NumberFormat('id-ID').format(n);
+  const formatUSD = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
   const emoji = { sent: '📨', paid: '✅', overdue: '⚠️', reminder: '🔔' }[event];
   const label = { sent: 'Invoice Sent', paid: 'Invoice Paid', overdue: 'Invoice Overdue', reminder: 'Reminder Sent' }[event];
 
@@ -571,17 +483,27 @@ export async function notifyInvoiceEvent(
     `${emoji} <b>${label}</b>\n` +
     `Invoice: <code>${inv.invoice_number}</code>\n` +
     `Client: ${inv.client_name}\n` +
-    `Amount: IDR ${formatIDR(inv.total)}\n` +
+    `Amount: ${formatUSD(inv.total)}\n` +
     `Due: ${inv.due_date}`
   );
 }
 
 // ─── Shared ──────────────────────────────────────────────────────────────────
 
+function esc(s: string | undefined | null): string {
+  if (!s) return "";
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 function row(label: string, value: string): string {
   return `
     <tr>
-      <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);color:#7a7875;font-size:13px;width:140px;white-space:nowrap;">${label}</td>
+      <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);color:#7a7875;font-size:13px;width:140px;white-space:nowrap;">${esc(label)}</td>
       <td style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);color:#f5f4f1;font-size:13px;font-weight:500;">${value}</td>
     </tr>`;
 }

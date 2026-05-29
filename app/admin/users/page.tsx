@@ -46,6 +46,9 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, mrr: 0 });
+  const [page, setPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const PAGE_LIMIT = 50;
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [modal, setModal] = useState<"create" | null>(null);
   const [confirm, setConfirm] = useState<
@@ -66,6 +69,9 @@ export default function AdminUsersPage() {
     return () => clearTimeout(id);
   }, [search]);
 
+  // Reset to page 1 when any filter changes
+  useEffect(() => { setPage(1); }, [roleFilter, statusFilter, debouncedSearch]);
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
@@ -73,12 +79,15 @@ export default function AdminUsersPage() {
       if (roleFilter !== "all") params.set("role", roleFilter);
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (debouncedSearch) params.set("q", debouncedSearch);
+      params.set("page", String(page));
+      params.set("limit", String(PAGE_LIMIT));
 
       const res = await fetch(`/prospecting-os/api/admin/users?${params}`);
       if (!res.ok) { setError("Failed to load users"); setLoading(false); return; }
       const data = await res.json();
       const allUsers = (data.users || []) as UserProfile[];
       setUsers(allUsers);
+      setTotalUsers(data.total ?? allUsers.length);
 
       // 2.6 — Stats now come from API; fall back to client-side compute if missing
       if (data.stats) {
@@ -101,7 +110,7 @@ export default function AdminUsersPage() {
       setError("");
     } catch { setError("Failed to load users"); }
     setLoading(false);
-  }, [roleFilter, statusFilter, debouncedSearch]);
+  }, [roleFilter, statusFilter, debouncedSearch, page]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -377,6 +386,34 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalUsers > PAGE_LIMIT && (
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[11px]" style={{ color: "var(--ink-4)" }}>
+            Showing {(page - 1) * PAGE_LIMIT + 1}–{Math.min(page * PAGE_LIMIT, totalUsers)} of {totalUsers}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink-3)" }}>
+              Prev
+            </button>
+            <span className="text-[11px] tabular-nums" style={{ color: "var(--ink-3)" }}>
+              {page} / {Math.ceil(totalUsers / PAGE_LIMIT)}
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= Math.ceil(totalUsers / PAGE_LIMIT) || loading}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink-3)" }}>
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create User Modal */}
       {modal === "create" && (
