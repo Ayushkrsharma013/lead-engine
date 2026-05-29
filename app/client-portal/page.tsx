@@ -231,6 +231,46 @@ export default function ClientPortalOverview() {
     init();
   }, []);
 
+  // All hooks must be called before any early return — Rules of Hooks
+  const planLabel = useMemo(() => {
+    const plan = dash?.plan;
+    return plan === "pilot" ? "Founder's Pilot"
+      : plan === "growth" ? "Growth"
+      : plan === "scale" ? "Scale"
+      : plan === "micro" ? "Micro-Offer"
+      : "No plan";
+  }, [dash?.plan]);
+
+  const hasGrowth = useMemo(() => dash?.allowedModules.includes("icebreakers") ?? false, [dash?.allowedModules]);
+  const hasScale = useMemo(() => dash?.allowedModules.includes("sequences") ?? false, [dash?.allowedModules]);
+
+  const StatCards = useMemo(() => {
+    const core = dash?.core;
+    if (!core) return [];
+    return [
+      { label: "Total Leads", value: core.total.toLocaleString(), icon: Users, color: "var(--accent)" },
+      { label: "Hot (80+)", value: String(core.hot), icon: Zap, color: "var(--negative)" },
+      { label: "Avg Score", value: String(core.avgScore), icon: TrendingUp, color: "var(--positive)" },
+      { label: "Contacted", value: String(core.contacted), icon: Mail, color: "var(--info)" },
+      { label: "Meetings", value: String(core.meetings), icon: CalendarCheck, color: "var(--accent-blue)" },
+    ];
+  }, [dash?.core]);
+
+  const handleExportCSV = useCallback(async () => {
+    const res = await fetch("/prospecting-os/api/client-portal/leads?limit=1000");
+    if (!res.ok) return;
+    const data = await res.json();
+    const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
+    for (const l of data.leads) {
+      rows.push([csvEscape(l.name), csvEscape(l.title), csvEscape(l.company), csvEscape(l.industry), csvEscape(l.score), csvEscape(l.status || "new"), csvEscape(l.email)].join(","));
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "my-leads.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -249,37 +289,6 @@ export default function ClientPortalOverview() {
   }
 
   const { core, recentLeads, plan, industryBreakdown, statusBreakdown, icebreakers, slackConfigured, weeklyFlow, activeSequences, conversionFunnel } = dash;
-
-  const planLabel = useMemo(() => plan === "pilot"
-    ? "Founder's Pilot" : plan === "growth"
-    ? "Growth" : plan === "scale"
-    ? "Scale" : plan === "micro"
-    ? "Micro-Offer" : "No plan", [plan]);
-  const hasGrowth = useMemo(() => dash.allowedModules.includes('icebreakers'), [dash.allowedModules]);
-  const hasScale = useMemo(() => dash.allowedModules.includes('sequences'), [dash.allowedModules]);
-
-  const StatCards = useMemo(() => [
-    { label: "Total Leads", value: core.total.toLocaleString(), icon: Users, color: "var(--accent)" },
-    { label: "Hot (80+)", value: String(core.hot), icon: Zap, color: "var(--negative)" },
-    { label: "Avg Score", value: String(core.avgScore), icon: TrendingUp, color: "var(--positive)" },
-    { label: "Contacted", value: String(core.contacted), icon: Mail, color: "var(--info)" },
-    { label: "Meetings", value: String(core.meetings), icon: CalendarCheck, color: "var(--accent-blue)" },
-  ], [core.total, core.hot, core.avgScore, core.contacted, core.meetings]);
-
-  const handleExportCSV = useCallback(async () => {
-    const res = await fetch("/prospecting-os/api/client-portal/leads?limit=1000");
-    if (!res.ok) return;
-    const data = await res.json();
-    const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
-    for (const l of data.leads) {
-      rows.push([csvEscape(l.name), csvEscape(l.title), csvEscape(l.company), csvEscape(l.industry), csvEscape(l.score), csvEscape(l.status || "new"), csvEscape(l.email)].join(","));
-    }
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "my-leads.csv"; a.click();
-    URL.revokeObjectURL(url);
-  }, []);
 
   return (
     <div className="max-w-5xl space-y-5 animate-fade-in">
