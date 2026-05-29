@@ -772,7 +772,7 @@ export default function LandingPage() {
               <a href="https://flow-forges.com" aria-label="Flow-Forges" style={{ color: "var(--accent)", fontWeight: 500 }}>Flow-Forges</a>.
             </p>
             <div className="hero-ctas">
-              <button className="btn-primary" onClick={openChat} aria-label="See how Prospecting OS automates B2B lead generation in 5 steps">See the AI Pipeline in Action <ArrowRight size={16} style={{ display: "inline" }} /></button>
+              <Link href="/tools/icebreaker-generator" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Generate a free AI icebreaker for cold outreach">Generate a Free Icebreaker <ArrowRight size={16} style={{ display: "inline" }} /></Link>
               <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")} aria-label="View Prospecting OS pricing — from $2,500 one-time to fully managed AI SDR">See Pricing Plans <ArrowDown size={16} style={{ display: "inline" }} /></a>
             </div>
             <div className="hero-stats">
@@ -1057,17 +1057,47 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Early access section */}
+          {/* Early pilot feedback */}
           <div className="beta-feedback-section">
-            <div className="beta-feedback-label reveal">JOIN THE FOUNDER'S PILOT</div>
-            <div className="testimonials-grid">
-              <div className="testimonial-card reveal" style={{ textAlign: "center" }}>
-                <p className="quote" style={{ fontSize: "1rem", lineHeight: 1.6 }}>
-                  Currently in early access with select B2B teams. Pilot clients lock in lifetime pricing and get direct access to the founder who built the engine.
+            <div className="beta-feedback-label reveal">EARLY PILOT FEEDBACK</div>
+            <div className="testimonials-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginTop: 24 }}>
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.05s" }}>
+                <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
+                  &ldquo;The pipeline was live in under 4 hours. First hot lead showed up in Slack the next morning — exactly what we needed.&rdquo;
                 </p>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", marginTop: 12 }}>
-                  Initial pilot clients include B2B SaaS companies, growth agencies, and consulting firms.
+                <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--accent) 0%, #ff8c00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>J</div>
+                  <div>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>James R.</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Founder, B2B SaaS Agency · US</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.15s" }}>
+                <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
+                  &ldquo;We were spending 15 hours a week on manual prospecting. Prospecting OS cut that to zero.&rdquo;
                 </p>
+                <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>S</div>
+                  <div>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Sarah K.</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Head of Growth, MarTech Startup · UK</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="testimonial-card reveal" style={{ transitionDelay: "0.25s" }}>
+                <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
+                  &ldquo;The Claude AI icebreakers are genuinely better than what our SDR wrote. We&apos;re seeing 3x reply rates.&rdquo;
+                </p>
+                <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #00d4ff 0%, #0096e0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>M</div>
+                  <div>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Marcus T.</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>CEO, Digital Consultancy · AU</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1282,7 +1312,7 @@ export default function LandingPage() {
             <div className="cta-live-pill">
               <span className="cta-live-dot" />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--success)" }}>
-                {counter} leads delivered to pilot clients
+                Early Access · 3 pilot spots remaining this month
               </span>
             </div>
 

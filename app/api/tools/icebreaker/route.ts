@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name, title, and company are required.' }, { status: 400 })
   }
 
-  // Insert rate-limit record BEFORE calling Gemini so a failed insert
+  // Insert rate-limit record BEFORE calling Claude so a failed insert
   // doesn't give the user infinite free generations.
   await supabaseAdmin.from('tool_rate_limits').insert({
     tool: 'icebreaker',
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
     created_at: new Date().toISOString(),
   });
 
-  const geminiKey = process.env.GEMINI_API_KEY
-  if (!geminiKey) {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  if (!anthropicKey) {
     return NextResponse.json({ error: 'AI service not configured.' }, { status: 503 })
   }
 
@@ -68,34 +68,29 @@ RULES:
 
 Write the icebreaker:`
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 200,
-          topP: 0.9,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }),
-    }
-  )
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
 
-  if (!geminiRes.ok) {
-    console.error('Gemini API error:', await geminiRes.text())
+  if (!claudeRes.ok) {
+    console.error('Claude API error:', await claudeRes.text())
     return NextResponse.json({ error: 'AI generation failed. Try again.' }, { status: 500 })
   }
 
-  const geminiData = await geminiRes.json() as {
-    candidates?: Array<{ content?: { parts?: Array<{ thought?: boolean; text?: string }> } }>
+  const claudeData = await claudeRes.json() as {
+    content?: Array<{ type: string; text: string }>
   }
-  const parts = geminiData.candidates?.[0]?.content?.parts ?? []
-  const textPart = parts.find(p => !p.thought) ?? parts[0]
-  const icebreaker = textPart?.text?.trim()
+  const icebreaker = claudeData.content?.[0]?.text?.trim()
 
   if (!icebreaker) {
     return NextResponse.json({ error: 'No output from AI. Try again.' }, { status: 500 })
