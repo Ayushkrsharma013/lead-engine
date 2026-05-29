@@ -536,8 +536,9 @@ text-accent-blue → var(--accent-blue)
 | `NEXT_PUBLIC_SITE_URL` | Vercel + `.env.local` | Canonical URL for OAuth callbacks |
 | `CRON_SECRET` | Vercel + `.env.local` | Optional — bearer token to secure cron endpoints |
 | `SENTRY_DSN` | Vercel + `.env.local` | Optional — Sentry DSN for error forwarding |
+| `ANTHROPIC_API_KEY` | Vercel + `.env.local` | **Required** — server-side Claude API for free icebreaker tool (`/api/tools/icebreaker`) |
 
-The Anthropic API key is entered by the user in the UI and stored in React state only (never persisted). Gemini API key is stored in localStorage for browser-side AI features (Scorer, A/B variants).
+The Anthropic API key is entered by the user in the UI and stored in React state only (never persisted). A separate server-side `ANTHROPIC_API_KEY` is used by the free public icebreaker tool (3/day per IP, rate-limited via `tool_rate_limits` Supabase table). Gemini API key is stored in localStorage for browser-side AI features (Scorer, A/B variants).
 
 ---
 
@@ -562,6 +563,8 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 - **Email/notify env vars**: `RESEND_API_KEY`, `NOTIFY_EMAIL`, `TELEGRAM_BOT_TOKEN` (optional), `TELEGRAM_CHAT_ID` (optional)
 - **Google Calendar env vars**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALENDAR_REFRESH_TOKEN` (optional)
 - **CAPTCHA env var**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (optional — Cloudflare Turnstile)
+- **Force redeploy** (after adding env vars): `npx vercel redeploy <deployment-id> --target production --no-wait` — get ID from `npx vercel ls`
+- **Check env vars on Vercel**: `npx vercel env ls --scope <team-id>` — confirms what's actually deployed
 
 ---
 
@@ -582,6 +585,7 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 | Phase 6 | Superadmin safety + client-portal audit remediation | 2026-05-27 |
 | Tools | Icebreaker + Free Audit with Navbar, Footer, custom dropdowns, rate-limit fixes | 2026-05-27 |
 | N8N | 5 n8n workflows built, Vercel→n8n wired, credentials pushed to Hetzner | 2026-05-26/27 |
+| Audit-29 | Landing credibility fixes — counter pill, hero CTA→icebreaker, testimonials, icebreaker API→Claude | 2026-05-29 |
 
 ### Credentials
 - Super admin: ayushkumarsharma013@gmail.com / Pro2026!Secure
@@ -595,6 +599,9 @@ bash tests/sanity.sh                       # QA_Bot full sanity suite
 - Email/Telegram notifications fire-and-forget after DB writes
 - Middleware: fail-closed subscription check, `effectiveRole = role || "user"`, hoisted supabaseAdmin
 - Gemini 2.5 Flash: `thinkingConfig: { thinkingBudget: 0 }`, extract with `parts.find(p => !p.thought)`
+- Icebreaker route uses direct `fetch` to `https://api.anthropic.com/v1/messages` — Anthropic SDK is NOT installed; use fetch with `x-api-key` + `anthropic-version: 2023-06-01` headers
+- Free public tools (`/api/tools/*`) use `tool_rate_limits` Supabase table for IP-based rate limiting (insert record BEFORE API call)
+- Known pre-existing console noise (not bugs): Supabase profiles 500 (RLS browser query), GoTrueClient duplicate warning, book page RSC 404 (`/prospecting-os/prospecting-os?_rsc=`), 401s on `/api/filters` + `/api/user/settings` from browser context
 
 ---
 
