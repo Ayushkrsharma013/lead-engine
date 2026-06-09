@@ -312,7 +312,10 @@ export const PLAN_MODULES: Record<PlanKey, string[]> = {
   micro: [
     'overview',
     'leads-view',
+    'icebreakers',
+    'analytics',
     'billing',
+    'settings',
   ],
 }
 

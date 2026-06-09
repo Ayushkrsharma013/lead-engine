@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Zap, ArrowRight, ArrowLeft, CheckCircle2, Search, Monitor, Code, Compass,
@@ -34,13 +34,38 @@ const PLANS_DATA: Record<string, { name: string; price: string; interval: string
 };
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", background: "#0e0d0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 size={20} className="animate-spin" style={{ color: "#e8420a" }} />
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
+  );
+}
+
+function OnboardingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<OnboardingStep>("welcome");
   const [name, setName] = useState("");
   const [icp, setIcp] = useState<IcpPreferences>({ industries: [], companySizes: [], seniority: [], countries: [] });
   const [selectedPlan, setSelectedPlan] = useState("pilot");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Detect plan from URL params (e.g., ?plan=micro or ?plan=pilot)
+  useEffect(() => {
+    const planParam = searchParams.get("plan");
+    if (planParam && PLANS_DATA[planParam]) {
+      setSelectedPlan(planParam);
+      // For micro: skip welcome step, go straight to ICP
+      if (planParam === "micro") {
+        setStep("icp");
+      }
+    }
+  }, [searchParams]);
 
   const currentIndex = ONBOARDING_STEPS.findIndex(s => s.key === step);
   const progress = ((currentIndex + 1) / ONBOARDING_STEPS.length) * 100;

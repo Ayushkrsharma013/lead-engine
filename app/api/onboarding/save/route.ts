@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase";
+import { notifyTelegram } from "@/lib/notify";
+import { triggerMicroDelivery } from "@/lib/micro-delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -47,20 +49,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
 
-  // Fire-and-forget: notify n8n welcome sequence
+  // ── Save ICP to client_workspaces ─────────────────────────────────────
+  if (body.icp && Object.keys(body.icp).length > 0) {
+    const plan = body.plan || "pilot";
+    const { data: existingWs } = await supabaseAdmin
+      .from("client_workspaces")
+      .select("id")
+      .eq("client_user_id", user.id)
+      .maybeSingle();
+
+    if (existingWs) {
+      await supabaseAdmin
+        .from("client_workspaces")
+        .update({ icp_config: body.icp, plan })
+        .eq("client_user_id", user.id);
+    } else {
+      await supabaseAdmin
+        .from("client_workspaces")
+        .insert({
+          client_user_id: user.id,
+          plan,
+          icp_config: body.icp,
+        });
+    }
+  }
+
+  // ── Fetch updated profile for downstream hooks ───────────────────────
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("email, full_name, plan, subscription_status, onboarding_complete")
+    .select("id, email, full_name, plan, subscription_status, onboarding_complete, icp_preferences")
     .eq("id", user.id)
     .single();
 
-  if (profile) {
-    fetch("https://automate.flow-forges.com/webhook/welcome-sequence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profile),
-    }).catch(() => {}); // n8n failure never blocks onboarding
+  if (!profile) {
+    return NextResponse.json({ ok: true });
   }
+
+  // ── Micro plan: trigger delivery + Telegram alert ─────────────────────
+  const isMicro = profile.plan === "micro";
+  const justOnboarded = body.onboardingComplete === true;
+
+  if (isMicro && justOnboarded) {
+    const email = profile.email as string;
+    // Fire-and-forget: trigger micro delivery
+    triggerMicroDelivery(user.id, email).catch((err) =>
+      console.error("[onboarding/save] micro delivery trigger failed:", err)
+    );
+
+    // Telegram alert to founder with ICP details
+    const icp = body.icp || {};
+    const icpSummary = Object.entries(icp)
+      .map(([k, v]) => `${k}: ${(v as string[]).join(", ") || "none"}`)
+      .join("\n");
+
+    notifyTelegram(
+      `NEW MICRO CLIENT ONBOARDED\n` +
+      `Email: ${email}\n` +
+      `Plan: Micro-Offer ($997)\n` +
+      `ICP Config:\n${icpSummary || "Not provided"}`
+    ).catch(() => {});
+  }
+
+  // ── Fire-and-forget: notify n8n welcome sequence ─────────────────────
+  fetch("https://automate.flow-forges.com/webhook/welcome-sequence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }
