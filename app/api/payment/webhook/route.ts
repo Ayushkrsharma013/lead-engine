@@ -13,6 +13,19 @@ const PORTAL_LOGIN_URL =
 const N8N_WELCOME_HOOK =
   "https://automate.flow-forges.com/webhook/welcome-sequence";
 
+// Map Dodo product IDs to plan keys
+// Product IDs from Dodo dashboard → internal plan keys
+const DODO_PRODUCT_MAP: Record<string, PlanKey> = {
+  // These will be updated with actual Dodo product IDs once available
+  prod_micro: "micro",
+  prod_pilot_setup: "pilot",
+  prod_pilot_monthly: "pilot",
+  prod_growth_setup: "growth",
+  prod_growth_monthly: "growth",
+  prod_scale_setup: "scale",
+  prod_scale_monthly: "scale",
+};
+
 // 12-char alphanumeric, crypto-random, no ambiguous chars (l, 1, o, 0, I, O)
 function generateTempPassword(): string {
   const chars =
@@ -41,11 +54,271 @@ function maskEmail(email: string | null | undefined): string {
   return `${email.slice(0, 2)}***${email.slice(at)}`;
 }
 
+// Verify Dodo webhook signature using HMAC-SHA256
+function verifyDodoSignature(
+  payload: string,
+  signature: string | null,
+  secret: string
+): boolean {
+  if (!signature || !secret) return false;
+  try {
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(payload)
+      .digest("hex");
+    return crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signature)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody || "{}");
 
-    // Support Easebuzz, Skydo, Stripe webhook formats
+    // ── Dodo webhook path ──────────────────────────────────────────────────
+    const dodoSignature = req.headers.get("dodo-signature")
+      || req.headers.get("x-dodo-signature");
+    const dodoSecret = process.env.DODO_WEBHOOK_SECRET;
+
+    if (dodoSignature && dodoSecret) {
+      if (!verifyDodoSignature(rawBody, dodoSignature, dodoSecret)) {
+        console.warn("[payment-webhook] Invalid Dodo signature");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+
+      // Dodo sends: { event: "payment.succeeded", data: { payment: { id, email, amount, product_id, status } } }
+      const event = body.event || body.type;
+      const payment = body.data?.payment || body.data || body;
+
+      if (event !== "payment.succeeded" && payment?.status !== "succeeded") {
+        // Log other events but don't process
+        console.log("[payment-webhook] Dodo event ignored:", event || payment?.status);
+        return NextResponse.json({ received: true });
+      }
+
+      const email = payment.email || payment.customer_email;
+      const amount = Number(payment.amount) || 0;
+      const productId = payment.product_id || body.data?.product_id || "";
+      const paymentId = payment.id || payment.payment_id || "";
+
+      // Map Dodo product ID to internal plan key
+      const plan = DODO_PRODUCT_MAP[productId] || "micro";
+
+      if (!email) {
+        console.warn("[payment-webhook] Dodo payment has no email:", paymentId);
+        return NextResponse.json({ received: true });
+      }
+
+      // Find or create user by email
+      const { data: existingProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, full_name, subscription_status, role, plan, icp_preferences")
+        .eq("email", email.toLowerCase())
+        .maybeSingle();
+
+      let userId: string;
+      const tempPassword = generateTempPassword();
+      const username = generateUsername(email);
+
+      if (existingProfile) {
+        userId = existingProfile.id as string;
+
+        // Skip if already active (idempotent)
+        if (existingProfile.subscription_status === "active") {
+          console.log("[payment-webhook] Dodo: already active, skipping:", maskEmail(email));
+          return NextResponse.json({ received: true, alreadyActive: true });
+        }
+
+        // Update existing profile
+        const { error: profileError } = await supabaseAdmin
+          .from("profiles")
+          .update({
+            role: "client",
+            plan,
+            subscription_status: "active",
+            onboarding_complete: true,
+            subscription_activated_at: new Date().toISOString(),
+            payment_ref: paymentId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", userId);
+
+        if (profileError) {
+          console.error("[payment-webhook] Dodo profile update failed:", profileError);
+          return NextResponse.json({ error: "Profile update failed" }, { status: 500 });
+        }
+      } else {
+        // Create new user profile — requires auth user first
+        // For Dodo, the user may not have signed up yet. Use client provisioning.
+        // Create a profile entry directly (service role bypasses RLS)
+        const { data: newProfile, error: createError } = await supabaseAdmin
+          .from("profiles")
+          .insert({
+            email: email.toLowerCase(),
+            role: "client",
+            plan,
+            subscription_status: "active",
+            onboarding_complete: true,
+            subscription_activated_at: new Date().toISOString(),
+            payment_ref: paymentId,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+
+        if (createError || !newProfile) {
+          console.error("[payment-webhook] Dodo profile creation failed:", createError?.message);
+          return NextResponse.json({ error: "Profile creation failed" }, { status: 500 });
+        }
+
+        userId = newProfile.id as string;
+      }
+
+      // Provision client row
+      const { data: existingClient } = await supabaseAdmin
+        .from("clients")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      let clientId: string;
+      if (existingClient) {
+        clientId = existingClient.id as string;
+        await supabaseAdmin
+          .from("clients")
+          .update({
+            portal_username: username,
+            portal_password: tempPassword,
+            plan,
+            status: "active",
+            monthly_retainer: PLANS[plan]?.monthlyAmount ?? 0,
+          })
+          .eq("id", clientId);
+      } else {
+        const { data: newClient } = await supabaseAdmin
+          .from("clients")
+          .insert({
+            name: email.split("@")[0] || "Client",
+            company: "",
+            industry: "",
+            monthly_retainer: PLANS[plan]?.monthlyAmount ?? 0,
+            status: "active",
+            email: email.toLowerCase(),
+            portal_username: username,
+            portal_password: tempPassword,
+            plan,
+            user_id: userId,
+          })
+          .select("id")
+          .single();
+
+        clientId = newClient?.id as string || "";
+      }
+
+      // Create workspace
+      const { data: existingWorkspace } = await supabaseAdmin
+        .from("client_workspaces")
+        .select("id")
+        .eq("client_user_id", userId)
+        .maybeSingle();
+
+      if (!existingWorkspace) {
+        await supabaseAdmin.from("client_workspaces").insert({
+          client_user_id: userId,
+          plan,
+          icp_config: {},
+        });
+      }
+
+      // Send credentials email
+      try {
+        await sendClientCredentialsEmail({
+          to: email,
+          clientName: email.split("@")[0] || "there",
+          clientId: clientId || userId,
+          username: email,
+          tempPassword,
+          loginUrl: PORTAL_LOGIN_URL,
+        });
+      } catch (err) {
+        console.warn("[payment-webhook] Dodo credentials email failed:", err);
+      }
+
+      // Send activation email
+      const planName = PLANS[plan]?.name || plan;
+      try {
+        await sendEmail({
+          to: email,
+          subject: `Payment received — Your ${planName} plan is active`,
+          html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0e0d0a;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0d0a;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+        <tr>
+          <td style="background:#E8A840;padding:28px 36px;">
+            <p style="margin:0;color:#1a1917;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Prospecting OS</p>
+            <h1 style="margin:8px 0 0;color:#1a1917;font-size:24px;font-weight:800;">Payment Received</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 36px;color:#f5f4f1;font-size:15px;line-height:1.6;">
+            <p style="margin:0 0 16px;">Hi there,</p>
+            <p style="margin:0 0 16px;">Thank you for your purchase. Your <strong>${planName}</strong> plan ($${amount}) is now active.</p>
+            <p style="margin:0 0 24px;">Your client portal credentials have been sent in a separate email. Sign in to view your pipeline.</p>
+            <div style="text-align:center;margin:24px 0;">
+              <a href="${PORTAL_LOGIN_URL}" style="display:inline-block;background:#E8A840;color:#1a1917;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;">Open Client Portal</a>
+            </div>
+            <p style="margin:24px 0 0;font-size:13px;color:#b0aeaa;">
+              Reference: <code style="color:#f5f4f1;">${paymentId}</code>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+        });
+      } catch (err) {
+        console.warn("[payment-webhook] Dodo activation email failed:", err);
+      }
+
+      // Telegram alert
+      const deliveryNote =
+        plan === "micro"
+          ? "Auto-activated. Deliver in 5 days."
+          : "Auto-activated.";
+      await notifyTelegram(
+        `NEW CLIENT — ${maskEmail(email)} paid $${amount} for ${planName}. ${deliveryNote}`
+      ).catch(() => undefined);
+
+      // n8n welcome-sequence webhook
+      fetch(N8N_WELCOME_HOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "payment_activated",
+          source: "dodo",
+          userId,
+          email,
+          plan,
+          amount,
+          paymentId,
+          activated_at: new Date().toISOString(),
+        }),
+      }).catch(() => undefined);
+
+      console.log("[payment-webhook] Dodo activated:", maskEmail(email), "plan:", plan);
+      return NextResponse.json({ received: true, activated: true });
+    }
+
+    // ── Legacy path: Easebuzz, Skydo, Stripe webhook formats ────────────
     const txnid =
       body.txnid || body.client_reference_id || body.metadata?.txnid;
     const status = body.status || body.payment_status;
@@ -78,7 +351,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // ── Idempotency: if already active, do nothing ─────────────────────────
+    // Idempotency
     const { data: existing } = await supabaseAdmin
       .from("profiles")
       .select(
@@ -97,7 +370,6 @@ export async function POST(req: NextRequest) {
         "[payment-webhook] Already active, skipping:",
         userId.slice(0, 8),
       );
-      // Still safe to clean up the txn row so we never re-fire.
       await supabaseAdmin
         .from("pending_transactions")
         .delete()
@@ -105,11 +377,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, alreadyActive: true });
     }
 
-    // ── Provision client ───────────────────────────────────────────────────
+    // Provision client
     const tempPassword = generateTempPassword();
     const username = generateUsername(existing.email || existing.full_name || userId);
 
-    // 1) Update profile: role=client, plan, active, onboarding_complete
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -131,12 +402,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2) Reset auth password to the new temp password (so user can log in)
+    // Reset auth password
     await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: tempPassword,
     });
 
-    // 3) Insert clients row (idempotent — skip if user_id already present)
+    // Insert/update clients row
     const { data: existingClient } = await supabaseAdmin
       .from("clients")
       .select("id")
@@ -146,7 +417,6 @@ export async function POST(req: NextRequest) {
     let clientId: string;
     if (existingClient) {
       clientId = existingClient.id as string;
-      // Update existing client row with portal credentials + plan
       await supabaseAdmin
         .from("clients")
         .update({
@@ -168,8 +438,6 @@ export async function POST(req: NextRequest) {
           status: "active",
           email: existing.email,
           portal_username: username,
-          // TODO(security): plaintext for first-login flow; rotate via
-          // verify_portal_password RPC + change-on-first-login UI.
           portal_password: tempPassword,
           plan,
           user_id: userId,
@@ -190,7 +458,7 @@ export async function POST(req: NextRequest) {
       clientId = newClient.id as string;
     }
 
-    // 4) Insert client_workspaces (idempotent — skip if exists)
+    // Insert client_workspaces
     const { data: existingWorkspace } = await supabaseAdmin
       .from("client_workspaces")
       .select("id")
@@ -207,7 +475,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5) Send credentials email
+    // Send credentials email
     if (existing.email) {
       try {
         await sendClientCredentialsEmail({
@@ -222,7 +490,7 @@ export async function POST(req: NextRequest) {
         console.warn("[payment-webhook] Credentials email failed:", err);
       }
 
-      // 6) Send activation email with invoice link
+      // Send activation email
       const invoiceUrl = `https://app.flow-forges.com/prospecting-os/api/invoice?txnid=${encodeURIComponent(txnid)}`;
       try {
         await sendEmail({
@@ -272,7 +540,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7) Telegram alert (plain text — no emoji)
+    // Telegram alert
     const planName = PLANS[plan]?.name || plan;
     const deliveryNote =
       plan === "micro"
@@ -282,7 +550,7 @@ export async function POST(req: NextRequest) {
       `NEW CLIENT — ${existing.email || "[no-email]"} paid $${planAmount} for ${planName}. ${deliveryNote}`,
     ).catch(() => undefined);
 
-    // 8) n8n welcome-sequence webhook (fire-and-forget)
+    // n8n welcome-sequence webhook
     fetch(N8N_WELCOME_HOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -298,7 +566,7 @@ export async function POST(req: NextRequest) {
       }),
     }).catch(() => undefined);
 
-    // 9) Clean up pending transaction
+    // Clean up pending transaction
     await supabaseAdmin
       .from("pending_transactions")
       .delete()

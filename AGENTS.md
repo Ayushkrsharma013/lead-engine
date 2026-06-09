@@ -1,6 +1,6 @@
 # Prospecting OS — lead-engine
 
-Next.js 14.2.5 App Router · TypeScript 5 strict · Tailwind CSS 3 + CSS vars · Supabase (shared) · Anthropic Claude API · npm
+Next.js 14.2.5 App Router · TypeScript 5 strict · Tailwind CSS 3 + CSS vars · Supabase (shared) · Anthropic Codex API · npm
 Live: `app.flow-forges.com/prospecting-os` | basePath: `/prospecting-os`
 
 ## Critical Rules
@@ -47,4 +47,4 @@ Push to `main` → Vercel auto-deploys. Required env: `NEXT_PUBLIC_SUPABASE_URL`
 
 ## Full Reference
 
-See `lead-engine/.claude/ref.md` — full directory tree, RBAC tables, AppContext, DB schema, CSS vars, types, env vars, security audit notes.
+See `lead-engine/.Codex/ref.md` — full directory tree, RBAC tables, AppContext, DB schema, CSS vars, types, env vars, security audit notes.

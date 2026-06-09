@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +11,8 @@ import type { UserProfile, PlanKey } from "@/lib/types";
 import { trackPayment } from "@/lib/analytics";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Checkout / Billing Page — Client-facing payment flow (Xflow Pay)
+   Checkout / Billing Page — Client-facing payment flow
+   Wrapped in Suspense for useSearchParams() SSR compatibility.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function fmtDate(iso: string | null): string {
@@ -36,7 +37,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -401,6 +402,18 @@ export default function CheckoutPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg, #000)" }}>
+        <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent, #E8A840)" }} />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
 

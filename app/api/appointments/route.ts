@@ -63,16 +63,16 @@ export async function GET(req: Request) {
 
     if (error) {
       if (error.message.includes("Could not find") || error.code === "42P01") {
-        return NextResponse.json([]);
+        return NextResponse.json({ error: "Table not found" }, { status: 500 });
       }
       console.error("[appointments] fetch failed:", error.message);
-      return NextResponse.json([], { status: 200 });
+      return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500 });
     }
 
     return NextResponse.json(data || []);
   } catch (err) {
     console.error("[appointments] unexpected error:", err);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
 

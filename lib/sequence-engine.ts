@@ -18,6 +18,8 @@ import type { Sequence, SequenceExecution, Lead } from "./types";
 
 const supabase = supabaseAdmin;
 
+// ─── Batch Icebreaker Generator (server-side, no rate limit) ─────────────────
+
 interface CronResult {
   processed: number;
   sent: number;
@@ -383,3 +385,126 @@ export async function processInboundReply(params: {
     action: messageMatched ? "lead_matched_message_updated" : "lead_matched_no_message",
   };
 }
+
+// ─── Batch Icebreaker Generator (server-side, bypasses 3/day rate limit) ─────
+
+export interface IcebreakerResult {
+  leadId: string;
+  leadName: string;
+  company: string;
+  icebreakers: string[];
+}
+
+/**
+ * Generate 5 icebreakers per lead for the top N leads.
+ * Uses Gemini directly — no rate limit. For founder's own outreach use.
+ */
+export async function generateBatchIcebreakers(
+  leads: Array<{ id: string; name: string; title: string; company: string; industry: string }>,
+  count: number = 5
+): Promise<IcebreakerResult[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("[batch-icebreaker] No GEMINI_API_KEY configured");
+    return [];
+  }
+
+  const results: IcebreakerResult[] = [];
+
+  for (const lead of leads) {
+    const prompt = `You are an expert B2B outreach specialist. Write ${count} short, personalized icebreaker opening lines for a LinkedIn DM. Each line must be 1-2 sentences, reference something specific about the prospect, and avoid generic flattery.
+
+PROSPECT:
+- Name: ${lead.name}
+- Title: ${lead.title}
+- Company: ${lead.company}
+- Industry: ${lead.industry || "Not specified"}
+
+Return exactly ${count} icebreakers, one per line, numbered 1-${count}. No introductions, no explanations.`;
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 500, temperature: 0.9, topP: 0.95 },
+          }),
+        }
+      );
+
+      const data = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      // Parse numbered lines
+      const lines = text
+        .split("\n")
+        .map((l) => l.replace(/^\d+[.)]\s*/, "").trim())
+        .filter((l) => l.length > 10);
+
+      results.push({
+        leadId: lead.id,
+        leadName: lead.name,
+        company: lead.company,
+        icebreakers: lines.slice(0, count),
+      });
+    } catch (err) {
+      console.warn(`[batch-icebreaker] Failed for ${lead.name}:`, err);
+      results.push({
+        leadId: lead.id,
+        leadName: lead.name,
+        company: lead.company,
+        icebreakers: ["Could not generate icebreakers — please try manually."],
+      });
+    }
+  }
+
+  return results;
+}
+
+// ─── LinkedIn Outreach Sequence Templates ────────────────────────────────────
+
+export const LINKEDIN_SEQUENCE_TEMPLATES = {
+  /** Step 1: Connection request (300 char limit) */
+  connection_request: (firstName: string, company: string, industry: string) =>
+    `Hi ${firstName}, saw you're leading growth at ${company}. I've been helping ${industry} founders fill their pipeline with AI-scored leads — would love to connect and share what's working.`,
+
+  /** Step 2: Follow-up DM (sent after connection accepted) */
+  follow_up_dm: (firstName: string, company: string) =>
+    `Thanks for connecting, ${firstName}! Quick question — how are you currently handling outbound lead gen at ${company}? We've built an AI pipeline that scores and delivers ICP-verified leads every morning. Happy to share a sample report if you're curious.`,
+
+  /** Step 3: Value DM (1-2 days after follow-up) */
+  value_dm: (firstName: string) =>
+    `${firstName}, here's a quick look at what our system produces: 50 ICP-verified leads with AI icebreakers, scored 8+/10. No commitment — happy to run a sample batch for your ICP so you can see the quality yourself. Want me to send it over?`,
+
+  /** Step 4: Breakup (3-4 days after value DM, if no reply) */
+  breakup: (firstName: string) =>
+    `No worries if this isn't the right time, ${firstName}. If you ever want to see what 50 AI-scored leads look like for your ICP, my inbox is open. Wishing you a strong Q2!`,
+
+  /** Full sequence with UTM parameters */
+  full_sequence: (firstName: string, company: string, industry: string) => ({
+    step1_connection: {
+      channel: "linkedin",
+      delay: "Day 0",
+      message: `Hi ${firstName}, saw you're leading growth at ${company}. I've been helping ${industry} founders fill their pipeline with AI-scored leads — would love to connect and share what's working.`,
+    },
+    step2_followup: {
+      channel: "linkedin",
+      delay: "Day 1 (after accept)",
+      message: `Thanks for connecting, ${firstName}! Quick question — how are you currently handling outbound lead gen at ${company}? We've built an AI pipeline that scores and delivers ICP-verified leads every morning. Happy to share a sample report: https://app.flow-forges.com/prospecting-os/tools/free-audit?utm_source=linkedin&utm_medium=dm&utm_campaign=outreach_q2_2026`,
+    },
+    step3_value: {
+      channel: "linkedin",
+      delay: "Day 2-3",
+      message: `${firstName}, here's what we deliver: 50 ICP-verified leads with AI icebreakers, scored 8+/10 by Claude. No commitment — I'll run a free sample batch for your ICP so you can see the quality. Book a 15-min call: https://app.flow-forges.com/prospecting-os/book?offer=micro&utm_source=linkedin&utm_medium=dm&utm_campaign=outreach_q2_2026`,
+    },
+    step4_breakup: {
+      channel: "linkedin",
+      delay: "Day 4-5",
+      message: `No worries if the timing isn't right, ${firstName}. If you ever want to see what 50 AI-scored leads look like for your ICP, here's the micro-offer: https://app.flow-forges.com/prospecting-os/#pricing?utm_source=linkedin&utm_medium=dm&utm_campaign=outreach_q2_2026 — $997 one-time, delivered in 5 days. Wishing you a strong quarter!`,
+    },
+  }),
+};
+
