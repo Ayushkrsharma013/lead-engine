@@ -241,84 +241,72 @@ export default function AdminClientsPage() {
     <div className="max-w-6xl space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[18px] font-bold" style={{ color: "var(--ink)" }}>Client Manager</h1>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-            Manage all client accounts, subscriptions, and access
-          </p>
+        <div className="flex items-start gap-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+            style={{ background: "var(--accent-soft)", border: "1px solid rgba(232,66,10,0.18)" }}
+          >
+            <Users size={16} style={{ color: "var(--accent)" }} />
+          </div>
+          <div>
+            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "var(--ink)" }}>Client Manager</h1>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
+              Accounts, subscriptions, and portal access
+            </p>
+          </div>
         </div>
 
         {/* Add Client button */}
         <button
           onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-semibold transition-all duration-300 hover:scale-105"
+          className="flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
           style={{
-            background: "#22c55e",
+            background: "var(--accent)",
             color: "#fff",
             border: "none",
             cursor: "pointer",
-            boxShadow: "0 2px 12px rgba(34,197,94,0.2)",
+            boxShadow: "0 2px 12px rgba(232,66,10,0.25)",
           }}
         >
-          <UserPlus size={15} />
+          <UserPlus size={14} />
           Add Client
         </button>
       </div>
 
-      {/* Metrics Cards — with CountUp + hover scale */}
+      {/* Metrics Cards */}
       {metrics ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div
-            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
-          >
-            <div className="flex items-center gap-2.5 mb-2">
-              <Users size={16} style={{ color: "#00b4ff" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Total Clients</span>
+          {[
+            { label: "Total Clients",  value: metrics.totalClients,       icon: Users,     color: "#00b4ff",  prefix: "" },
+            { label: "Active",         value: metrics.activeSubscriptions, icon: UserCheck, color: "#22c55e",  prefix: "" },
+            { label: "MRR",            value: metrics.mrr,                icon: DollarSign, color: "#E8A840", prefix: "$" },
+            { label: "Leads Managed",  value: metrics.totalLeadsManaged,  icon: BarChart3, color: "#a855f7",  prefix: "" },
+          ].map(({ label, value, icon: Icon, color, prefix }, i) => (
+            <div
+              key={label}
+              className="rounded-xl p-4 transition-all duration-300 hover:scale-[1.02]"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--line)",
+                borderTop: `2px solid ${color}40`,
+                cursor: "default",
+                animationDelay: `${i * 60}ms`,
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>{label}</span>
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center"
+                  style={{ background: `${color}14`, border: `1px solid ${color}28` }}
+                >
+                  <Icon size={12} style={{ color }} />
+                </div>
+              </div>
+              <p className="text-[26px] font-bold tabular-nums leading-none" style={{ color: "var(--ink)" }}>
+                {prefix}<CountUp value={value} />
+              </p>
             </div>
-            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
-              <CountUp value={metrics.totalClients} />
-            </p>
-          </div>
-
-          <div
-            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
-          >
-            <div className="flex items-center gap-2.5 mb-2">
-              <UserCheck size={16} style={{ color: "#22c55e" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Active</span>
-            </div>
-            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
-              <CountUp value={metrics.activeSubscriptions} />
-            </p>
-          </div>
-
-          <div
-            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
-          >
-            <div className="flex items-center gap-2.5 mb-2">
-              <DollarSign size={16} style={{ color: "#E8A840" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>MRR</span>
-            </div>
-            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
-              $<CountUp value={metrics.mrr} />
-            </p>
-          </div>
-
-          <div
-            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
-          >
-            <div className="flex items-center gap-2.5 mb-2">
-              <BarChart3 size={16} style={{ color: "#a855f7" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Leads</span>
-            </div>
-            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
-              <CountUp value={metrics.totalLeadsManaged} />
-            </p>
-          </div>
+          ))}
         </div>
       ) : loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -327,16 +315,18 @@ export default function AdminClientsPage() {
       )}
 
       {/* Search + Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}
         <div
-          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-xl px-3 h-10 transition-colors duration-150"
+          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-lg px-3 h-9 transition-all duration-150"
           style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+          onFocusCapture={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.35)")}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = "var(--line)")}
         >
-          <Search size={14} style={{ color: "var(--ink-4)" }} />
+          <Search size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
           <input
             type="text"
-            placeholder="Search clients by name or email..."
+            placeholder="Search by name or email…"
             value={search}
             onChange={e => handleSearch(e.target.value)}
             className="flex-1 bg-transparent border-none outline-none text-[13px]"
@@ -351,7 +341,7 @@ export default function AdminClientsPage() {
           onChange={v => { setPlanFilter(v); handleFilterChange(); }}
           placeholder="All Plans"
           clearable
-          width={170}
+          width={160}
         />
 
         {/* Status filter */}
@@ -361,17 +351,19 @@ export default function AdminClientsPage() {
           onChange={v => { setStatusFilter(v); handleFilterChange(); }}
           placeholder="All Status"
           clearable
-          width={160}
+          width={150}
         />
 
         {/* Clear filters */}
         {hasFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1.5 h-10 px-3 rounded-xl text-[12px] font-medium transition-colors"
+            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-medium transition-colors"
             style={{ background: "transparent", border: "1px solid var(--line)", color: "var(--ink-3)", cursor: "pointer" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.color = "var(--ink-2)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--ink-3)"; }}
           >
-            <RotateCcw size={12} /> Clear
+            <RotateCcw size={11} /> Clear
           </button>
         )}
       </div>
@@ -394,39 +386,44 @@ export default function AdminClientsPage() {
       {/* Table / Loading / Empty */}
       {loading ? (
         <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <div className="flex px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div className="flex px-4 py-3" style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
             {["Client", "Plan", "Status", "Leads", "Joined", "Actions"].map(h => (
-              <div key={h} className="flex-1 text-left text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: "var(--ink-4)" }}>{h}</div>
+              <div key={h} className="flex-1 text-left text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>{h}</div>
             ))}
           </div>
           {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       ) : clients.length === 0 ? (
         /* Empty state */
-        <div className="rounded-xl p-12 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <Users size={48} style={{ color: "var(--ink-4)", opacity: 0.3, margin: "0 auto 16px" }} />
-          <p className="text-[15px] font-semibold" style={{ color: "var(--ink-2)" }}>
+        <div className="rounded-xl py-14 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
+          >
+            <Users size={22} style={{ color: "var(--ink-4)" }} />
+          </div>
+          <p className="text-[14px] font-semibold" style={{ color: "var(--ink-2)" }}>
             {hasFilters ? "No clients match your filters" : "No clients yet"}
           </p>
-          <p className="text-[12px] mt-1.5 mb-4" style={{ color: "var(--ink-4)" }}>
+          <p className="text-[12px] mt-1.5 mb-5" style={{ color: "var(--ink-4)" }}>
             {hasFilters ? "Try adjusting your search or filters above." : "Create your first client account to get started."}
           </p>
           {!hasFilters && (
             <button
               onClick={() => setAddModalOpen(true)}
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[13px] font-semibold transition-all duration-300 hover:scale-105"
-              style={{ background: "#22c55e", color: "#fff", border: "none", cursor: "pointer" }}
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+              style={{ background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", boxShadow: "0 2px 12px rgba(232,66,10,0.25)" }}
             >
-              <UserPlus size={15} /> Add Your First Client
+              <UserPlus size={14} /> Add Your First Client
             </button>
           )}
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-[12px] font-semibold transition-colors"
               style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)", cursor: "pointer" }}
             >
-              <RotateCcw size={12} /> Clear All Filters
+              <RotateCcw size={11} /> Clear Filters
             </button>
           )}
         </div>
@@ -444,7 +441,7 @@ export default function AdminClientsPage() {
 
           {/* Pagination */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <CustomDropdown
                 options={PAGE_SIZE_OPTIONS}
                 value={String(limit)}
@@ -452,43 +449,47 @@ export default function AdminClientsPage() {
                 width={120}
               />
               <span className="text-[12px]" style={{ color: "var(--ink-4)" }}>
-                {totalCount.toLocaleString()} clients total
+                {totalCount.toLocaleString()} clients
               </span>
             </div>
 
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
-                <span className="text-[12px]" style={{ color: "var(--ink-4)" }}>
-                  Page {page} of {totalPages}
+                <span className="text-[12px] tabular-nums" style={{ color: "var(--ink-4)" }}>
+                  {page} / {totalPages}
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-0.5">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="p-2 rounded-lg transition-colors"
+                    className="p-2 rounded-lg transition-all duration-150"
                     style={{
-                      color: page <= 1 ? "var(--ink-4)" : "var(--ink)",
-                      opacity: page <= 1 ? 0.4 : 1,
-                      background: "transparent",
-                      border: "none",
+                      color: "var(--ink-3)",
+                      opacity: page <= 1 ? 0.35 : 1,
+                      background: "var(--surface)",
+                      border: "1px solid var(--line)",
                       cursor: page <= 1 ? "default" : "pointer",
                     }}
+                    onMouseEnter={e => { if (page > 1) e.currentTarget.style.borderColor = "var(--line-strong)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; }}
                   >
-                    <ChevronLeft size={14} />
+                    <ChevronLeft size={13} />
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="p-2 rounded-lg transition-colors"
+                    className="p-2 rounded-lg transition-all duration-150"
                     style={{
-                      color: page >= totalPages ? "var(--ink-4)" : "var(--ink)",
-                      opacity: page >= totalPages ? 0.4 : 1,
-                      background: "transparent",
-                      border: "none",
+                      color: "var(--ink-3)",
+                      opacity: page >= totalPages ? 0.35 : 1,
+                      background: "var(--surface)",
+                      border: "1px solid var(--line)",
                       cursor: page >= totalPages ? "default" : "pointer",
                     }}
+                    onMouseEnter={e => { if (page < totalPages) e.currentTarget.style.borderColor = "var(--line-strong)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; }}
                   >
-                    <ChevronRight size={14} />
+                    <ChevronRight size={13} />
                   </button>
                 </div>
               </div>
