@@ -6,6 +6,7 @@ import {
   DollarSign, BarChart3, UserCheck, RotateCcw, X,
   UserPlus,
 } from "lucide-react";
+import TopBar from "@/components/layout/TopBar";
 import CustomDropdown from "@/components/ui/CustomDropdown";
 import type { DropdownOption } from "@/components/ui/CustomDropdown";
 import CountUp from "@/components/ui/CountUp";
@@ -238,40 +239,30 @@ export default function AdminClientsPage() {
   /* ── Render ─────────────────────────────────────────────────────────────── */
 
   return (
-    <div className="max-w-6xl space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-start gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-            style={{ background: "var(--accent-soft)", border: "1px solid rgba(232,66,10,0.18)" }}
+    <>
+      <TopBar
+        title="Client Manager"
+        subtitle="Accounts, subscriptions, and portal access"
+        actions={
+          <button
+            onClick={() => setAddModalOpen(true)}
+            className="flex items-center gap-2 h-8 px-3.5 rounded-lg text-[12px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(232,66,10,0.2)",
+            }}
           >
-            <Users size={16} style={{ color: "var(--accent)" }} />
-          </div>
-          <div>
-            <h1 className="text-[18px] font-bold leading-tight" style={{ color: "var(--ink)" }}>Client Manager</h1>
-            <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-              Accounts, subscriptions, and portal access
-            </p>
-          </div>
-        </div>
+            <UserPlus size={13} />
+            Add Client
+          </button>
+        }
+      />
 
-        {/* Add Client button */}
-        <button
-          onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-2 h-9 px-4 rounded-lg text-[13px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            boxShadow: "0 2px 12px rgba(232,66,10,0.25)",
-          }}
-        >
-          <UserPlus size={14} />
-          Add Client
-        </button>
-      </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-6xl space-y-5 animate-fade-in">
 
       {/* Metrics Cards */}
       {metrics ? (
@@ -498,6 +489,9 @@ export default function AdminClientsPage() {
         </>
       )}
 
+        </div>
+      </div>
+
       {/* ── Add Client Modal ────────────────────────────────────────────────── */}
       <AddClientModal
         open={addModalOpen}
@@ -551,6 +545,6 @@ export default function AdminClientsPage() {
           {toast}
         </div>
       )}
-    </div>
+    </>
   );
 }
