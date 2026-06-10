@@ -19,13 +19,13 @@ export async function GET(req: NextRequest) {
   // Total clients
   const { count: totalClients } = await supabaseAdmin
     .from("profiles")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact" })
     .eq("role", "client");
 
   // Active subscriptions
   const { count: activeSubscriptions } = await supabaseAdmin
     .from("profiles")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact" })
     .eq("role", "client")
     .eq("subscription_status", "active");
 

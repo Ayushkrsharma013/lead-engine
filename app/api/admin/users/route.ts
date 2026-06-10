@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
     id: userId,
     email,
     full_name: display_name || '',
+    display_name: display_name || null,
     role: newRole,
     plan: plan || null,
     subscription_status: subscription_status || (plan ? 'pending_payment' : null),
