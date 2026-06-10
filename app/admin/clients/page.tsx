@@ -73,7 +73,7 @@ function SkeletonRow() {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl p-5 animate-pulse-slow" style={{ background: "var(--surface)", border: "1px solid var(--line)", height: 100 }} />
+    <div className="rounded-xl p-4 animate-pulse-slow" style={{ background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)", border: "1px solid rgba(201,168,124,0.07)", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", height: 108 }} />
   );
 }
 
@@ -108,9 +108,8 @@ export default function AdminClientsPage() {
       if (res.ok) {
         setMetrics(await res.json());
       } else {
-        // Degrade gracefully — show zeros, don't block the UI
+        // Silent fallback to zeros — don't show a toast
         setMetrics({ totalClients: 0, activeSubscriptions: 0, mrr: 0, totalLeadsManaged: 0 });
-        setToast("Could not load stats"); setTimeout(() => setToast(""), 2500);
       }
     } catch {
       setMetrics({ totalClients: 0, activeSubscriptions: 0, mrr: 0, totalLeadsManaged: 0 });
@@ -265,27 +264,39 @@ export default function AdminClientsPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-6xl space-y-5 animate-fade-in">
 
-      {/* Metrics Cards */}
+      {/* Metrics Cards — match Command Center GraphCard styling */}
       {metrics ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Total Clients", value: metrics.totalClients, sub: `${metrics.activeSubscriptions} active`, color: "#00b4ff", prefix: "" },
-            { label: "Active", value: metrics.activeSubscriptions, sub: "paying subscribers", color: "#22c55e", prefix: "" },
-            { label: "MRR", value: metrics.mrr, sub: `${metrics.activeSubscriptions} subscriptions`, color: "#E8A840", prefix: "$" },
-            { label: "Leads Managed", value: metrics.totalLeadsManaged, sub: `across ${metrics.totalClients} clients`, color: "#a855f7", prefix: "" },
-          ].map(({ label, value, sub, color, prefix }) => (
+            { label: "Total Clients", value: metrics.totalClients, sub: `${metrics.activeSubscriptions} active`, prefix: "" },
+            { label: "Active",        value: metrics.activeSubscriptions, sub: "paying subscribers", prefix: "" },
+            { label: "MRR",           value: metrics.mrr,                sub: `${metrics.activeSubscriptions} subscriptions`, prefix: "$" },
+            { label: "Leads Managed", value: metrics.totalLeadsManaged,  sub: `across ${metrics.totalClients} clients`, prefix: "" },
+          ].map(({ label, value, sub, prefix }) => (
             <div
               key={label}
-              className="rounded-xl p-4 flex flex-col gap-1"
-              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+              className="rounded-xl p-4 flex flex-col gap-1 transition-all duration-300 hover:-translate-y-0.5"
+              style={{
+                background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)",
+                border: "1px solid rgba(201,168,124,0.07)",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.16)";
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(201,168,124,0.06)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.07)";
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
+              }}
             >
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--ink-3)" }}>
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
                 {label}
               </span>
-              <span className="text-xl font-bold tabular-nums" style={{ color }}>
+              <span className="text-[28px] font-bold tabular-nums leading-none mt-1" style={{ color: "var(--accent)" }}>
                 {prefix}<CountUp value={value} />
               </span>
-              <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>
+              <span className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>
                 {sub}
               </span>
             </div>

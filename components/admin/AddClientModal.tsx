@@ -49,6 +49,7 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
       const res = await fetch("/prospecting-os/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           display_name: name.trim(),
           email: email.trim(),
@@ -102,10 +103,10 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(34,197,94,0.1)" }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: "var(--accent-soft)", border: "1px solid rgba(232,66,10,0.18)" }}
             >
-              <UserPlus size={18} style={{ color: "#22c55e" }} />
+              <UserPlus size={18} style={{ color: "var(--accent)" }} />
             </div>
             <div>
               <h2 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>Add New Client</h2>
@@ -208,7 +209,7 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 h-10 rounded-full text-[13px] font-semibold transition-colors"
+            className="flex-1 h-9 rounded-lg text-[13px] font-semibold transition-colors"
             style={{
               background: "var(--surface-2)",
               border: "1px solid var(--line)",
@@ -222,16 +223,17 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 h-10 rounded-full text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-opacity"
+            className="flex-1 h-9 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 hover:opacity-90 active:scale-95"
             style={{
-              background: "#22c55e",
+              background: "var(--accent)",
               color: "#fff",
               border: "none",
               cursor: loading ? "default" : "pointer",
               opacity: loading ? 0.7 : 1,
+              boxShadow: "0 2px 12px rgba(232,66,10,0.25)",
             }}
           >
-            {loading ? <Loader2 size={14} className="animate-spin-smooth" /> : <UserPlus size={14} />}
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
             {loading ? "Creating..." : "Create Client"}
           </button>
         </div>
