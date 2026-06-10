@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Users, Search, ChevronLeft, ChevronRight,
-  DollarSign, BarChart3, UserCheck, RotateCcw, X,
-  UserPlus,
+  RotateCcw, X, UserPlus,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import CustomDropdown from "@/components/ui/CustomDropdown";
@@ -105,7 +104,7 @@ export default function AdminClientsPage() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await fetch("/prospecting-os/api/admin/clients/metrics");
+      const res = await fetch("/prospecting-os/api/admin/clients/metrics", { credentials: "include" });
       if (res.ok) {
         setMetrics(await res.json());
       } else {
@@ -133,7 +132,7 @@ export default function AdminClientsPage() {
     setError("");
 
     try {
-      const res = await fetch(`/prospecting-os/api/admin/clients?${params}`);
+      const res = await fetch(`/prospecting-os/api/admin/clients?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load clients");
       const d = await res.json();
       setClients(d.clients || []);
@@ -192,6 +191,7 @@ export default function AdminClientsPage() {
         method: action === "delete" ? "DELETE" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(action === "delete" ? {} : { id, action }),
+        credentials: "include",
       });
       if (res.ok) {
         const labels: Record<string, string> = {
@@ -217,6 +217,7 @@ export default function AdminClientsPage() {
     try {
       const res = await fetch(`/prospecting-os/api/admin/users/${client.id}/impersonate`, {
         method: "POST",
+        credentials: "include",
       });
       if (res.ok) {
         const { url } = await res.json();
@@ -268,34 +269,25 @@ export default function AdminClientsPage() {
       {metrics ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Total Clients",  value: metrics.totalClients,       icon: Users,     color: "#00b4ff",  prefix: "" },
-            { label: "Active",         value: metrics.activeSubscriptions, icon: UserCheck, color: "#22c55e",  prefix: "" },
-            { label: "MRR",            value: metrics.mrr,                icon: DollarSign, color: "#E8A840", prefix: "$" },
-            { label: "Leads Managed",  value: metrics.totalLeadsManaged,  icon: BarChart3, color: "#a855f7",  prefix: "" },
-          ].map(({ label, value, icon: Icon, color, prefix }, i) => (
+            { label: "Total Clients", value: metrics.totalClients, sub: `${metrics.activeSubscriptions} active`, color: "#00b4ff", prefix: "" },
+            { label: "Active", value: metrics.activeSubscriptions, sub: "paying subscribers", color: "#22c55e", prefix: "" },
+            { label: "MRR", value: metrics.mrr, sub: `${metrics.activeSubscriptions} subscriptions`, color: "#E8A840", prefix: "$" },
+            { label: "Leads Managed", value: metrics.totalLeadsManaged, sub: `across ${metrics.totalClients} clients`, color: "#a855f7", prefix: "" },
+          ].map(({ label, value, sub, color, prefix }) => (
             <div
               key={label}
-              className="rounded-xl p-4 transition-all duration-300 hover:scale-[1.02]"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line)",
-                borderTop: `2px solid ${color}40`,
-                cursor: "default",
-                animationDelay: `${i * 60}ms`,
-              }}
+              className="rounded-xl p-4 flex flex-col gap-1"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--ink-4)" }}>{label}</span>
-                <div
-                  className="w-6 h-6 rounded-md flex items-center justify-center"
-                  style={{ background: `${color}14`, border: `1px solid ${color}28` }}
-                >
-                  <Icon size={12} style={{ color }} />
-                </div>
-              </div>
-              <p className="text-[26px] font-bold tabular-nums leading-none" style={{ color: "var(--ink)" }}>
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--ink-3)" }}>
+                {label}
+              </span>
+              <span className="text-xl font-bold tabular-nums" style={{ color }}>
                 {prefix}<CountUp value={value} />
-              </p>
+              </span>
+              <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>
+                {sub}
+              </span>
             </div>
           ))}
         </div>
