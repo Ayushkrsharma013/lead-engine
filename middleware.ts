@@ -14,17 +14,23 @@ export async function middleware(req: NextRequest) {
   requestHeaders.delete("x-user-name");
   requestHeaders.delete("x-user-role");
   requestHeaders.delete("x-user-avatar");
-  const res = NextResponse.next({ request: { headers: requestHeaders } });
+
   const path = req.nextUrl.pathname;
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
 
-  // Hoisted service-role client — reused for profiles + subscription queries
   const supabaseAdmin = createClient(
     supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+
+  // Collect cookies set by supabase.auth.getUser() (session refresh).
+  // We apply them to `res` after creating it — NextResponse.next() copies
+  // request headers at call time, so we must defer creation until ALL
+  // requestHeaders.set() calls are done, otherwise x-user-* headers are lost.
+  type CookieEntry = { name: string; value: string; options?: Record<string, unknown> };
+  const pendingCookies: CookieEntry[] = [];
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -35,9 +41,7 @@ export async function middleware(req: NextRequest) {
           return req.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            res.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(c => pendingCookies.push(c as CookieEntry));
         },
       },
     }
@@ -46,6 +50,7 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   let role: string | null = null;
+  let avatarUrl: string | null = null;
 
   if (user) {
     try {
@@ -66,10 +71,8 @@ export async function middleware(req: NextRequest) {
         requestHeaders.set("x-user-email", profile.email || "");
         requestHeaders.set("x-user-name", profile.display_name || "");
         requestHeaders.set("x-user-role", profile.role || "user");
-        if (profile.avatar_url) {
-          res.headers.set("x-user-avatar", profile.avatar_url);
-        }
         role = profile.role || "user";
+        avatarUrl = profile.avatar_url || null;
       }
     } catch {
       requestHeaders.set("x-user-id", user.id);
@@ -79,6 +82,17 @@ export async function middleware(req: NextRequest) {
       role = user.user_metadata?.role || "user";
     }
   }
+
+  // Create res AFTER all requestHeaders.set() calls — ensures x-user-* headers
+  // are captured in the copy that NextResponse.next() takes at this point.
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+
+  // Apply any session cookies refreshed by supabase.auth.getUser()
+  pendingCookies.forEach(({ name, value, options }) =>
+    res.cookies.set(name, value, options as Parameters<typeof res.cookies.set>[2])
+  );
+
+  if (avatarUrl) res.headers.set("x-user-avatar", avatarUrl);
 
   // Strip basePath for route matching
   let normalizedPath = path;
