@@ -6,21 +6,17 @@ import Link from "next/link";
 import {
   LayoutDashboard, Users, MessageSquare, BarChart2,
   GitBranch, Bell, CreditCard, Settings, LogOut,
+  Plug, ShoppingBag, UserPlus, RefreshCw,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { PLAN_MODULES } from "@/lib/types";
+import { PLAN_MODULES, MODULE_LABELS, MODULE_ROUTES, MODULE_ICONS } from "@/lib/plan-modules";
+import type { ModuleKey, PlanTier } from "@/lib/plan-modules";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
-const CLIENT_NAV = [
-  { module: "overview", label: "Overview", href: "/client-portal", icon: LayoutDashboard },
-  { module: "leads-view", label: "My Leads", href: "/client-portal/leads", icon: Users },
-  { module: "icebreakers", label: "Icebreakers", href: "/client-portal/icebreakers", icon: MessageSquare },
-  { module: "analytics", label: "Analytics", href: "/client-portal/analytics", icon: BarChart2 },
-  { module: "sequences", label: "Sequences", href: "/client-portal/sequences", icon: GitBranch },
-  { module: "slack-digest", label: "Slack Digest", href: "/client-portal/slack", icon: Bell },
-  { module: "billing", label: "Billing", href: "/client-portal/billing", icon: CreditCard },
-  { module: "settings", label: "Settings", href: "/client-portal/settings", icon: Settings },
-];
+const ICON_MAP: Record<string, typeof LayoutDashboard> = {
+  LayoutDashboard, Users, MessageSquare, BarChart2, GitBranch,
+  CreditCard, Settings, Plug, ShoppingBag, UserPlus, RefreshCw, Bell,
+};
 
 export default function ClientPortalLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -55,7 +51,12 @@ export default function ClientPortalLayout({ children }: { children: React.React
 
       if (!ignore) {
         setProfile(prof);
-        setAllowedModules(data.allowedModules as string[]);
+        // Build allowed modules from plan
+        const plan = (prof.plan || "pilot") as PlanTier;
+        const modules = (prof.role === "qa_agent" || prof.role === "super_admin")
+          ? PLAN_MODULES.scale // all modules
+          : PLAN_MODULES[plan] || PLAN_MODULES.pilot;
+        setAllowedModules(modules);
         setLoading(false);
       }
     }
@@ -81,9 +82,15 @@ export default function ClientPortalLayout({ children }: { children: React.React
     return <>{children}</>;
   }
 
-  const visibleNav = CLIENT_NAV.filter(item =>
-    allowedModules.includes(item.module) || profile?.role === "qa_agent" || profile?.role === "super_admin"
-  );
+  // Build dynamic nav from plan modules
+  const visibleNav = (allowedModules as string[])
+    .filter((m): m is ModuleKey => m in MODULE_LABELS && m in MODULE_ROUTES)
+    .map(m => ({
+      module: m,
+      label: MODULE_LABELS[m],
+      href: MODULE_ROUTES[m],
+      icon: ICON_MAP[MODULE_ICONS[m]] || LayoutDashboard,
+    }));
 
   return (
     <div

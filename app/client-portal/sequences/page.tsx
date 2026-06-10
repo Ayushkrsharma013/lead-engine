@@ -2,242 +2,164 @@
 
 import { useEffect, useState } from "react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
-import { Play, ChevronRight, Calendar } from "lucide-react";
-import type { UserProfile, PlanKey } from "@/lib/types";
+import { GitBranch, Plus, Play, Pause, Trash2, Loader2, X } from "lucide-react";
+import type { PlanKey } from "@/lib/types";
 
-interface ActiveExecution {
-  id: string;
-  sequence_id: string;
-  lead_id: string;
-  current_step: number;
-  status: string;
-  variant: string;
-  started_at: string;
-  sequence_name: string;
-  steps_count: number;
+interface Sequence {
+  id: string; name: string; steps: unknown[]; schedule: Record<string, unknown> | null;
+  status: string; created_at: string; updated_at: string;
 }
 
 export default function ClientSequencesPage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<{ plan?: PlanKey; role?: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [executions, setExecutions] = useState<ActiveExecution[]>([]);
+  const [sequences, setSequences] = useState<Sequence[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const fetchSequences = async () => {
+    const res = await fetch("/prospecting-os/api/client-portal/sequences");
+    if (res.ok) {
+      const d = await res.json();
+      setSequences(d.sequences || []);
+    }
+  };
 
   useEffect(() => {
     async function init() {
       const meRes = await fetch("/prospecting-os/api/client-portal/me");
-      if (!meRes.ok) {
-        setLoading(false);
-        setError("Failed to load profile");
-        return;
-      }
-      const d = await meRes.json();
-      setProfile(d.profile);
-
-      const seqRes = await fetch(
-        "/prospecting-os/api/client-portal/sequences?status=active"
-      );
-      if (!seqRes.ok) {
-        const err = await seqRes.json().catch(() => ({}));
-        setError(err.error || "Failed to load sequences");
-      } else {
-        const seqData = await seqRes.json();
-        setExecutions(seqData.executions || []);
-      }
+      if (meRes.ok) { const d = await meRes.json(); setProfile(d.profile); }
+      await fetchSequences();
       setLoading(false);
     }
     init();
   }, []);
 
-  // Group executions by sequence id
-  const grouped = executions.reduce<
-    Record<string, { name: string; executions: ActiveExecution[] }>
-  >((acc, ex) => {
-    if (!acc[ex.sequence_id]) {
-      acc[ex.sequence_id] = { name: ex.sequence_name, executions: [] };
+  const handleCreate = async () => {
+    if (!formName.trim()) return;
+    setSaving(true);
+    const res = await fetch("/prospecting-os/api/client-portal/sequences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: formName, steps: [], schedule: null }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setShowForm(false);
+      setFormName("");
+      await fetchSequences();
+      setToast("Sequence created");
+      setTimeout(() => setToast(""), 2500);
     }
-    acc[ex.sequence_id].executions.push(ex);
-    return acc;
-  }, {});
+  };
+
+  const handleToggle = async (seq: Sequence) => {
+    const newStatus = seq.status === "active" ? "draft" : "active";
+    const res = await fetch(`/prospecting-os/api/client-portal/sequences?id=${seq.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) await fetchSequences();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this sequence?")) return;
+    await fetch(`/prospecting-os/api/client-portal/sequences?id=${id}`, { method: "DELETE" });
+    await fetchSequences();
+  };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <span className="w-5 h-5 border-2 border-white/[0.10] border-t-[#E8A840] rounded-full animate-spin" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20"><Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} /></div>;
   }
 
   return (
-    <PlanGate
-      module="sequences"
-      plan={(profile?.plan as PlanKey) || null}
-      role={profile?.role}
-      requiredPlan="scale"
-    >
-      <div className="max-w-5xl space-y-4 animate-fade-in">
-        <div>
-          <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>
-            Sequences
-          </h1>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-            Active outreach sequences running for your leads
-          </p>
+    <PlanGate module="sequences" plan={profile?.plan || null} role={profile?.role} requiredPlan="pilot">
+      <div className="max-w-3xl space-y-4 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Sequences</h1>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Create and manage outreach sequences</p>
+          </div>
+          <button onClick={() => setShowForm(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all"
+            style={{ background: "var(--accent)", color: "#000", border: "none", cursor: "pointer" }}>
+            <Plus size={14} /> New Sequence
+          </button>
         </div>
 
-        {error ? (
-          <div
-            className="rounded-xl p-6 text-center"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            <p className="text-[13px]" style={{ color: "var(--negative)" }}>
-              Failed to load sequences: {error}
-            </p>
+        {/* Create form modal */}
+        {showForm && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
+            <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: "var(--surface-elev)", border: "1px solid var(--line)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>New Sequence</h2>
+                <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)" }}><X size={16} /></button>
+              </div>
+              <input type="text" value={formName} onChange={e => setFormName(e.target.value)} placeholder="Sequence name" autoFocus
+                className="w-full h-10 rounded-xl px-3 text-[13px] mb-4"
+                style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)", outline: "none" }} />
+              <button onClick={handleCreate} disabled={saving || !formName.trim()}
+                className="w-full h-10 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2"
+                style={{ background: "var(--accent)", color: "#000", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+                {saving ? <Loader2 size={14} className="animate-spin" /> : null} Create
+              </button>
+            </div>
           </div>
-        ) : Object.keys(grouped).length === 0 ? (
-          <div
-            className="rounded-xl p-8 text-center"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-              No active sequences right now. Your account manager will launch
-              campaigns for your leads.
-            </p>
+        )}
+
+        {sequences.length === 0 ? (
+          <div className="rounded-xl p-8 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+            <GitBranch size={32} style={{ color: "var(--ink-4)", margin: "0 auto 12px" }} />
+            <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>No sequences yet</p>
+            <p className="text-[11px] mt-1" style={{ color: "var(--ink-4)" }}>Create your first outreach sequence to get started.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {Object.entries(grouped).map(([seqId, group]) => (
-              <div
-                key={seqId}
-                className="rounded-xl overflow-hidden"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--line)",
-                }}
-              >
-                <div
-                  className="px-5 py-3 flex items-center justify-between"
-                  style={{ borderBottom: "1px solid var(--line)" }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
-                      style={{
-                        background: "rgba(232,168,64,0.08)",
-                        border: "1px solid rgba(232,168,64,0.15)",
-                      }}
-                    >
-                      <Play size={14} style={{ color: "var(--accent)" }} />
-                    </div>
-                    <div>
-                      <span
-                        className="text-[14px] font-semibold"
-                        style={{ color: "var(--ink)" }}
-                      >
-                        {group.name}
-                      </span>
-                      <span
-                        className="text-[10px] ml-2 px-2 py-0.5 rounded-full"
-                        style={{
-                          background: "rgba(168,201,154,0.10)",
-                          color: "var(--positive)",
-                          border: "1px solid rgba(168,201,154,0.18)",
-                        }}
-                      >
-                        Active
-                      </span>
-                    </div>
+          <div className="space-y-2">
+            {sequences.map(seq => (
+              <div key={seq.id} className="rounded-xl p-4 flex items-center justify-between"
+                style={{ background: "var(--surface)", border: seq.status === "active" ? "1px solid rgba(34,197,94,0.2)" : "1px solid var(--line)" }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: "rgba(232,168,64,0.08)", border: "1px solid rgba(232,168,64,0.15)" }}>
+                    <GitBranch size={14} style={{ color: "var(--accent)" }} />
                   </div>
-                  <span
-                    className="text-[11px]"
-                    style={{ color: "var(--ink-4)" }}
-                  >
-                    {group.executions.length} lead
-                    {group.executions.length !== 1 ? "s" : ""}
-                  </span>
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{seq.name}</p>
+                    <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>
+                      {(seq.steps as unknown[] || []).length} steps · {new Date(seq.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--line)" }}>
-                      {["Lead", "Step", "Status", "Started", ""].map((h) => (
-                        <th
-                          key={h}
-                          className="px-5 py-2 text-left text-[10px] font-bold uppercase tracking-[0.10em]"
-                          style={{ color: "var(--ink-4)" }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.executions.map((ex) => (
-                      <tr
-                        key={ex.id}
-                        className="transition-colors duration-150"
-                        style={{ borderBottom: "1px solid var(--line)" }}
-                        onMouseEnter={(e) =>
-                          ((e.currentTarget as HTMLElement).style.background =
-                            "rgba(237,234,226,0.02)")
-                        }
-                        onMouseLeave={(e) =>
-                          ((e.currentTarget as HTMLElement).style.background =
-                            "transparent")
-                        }
-                      >
-                        <td
-                          className="px-5 py-3 text-[12px] font-medium"
-                          style={{ color: "var(--ink)" }}
-                        >
-                          {ex.lead_id.substring(0, 8)}...
-                        </td>
-                        <td
-                          className="px-5 py-3 text-[12px]"
-                          style={{ color: "var(--ink-2)" }}
-                        >
-                          Step {ex.current_step} of {ex.steps_count}
-                        </td>
-                        <td className="px-5 py-3">
-                          <span
-                            className="px-2 py-0.5 rounded-full font-medium text-[10px]"
-                            style={{
-                              background: "rgba(168,201,154,0.10)",
-                              color: "var(--positive)",
-                              border: "1px solid rgba(168,201,154,0.18)",
-                            }}
-                          >
-                            {ex.status}
-                          </span>
-                        </td>
-                        <td
-                          className="px-5 py-3 text-[11px]"
-                          style={{ color: "var(--ink-4)" }}
-                        >
-                          <Calendar size={10} className="inline mr-1" />
-                          {new Date(ex.started_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </td>
-                        <td className="px-5 py-3">
-                          <ChevronRight
-                            size={14}
-                            style={{ color: "var(--ink-4)" }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{
+                      background: seq.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.04)",
+                      color: seq.status === "active" ? "#22c55e" : "var(--ink-4)",
+                    }}>
+                    {seq.status}
+                  </span>
+                  <button onClick={() => handleToggle(seq)} title={seq.status === "active" ? "Pause" : "Activate"}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", padding: 4 }}>
+                    {seq.status === "active" ? <Pause size={14} /> : <Play size={14} />}
+                  </button>
+                  <button onClick={() => handleDelete(seq.id)} title="Delete"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-4)", padding: 4 }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium"
+            style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", color: "var(--ink)", boxShadow: "var(--shadow-md)" }}>
+            {toast}
           </div>
         )}
       </div>

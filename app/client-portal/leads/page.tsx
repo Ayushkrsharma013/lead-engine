@@ -85,7 +85,7 @@ export default function ClientLeadsPage() {
   const totalPages = Math.ceil(count / limit);
 
   return (
-    <PlanGate module="leads-view" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="pilot">
+    <PlanGate module="leads" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="pilot">
       <Watermark email={profile?.email || ""} />
       <div className="max-w-5xl space-y-4 animate-fade-in" style={{ position: "relative", zIndex: 1 }}>
         <div className="flex items-center justify-between">
