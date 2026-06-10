@@ -499,7 +499,7 @@ export default function AdminClientsPage() {
       <AddClientModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onSuccess={() => { setToast("Client created successfully"); setTimeout(() => setToast(""), 2500); }}
+        onSuccess={() => { setToast("Client created successfully"); setTimeout(() => setToast(""), 2500); refreshAll(); }}
       />
 
       {/* ── Delete Confirmation Modal ─────────────────────────────────────── */}

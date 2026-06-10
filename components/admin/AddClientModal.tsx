@@ -79,6 +79,7 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
 
   return (
     <div
+      className="animate-fade-in"
       style={{
         position: "fixed",
         inset: 0,
