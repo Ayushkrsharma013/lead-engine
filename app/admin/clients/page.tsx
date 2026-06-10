@@ -189,7 +189,7 @@ export default function AdminClientsPage() {
       const res = await fetch("/prospecting-os/api/admin/clients", {
         method: action === "delete" ? "DELETE" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(action === "delete" ? {} : { id, action }),
+        body: JSON.stringify(action === "delete" ? { id } : { id, action }),
         credentials: "include",
       });
       if (res.ok) {

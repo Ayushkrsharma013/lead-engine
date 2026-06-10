@@ -19,12 +19,12 @@ export async function GET(req: NextRequest) {
   // Build query for profiles with role=client
   let query = supabaseAdmin
     .from("profiles")
-    .select("id, email, full_name, role, plan, subscription_status, created_at, is_active", { count: "exact" })
+    .select("id, email, display_name, role, plan, subscription_status, created_at, is_active", { count: "exact" })
     .eq("role", "client")
     .order("created_at", { ascending: false });
 
   if (search) {
-    query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+    query = query.or(`email.ilike.%${search}%,display_name.ilike.%${search}%`);
   }
   if (planFilter) {
     query = query.eq("plan", planFilter);
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     return {
       id: p.id,
       email: p.email,
-      name: p.full_name || p.email?.split("@")[0] || "Client",
+      name: p.display_name || p.email?.split("@")[0] || "Client",
       plan: p.plan || "pilot",
       subscription_status: p.subscription_status || "inactive",
       is_active: p.is_active ?? true,
@@ -114,7 +114,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const id = req.nextUrl.searchParams.get("id");
+  // id may come from query param or request body
+  const idFromQuery = req.nextUrl.searchParams.get("id");
+  const body = await req.json().catch(() => ({})) as { id?: string };
+  const id = idFromQuery || body.id;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   // Soft delete: set deleted_at and deactivate
