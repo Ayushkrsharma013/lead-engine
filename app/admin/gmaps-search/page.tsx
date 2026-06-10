@@ -702,7 +702,7 @@ export default function GmapsSearchPage() {
               {importResult.imported} new leads imported
               {importResult.duplicates > 0 ? `, ${importResult.duplicates} already in DB` : ""}
             </span>
-            <Link href="/leads"
+            <Link href="/admin/leads"
               className="flex items-center gap-1 text-[11px] font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "#00ff88" }}>
               View in Lead Intelligence <ChevronRight size={12} />
@@ -721,7 +721,7 @@ export default function GmapsSearchPage() {
                 ? ` (${autoQueueResult.qualifyingCount} qualified of ${autoQueueResult.assessed} assessed)`
                 : ""}
             </span>
-            <Link href="/outreach/gmaps"
+            <Link href="/admin/outreach/gmaps"
               className="flex items-center gap-1 text-[11px] font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "var(--accent-blue)" }}>
               View Pipeline <ChevronRight size={12} />

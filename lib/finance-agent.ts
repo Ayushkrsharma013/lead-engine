@@ -295,7 +295,7 @@ export async function jobActivateProfile(profileId: string): Promise<{ success: 
         <p style="color:#b0aeaa;margin:0 0 24px;">
           Your <strong style="color:#f5f4f1;">${plan.name}</strong> plan is now active.
         </p>
-        <a href="https://app.flow-forges.com/prospecting-os/dashboard"
+        <a href="https://app.flow-forges.com/prospecting-os/admin/dashboard"
            style="display:inline-block;background:#e8420a;color:white;padding:12px 28px;border-radius:9999px;text-decoration:none;font-weight:600;">
           Open Dashboard →
         </a>

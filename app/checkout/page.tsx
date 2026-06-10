@@ -162,7 +162,7 @@ function CheckoutContent() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-[13px] font-medium no-underline" style={{ color: "var(--ink-3, #808080)" }}>Dashboard</Link>
+            <Link href="/admin/dashboard" className="text-[13px] font-medium no-underline" style={{ color: "var(--ink-3, #808080)" }}>Dashboard</Link>
             <Link href="/book" className="text-[13px] font-semibold px-4 py-2 rounded-full no-underline" style={{ background: "var(--accent, #E8A840)", color: "#000" }}>
               Need Help?
             </Link>
@@ -386,7 +386,7 @@ function CheckoutContent() {
                 Start using Prospecting OS — your pipeline is ready.
               </p>
               <Link
-                href="/dashboard"
+                href="/admin/dashboard"
                 className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[13px] font-semibold no-underline transition-all"
                 style={{ background: "var(--accent, #E8A840)", color: "#000" }}
               >

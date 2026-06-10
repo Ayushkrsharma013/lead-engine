@@ -50,7 +50,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
       const prof = data.profile as UserProfile;
 
       if (prof.role !== "client" && prof.role !== "qa_agent" && prof.role !== "super_admin") {
-        router.replace("/dashboard");
+        router.replace("/admin/dashboard");
         return;
       }
 

@@ -42,9 +42,9 @@ const NAV_SECTIONS: NavSection[] = [
     id: "overview",
     label: "Overview",
     items: [
-      { id: "dashboard", module: "dashboard", label: "Command Center", icon: LayoutDashboard, href: "/dashboard" },
-      { id: "leads", module: "leads", label: "Lead Intelligence", icon: Users, href: "/leads" },
-      { id: "gmaps-search", module: "gmaps-search", label: "Maps Prospecting", icon: MapPin, href: "/gmaps-search" },
+      { id: "dashboard", module: "dashboard", label: "Command Center", icon: LayoutDashboard, href: "/admin/dashboard" },
+      { id: "leads", module: "leads", label: "Lead Intelligence", icon: Users, href: "/admin/leads" },
+      { id: "gmaps-search", module: "gmaps-search", label: "Maps Prospecting", icon: MapPin, href: "/admin/gmaps-search" },
     ],
   },
   {
@@ -52,7 +52,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Agent Workforce",
     items: [
       { id: "agents-command", module: "agent", label: "Command Center", icon: Cpu, href: "/admin/agents" },
-      { id: "agent-finance", module: "agent", label: "Finance Agent", icon: Bot, href: "/agent/finance" },
+      { id: "agent-finance", module: "agent", label: "Finance Agent", icon: Bot, href: "/admin/agent/finance" },
       { id: "agent-data-janitor", module: "agent", label: "Data Janitor", icon: HardDrive, href: "/admin/agents/data-janitor" },
       { id: "agent-lead-scout", module: "agent", label: "Lead Scout", icon: Search, href: "/admin/agents/lead-scout" },
       { id: "agent-outreach", module: "agent", label: "Outreach Agent", icon: Send, href: "/admin/agents/outreach-agent" },
@@ -66,26 +66,26 @@ const NAV_SECTIONS: NavSection[] = [
     id: "ai-studio",
     label: "AI Studio",
     items: [
-      { id: "message-lab", module: "message-lab", label: "AI Message Lab", icon: MessageSquare, href: "/message-lab" },
-      { id: "scorer", module: "scorer", label: "Lead Scorer", icon: Target, href: "/scorer" },
+      { id: "message-lab", module: "message-lab", label: "AI Message Lab", icon: MessageSquare, href: "/admin/message-lab" },
+      { id: "scorer", module: "scorer", label: "Lead Scorer", icon: Target, href: "/admin/scorer" },
     ],
   },
   {
     id: "pipeline",
     label: "Pipeline",
     items: [
-      { id: "sequences", module: "sequences", label: "Sequence Builder", icon: GitBranch, href: "/sequences" },
-      { id: "kanban", module: "kanban", label: "Kanban Pipeline", icon: KanbanSquare, href: "/kanban" },
-      { id: "analytics", module: "analytics", label: "Analytics", icon: BarChart2, href: "/analytics" },
-      { id: "clients", module: "clients", label: "Client Manager", icon: Briefcase, href: "/clients" },
+      { id: "sequences", module: "sequences", label: "Sequence Builder", icon: GitBranch, href: "/admin/sequences" },
+      { id: "kanban", module: "kanban", label: "Kanban Pipeline", icon: KanbanSquare, href: "/admin/kanban" },
+      { id: "analytics", module: "analytics", label: "Analytics", icon: BarChart2, href: "/admin/analytics" },
+      { id: "clients", module: "clients", label: "Client Manager", icon: Briefcase, href: "/admin/clients" },
     ],
   },
   {
     id: "outreach",
     label: "Outreach",
     items: [
-      { id: "linkedin-outreach", module: "linkedin-outreach", label: "LinkedIn Outreach", icon: Send, href: "/outreach/linkedin" },
-      { id: "gmaps-outreach", module: "gmaps-outreach", label: "GMap Outreach", icon: MapPin, href: "/outreach/gmaps" },
+      { id: "linkedin-outreach", module: "linkedin-outreach", label: "LinkedIn Outreach", icon: Send, href: "/admin/outreach/linkedin" },
+      { id: "gmaps-outreach", module: "gmaps-outreach", label: "GMap Outreach", icon: MapPin, href: "/admin/outreach/gmaps" },
     ],
   },
   {
@@ -98,8 +98,8 @@ const NAV_SECTIONS: NavSection[] = [
 // ─── Route helpers ────────────────────────────────────────────────────────
 
 function isActive(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  if (href === "/leads") return pathname === "/leads";
+  if (href === "/admin/dashboard") return pathname === "/admin/dashboard";
+  if (href === "/admin/leads") return pathname === "/admin/leads";
   return pathname.startsWith(href);
 }
 
@@ -333,8 +333,8 @@ export default function ProSidebar() {
   const sections = NAV_SECTIONS.map((sec) => {
     if (sec.id === "operations") {
       const items: NavItem[] = [
-        { id: "integrations", module: "settings", label: "Integrations", icon: Shield, href: "/integrations" },
-        { id: "invoice-agent", module: "settings", label: "Invoice Agent", icon: FileText, href: "/invoice" },
+        { id: "integrations", module: "settings", label: "Integrations", icon: Shield, href: "/admin/integrations" },
+        { id: "invoice-agent", module: "settings", label: "Invoice Agent", icon: FileText, href: "/admin/invoice" },
         { id: "blog", module: "settings", label: "Blog", icon: PenTool, href: "/admin/blog" },
       ];
       if (userRole === "super_admin") {
@@ -357,7 +357,7 @@ export default function ProSidebar() {
     >
       {/* ── Logo ── */}
       <Link
-        href="/dashboard"
+        href="/admin/dashboard"
         className="flex items-center shrink-0 no-underline"
         style={{
           height: 56,
@@ -577,11 +577,11 @@ export default function ProSidebar() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {/* Settings */}
                   <button
-                    onClick={() => { setProfileOpen(false); router.push("/settings"); }}
+                    onClick={() => { setProfileOpen(false); router.push("/admin/settings"); }}
                     className="flex items-center gap-2.5 rounded-lg transition-colors duration-150 w-full"
                     style={{
-                      height: 34, padding: "0 10px", background: pathname === "/settings" ? "rgba(232,66,10,0.08)" : "transparent",
-                      border: "none", cursor: "pointer", color: pathname === "/settings" ? "var(--accent)" : "var(--ink-3)",
+                      height: 34, padding: "0 10px", background: pathname === "/admin/settings" ? "rgba(232,66,10,0.08)" : "transparent",
+                      border: "none", cursor: "pointer", color: pathname === "/admin/settings" ? "var(--accent)" : "var(--ink-3)",
                     }}
                   >
                     <Settings2 size={14} />

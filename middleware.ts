@@ -121,21 +121,10 @@ export async function middleware(req: NextRequest) {
 
   if (user) {
     const effectiveRole = role || "user";
-    const superAdminOnly = ["/admin", "/clients", "/outreach", "/settings"];
-    const clientPortalBase = "/client-portal";
-    const sharedAdmin = ["/dashboard", "/leads", "/message-lab", "/scorer", "/sequences", "/kanban", "/analytics"];
-    const adminAgentPaths = [...superAdminOnly, ...sharedAdmin];
-
-    const isSuperAdminPath = superAdminOnly.some(p =>
-      normalizedPath === p || normalizedPath.startsWith(p + "/")
-    );
-    const isAdminAgentPath = adminAgentPaths.some(p =>
-      normalizedPath === p || normalizedPath.startsWith(p + "/")
-    );
-    const isClientPortalPath = normalizedPath.startsWith(clientPortalBase);
+    const isAdminPath = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
 
     // ── Admin routes: super_admin only, bypass ALL further checks ──
-    if (isSuperAdminPath) {
+    if (isAdminPath) {
       if (effectiveRole !== "super_admin") {
         return NextResponse.redirect(new URL(BASE_PATH + "/login", req.url));
       }
@@ -143,28 +132,14 @@ export async function middleware(req: NextRequest) {
       return res;
     }
 
-    if (effectiveRole === "client" || effectiveRole === "user") {
-      // Block access to shared admin routes
-      if (effectiveRole === "client" && isAdminAgentPath) {
-        return NextResponse.redirect(new URL(BASE_PATH + "/client-portal", req.url));
-      }
-    }
-
     if (effectiveRole === "qa_agent") {
       // Full access — no redirects. QA agent can visit any route.
     }
-
-    // super_admin on client-portal is fine (they can view what clients see)
-    void isClientPortalPath;
   }
 
   // ─── Subscription enforcement ──────────────────────────────────
 
-  const paidRoutes = [
-    "/dashboard", "/leads", "/message-lab", "/scorer",
-    "/sequences", "/kanban", "/analytics", "/clients",
-    "/outreach", "/settings", "/agent", "/admin",
-  ];
+  const paidRoutes = ["/admin"];
 
   const isPaidRoute = paidRoutes.some(p =>
     normalizedPath === p || normalizedPath.startsWith(p + "/")
@@ -217,12 +192,7 @@ export async function middleware(req: NextRequest) {
 
   // ─── Protect admin routes ─────────────────────────────────────────
 
-  const protectedPrefixes = [
-    "/dashboard", "/leads", "/message-lab", "/scorer",
-    "/sequences", "/kanban", "/analytics", "/clients",
-    "/outreach", "/settings", "/agent", "/admin", "/client-portal",
-    "/invoice",
-  ];
+  const protectedPrefixes = ["/admin", "/client-portal"];
 
   const isProtected = protectedPrefixes.some((prefix) =>
     normalizedPath === prefix || normalizedPath.startsWith(prefix + "/")

@@ -104,7 +104,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
             {authenticated ? (
               <Link
-                href="/dashboard"
+                href="/admin/dashboard"
                 className="flex items-center gap-1.5 text-sm font-semibold px-5 py-2 rounded-full bg-white/[0.06] text-white border border-white/[0.08] hover:bg-white/[0.10] transition-all duration-200"
               >
                 <LayoutDashboard size={14} /> Dashboard
@@ -202,7 +202,7 @@ export function Navbar() {
           >
             {authenticated ? (
               <Link
-                href="/dashboard"
+                href="/admin/dashboard"
                 onClick={() => setOpen(false)}
                 className="w-full max-w-xs text-center py-3.5 rounded-2xl bg-white/[0.06] text-white border border-white/[0.08] font-semibold text-[15px]"
               >

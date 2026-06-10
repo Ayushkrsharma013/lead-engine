@@ -52,7 +52,7 @@ export default function InvoicePanel() {
           </h3>
         </div>
         <Link
-          href="/invoice"
+          href="/admin/invoice"
           className="flex items-center gap-1 text-[11px] font-medium transition-colors duration-200"
           style={{ color: "var(--accent)" }}
         >
@@ -86,7 +86,7 @@ export default function InvoicePanel() {
           <FileText size={24} style={{ color: "var(--muted)", opacity: 0.3 }} />
           <p className="text-[12px]" style={{ color: "var(--muted)" }}>No invoices yet.</p>
           <Link
-            href="/invoice"
+            href="/admin/invoice"
             className="flex items-center gap-1 h-8 px-3 rounded-lg text-[11px] font-medium transition-all duration-200"
             style={{ background: "rgba(232,168,64,0.10)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.18)" }}
           >
@@ -98,7 +98,7 @@ export default function InvoicePanel() {
           {recent.map(inv => (
             <Link
               key={inv.id}
-              href="/invoice"
+              href="/admin/invoice"
               className="flex items-center gap-3 py-2 px-2 rounded-lg transition-colors duration-150"
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.03)"}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}

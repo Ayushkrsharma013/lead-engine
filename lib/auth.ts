@@ -107,7 +107,7 @@ export async function requireAuth(redirectTo = "/prospecting-os/login") {
   return user;
 }
 
-export async function requireRole(required: Role | Role[], redirectTo = "/prospecting-os/dashboard") {
+export async function requireRole(required: Role | Role[], redirectTo = "/prospecting-os/admin/dashboard") {
   const user = await requireAuth("/prospecting-os/login");
   const hasRequiredRole = Array.isArray(required)
     ? required.includes(user.role)
