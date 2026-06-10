@@ -160,6 +160,12 @@ function OnboardingContent() {
   const currentIndex = ONBOARDING_STEPS.findIndex(s => s.key === step);
   const progress = ((currentIndex + 1) / ONBOARDING_STEPS.length) * 100;
 
+  // ICP validation: must select at least 1 industry + 1 country (for micro, also require seniority)
+  const icpIsValid =
+    icp.industries.length > 0 &&
+    icp.countries.length > 0 &&
+    (selectedPlan !== "micro" || icp.seniority.length > 0);
+
   const toggleIcp = (field: keyof IcpPreferences, value: string) => {
     setIcp(prev => {
       const list = prev[field];
@@ -271,27 +277,6 @@ function OnboardingContent() {
       setError("Something went wrong. Please try again.");
     }
     setLoading(false);
-  };
-
-  const handleTokenSkip = async () => {
-    // Save ICP without payment, go to confirmation
-    if (token) {
-      await fetch("/prospecting-os/api/onboarding/token-save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, icp, plan: selectedPlan }),
-      }).catch(() => {});
-    }
-    setStep("confirmation");
-  };
-
-  const handleSkip = () => {
-    fetch("/prospecting-os/api/onboarding/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, icp, onboardingComplete: true }),
-    }).catch(() => {});
-    router.push("/dashboard");
   };
 
   const styles = {
@@ -435,12 +420,7 @@ function OnboardingContent() {
               </div>
             )}
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
-              {token ? <div /> : (
-                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  Skip for now
-                </button>
-              )}
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 24 }}>
               <button onClick={() => setStep("icp")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
                 Continue <ArrowRight size={14} />
               </button>
@@ -491,14 +471,20 @@ function OnboardingContent() {
               <button onClick={() => setStep("welcome")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
                 <ArrowLeft size={14} /> Back
               </button>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  Skip for now
-                </button>
-                <button onClick={() => setStep("plan")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
-                  Continue <ArrowRight size={14} />
-                </button>
-              </div>
+              <button
+                onClick={() => setStep("plan")}
+                disabled={!icpIsValid}
+                title={!icpIsValid ? "Select at least one industry and one country to continue" : ""}
+                style={{
+                  height: 44, padding: "0 24px", borderRadius: 999, border: "none",
+                  background: icpIsValid ? styles.accent : "rgba(255,255,255,0.06)",
+                  color: icpIsValid ? "#fff" : styles.textTertiary,
+                  fontWeight: 600, fontSize: "0.875rem", cursor: icpIsValid ? "pointer" : "not-allowed",
+                  fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
+                  transition: "all 0.2s",
+                }}>
+                Continue <ArrowRight size={14} />
+              </button>
             </div>
           </div>
         )}
@@ -602,19 +588,10 @@ function OnboardingContent() {
                   : "Complete Setup"}
             </button>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
               <button onClick={() => setStep("icp")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
                 <ArrowLeft size={14} /> Back
               </button>
-              {token ? (
-                <button onClick={handleTokenSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  Skip payment — start free
-                </button>
-              ) : (
-                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  Skip for now — start free trial
-                </button>
-              )}
             </div>
           </div>
         )}

@@ -16,59 +16,151 @@ const PLAN_LEAD_LIMITS: Record<string, number> = {
   scale: 500,
 };
 
-// Simple ICP-based scoring (no Claude API call — deterministic for speed)
+// Map ICP seniority selections to LinkedIn/Apify seniority filters
+const SENIORITY_MAP: Record<string, string[]> = {
+  "C-Suite (CEO, CTO, CFO)": ["ceo", "cto", "cfo", "chief", "president", "managing director"],
+  "VP / Director": ["vp", "vice president", "director", "head of"],
+  "Head of Department": ["head of", "lead", "principal"],
+  "Senior Manager": ["senior manager", "sr manager", "senior"],
+  "Manager": ["manager", "team lead"],
+  "Founder / Co-Founder": ["founder", "co-founder", "owner", "partner"],
+};
+
+// Map ICP company size selections to Apify employee count ranges
+const COMPANY_SIZE_MAP: Record<string, { min: number; max: number }> = {
+  "1-10": { min: 1, max: 10 },
+  "11-50": { min: 11, max: 50 },
+  "51-200": { min: 51, max: 200 },
+  "201-500": { min: 201, max: 500 },
+  "501-1000": { min: 501, max: 1000 },
+  "1000+": { min: 1001, max: 500000 },
+};
+
+// Build ICP-aware search keywords combining industries + seniority titles
+function buildSearchKeywords(icp: Record<string, string[]>): string[] {
+  const keywords: string[] = [];
+
+  // Combine industry terms with seniority titles for targeted keywords
+  const industries = icp.industries || [];
+  const seniority = icp.seniority || [];
+
+  for (const industry of industries) {
+    const shortIndustry = industry.split("&")[0].trim().split(",")[0].trim();
+    // Industry-alone keyword
+    keywords.push(shortIndustry);
+    // Industry + C-suite/founder combo for high-value targets
+    if (seniority.length > 0) {
+      const titles = seniority.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+      for (const title of titles.slice(0, 3)) {
+        keywords.push(`${shortIndustry} ${title}`);
+      }
+    }
+  }
+
+  // If no industry selected, use seniority as fallback
+  if (keywords.length === 0 && seniority.length > 0) {
+    keywords.push(...seniority.flatMap(s => SENIORITY_MAP[s] || [s]));
+  }
+
+  return keywords.length > 0 ? keywords.slice(0, 30) : ["saas founder", "technology ceo"];
+}
+
+// Build Apify search parameters from ICP config
+function buildApifyInput(
+  icp: Record<string, string[]>,
+  maxResults: number
+): Record<string, unknown> {
+  const keywords = buildSearchKeywords(icp);
+  const countries = icp.countries || [];
+  const companySizes = icp.companySizes || [];
+  const seniority = icp.seniority || [];
+
+  const input: Record<string, unknown> = {
+    searchUrl: "",
+    maxResults,
+  };
+
+  // Use first keyword as primary search term
+  if (keywords.length > 0) {
+    input.searchTerms = keywords;
+  }
+
+  // Location filter
+  if (countries.length > 0) {
+    input.location = countries.join(", ");
+  }
+
+  // Seniority filter — use first 3 mapped values
+  if (seniority.length > 0) {
+    const filters = seniority.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+    input.seniority = [...new Set(filters)].slice(0, 10);
+  }
+
+  // Company size — use broadest range from selected sizes
+  if (companySizes.length > 0) {
+    const ranges = companySizes.map(s => COMPANY_SIZE_MAP[s]).filter(Boolean);
+    if (ranges.length > 0) {
+      input.minEmployees = Math.min(...ranges.map(r => r.min));
+      input.maxEmployees = Math.max(...ranges.map(r => r.max));
+    }
+  }
+
+  return input;
+}
+
+// ICP scoring with proper field matching (0-10 scale for DB storage)
 function scoreLead(lead: {
   title?: string;
   company?: string;
   linkedin_url?: string;
   email?: string;
+  industry?: string;
 }, icp: Record<string, string[]>): { score: number; reason: string } {
   let score = 0;
   const reasons: string[] = [];
 
-  // Check seniority match
-  const seniorityKeywords = (icp.seniority || []).join(" ").toLowerCase();
+  // Seniority match — compare title against mapped seniority keywords
+  const senioritySelections = icp.seniority || [];
   const title = (lead.title || "").toLowerCase();
-  if (seniorityKeywords && title) {
-    const matched = (icp.seniority || []).some(s =>
-      title.includes(s.toLowerCase()) ||
-      seniorityKeywords.includes(title)
-    );
-    if (matched) { score += 25; reasons.push("Seniority match"); }
+  if (senioritySelections.length > 0 && title) {
+    const matchWords = senioritySelections.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+    const matched = matchWords.some(kw => title.includes(kw));
+    if (matched) { score += 3.0; reasons.push("Seniority match"); }
   }
 
   // Has LinkedIn = data quality
   if (lead.linkedin_url && lead.linkedin_url.trim().length > 0) {
-    score += 20;
-    reasons.push("Has LinkedIn profile");
+    score += 2.0;
+    reasons.push("LinkedIn profile");
   }
 
-  // Has email = data quality
+  // Has email = high quality
   if (lead.email && lead.email.trim().length > 0) {
-    score += 15;
-    reasons.push("Has verified email");
+    score += 1.5;
+    reasons.push("Verified email");
   }
 
-  // Industry bonus (any industry in ICP gets bonus)
-  const industryKeywords = (icp.industries || []).join(" ").toLowerCase();
-  if (industryKeywords && lead.company) {
-    score += 10;
-    reasons.push("Industry in ICP range");
+  // Industry match
+  const industrySelections = (icp.industries || []).map(i => i.toLowerCase());
+  const leadIndustry = (lead.industry || "").toLowerCase();
+  if (leadIndustry && industrySelections.some(ind => leadIndustry.includes(ind) || ind.includes(leadIndustry))) {
+    score += 1.5;
+    reasons.push("Industry match");
   }
 
   // Title presence
   if (title && title.length > 0) {
-    score += 10;
+    score += 1.0;
   }
 
   // Company presence
   if (lead.company && lead.company.length > 0) {
-    score += 10;
+    score += 1.0;
   }
 
   return {
-    score: Math.min(100, score),
-    reason: reasons.join("; ") || "Basic ICP match",
+    score: Math.min(10, Math.round(score * 10) / 10),
+    reason: reasons.join("; ") || "Basic match",
   };
 }
 
@@ -181,27 +273,26 @@ export async function POST(req: NextRequest) {
     const icp = (workspace.icp_config || {}) as Record<string, string[]>;
     const plan = (workspace.plan || "pilot") as PlanKey;
     const leadLimit = PLAN_LEAD_LIMITS[plan] || 50;
+    const fetchCount = leadLimit * 3; // Fetch 3x to have enough after scoring/filtering
 
-    // Build Apify search query from ICP
-    const industries = (icp.industries || []).join(", ");
-    const countries = (icp.countries || []).join(", ");
-    const companySizes = (icp.companySizes || []).join(", ");
+    // Build ICP-aware Apify search parameters
+    const apifyInput = buildApifyInput(icp, fetchCount);
+    const keywords = (apifyInput.searchTerms as string[]) || [];
+
+    console.log("[leads/generate] ICP config:", JSON.stringify(icp));
+    console.log("[leads/generate] Plan:", plan, "| Target:", leadLimit, "| Fetch:", fetchCount);
+    console.log("[leads/generate] Keywords:", keywords.join(", "));
 
     // Use Apify LinkedIn Search Actor
     const actorId = process.env.APIFY_LINKEDIN_ACTOR_ID || "curious_coder~linkedin-people-search-scraper";
 
-    // Start Apify run
+    // Start Apify run with ICP-targeted parameters
     const runRes = await fetch(
       `${APIFY_BASE}/acts/${encodeURIComponent(actorId)}/runs?token=${apifyKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          searchUrl: "", // Let actor build search from params
-          searchTerms: industries || undefined,
-          location: countries || undefined,
-          maxResults: leadLimit + 20, // Get extras for filtering
-        }),
+        body: JSON.stringify(apifyInput),
       }
     );
 
@@ -247,7 +338,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Map and filter leads
-    const mappedLeads = items.slice(0, leadLimit).map(item => ({
+    const allMapped = items.map(item => ({
       name: String(item.fullName || item.full_name || item.name || "").trim(),
       title: String(item.job_title || item.title || item.jobTitle || "").trim(),
       company: String(item.job_company_name || item.company || item.organization || "").trim(),
@@ -256,18 +347,47 @@ export async function POST(req: NextRequest) {
       industry: String(item.job_company_industry || item.industry || "").trim(),
     })).filter(l => l.name && l.name.length > 1);
 
-    if (mappedLeads.length === 0) {
-      throw new Error("No valid leads found in Apify results");
+    console.log(`[leads/generate] Apify returned: ${items.length} raw → ${allMapped.length} valid leads`);
+
+    if (allMapped.length === 0) {
+      throw new Error("No valid leads found in Apify results — try broadening your ICP criteria");
     }
 
-    // Score each lead against ICP
-    const scored = mappedLeads.map(lead => {
+    // Score each lead against ICP (0-10 scale)
+    const scored = allMapped.map(lead => {
       const { score, reason } = scoreLead(lead, icp);
       return { ...lead, score, icp_match_reason: reason };
     });
 
+    // Filter: score >= 8.0, then sort by score descending, take top N
+    const qualified = scored
+      .filter(l => l.score >= 8.0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, leadLimit);
+
+    console.log(
+      `[leads/generate] Scored: ${scored.length} total | ` +
+      `${scored.filter(l => l.score >= 8.0).length} qualified (≥8.0) | ` +
+      `${qualified.length} final (plan limit: ${leadLimit})`
+    );
+
+    // If not enough qualified leads, relax threshold to 7.0
+    let finalLeads = qualified;
+    if (finalLeads.length < Math.floor(leadLimit * 0.5)) {
+      const relaxed = scored
+        .filter(l => l.score >= 7.0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, leadLimit);
+      finalLeads = relaxed;
+      console.log(`[leads/generate] Relaxed threshold to 7.0: ${finalLeads.length} leads`);
+    }
+
+    if (finalLeads.length === 0) {
+      throw new Error("No leads met the ICP quality threshold — try broader criteria");
+    }
+
     // Insert leads into client_leads
-    const leadRows = scored.map(l => ({
+    const leadRows = finalLeads.map(l => ({
       workspace_id: workspace.id,
       name: l.name,
       title: l.title || null,
@@ -293,16 +413,16 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < inserted.length; i += batchSize) {
       const batch = inserted.slice(i, i + batchSize);
-      const batchScored = scored.slice(i, i + batchSize);
+      const batchLeads = finalLeads.slice(i, i + batchSize);
 
       const results = await Promise.all(
         batch.map((lead, idx) =>
           generateIcebreaker(
             {
               name: lead.name,
-              title: batchScored[idx]?.title || "",
+              title: batchLeads[idx]?.title || "",
               company: lead.company || "",
-              industry: batchScored[idx]?.industry || "",
+              industry: batchLeads[idx]?.industry || "",
             },
             geminiKey
           ).then(text => ({ lead_id: lead.id, text }))
@@ -311,6 +431,8 @@ export async function POST(req: NextRequest) {
 
       icebreakerRows.push(...results);
     }
+
+    console.log(`[leads/generate] Generated ${icebreakerRows.length} icebreakers`);
 
     // Insert icebreakers
     if (icebreakerRows.length > 0) {
