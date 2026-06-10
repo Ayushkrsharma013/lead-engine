@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden — super_admin only' }, { status: 403 })
   }
 
-  const { email, display_name, role: newRole, plan, notes, send_invite } = await req.json()
+  const { email, display_name, role: newRole, plan, notes, send_invite, subscription_status } = await req.json()
 
   if (!email || !newRole) {
     return NextResponse.json({ error: 'email and role are required' }, { status: 400 })
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     full_name: display_name || '',
     role: newRole,
     plan: plan || null,
-    subscription_status: plan ? 'pending_payment' : null,
+    subscription_status: subscription_status || (plan ? 'pending_payment' : null),
     payment_ref: paymentRef,
     is_active: true,
     created_by: adminUserId,

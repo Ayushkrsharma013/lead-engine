@@ -127,6 +127,7 @@ body::before {
 @keyframes progress-fill { from { width: 0%; } to { width: 100%; } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes pulse-live { 0%,100% { box-shadow: 0 0 0 0 var(--positive); } 50% { box-shadow: 0 0 0 8px transparent; } }
+@keyframes pulse-slow { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .animate-fade-up    { animation: fade-up 0.25s ease-out; }
 .animate-fade-in    { animation: fade-in 0.2s ease-out; }
@@ -134,6 +135,7 @@ body::before {
 .animate-slide-in-right { animation: slide-in-right 0.2s ease-out; }
 .animate-toast-in   { animation: toast-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .animate-pulse-live { animation: pulse-live 2s ease-in-out infinite; }
+.animate-pulse-slow { animation: pulse-slow 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
 .transition-premium {
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;

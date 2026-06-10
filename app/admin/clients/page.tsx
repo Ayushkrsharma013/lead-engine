@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Users, Search, Loader2, ChevronLeft, ChevronRight,
+  Users, Search, ChevronLeft, ChevronRight,
   DollarSign, BarChart3, UserCheck, RotateCcw, X,
+  UserPlus,
 } from "lucide-react";
 import CustomDropdown from "@/components/ui/CustomDropdown";
 import type { DropdownOption } from "@/components/ui/CustomDropdown";
-import MetricsCard from "@/components/ui/MetricsCard";
+import CountUp from "@/components/ui/CountUp";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
 import ClientTable from "@/components/admin/ClientTable";
+import AddClientModal from "@/components/admin/AddClientModal";
 import type { ClientRow } from "@/components/admin/ClientTable";
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -57,15 +59,21 @@ function SkeletonRow() {
   return (
     <div className="flex items-center gap-4 px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
       <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 w-32 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
-        <div className="h-3 w-48 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+        <div className="h-3.5 w-32 rounded animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
+        <div className="h-3 w-48 rounded animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
       </div>
-      <div className="h-5 w-14 rounded-full animate-pulse" style={{ background: "var(--surface-2)" }} />
-      <div className="h-5 w-16 rounded-full animate-pulse" style={{ background: "var(--surface-2)" }} />
-      <div className="h-4 w-10 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
-      <div className="h-4 w-20 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
-      <div className="h-7 w-20 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+      <div className="h-5 w-14 rounded-full animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
+      <div className="h-5 w-16 rounded-full animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
+      <div className="h-4 w-10 rounded animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
+      <div className="h-4 w-20 rounded animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
+      <div className="h-7 w-20 rounded animate-pulse-slow" style={{ background: "var(--surface-2)" }} />
     </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-xl p-5 animate-pulse-slow" style={{ background: "var(--surface)", border: "1px solid var(--line)", height: 100 }} />
   );
 }
 
@@ -85,6 +93,7 @@ export default function AdminClientsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
 
   /* Modals */
@@ -127,7 +136,7 @@ export default function AdminClientsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /* ── Search (debounced) ─────────────────────────────────────────────────── */
+  /* ── Search (debounced 300ms) ───────────────────────────────────────────── */
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -220,22 +229,82 @@ export default function AdminClientsPage() {
             Manage all client accounts, subscriptions, and access
           </p>
         </div>
+
+        {/* Add Client button */}
+        <button
+          onClick={() => setAddModalOpen(true)}
+          className="flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-semibold transition-all duration-300 hover:scale-105"
+          style={{
+            background: "#22c55e",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 2px 12px rgba(34,197,94,0.2)",
+          }}
+        >
+          <UserPlus size={15} />
+          Add Client
+        </button>
       </div>
 
-      {/* Metrics Cards */}
-      {metrics && (
+      {/* Metrics Cards — with CountUp + hover scale */}
+      {metrics ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <MetricsCard icon={Users} label="Total Clients" value={metrics.totalClients.toLocaleString()} color="#00b4ff" />
-          <MetricsCard icon={UserCheck} label="Active Subscriptions" value={metrics.activeSubscriptions.toLocaleString()} color="#22c55e" />
-          <MetricsCard icon={DollarSign} label="MRR" value={`$${metrics.mrr.toLocaleString()}`} color="#E8A840" />
-          <MetricsCard icon={BarChart3} label="Leads Managed" value={metrics.totalLeadsManaged.toLocaleString()} color="#a855f7" />
+          <div
+            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
+          >
+            <div className="flex items-center gap-2.5 mb-2">
+              <Users size={16} style={{ color: "#00b4ff" }} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Total Clients</span>
+            </div>
+            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
+              <CountUp value={metrics.totalClients} />
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
+          >
+            <div className="flex items-center gap-2.5 mb-2">
+              <UserCheck size={16} style={{ color: "#22c55e" }} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Active</span>
+            </div>
+            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
+              <CountUp value={metrics.activeSubscriptions} />
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
+          >
+            <div className="flex items-center gap-2.5 mb-2">
+              <DollarSign size={16} style={{ color: "#E8A840" }} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>MRR</span>
+            </div>
+            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
+              $<CountUp value={metrics.mrr} />
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", cursor: "default" }}
+          >
+            <div className="flex items-center gap-2.5 mb-2">
+              <BarChart3 size={16} style={{ color: "#a855f7" }} />
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Leads</span>
+            </div>
+            <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>
+              <CountUp value={metrics.totalLeadsManaged} />
+            </p>
+          </div>
         </div>
-      )}
-      {loading && !metrics && (
+      ) : loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="rounded-xl p-5 animate-pulse" style={{ background: "var(--surface)", border: "1px solid var(--line)", height: 100 }} />
-          ))}
+          {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
         </div>
       )}
 
@@ -243,7 +312,7 @@ export default function AdminClientsPage() {
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div
-          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-xl px-3 h-10"
+          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-xl px-3 h-10 transition-colors duration-150"
           style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
         >
           <Search size={14} style={{ color: "var(--ink-4)" }} />
@@ -324,6 +393,15 @@ export default function AdminClientsPage() {
           <p className="text-[12px] mt-1.5 mb-4" style={{ color: "var(--ink-4)" }}>
             {hasFilters ? "Try adjusting your search or filters above." : "Create your first client account to get started."}
           </p>
+          {!hasFilters && (
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[13px] font-semibold transition-all duration-300 hover:scale-105"
+              style={{ background: "#22c55e", color: "#fff", border: "none", cursor: "pointer" }}
+            >
+              <UserPlus size={15} /> Add Your First Client
+            </button>
+          )}
           {hasFilters && (
             <button
               onClick={clearFilters}
@@ -401,6 +479,13 @@ export default function AdminClientsPage() {
         </>
       )}
 
+      {/* ── Add Client Modal ────────────────────────────────────────────────── */}
+      <AddClientModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={() => { setToast("Client created successfully"); setTimeout(() => setToast(""), 2500); }}
+      />
+
       {/* ── Delete Confirmation Modal ─────────────────────────────────────── */}
       <ConfirmationModal
         open={!!confirmDelete}
@@ -436,7 +521,7 @@ export default function AdminClientsPage() {
       {/* ── Toast ──────────────────────────────────────────────────────────── */}
       {toast && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium animate-fade-in"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium animate-toast-in"
           style={{
             background: "var(--surface-elev)",
             border: "1px solid var(--line)",
