@@ -203,7 +203,9 @@ export async function middleware(req: NextRequest) {
   if (isPublicRoute || isStaticAsset || isApiRoute || isClientPortalLogin) {
     if (user && (normalizedPath === "/login" || normalizedPath === "/signup" || normalizedPath === "/client-portal/login")) {
       // Route to appropriate destination based on role
-      const dest = role === "client" ? "/client-portal" : "/dashboard";
+      let dest = "/dashboard";
+      if (role === "client") dest = "/client-portal";
+      else if (role === "super_admin") dest = "/admin";
       return NextResponse.redirect(new URL(BASE_PATH + dest, req.url));
     }
     return res;
