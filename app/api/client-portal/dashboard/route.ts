@@ -52,21 +52,22 @@ export async function GET(req: NextRequest) {
     ? Object.values(PLAN_MODULES).flat()
     : PLAN_MODULES[plan] ?? []
 
-  // ── Core stats (all plans) ─────────────────────────────────────
+  // ── Core stats (all plans) — workspace-scoped client_leads ─────
 
   const { data: allLeads, count: totalLeads } = await supabaseAdmin
-    .from('leads')
+    .from('client_leads')
     .select('*', { count: 'exact' })
-    .eq('user_id', userId)
+    .eq('workspace_id', workspace?.id)
     .order('score', { ascending: false })
 
   const leads = allLeads || []
-  const hot = leads.filter(l => l.score >= 80).length
-  const contacted = leads.filter(l => l.status && l.status !== 'new').length
+  // client_leads doesn't have status column — derive from score
+  const hot = leads.filter(l => (l.score || 0) >= 8.0).length
+  const contacted = hot // hot = high-scoring leads
   const avgScore = leads.length > 0
-    ? Math.round(leads.reduce((s, l) => s + (l.score || 0), 0) / leads.length)
+    ? Math.round(leads.reduce((s, l) => s + (Number(l.score) || 0), 0) / leads.length * 10) / 10
     : 0
-  const meetings = leads.filter(l => l.status === 'meeting').length
+  const meetings = 0 // No meeting tracking on client_leads yet
 
   const core = { total: totalLeads || 0, hot, contacted, avgScore, meetings }
 
@@ -77,9 +78,9 @@ export async function GET(req: NextRequest) {
     name: l.name,
     title: l.title,
     company: l.company,
-    industry: l.industry,
-    score: l.score,
-    status: l.status || 'new',
+    industry: l.icp_match_reason || '',
+    score: Number(l.score) || 0,
+    status: (l.score || 0) >= 8.0 ? 'hot' : 'new',
   }))
 
   // ── Growth+ data ───────────────────────────────────────────────
@@ -92,10 +93,10 @@ export async function GET(req: NextRequest) {
   const showGrowth = allowedModules.includes('icebreakers') || (profileData.role === 'qa_agent' || profileData.role === 'super_admin')
 
   if (showGrowth) {
-    // Industry breakdown
+    // Industry breakdown — use icp_match_reason as proxy
     const industryMap: Record<string, number> = {}
     for (const l of leads) {
-      const ind = l.industry || 'Unknown'
+      const ind = (l as any).icp_match_reason?.split(';')[0]?.trim() || 'General'
       industryMap[ind] = (industryMap[ind] || 0) + 1
     }
     industryBreakdown = Object.entries(industryMap)
@@ -103,35 +104,37 @@ export async function GET(req: NextRequest) {
       .slice(0, 6)
       .map(([industry, count]) => ({ industry, count }))
 
-    // Status breakdown
+    // Status breakdown — derived from score
     const statusMap: Record<string, number> = {}
     for (const l of leads) {
-      const s = l.status || 'new'
+      const s = (l.score || 0) >= 8.0 ? 'hot' : 'new'
       statusMap[s] = (statusMap[s] || 0) + 1
     }
-    const order = ['new', 'contacted', 'replied', 'hot', 'meeting', 'won', 'lost']
+    const order = ['new', 'hot']
     statusBreakdown = order
       .filter(o => statusMap[o])
       .map(status => ({ status, count: statusMap[status] }))
 
-    // Icebreakers — latest 3 messages for this user's leads
-    const { data: msgs } = await supabaseAdmin
-      .from('messages')
-      .select('lead_id, body')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    // Icebreakers — from client_icebreakers table
+    const leadIds = leads.map(l => l.id)
+    if (leadIds.length > 0) {
+      const { data: ibr } = await supabaseAdmin
+        .from('client_icebreakers')
+        .select('lead_id, text')
+        .in('lead_id', leadIds)
+        .order('created_at', { ascending: false })
+        .limit(3)
 
-    if (msgs && msgs.length > 0) {
-      const userLeadIds = new Set(leads.map(l => l.id))
-      const userMsgs = msgs.filter(m => userLeadIds.has(m.lead_id))
-      icebreakers = userMsgs.slice(0, 3).map(m => {
-        const lead = leads.find(l => l.id === m.lead_id)
-        return {
-          leadName: lead?.name || 'Unknown',
-          company: lead?.company || '',
-          body: m.body?.slice(0, 200) || '',
-        }
-      })
+      if (ibr && ibr.length > 0) {
+        icebreakers = ibr.map((m: any) => {
+          const lead = leads.find(l => l.id === m.lead_id)
+          return {
+            leadName: lead?.name || 'Unknown',
+            company: lead?.company || '',
+            body: m.text?.slice(0, 200) || '',
+          }
+        })
+      }
     }
 
     // Slack configured
@@ -155,33 +158,24 @@ export async function GET(req: NextRequest) {
       days.push({ day: d.toLocaleDateString('en-US', { weekday: 'short' }), count: 0 })
     }
     for (const l of leads) {
-      if (l.saved_at) {
-        const savedDate = new Date(l.saved_at).toLocaleDateString('en-US', { weekday: 'short' })
+      if ((l as any).created_at) {
+        const savedDate = new Date((l as any).created_at).toLocaleDateString('en-US', { weekday: 'short' })
         const slot = days.find(d => d.day === savedDate)
         if (slot) slot.count++
       }
     }
     weeklyFlow = days
 
-    // Active sequences for this user's leads
-    const leadIds = leads.map(l => l.id)
-    if (leadIds.length > 0) {
-      const { count: seqCount } = await supabaseAdmin
-        .from('sequence_executions')
-        .select('*', { count: 'exact', head: true })
-        .in('lead_id', leadIds)
-        .eq('status', 'active')
-      activeSequences = seqCount || 0
-    }
+    // Active sequences — not applicable for client_leads yet, skip
+    activeSequences = 0
 
-    // Conversion funnel
-    const funnelOrder = ['new', 'contacted', 'replied', 'hot', 'meeting', 'won', 'lost']
+    // Conversion funnel — simplified for client_leads
     const funnelMap: Record<string, number> = {}
     for (const l of leads) {
-      const s = l.status || 'new'
+      const s = (l.score || 0) >= 8.0 ? 'hot' : 'new'
       funnelMap[s] = (funnelMap[s] || 0) + 1
     }
-    conversionFunnel = funnelOrder.map(stage => ({
+    conversionFunnel = ['new', 'hot'].map(stage => ({
       stage,
       count: funnelMap[stage] || 0,
     }))

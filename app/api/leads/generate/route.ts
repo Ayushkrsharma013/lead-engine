@@ -116,10 +116,27 @@ async function fetchApifyResults(datasetId: string, apiKey: string): Promise<Arr
   return (await res.json()) as Array<Record<string, unknown>>;
 }
 
-// POST /api/leads/generate — trigger lead generation for authenticated client
+// POST /api/leads/generate — trigger lead generation
+// Auth: x-user-id header (client portal), OR Authorization: Bearer <CRON_SECRET> + ?workspace_id= (webhook/cron)
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization");
+  const isInternal = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  let workspaceId: string | undefined;
+  let userId: string | undefined;
+
+  if (isInternal) {
+    // Internal call from webhook/cron — use workspace_id query param
+    workspaceId = req.nextUrl.searchParams.get("workspace_id") || undefined;
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspace_id" }, { status: 400 });
+    }
+  } else {
+    // Client portal call — use x-user-id header
+    userId = req.headers.get("x-user-id") || undefined;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const apifyKey = process.env.APIFY_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -128,11 +145,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Get workspace + ICP config
-  const { data: workspace } = await supabaseAdmin
-    .from("client_workspaces")
-    .select("id, plan, icp_config, leads_generation_status, icp_locked")
-    .eq("client_user_id", userId)
-    .maybeSingle();
+  let workspace: Record<string, unknown> | null = null;
+  if (workspaceId) {
+    const { data } = await supabaseAdmin
+      .from("client_workspaces")
+      .select("id, plan, icp_config, leads_generation_status, icp_locked, client_user_id")
+      .eq("id", workspaceId)
+      .maybeSingle();
+    workspace = data as Record<string, unknown> | null;
+  } else if (userId) {
+    const { data } = await supabaseAdmin
+      .from("client_workspaces")
+      .select("id, plan, icp_config, leads_generation_status, icp_locked")
+      .eq("client_user_id", userId)
+      .maybeSingle();
+    workspace = data as Record<string, unknown> | null;
+  }
 
   if (!workspace) {
     return NextResponse.json({ error: "Workspace not found — complete onboarding first" }, { status: 404 });
@@ -326,15 +354,41 @@ export async function POST(req: NextRequest) {
 }
 
 // GET /api/leads/generate — check generation status
+// Auth: x-user-id header (client portal), OR Authorization: Bearer <CRON_SECRET> + ?workspace_id= (webhook/cron)
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization");
+  const isInternal = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  const { data: workspace } = await supabaseAdmin
-    .from("client_workspaces")
-    .select("leads_generation_status, leads_generated_at, leads_count, icp_locked")
-    .eq("client_user_id", userId)
-    .maybeSingle();
+  let workspaceId: string | undefined;
+  let userId: string | undefined;
+
+  if (isInternal) {
+    workspaceId = req.nextUrl.searchParams.get("workspace_id") || undefined;
+    if (!workspaceId) {
+      return NextResponse.json({ error: "Missing workspace_id" }, { status: 400 });
+    }
+  } else {
+    userId = req.headers.get("x-user-id") || undefined;
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let workspace: Record<string, unknown> | null = null;
+  if (workspaceId) {
+    const { data } = await supabaseAdmin
+      .from("client_workspaces")
+      .select("leads_generation_status, leads_generated_at, leads_count, icp_locked")
+      .eq("id", workspaceId)
+      .maybeSingle();
+    workspace = data as Record<string, unknown> | null;
+  } else if (userId) {
+    const { data } = await supabaseAdmin
+      .from("client_workspaces")
+      .select("leads_generation_status, leads_generated_at, leads_count, icp_locked")
+      .eq("client_user_id", userId)
+      .maybeSingle();
+    workspace = data as Record<string, unknown> | null;
+  }
 
   if (!workspace) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });

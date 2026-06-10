@@ -153,13 +153,29 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Profile update failed" }, { status: 500 });
         }
       } else {
-        // Create new user profile — requires auth user first
-        // For Dodo, the user may not have signed up yet. Use client provisioning.
-        // Create a profile entry directly (service role bypasses RLS)
-        const { data: newProfile, error: createError } = await supabaseAdmin
+        // Create new auth user + profile for Dodo payments
+        // Step 1: Create auth user so client can log in
+        const { data: newAuthUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: email.toLowerCase(),
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: { role: "client", plan },
+        });
+
+        if (authError || !newAuthUser?.user) {
+          console.error("[payment-webhook] Dodo auth user creation failed:", authError?.message);
+          return NextResponse.json({ error: "User creation failed" }, { status: 500 });
+        }
+
+        userId = newAuthUser.user.id;
+
+        // Step 2: Create profile entry linked to auth user
+        const { error: createError } = await supabaseAdmin
           .from("profiles")
           .insert({
+            id: userId,
             email: email.toLowerCase(),
+            display_name: (email.split("@")[0] || "Client").slice(0, 50),
             role: "client",
             plan,
             subscription_status: "active",
@@ -167,16 +183,12 @@ export async function POST(req: NextRequest) {
             subscription_activated_at: new Date().toISOString(),
             payment_ref: paymentId,
             is_active: true,
-          })
-          .select("id")
-          .single();
+          });
 
-        if (createError || !newProfile) {
-          console.error("[payment-webhook] Dodo profile creation failed:", createError?.message);
-          return NextResponse.json({ error: "Profile creation failed" }, { status: 500 });
+        if (createError) {
+          console.error("[payment-webhook] Dodo profile creation failed:", createError.message);
+          // Don't fail — auth user is created, profile can be fixed
         }
-
-        userId = newProfile.id as string;
       }
 
       // Provision client row
@@ -236,6 +248,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      let workspaceId: string | undefined;
+
       const { data: existingWorkspace } = await supabaseAdmin
         .from("client_workspaces")
         .select("id")
@@ -243,20 +257,41 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existingWorkspace) {
+        workspaceId = (existingWorkspace as any).id;
         // Update existing workspace ICP if it's empty
         const existingIcp = (existingWorkspace as any).icp_config;
-        if (!existingIcp || Object.keys(existingIcp).length === 0) {
+        const needRegen = !existingIcp || Object.keys(existingIcp).length === 0;
+        if (needRegen) {
           await supabaseAdmin
             .from("client_workspaces")
-            .update({ icp_config: icpConfig })
-            .eq("id", (existingWorkspace as any).id);
+            .update({ icp_config: icpConfig, leads_generation_status: "processing" })
+            .eq("id", workspaceId);
         }
       } else {
-        await supabaseAdmin.from("client_workspaces").insert({
+        const { data: newWs } = await supabaseAdmin.from("client_workspaces").insert({
           client_user_id: userId,
           plan,
           icp_config: icpConfig,
-        });
+          leads_generation_status: "processing",
+        }).select("id").single();
+        workspaceId = (newWs as any)?.id;
+      }
+
+      // Trigger lead generation asynchronously (fire-and-forget)
+      if (workspaceId) {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret) {
+          fetch(
+            `https://app.flow-forges.com/prospecting-os/api/leads/generate?workspace_id=${workspaceId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${cronSecret}`,
+              },
+            }
+          ).catch((err) => console.warn("[payment-webhook] Lead gen trigger failed:", err));
+        }
       }
 
       // Send credentials email
@@ -506,20 +541,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let workspaceId: string | undefined;
+
     if (existingWorkspace) {
+      workspaceId = (existingWorkspace as any).id;
       const existingIcp = (existingWorkspace as any).icp_config;
       if (!existingIcp || Object.keys(existingIcp).length === 0) {
         await supabaseAdmin
           .from("client_workspaces")
-          .update({ icp_config: icpConfig })
-          .eq("id", (existingWorkspace as any).id);
+          .update({ icp_config: icpConfig, leads_generation_status: "processing" })
+          .eq("id", workspaceId);
       }
     } else {
-      await supabaseAdmin.from("client_workspaces").insert({
+      const { data: newWs } = await supabaseAdmin.from("client_workspaces").insert({
         client_user_id: userId,
         plan,
         icp_config: icpConfig,
-      });
+        leads_generation_status: "processing",
+      }).select("id").single();
+      workspaceId = (newWs as any)?.id;
+    }
+
+    // Trigger lead generation asynchronously (fire-and-forget)
+    if (workspaceId) {
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret) {
+        fetch(
+          `https://app.flow-forges.com/prospecting-os/api/leads/generate?workspace_id=${workspaceId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${cronSecret}`,
+            },
+          }
+        ).catch((err) => console.warn("[payment-webhook] Lead gen trigger failed:", err));
+      }
     }
 
     // Send credentials email

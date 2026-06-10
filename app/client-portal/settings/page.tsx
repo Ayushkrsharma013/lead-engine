@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings, Save } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Settings, Save, Lock } from "lucide-react";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
 const INDUSTRY_OPTIONS = [
@@ -15,6 +14,7 @@ export default function ClientSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
+  const [icpLocked, setIcpLocked] = useState(false);
 
   const [targetIndustries, setTargetIndustries] = useState<string[]>([]);
   const [targetLocations, setTargetLocations] = useState("");
@@ -26,6 +26,7 @@ export default function ClientSettingsPage() {
       if (meRes.ok) {
         const d = await meRes.json();
         setProfile(d.profile);
+        setIcpLocked(!!d.workspace?.icp_locked);
         const icp = (d.workspace?.icp_config || {}) as Record<string, unknown>;
         setTargetIndustries((icp.industries as string[]) || []);
         setTargetLocations((icp.locations as string) || "");
@@ -37,6 +38,7 @@ export default function ClientSettingsPage() {
   }, []);
 
   const toggleIndustry = (ind: string) => {
+    if (icpLocked) return;
     if (targetIndustries.includes(ind)) {
       setTargetIndustries(targetIndustries.filter(i => i !== ind));
     } else {
@@ -45,20 +47,26 @@ export default function ClientSettingsPage() {
   };
 
   const handleSave = async () => {
+    if (icpLocked) {
+      setToast("ICP is locked — contact support to make changes");
+      setTimeout(() => setToast(""), 3000);
+      return;
+    }
     setSaving(true);
-    const client = createClient();
-    const { error } = await client
-      .from("client_workspaces")
-      .update({
-        icp_config: {
+    // Use API route for saving
+    const res = await fetch("/prospecting-os/api/onboarding/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        icp: {
           industries: targetIndustries,
           locations: targetLocations,
           minScore,
         },
-      })
-      .eq("client_user_id", profile?.id);
+      }),
+    });
     setSaving(false);
-    if (error) {
+    if (!res.ok) {
       setToast("Failed to save preferences");
     } else {
       setToast("Preferences saved");
@@ -78,7 +86,17 @@ export default function ClientSettingsPage() {
     <div className="max-w-lg space-y-4 animate-fade-in">
       <div>
         <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Settings</h1>
-        <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Configure your ICP preferences and scoring thresholds</p>
+        <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
+          {icpLocked
+            ? "ICP is locked for your plan. Contact support to make changes."
+            : "Configure your ICP preferences and scoring thresholds"}
+        </p>
+        {icpLocked && (
+          <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[11px] font-semibold"
+            style={{ background: "rgba(232,168,64,0.10)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }}>
+            <Lock size={10} /> ICP Locked
+          </div>
+        )}
       </div>
 
       {/* Industries */}
