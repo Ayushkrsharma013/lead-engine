@@ -294,7 +294,7 @@ function BookPageInner() {
       <nav className="flex-shrink-0 z-50" style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/prospecting-os" className="flex items-center gap-2.5 flex-shrink-0 group">
+          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
             <img
               src="/prospecting-os/assets/Logo_Icon.png"
               alt="Prospecting OS"

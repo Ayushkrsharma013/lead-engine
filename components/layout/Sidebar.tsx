@@ -356,8 +356,9 @@ export default function ProSidebar() {
       }}
     >
       {/* ── Logo ── */}
-      <div
-        className="flex items-center shrink-0"
+      <Link
+        href="/dashboard"
+        className="flex items-center shrink-0 no-underline"
         style={{
           height: 56,
           paddingLeft: collapsed ? 0 : 16,
@@ -398,7 +399,7 @@ export default function ProSidebar() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </Link>
 
       {/* ── Navigation ── */}
       <div className="flex-1 py-3 overflow-y-auto overflow-x-hidden space-y-0.5 px-2">

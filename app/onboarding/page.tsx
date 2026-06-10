@@ -157,6 +157,21 @@ function OnboardingContent() {
     }
   }, [searchParams, token]);
 
+  // Fetch name automatically — token flow from appointment, auth flow from profile
+  useEffect(() => {
+    if (token) return; // name already fetched via tokenData in the token useEffect
+    fetch("/prospecting-os/api/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.display_name) setName(data.display_name);
+        else if (data?.email) setName(data.email.split("@")[0].replace(/[^a-zA-Z]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+        else if (data?.full_name) setName(data.full_name);
+      })
+      .catch(() => {});
+  }, [token]);
+
+  // Name is valid if non-empty (auto-populated in both flows)
+
   const currentIndex = ONBOARDING_STEPS.findIndex(s => s.key === step);
   const progress = ((currentIndex + 1) / ONBOARDING_STEPS.length) * 100;
 
@@ -441,21 +456,44 @@ function OnboardingContent() {
               ))}
             </div>
 
-            {!token && (
-              <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24 }}>
-                <label style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: styles.textTertiary, display: "block", marginBottom: 8 }}>
-                  Your Name
-                </label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" style={inputStyle}
+            {/* Name display — auto-populated, always shown */}
+            <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
+              <label style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: styles.textTertiary, display: "block", marginBottom: 8 }}>
+                Your Name
+              </label>
+              {name ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: "1rem", fontWeight: 700, color: styles.text }}>
+                    {name}
+                  </span>
+                  <CheckCircle2 size={16} style={{ color: styles.success }} />
+                  <span style={{ fontSize: "0.7rem", color: styles.success, fontWeight: 600 }}>
+                    {token ? "From your booking" : "From your profile"}
+                  </span>
+                </div>
+              ) : (
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" style={inputStyle}
                   onFocus={e => { e.currentTarget.style.borderColor = styles.accent; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
                   onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
                 />
-              </div>
-            )}
+              )}
+            </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 24 }}>
-              <button onClick={() => setStep("icp")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
-                Continue <ArrowRight size={14} />
+              <button
+                onClick={() => setStep("icp")}
+                disabled={!name.trim()}
+                title={!name.trim() ? "Enter your name to continue" : ""}
+                style={{
+                  height: 44, padding: "0 24px", borderRadius: 999, border: "none",
+                  background: name.trim() ? styles.accent : "rgba(255,255,255,0.06)",
+                  color: name.trim() ? "#fff" : "rgba(255,255,255,0.25)",
+                  fontWeight: 600, fontSize: "0.875rem",
+                  cursor: name.trim() ? "pointer" : "not-allowed",
+                  fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
+                  transition: "all 0.2s",
+                }}>
+                {name.trim() ? <>Continue <ArrowRight size={14} /></> : <>Enter Name to Continue <ArrowRight size={14} /></>}
               </button>
             </div>
           </div>
