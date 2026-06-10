@@ -100,9 +100,26 @@ export default function AdminClientsPage() {
   const [confirmDelete, setConfirmDelete] = useState<ClientRow | null>(null);
   const [confirmSuspend, setConfirmSuspend] = useState<SuspensionTarget | null>(null);
 
-  /* ── Data fetching ──────────────────────────────────────────────────────── */
+  /* ── Metrics fetch (degraded — failure → zeros, no error banner) ────────── */
 
-  const fetchData = useCallback(async () => {
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const res = await fetch("/prospecting-os/api/admin/clients/metrics");
+      if (res.ok) {
+        setMetrics(await res.json());
+      } else {
+        // Degrade gracefully — show zeros, don't block the UI
+        setMetrics({ totalClients: 0, activeSubscriptions: 0, mrr: 0, totalLeadsManaged: 0 });
+        setToast("Could not load stats"); setTimeout(() => setToast(""), 2500);
+      }
+    } catch {
+      setMetrics({ totalClients: 0, activeSubscriptions: 0, mrr: 0, totalLeadsManaged: 0 });
+    }
+  }, []);
+
+  /* ── Clients fetch ──────────────────────────────────────────────────────── */
+
+  const fetchClients = useCallback(async () => {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -115,16 +132,9 @@ export default function AdminClientsPage() {
     setError("");
 
     try {
-      const [metricsRes, clientsRes] = await Promise.all([
-        fetch("/prospecting-os/api/admin/clients/metrics"),
-        fetch(`/prospecting-os/api/admin/clients?${params}`),
-      ]);
-
-      if (!metricsRes.ok) throw new Error("Failed to load metrics");
-      if (!clientsRes.ok) throw new Error("Failed to load clients");
-
-      setMetrics(await metricsRes.json());
-      const d = await clientsRes.json();
+      const res = await fetch(`/prospecting-os/api/admin/clients?${params}`);
+      if (!res.ok) throw new Error("Failed to load clients");
+      const d = await res.json();
       setClients(d.clients || []);
       setTotalCount(d.count || 0);
     } catch (e) {
@@ -134,7 +144,15 @@ export default function AdminClientsPage() {
     }
   }, [page, limit, search, planFilter, statusFilter]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchMetrics();
+    fetchClients();
+  }, [fetchMetrics, fetchClients]);
+
+  /* Refresh both after mutation */
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchMetrics(), fetchClients()]);
+  }, [fetchMetrics, fetchClients]);
 
   /* ── Search (debounced 300ms) ───────────────────────────────────────────── */
 
@@ -151,7 +169,7 @@ export default function AdminClientsPage() {
   }, []);
 
   useEffect(() => {
-    if (page === 1) fetchData();
+    if (page === 1) fetchClients();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planFilter, statusFilter, limit]);
 
@@ -182,7 +200,7 @@ export default function AdminClientsPage() {
         };
         setToast(`${labels[action] || action} successfully`);
         setTimeout(() => setToast(""), 2500);
-        await fetchData();
+        await refreshAll();
       } else {
         setToast("Action failed. Try again.");
         setTimeout(() => setToast(""), 2500);
@@ -364,7 +382,7 @@ export default function AdminClientsPage() {
           <X size={16} style={{ color: "#ef4444" }} />
           <span className="text-[13px] font-medium" style={{ color: "#ef4444" }}>{error}</span>
           <button
-            onClick={() => fetchData()}
+            onClick={fetchClients}
             className="ml-auto text-[12px] font-semibold px-3 py-1 rounded-full"
             style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "none", cursor: "pointer" }}
           >
