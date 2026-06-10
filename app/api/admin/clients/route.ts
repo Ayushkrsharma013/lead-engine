@@ -19,12 +19,12 @@ export async function GET(req: NextRequest) {
   // Build query for profiles with role=client
   let query = supabaseAdmin
     .from("profiles")
-    .select("id, email, display_name, role, plan, subscription_status, created_at, is_active", { count: "exact" })
+    .select("id, email, full_name, role, plan, subscription_status, created_at, is_active", { count: "exact" })
     .eq("role", "client")
     .order("created_at", { ascending: false });
 
   if (search) {
-    query = query.or(`email.ilike.%${search}%,display_name.ilike.%${search}%`);
+    query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
   }
   if (planFilter) {
     query = query.eq("plan", planFilter);
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     return {
       id: p.id,
       email: p.email,
-      name: p.display_name || p.email?.split("@")[0] || "Client",
+      name: p.full_name || p.email?.split("@")[0] || "Client",
       plan: p.plan || "pilot",
       subscription_status: p.subscription_status || "inactive",
       is_active: p.is_active ?? true,

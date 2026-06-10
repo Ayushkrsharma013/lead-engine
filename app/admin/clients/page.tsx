@@ -261,8 +261,8 @@ export default function AdminClientsPage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-6xl space-y-5 animate-fade-in">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="animate-fade-in space-y-4">
 
       {/* Metrics Cards — match Command Center GraphCard styling */}
       {metrics ? (

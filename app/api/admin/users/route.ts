@@ -108,7 +108,6 @@ export async function POST(req: NextRequest) {
   await supabaseAdmin.from('profiles').upsert({
     id: userId,
     email,
-    display_name,
     full_name: display_name || '',
     role: newRole,
     plan: plan || null,
