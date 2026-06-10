@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, DollarSign, BarChart3, UserCheck, ArrowRight, Settings, Activity } from "lucide-react";
+import { Users, DollarSign, BarChart3, UserCheck, ArrowRight, Activity } from "lucide-react";
 
 interface Metrics {
   totalClients: number; activeSubscriptions: number;

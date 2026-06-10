@@ -134,13 +134,17 @@ export async function middleware(req: NextRequest) {
     );
     const isClientPortalPath = normalizedPath.startsWith(clientPortalBase);
 
-    if (effectiveRole === "client" || effectiveRole === "user") {
-      // Block access to super_admin-only areas
-      if (isSuperAdminPath) {
-        const dest = effectiveRole === "client" ? "/client-portal" : "/dashboard";
-        return NextResponse.redirect(new URL(BASE_PATH + dest, req.url));
+    // ── Admin routes: super_admin only, bypass ALL further checks ──
+    if (isSuperAdminPath) {
+      if (effectiveRole !== "super_admin") {
+        return NextResponse.redirect(new URL(BASE_PATH + "/login", req.url));
       }
-      // client role also blocked from shared admin routes
+      // Super admin on admin routes — allow immediately, skip subscription + all other checks
+      return res;
+    }
+
+    if (effectiveRole === "client" || effectiveRole === "user") {
+      // Block access to shared admin routes
       if (effectiveRole === "client" && isAdminAgentPath) {
         return NextResponse.redirect(new URL(BASE_PATH + "/client-portal", req.url));
       }
