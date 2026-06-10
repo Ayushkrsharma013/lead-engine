@@ -160,11 +160,22 @@ function OnboardingContent() {
   const currentIndex = ONBOARDING_STEPS.findIndex(s => s.key === step);
   const progress = ((currentIndex + 1) / ONBOARDING_STEPS.length) * 100;
 
-  // ICP validation: must select at least 1 industry + 1 country (for micro, also require seniority)
+  // ICP validation: ALL 4 fields required before continuing
   const icpIsValid =
     icp.industries.length > 0 &&
-    icp.countries.length > 0 &&
-    (selectedPlan !== "micro" || icp.seniority.length > 0);
+    icp.companySizes.length > 0 &&
+    icp.seniority.length > 0 &&
+    icp.countries.length > 0;
+
+  // Human-readable hint for what's still missing
+  const icpMissing: string[] = [];
+  if (icp.industries.length === 0) icpMissing.push("Industries");
+  if (icp.companySizes.length === 0) icpMissing.push("Company Size");
+  if (icp.seniority.length === 0) icpMissing.push("Seniority");
+  if (icp.countries.length === 0) icpMissing.push("Countries");
+  const icpHint = icpMissing.length > 0
+    ? `Select ${icpMissing.join(", ")} to continue`
+    : "";
 
   const toggleIcp = (field: keyof IcpPreferences, value: string) => {
     setIcp(prev => {
@@ -360,9 +371,31 @@ function OnboardingContent() {
       </nav>
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 24px" }}>
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease forwards;
+          }
+        `}</style>
+
+        {/* Step counter */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <span style={{
+            display: "inline-block", padding: "4px 14px", borderRadius: 999,
+            background: "rgba(255,255,255,0.04)", border: `1px solid ${styles.border}`,
+            fontSize: "0.7rem", fontWeight: 600, color: styles.textTertiary,
+            letterSpacing: "0.04em",
+          }}>
+            Step {currentIndex + 1} of {ONBOARDING_STEPS.length}
+          </span>
+        </div>
+
         {/* Step 1: Welcome */}
         {step === "welcome" && (
-          <div>
+          <div className="animate-fadeIn">
             <div style={{ textAlign: "center", marginBottom: 40 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 999, background: styles.badgeBg, color: styles.badgeText, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 16 }}>
                 <Sparkles size={12} /> Setup Wizard
@@ -430,7 +463,7 @@ function OnboardingContent() {
 
         {/* Step 2: ICP Setup */}
         {step === "icp" && (
-          <div>
+          <div className="animate-fadeIn">
             <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Who are your ideal customers?</h1>
             <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>This pre-configures your lead filters so you get relevant prospects from day one.</p>
 
@@ -474,24 +507,29 @@ function OnboardingContent() {
               <button
                 onClick={() => setStep("plan")}
                 disabled={!icpIsValid}
-                title={!icpIsValid ? "Select at least one industry and one country to continue" : ""}
+                title={icpHint}
                 style={{
                   height: 44, padding: "0 24px", borderRadius: 999, border: "none",
                   background: icpIsValid ? styles.accent : "rgba(255,255,255,0.06)",
-                  color: icpIsValid ? "#fff" : styles.textTertiary,
+                  color: icpIsValid ? "#fff" : "rgba(255,255,255,0.25)",
                   fontWeight: 600, fontSize: "0.875rem", cursor: icpIsValid ? "pointer" : "not-allowed",
                   fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8,
                   transition: "all 0.2s",
                 }}>
-                Continue <ArrowRight size={14} />
+                {icpIsValid ? <>Continue <ArrowRight size={14} /></> : <>Fill All Fields <ArrowRight size={14} /></>}
               </button>
+              {!icpIsValid && icpMissing.length > 0 && (
+                <p style={{ textAlign: "right", marginTop: 8, fontSize: "0.7rem", color: styles.textTertiary }}>
+                  {icpHint}
+                </p>
+              )}
             </div>
           </div>
         )}
 
         {/* Step 3: Plan & Pay */}
         {step === "plan" && (
-          <div>
+          <div className="animate-fadeIn">
             {token ? (
               /* ─── Token flow: plan locked, payment only ─── */
               <>
@@ -598,7 +636,7 @@ function OnboardingContent() {
 
         {/* Step 4: Confirmation */}
         {step === "confirmation" && (
-          <div style={{ textAlign: "center", paddingTop: 40 }}>
+          <div className="animate-fadeIn" style={{ textAlign: "center", paddingTop: 40 }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(34,197,94,0.08)", border: "2px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
               <CheckCircle2 size={40} style={{ color: styles.success }} />
             </div>
