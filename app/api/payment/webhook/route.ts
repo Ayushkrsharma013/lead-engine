@@ -220,18 +220,42 @@ export async function POST(req: NextRequest) {
         clientId = newClient?.id as string || "";
       }
 
-      // Create workspace
+      // Create workspace — try to pull ICP from appointment first
+      let icpConfig: Record<string, unknown> = {};
+
+      if (email) {
+        const { data: appointment } = await supabaseAdmin
+          .from("appointments")
+          .select("icp_config, plan")
+          .eq("email", email.toLowerCase())
+          .eq("status", "won")
+          .maybeSingle();
+
+        if (appointment?.icp_config && typeof appointment.icp_config === "object") {
+          icpConfig = appointment.icp_config as Record<string, unknown>;
+        }
+      }
+
       const { data: existingWorkspace } = await supabaseAdmin
         .from("client_workspaces")
         .select("id")
         .eq("client_user_id", userId)
         .maybeSingle();
 
-      if (!existingWorkspace) {
+      if (existingWorkspace) {
+        // Update existing workspace ICP if it's empty
+        const existingIcp = (existingWorkspace as any).icp_config;
+        if (!existingIcp || Object.keys(existingIcp).length === 0) {
+          await supabaseAdmin
+            .from("client_workspaces")
+            .update({ icp_config: icpConfig })
+            .eq("id", (existingWorkspace as any).id);
+        }
+      } else {
         await supabaseAdmin.from("client_workspaces").insert({
           client_user_id: userId,
           plan,
-          icp_config: {},
+          icp_config: icpConfig,
         });
       }
 
@@ -458,16 +482,39 @@ export async function POST(req: NextRequest) {
       clientId = newClient.id as string;
     }
 
-    // Insert client_workspaces
+    // Insert client_workspaces — try appointment ICP first
     const { data: existingWorkspace } = await supabaseAdmin
       .from("client_workspaces")
-      .select("id")
+      .select("id, icp_config")
       .eq("client_user_id", userId)
       .maybeSingle();
 
-    if (!existingWorkspace) {
-      const icpConfig =
-        (existing.icp_preferences as Record<string, unknown> | null) || {};
+    let icpConfig =
+      (existing.icp_preferences as Record<string, unknown> | null) || {};
+
+    // Try to pull ICP from a "won" appointment if workspace ICP is empty
+    if (Object.keys(icpConfig).length === 0 && existing.email) {
+      const { data: appointment } = await supabaseAdmin
+        .from("appointments")
+        .select("icp_config, plan")
+        .eq("email", existing.email.toLowerCase())
+        .eq("status", "won")
+        .maybeSingle();
+
+      if (appointment?.icp_config && typeof appointment.icp_config === "object") {
+        icpConfig = appointment.icp_config as Record<string, unknown>;
+      }
+    }
+
+    if (existingWorkspace) {
+      const existingIcp = (existingWorkspace as any).icp_config;
+      if (!existingIcp || Object.keys(existingIcp).length === 0) {
+        await supabaseAdmin
+          .from("client_workspaces")
+          .update({ icp_config: icpConfig })
+          .eq("id", (existingWorkspace as any).id);
+      }
+    } else {
       await supabaseAdmin.from("client_workspaces").insert({
         client_user_id: userId,
         plan,

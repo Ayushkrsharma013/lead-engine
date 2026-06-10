@@ -10,6 +10,7 @@ export interface BookingDetails {
   duration?: number;
   timezone?: string;
   calendarLink?: string;
+  plan?: string;
 }
 
 // ─── Telegram ────────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ export async function sendTelegramNotification(b: BookingDetails): Promise<void>
     b.company ? `🏢 <b>Company:</b> ${b.company}` : null,
     b.phone ? `📞 <b>Phone:</b> ${b.phone}` : null,
     b.type ? `🏷 <b>Type:</b> ${b.type}` : null,
+    b.plan ? `📋 <b>Plan:</b> ${b.plan}` : null,
     ``,
     `🗓 <b>Date:</b> ${b.date}`,
     `⏰ <b>Time:</b> ${b.time} (${tz})`,

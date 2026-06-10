@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase";
 import { createCalendarEvent, isCalendarConnected } from "@/lib/google-calendar";
-import { sendTelegramNotification, sendEmailNotification, sendAttendeeConfirmation, sendCancellationEmail } from "@/lib/notify";
+import { sendTelegramNotification, sendEmailNotification, sendAttendeeConfirmation, sendCancellationEmail, notifyTelegram } from "@/lib/notify";
+import { sendEmail } from "@/lib/resend";
+import { PLANS } from "@/lib/stripe";
+import type { PlanKey } from "@/lib/types";
 import type { MeetingType, AppointmentInput, Appointment } from "@/lib/types";
 import { MEETING_TYPES, APPOINTMENT_BUFFER_MINUTES, MAX_BOOKINGS_PER_DAY, BUSINESS_HOURS_START, BUSINESS_HOURS_END, WEEKEND_DAYS } from "@/lib/types";
 
@@ -30,6 +33,22 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const status = searchParams.get("status");
+    const token = searchParams.get("token");
+
+    // Token-based lookup — used by onboarding page (no auth required)
+    if (token) {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("onboarding_token", token)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json({ error: "Invalid or expired onboarding token" }, { status: 404 });
+      }
+
+      return NextResponse.json(data);
+    }
 
     if (id) {
       const { data, error } = await supabase
@@ -79,7 +98,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body: AppointmentInput = await req.json();
-    const { date, time, name, email, phone, company, notes, type, timezone } = body;
+    const { date, time, name, email, phone, company, notes, type, timezone, plan } = body;
 
     if (!date || !time || !name || !email || !type || !timezone) {
       return NextResponse.json(
@@ -187,6 +206,7 @@ export async function POST(req: Request) {
       duration,
       status: "confirmed",
       timezone,
+      plan: plan || null,
     };
 
     const baseInsert = {
@@ -196,6 +216,7 @@ export async function POST(req: Request) {
       email: email.trim().toLowerCase(),
       company: (company || "").trim(),
       notes: (notes || "").trim(),
+      plan: plan || null,
     };
 
     let { data, error } = await supabase
@@ -268,6 +289,7 @@ export async function POST(req: Request) {
       time,
       timezone: timezone || "Asia/Kolkata",
       calendarLink,
+      plan: plan || undefined,
     };
 
     void Promise.all([
@@ -292,8 +314,8 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Missing required fields (id, status)" }, { status: 400 });
     }
 
-    if (status !== "cancelled" && status !== "rescheduled") {
-      return NextResponse.json({ error: "Status must be 'cancelled' or 'rescheduled'" }, { status: 400 });
+    if (status !== "cancelled" && status !== "rescheduled" && status !== "won" && status !== "completed") {
+      return NextResponse.json({ error: "Status must be 'cancelled', 'rescheduled', 'won', or 'completed'" }, { status: 400 });
     }
 
     // Fetch existing appointment
@@ -336,6 +358,98 @@ export async function PATCH(req: Request) {
       });
 
       return NextResponse.json({ ok: true, status: "cancelled" });
+    }
+
+    // ── Mark as Won — generate onboarding token and send email ─────────
+    if (status === "won") {
+      const onboardingToken = crypto.randomUUID();
+      const { error: updateError } = await supabase
+        .from("appointments")
+        .update({
+          status: "won",
+          onboarding_token: onboardingToken,
+          onboarding_sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (updateError) {
+        console.error("[appointments] won update failed:", updateError.message);
+        return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
+      }
+
+      const planKey = (appointment.plan || "pilot") as PlanKey;
+      const planName = PLANS[planKey]?.name || "Prospecting OS";
+      const planPrice = PLANS[planKey]?.displaySetup || "";
+      const onboardingUrl = `https://app.flow-forges.com/prospecting-os/onboarding?token=${onboardingToken}`;
+
+      // Send onboarding email to client
+      void sendEmail({
+        to: appointment.email,
+        subject: `Your ${planName} Setup is Ready — Start Onboarding`,
+        html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0e0d0a;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0d0a;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a1917;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+        <tr>
+          <td style="background:#e8420a;padding:28px 36px;">
+            <p style="margin:0;color:#fff;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Prospecting OS</p>
+            <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:800;">Your Setup is Ready</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 36px;color:#f5f4f1;font-size:15px;line-height:1.6;">
+            <p style="margin:0 0 16px;">Hi ${appointment.name},</p>
+            <p style="margin:0 0 16px;">Great news — your <strong>${planName}</strong> (${planPrice}) setup is ready to begin. Complete your onboarding in just a few minutes to configure your ICP and activate your lead pipeline.</p>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${onboardingUrl}" style="display:inline-block;background:#e8420a;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:16px 36px;border-radius:999px;">
+                Start Setup &rarr;
+              </a>
+            </div>
+            <p style="margin:24px 0 0;font-size:13px;color:#7a7875;">
+              This link is unique to you. If you have any questions, reply to this email or book a call at <a href="https://app.flow-forges.com/prospecting-os/book" style="color:#e8420a;text-decoration:none;">app.flow-forges.com/book</a>.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+            <p style="margin:0;color:#7a7875;font-size:12px;text-align:center;">
+              Prospecting OS &middot; <a href="https://app.flow-forges.com/prospecting-os" style="color:#e8420a;text-decoration:none;">app.flow-forges.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+      }).catch(err => console.warn("[appointments] onboarding email failed:", err));
+
+      // Telegram alert to founder
+      void notifyTelegram(
+        `MEETING WON — ${appointment.name} (${appointment.email}) for ${planName}\nOnboarding link sent. Token: ${onboardingToken.slice(0, 8)}...`
+      ).catch(() => {});
+
+      return NextResponse.json({ ok: true, status: "won", onboardingToken });
+    }
+
+    // ── Mark as Completed ─────────────────────────────────────────────
+    if (status === "completed") {
+      const { error: updateError } = await supabase
+        .from("appointments")
+        .update({
+          status: "completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (updateError) {
+        console.error("[appointments] completed update failed:", updateError.message);
+        return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
+      }
+
+      return NextResponse.json({ ok: true, status: "completed" });
     }
 
     if (status === "rescheduled") {

@@ -86,7 +86,11 @@ export default function ClientPortalLayout({ children }: { children: React.React
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--bg)" }}>
+    <div
+      className="flex min-h-screen portal-secure"
+      style={{ background: "var(--bg)", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {/* Sidebar */}
       <aside className="flex-shrink-0 flex flex-col" style={{
         width: 220, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)",

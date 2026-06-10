@@ -453,26 +453,60 @@ export default function AdminBookPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-4 text-right whitespace-nowrap">
-                          {a.status === "confirmed" && (
-                            <button
-                              onClick={() => setCancelTarget(a)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                              style={{
-                                background: "rgba(239,68,68,0.1)",
-                                color: "#ef4444",
-                                border: "1px solid rgba(239,68,68,0.2)",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(239,68,68,0.2)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-                              }}
-                            >
-                              <X size={12} />
-                              Cancel
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {a.status === "confirmed" && (
+                              <>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch("/prospecting-os/api/appointments", {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ id: a.id, status: "won" }),
+                                      });
+                                      if (res.ok) {
+                                        setAppointments((prev) =>
+                                          prev.map((ap) => (ap.id === a.id ? { ...ap, status: "won" } : a))
+                                        );
+                                      }
+                                    } catch {}
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                                  style={{
+                                    background: "rgba(34,197,94,0.1)",
+                                    color: "#22c55e",
+                                    border: "1px solid rgba(34,197,94,0.2)",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "rgba(34,197,94,0.2)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "rgba(34,197,94,0.1)";
+                                  }}
+                                >
+                                  Mark Won
+                                </button>
+                                <button
+                                  onClick={() => setCancelTarget(a)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                                  style={{
+                                    background: "rgba(239,68,68,0.1)",
+                                    color: "#ef4444",
+                                    border: "1px solid rgba(239,68,68,0.2)",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "rgba(239,68,68,0.2)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                                  }}
+                                >
+                                  <X size={12} />
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

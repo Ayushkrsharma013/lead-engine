@@ -935,7 +935,7 @@ export default function LandingPage() {
                 <li>Supabase-powered dashboard</li>
                 <li>Founder-managed delivery</li>
               </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Apply for the Founder's Pilot">Apply for Pilot</Link>
+              <Link href="/book?plan=pilot" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Apply for the Founder's Pilot">Apply for Pilot</Link>
               <Link href="/tools/free-audit" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
                 Or try our free pipeline audit first →
               </Link>
@@ -957,7 +957,7 @@ export default function LandingPage() {
                 <li>Dedicated Slack channel</li>
                 <li>Reply monitoring & warm handoff within 24 hrs</li>
               </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Growth plan">Book a Demo</Link>
+              <Link href="/book?plan=growth" className="btn-primary" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)" }} aria-label="Book a demo for Growth plan">Book a Demo</Link>
               <Link href="/tools/icebreaker-generator" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
                 Or generate a free icebreaker →
               </Link>
@@ -980,7 +980,7 @@ export default function LandingPage() {
                 <li>CRM sync (HubSpot/Salesforce)</li>
                 <li>Priority support within 4 hrs</li>
               </ul>
-              <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Book a demo for Scale plan">Book a Demo</Link>
+              <Link href="/book?plan=scale" className="btn-primary" style={{ textDecoration: "none" }} aria-label="Book a demo for Scale plan">Book a Demo</Link>
               <Link href="/tools/free-audit" style={{ display: "block", textAlign: "center", fontSize: "0.78rem", color: "var(--text-tertiary)", marginTop: 10, textDecoration: "none" }}>
                 Or try our free pipeline audit first →
               </Link>
@@ -1007,7 +1007,7 @@ export default function LandingPage() {
             <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>Founder's Pilot Micro-Offer</h3>
             <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: 12 }}>50 ICP-verified leads + 5 sequences. One-time. No recurring.</p>
             <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--accent)", marginBottom: 12 }}>$997 <span style={{ fontSize: "0.85rem", color: "var(--text-tertiary)" }}>one-time</span></div>
-            <Link href="/book?offer=micro" style={{ display: "inline-block", padding: "10px 24px", borderRadius: 9999, background: "var(--accent)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
+            <Link href="/book?plan=micro" style={{ display: "inline-block", padding: "10px 24px", borderRadius: 9999, background: "var(--accent)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
               Grab the Micro-Offer →
             </Link>
           </div>
@@ -1104,7 +1104,7 @@ export default function LandingPage() {
 
           <div className="beta-cta-row reveal">
             <p style={{ color: "var(--text-tertiary)", marginBottom: 16, fontSize: "1rem" }}>Ready to join the pilot?</p>
-            <Link href="/book" className="btn-primary" style={{ textDecoration: "none" }}>Apply for the Pilot</Link>
+            <Link href="/book?plan=pilot" className="btn-primary" style={{ textDecoration: "none" }}>Apply for the Pilot</Link>
           </div>
         </div>
       </section>
@@ -1243,7 +1243,7 @@ export default function LandingPage() {
                 <span className="roi-output-sub">return on investment</span>
               </div>
 
-              <Link href="/book" className="btn-primary roi-output-cta" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)", width: "100%", justifyContent: "center" }}>
+              <Link href="/book?plan=growth" className="btn-primary roi-output-cta" style={{ textDecoration: "none", boxShadow: "0 0 24px var(--accent-glow)", width: "100%", justifyContent: "center" }}>
                 Book a Demo — See Your Custom Pipeline
               </Link>
 
@@ -1330,7 +1330,7 @@ export default function LandingPage() {
             {/* CTA buttons */}
             <div className="cta-group" style={{ marginBottom: 32 }}>
               <Link
-                href="/book"
+                href="/book?plan=pilot"
                 className="btn-primary"
                 style={{ textDecoration: "none", padding: "16px 36px", fontSize: "1rem", boxShadow: "0 0 32px var(--accent-glow)" }}
                 aria-label="Book a free demo — see your custom AI prospecting pipeline"

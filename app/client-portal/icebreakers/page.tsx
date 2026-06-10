@@ -9,6 +9,25 @@ interface EnrichedLead {
   icebreakers: Array<{ id: string; body: string; subject: string; tone: string }>;
 }
 
+/** Watermark overlay for security */
+function Watermark({ email }: { email: string }) {
+  if (!email) return null;
+  const lines: string[] = [];
+  for (let row = 0; row < 20; row++) {
+    for (let col = 0; col < 6; col++) {
+      lines.push(
+        `<span style="position:absolute;top:${row * 80 + (col % 3) * 25}px;left:${col * 280 + (row % 4) * 40}px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.03);white-space:nowrap;pointer-events:none;transform:rotate(-15deg);font-family:monospace;">${email} · CONFIDENTIAL</span>`
+      );
+    }
+  }
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}
+      dangerouslySetInnerHTML={{ __html: lines.join("") }}
+    />
+  );
+}
+
 export default function ClientIcebreakersPage() {
   const [leads, setLeads] = useState<EnrichedLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +62,8 @@ export default function ClientIcebreakersPage() {
 
   return (
     <PlanGate module="icebreakers" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="growth">
-      <div className="max-w-5xl space-y-4 animate-fade-in">
+      <Watermark email={profile?.email || ""} />
+      <div className="max-w-5xl space-y-4 animate-fade-in" style={{ position: "relative", zIndex: 1 }}>
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Icebreakers</h1>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>AI-generated icebreakers for your top leads (score 60+)</p>

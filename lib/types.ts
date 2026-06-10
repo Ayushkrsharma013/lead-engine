@@ -228,6 +228,11 @@ export interface Appointment {
   status: AppointmentStatus;
   timezone: string;
   calendarLink?: string;
+  plan?: PlanKey;
+  onboarding_token?: string;
+  onboarding_sent_at?: string;
+  payment_status?: string;
+  icp_config?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -242,6 +247,7 @@ export interface AppointmentInput {
   notes?: string;
   type: MeetingType;
   timezone: string;
+  plan?: PlanKey;
 }
 
 export const APPOINTMENT_BUFFER_MINUTES = 15;

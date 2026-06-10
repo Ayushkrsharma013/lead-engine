@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Zap, ArrowRight, ArrowLeft, CheckCircle2, Search, Monitor, Code, Compass,
-  Building2, Users, MapPin, Key, Sparkles, Loader2, CreditCard, Briefcase,
+  Building2, Users, MapPin, Key, Sparkles, Loader2, CreditCard, Briefcase, X,
 } from "lucide-react";
 import {
   type OnboardingStep, ONBOARDING_STEPS,
@@ -33,6 +33,48 @@ const PLANS_DATA: Record<string, { name: string; price: string; interval: string
   },
 };
 
+// Confetti overlay — CSS-based animation like booking confirmation
+const CONFETTI_COLORS = ["#e8420a", "#ff6b35", "#ffd700", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#f97316"];
+const φ = 1.6180339887;
+const CONFETTI_PIECES = Array.from({ length: 60 }, (_, i) => ({
+  id: i,
+  left: (i * φ * 100) % 100,
+  delay: (i * 0.0416) % 2.5,
+  duration: 2.5 + (i * 0.0333) % 2,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  width: 6 + (i % 8),
+  height: 8 + (i % 7),
+}));
+
+function ConfettiOverlay() {
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 200, overflow: "hidden" }}>
+      <style>{`
+        @keyframes confetti-fall-onboarding {
+          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          80%  { opacity: 0.9; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+      `}</style>
+      {CONFETTI_PIECES.map(p => (
+        <div
+          key={p.id}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: `${p.left}%`,
+            width: p.width,
+            height: p.height,
+            background: p.color,
+            borderRadius: 2,
+            animation: `confetti-fall-onboarding ${p.duration}s ${p.delay}s ease-in forwards`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
   return (
     <Suspense fallback={
@@ -55,8 +97,56 @@ function OnboardingContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Token-based access (no auth required)
+  const token = searchParams.get("token");
+  const [tokenData, setTokenData] = useState<{
+    name: string; email: string; company: string; plan: string;
+  } | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(!!token);
+  const [countdown, setCountdown] = useState(3);
+
+  // Fetch appointment data by token
+  useEffect(() => {
+    if (!token) return;
+    setTokenLoading(true);
+    fetch(`/prospecting-os/api/appointments?token=${encodeURIComponent(token)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          setError(data.error);
+          setTokenLoading(false);
+          return;
+        }
+        setTokenData({
+          name: data.name || "",
+          email: data.email || "",
+          company: data.company || "",
+          plan: data.plan || "pilot",
+        });
+        setSelectedPlan(data.plan || "pilot");
+        setName(data.name || "");
+        setTokenLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to verify onboarding link. Please contact support.");
+        setTokenLoading(false);
+      });
+  }, [token]);
+
+  // Countdown + redirect after confirmation
+  useEffect(() => {
+    if (step !== "confirmation") return;
+    setCountdown(3);
+    const interval = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
+    const timeout = setTimeout(() => {
+      router.push("/client-portal");
+    }, 3000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [step, router]);
+
   // Detect plan from URL params (e.g., ?plan=micro or ?plan=pilot)
   useEffect(() => {
+    if (token) return; // token takes precedence
     const planParam = searchParams.get("plan");
     if (planParam && PLANS_DATA[planParam]) {
       setSelectedPlan(planParam);
@@ -65,7 +155,7 @@ function OnboardingContent() {
         setStep("icp");
       }
     }
-  }, [searchParams]);
+  }, [searchParams, token]);
 
   const currentIndex = ONBOARDING_STEPS.findIndex(s => s.key === step);
   const progress = ((currentIndex + 1) / ONBOARDING_STEPS.length) * 100;
@@ -82,6 +172,48 @@ function OnboardingContent() {
     setLoading(true);
     setError("");
     try {
+      // Token-based flow: save ICP to appointment, go to confirmation
+      if (token && tokenData) {
+        const saveRes = await fetch("/prospecting-os/api/onboarding/token-save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            icp,
+            plan: selectedPlan,
+          }),
+        });
+        const saveData = (await saveRes.json()) as { ok?: boolean; error?: string };
+        if (!saveData.ok) {
+          setError(saveData.error || "Failed to save. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        // Go to payment
+        if (selectedPlan === "micro") {
+          try {
+            const ckRes = await fetch("/prospecting-os/api/payment/create-checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                plan: "micro",
+                email: tokenData.email,
+                name: tokenData.name,
+              }),
+            });
+            const ck = (await ckRes.json()) as { url?: string; method?: string };
+            if (ck.url) { window.location.href = ck.url; return; }
+          } catch {}
+        }
+
+        // For non-micro or fallback: show confirmation directly
+        setStep("confirmation");
+        setLoading(false);
+        return;
+      }
+
+      // Auth-based flow (existing)
       // 1) Save onboarding data + mark pending_payment so reconciliation works
       const saveRes = await fetch("/prospecting-os/api/onboarding/save", {
         method: "POST",
@@ -141,6 +273,18 @@ function OnboardingContent() {
     setLoading(false);
   };
 
+  const handleTokenSkip = async () => {
+    // Save ICP without payment, go to confirmation
+    if (token) {
+      await fetch("/prospecting-os/api/onboarding/token-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, icp, plan: selectedPlan }),
+      }).catch(() => {});
+    }
+    setStep("confirmation");
+  };
+
   const handleSkip = () => {
     fetch("/prospecting-os/api/onboarding/save", {
       method: "POST",
@@ -172,8 +316,39 @@ function OnboardingContent() {
     boxSizing: "border-box" as const,
   };
 
+  // ─── Token loading state ──────────────────────────────────────────────
+  if (token && tokenLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: styles.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <Loader2 size={24} className="animate-spin" style={{ color: styles.accent, margin: "0 auto 12px" }} />
+          <p style={{ color: styles.textSecondary, fontSize: "0.9rem" }}>Verifying your setup link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Token error state ─────────────────────────────────────────────────
+  if (token && error && !tokenData) {
+    return (
+      <div style={{ minHeight: "100vh", background: styles.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center", maxWidth: 400, padding: "0 24px" }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <X size={24} style={{ color: "#ef4444" }} />
+          </div>
+          <h2 style={{ fontSize: "1.2rem", fontWeight: 700, margin: "0 0 8px", color: styles.text }}>Invalid Link</h2>
+          <p style={{ color: styles.textSecondary, fontSize: "0.85rem", margin: "0 0 16px" }}>{error}</p>
+          <Link href="/" style={{ color: styles.accent, textDecoration: "none", fontWeight: 600 }}>Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: styles.bg, color: styles.text, fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif" }}>
+      {/* Confetti overlay for confirmation step */}
+      {step === "confirmation" && <ConfettiOverlay />}
+
       <nav style={{ background: "rgba(14,13,10,0.85)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${styles.border}`, position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: styles.text, fontWeight: 800, fontSize: "1.1rem", letterSpacing: "-0.02em" }}>
@@ -207,9 +382,32 @@ function OnboardingContent() {
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 999, background: styles.badgeBg, color: styles.badgeText, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 16 }}>
                 <Sparkles size={12} /> Setup Wizard
               </div>
-              <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Let&apos;s Build Your Prospecting Engine</h1>
-              <p style={{ color: styles.textSecondary, fontSize: "1rem", margin: 0 }}>3 minutes to set up — start finding qualified leads today.</p>
+              <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>
+                {token && tokenData
+                  ? `Welcome${tokenData.name ? `, ${tokenData.name.split(" ")[0]}` : ""}!`
+                  : "Let's Build Your Prospecting Engine"}
+              </h1>
+              <p style={{ color: styles.textSecondary, fontSize: "1rem", margin: 0 }}>
+                {token && tokenData
+                  ? `Your ${PLANS_DATA[tokenData.plan]?.name || tokenData.plan} setup is ready. Complete in 3 minutes.`
+                  : "3 minutes to set up — start finding qualified leads today."}
+              </p>
             </div>
+
+            {token && tokenData && (
+              <div style={{ background: "rgba(232,66,10,0.06)", border: "1px solid rgba(232,66,10,0.15)", borderRadius: 16, padding: 24, marginBottom: 24, textAlign: "center" }}>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 4px" }}>{PLANS_DATA[tokenData.plan]?.name || tokenData.plan}</h3>
+                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: styles.accent }}>{PLANS_DATA[tokenData.plan]?.price || ""}</span>
+                <span style={{ fontSize: "0.75rem", color: styles.textTertiary, marginLeft: 4 }}>{PLANS_DATA[tokenData.plan]?.interval || ""}</span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", marginTop: 16, textAlign: "left" }}>
+                  {(PLANS_DATA[tokenData.plan]?.features || []).map((f: string) => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: styles.textSecondary }}>
+                      <CheckCircle2 size={12} style={{ color: styles.success, flexShrink: 0 }} /> {f}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 32 }}>
               {[
@@ -225,20 +423,24 @@ function OnboardingContent() {
               ))}
             </div>
 
-            <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24 }}>
-              <label style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: styles.textTertiary, display: "block", marginBottom: 8 }}>
-                Your Name
-              </label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" style={inputStyle}
-                onFocus={e => { e.currentTarget.style.borderColor = styles.accent; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
-              />
-            </div>
+            {!token && (
+              <div style={{ background: styles.card, border: `1px solid ${styles.borderCard}`, borderRadius: 16, padding: 24 }}>
+                <label style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: styles.textTertiary, display: "block", marginBottom: 8 }}>
+                  Your Name
+                </label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" style={inputStyle}
+                  onFocus={e => { e.currentTarget.style.borderColor = styles.accent; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
+                />
+              </div>
+            )}
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
-              <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                Skip for now
-              </button>
+              {token ? <div /> : (
+                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
+                  Skip for now
+                </button>
+              )}
               <button onClick={() => setStep("icp")} style={{ height: 44, padding: "0 24px", borderRadius: 999, border: "none", background: styles.accent, color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
                 Continue <ArrowRight size={14} />
               </button>
@@ -304,52 +506,85 @@ function OnboardingContent() {
         {/* Step 3: Plan & Pay */}
         {step === "plan" && (
           <div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Choose Your Plan</h1>
-            <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>
-              {selectedPlan === "micro"
-                ? "Pay $997 once. 50 ICP-verified leads delivered within 5 business days."
-                : "Payment via Xflow Pay. Our team will send an invoice and activate your plan within 24 hours."}
-            </p>
+            {token ? (
+              /* ─── Token flow: plan locked, payment only ─── */
+              <>
+                <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Complete Your Setup</h1>
+                <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>
+                  {selectedPlan === "micro"
+                    ? "Pay $997 once. 50 ICP-verified leads delivered within 5 business days."
+                    : `Your ${PLANS_DATA[selectedPlan]?.name || selectedPlan} plan is ready. Complete payment to activate.`}
+                </p>
 
-            <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
-              {Object.entries(PLANS_DATA).map(([key, plan]) => {
-                const sel = selectedPlan === key;
-                return (
-                  <button key={key} onClick={() => setSelectedPlan(key)} style={{
-                    display: "block", width: "100%", textAlign: "left", padding: 24, borderRadius: 16,
-                    background: sel ? "rgba(232,66,10,0.04)" : styles.card,
-                    border: sel ? `2px solid ${styles.accent}` : `1px solid ${styles.borderCard}`,
-                    cursor: "pointer", fontFamily: "inherit", color: styles.text,
-                    position: "relative", transition: "all 0.15s",
-                  }}>
-                    {plan.popular && (
-                      <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: styles.accent, color: "#fff", fontSize: "0.65rem", fontWeight: 700 }}>
-                        MOST POPULAR
-                      </span>
-                    )}
-                    {plan.enterprise && (
-                      <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: "rgba(124,58,237,0.15)", color: "#a78bfa", border: "1px solid rgba(124,58,237,0.3)", fontSize: "0.65rem", fontWeight: 700 }}>
-                        ENTERPRISE
-                      </span>
-                    )}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-                      <div>
-                        <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 2px" }}>{plan.name}</h3>
-                        <span style={{ fontSize: "0.75rem", color: styles.textTertiary }}>{plan.interval}</span>
+                {/* Locked plan display */}
+                <div style={{ background: styles.card, border: `2px solid ${styles.accent}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                    <div>
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 2px" }}>{PLANS_DATA[selectedPlan]?.name || selectedPlan}</h3>
+                      <span style={{ fontSize: "0.75rem", color: styles.textTertiary }}>{PLANS_DATA[selectedPlan]?.interval || ""}</span>
+                    </div>
+                    <span style={{ fontSize: "1.5rem", fontWeight: 800 }}>{PLANS_DATA[selectedPlan]?.price || ""}</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
+                    {(PLANS_DATA[selectedPlan]?.features || []).map((f: string) => (
+                      <div key={f} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: styles.textSecondary }}>
+                        <CheckCircle2 size={12} style={{ color: styles.success, flexShrink: 0 }} /> {f}
                       </div>
-                      <span style={{ fontSize: "1.5rem", fontWeight: 800 }}>{plan.price}<span style={{ fontSize: "0.8rem", color: styles.textTertiary, fontWeight: 400 }}>{plan.interval !== "one-time" ? plan.interval : ""}</span></span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
-                      {plan.features.map(f => (
-                        <div key={f} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: styles.textSecondary }}>
-                          <CheckCircle2 size={12} style={{ color: styles.success, flexShrink: 0 }} /> {f}
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* ─── Auth flow: plan selection ─── */
+              <>
+                <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>Choose Your Plan</h1>
+                <p style={{ color: styles.textSecondary, margin: "0 0 32px" }}>
+                  {selectedPlan === "micro"
+                    ? "Pay $997 once. 50 ICP-verified leads delivered within 5 business days."
+                    : "Payment via Xflow Pay. Our team will send an invoice and activate your plan within 24 hours."}
+                </p>
+
+                <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
+                  {Object.entries(PLANS_DATA).map(([key, plan]) => {
+                    const sel = selectedPlan === key;
+                    return (
+                      <button key={key} onClick={() => setSelectedPlan(key)} style={{
+                        display: "block", width: "100%", textAlign: "left", padding: 24, borderRadius: 16,
+                        background: sel ? "rgba(232,66,10,0.04)" : styles.card,
+                        border: sel ? `2px solid ${styles.accent}` : `1px solid ${styles.borderCard}`,
+                        cursor: "pointer", fontFamily: "inherit", color: styles.text,
+                        position: "relative", transition: "all 0.15s",
+                      }}>
+                        {plan.popular && (
+                          <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: styles.accent, color: "#fff", fontSize: "0.65rem", fontWeight: 700 }}>
+                            MOST POPULAR
+                          </span>
+                        )}
+                        {plan.enterprise && (
+                          <span style={{ position: "absolute", top: -10, right: 20, padding: "3px 12px", borderRadius: 999, background: "rgba(124,58,237,0.15)", color: "#a78bfa", border: "1px solid rgba(124,58,237,0.3)", fontSize: "0.65rem", fontWeight: 700 }}>
+                            ENTERPRISE
+                          </span>
+                        )}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                          <div>
+                            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 2px" }}>{plan.name}</h3>
+                            <span style={{ fontSize: "0.75rem", color: styles.textTertiary }}>{plan.interval}</span>
+                          </div>
+                          <span style={{ fontSize: "1.5rem", fontWeight: 800 }}>{plan.price}<span style={{ fontSize: "0.8rem", color: styles.textTertiary, fontWeight: 400 }}>{plan.interval !== "one-time" ? plan.interval : ""}</span></span>
                         </div>
-                      ))}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
+                          {plan.features.map(f => (
+                            <div key={f} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: styles.textSecondary }}>
+                              <CheckCircle2 size={12} style={{ color: styles.success, flexShrink: 0 }} /> {f}
+                            </div>
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {error && <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: 12 }}>{error}</p>}
 
@@ -364,17 +599,57 @@ function OnboardingContent() {
                 ? "Saving..."
                 : selectedPlan === "micro"
                   ? "Pay $997 — Get 50 Leads in 5 Days"
-                  : "Request Manual Payment"}
+                  : "Complete Setup"}
             </button>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <button onClick={() => setStep("icp")} style={{ background: "none", border: "none", color: styles.textSecondary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
                 <ArrowLeft size={14} /> Back
               </button>
-              <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                Skip for now — start free trial
-              </button>
+              {token ? (
+                <button onClick={handleTokenSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
+                  Skip payment — start free
+                </button>
+              ) : (
+                <button onClick={handleSkip} style={{ background: "none", border: "none", color: styles.textTertiary, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
+                  Skip for now — start free trial
+                </button>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* Step 4: Confirmation */}
+        {step === "confirmation" && (
+          <div style={{ textAlign: "center", paddingTop: 40 }}>
+            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(34,197,94,0.08)", border: "2px solid rgba(34,197,94,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+              <CheckCircle2 size={40} style={{ color: styles.success }} />
+            </div>
+            <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>You&apos;re All Set!</h1>
+            <p style={{ color: styles.textSecondary, fontSize: "1rem", maxWidth: 400, margin: "0 auto 32px" }}>
+              Your dashboard is being prepared! Redirecting you to your portal...
+            </p>
+
+            {/* Countdown bar */}
+            <p style={{ fontSize: "0.85rem", color: styles.textTertiary, marginBottom: 8 }}>
+              Redirecting in <span style={{ color: styles.accent, fontWeight: 700 }}>{countdown}</span>s...
+            </p>
+            <div style={{ width: 200, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 999, margin: "0 auto 32px" }}>
+              <div style={{
+                height: "100%", borderRadius: 999,
+                background: styles.accent,
+                width: `${((3 - countdown) / 3) * 100}%`,
+                transition: "width 1s linear",
+              }} />
+            </div>
+
+            <Link
+              href={token ? "/client-portal/login" : "/client-portal"}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold no-underline transition-all"
+              style={{ background: styles.accent, color: "#fff", boxShadow: "0 0 24px rgba(232,66,10,0.3)" }}
+            >
+              Go to Client Portal <ArrowRight size={16} />
+            </Link>
           </div>
         )}
       </div>

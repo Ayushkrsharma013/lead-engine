@@ -221,15 +221,52 @@ export default function PricingPage() {
           <PlanCard
             planKey="pilot" name="Founder's Pilot" amount={1499} interval="setup_plus_monthly" monthlyAmount={499}
             features={["100 ICP-verified leads/month", "3 personalized outreach sequences", "Kanban pipeline configured", "Monthly strategy call", "Founder-managed delivery", "Apify lead scraping", "Anthropic Claude AI scoring", "Supabase-powered dashboard"]}
-            cta="Get Started" href="/book"
+            cta="Get Started" href="/book?plan=pilot"
           />
           <PlanCard
             planKey="growth" name="Growth" amount={2499} interval="setup_plus_monthly" monthlyAmount={999} popular
             features={["Everything in Pilot, plus:", "200+ leads/month", "Email + LinkedIn sequences", "A/B testing of 2 variants", "Bi-weekly strategy calls", "Dedicated Slack channel", "Reply monitoring & warm handoff"]}
-            cta="Book a Demo" href="/book"
+            cta="Book a Demo" href="/book?plan=growth"
+          />
+          <PlanCard
+            planKey="scale" name="Scale" amount={4999} interval="setup_plus_monthly" monthlyAmount={1999}
+            features={["Everything in Growth, plus:", "500+ leads/month", "Email + LinkedIn + GMap multi-channel", "A/B testing of 5 variants", "Weekly strategy calls", "Dedicated Slack + Telegram", "CRM sync (HubSpot/Salesforce)", "Priority support within 4 hrs"]}
+            cta="Book a Demo" href="/book?plan=scale"
           />
         </div>
       </motion.section>
+
+      {/* Micro-Offer Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="max-w-lg mx-auto px-6 mb-24"
+      >
+        <div className="rounded-2xl p-8 text-center"
+          style={{
+            background: "linear-gradient(135deg, rgba(232,66,10,0.06) 0%, rgba(232,66,10,0.02) 100%)",
+            border: "1px solid rgba(232,66,10,0.2)",
+          }}>
+          <div className="inline-flex items-center gap-2 mb-3">
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--accent, #e8420a)", animation: "pulse-dot 2s ease-in-out infinite" }} />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider" style={{ color: "var(--accent, #e8420a)" }}>
+              Low-Risk Trial
+            </span>
+          </div>
+          <h3 className="text-xl font-extrabold mb-2" style={{ fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif" }}>Founder&apos;s Pilot Micro-Offer</h3>
+          <p className="text-sm mb-4" style={{ color: "var(--text-secondary, #b0aeaa)" }}>50 ICP-verified leads + 5 sequences. One-time. No recurring.</p>
+          <div className="text-3xl font-black mb-5" style={{ color: "var(--accent, #e8420a)" }}>$997 <span className="text-sm font-normal" style={{ color: "var(--text-tertiary, #7a7875)" }}>one-time</span></div>
+          <Link
+            href="/book?plan=micro"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold no-underline transition-all"
+            style={{ background: "var(--accent, #e8420a)", color: "#fff", boxShadow: "0 0 24px var(--accent-glow, rgba(232,66,10,0.3))" }}
+          >
+            Grab the Micro-Offer <ArrowRight size={14} />
+          </Link>
+        </div>
+      </motion.div>
 
       {/* FAQ */}
       <section className="max-w-2xl mx-auto px-6 pb-24" style={{ borderTop: "1px solid var(--divider, rgba(255,255,255,0.06))" }}>
@@ -308,7 +345,7 @@ export default function PricingPage() {
           Book a free 15-minute strategy call. We'll review your ICP, estimate your pipeline volume, and recommend the right setup — zero pressure.
         </p>
         <Link
-          href="/book"
+          href="/book?plan=pilot"
           className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold no-underline transition-all"
           style={{
             background: "var(--accent, #e8420a)",

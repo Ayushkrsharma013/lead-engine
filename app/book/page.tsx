@@ -9,7 +9,8 @@ import {
   Sparkles, Search, Monitor, Code, Compass, Phone,
 } from "lucide-react";
 import ProsBotPanel from "@/components/ProsBotPanel";
-import { MEETING_TYPES, type MeetingType } from "@/lib/types";
+import { MEETING_TYPES, type MeetingType, type PlanKey } from "@/lib/types";
+import { PLANS } from "@/lib/stripe";
 import { trackBooking } from "@/lib/analytics";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
@@ -123,6 +124,7 @@ function BookPageInner() {
   const searchParams = useSearchParams();
   const gmapsRef = searchParams.get("ref");
   const gmapsLid = searchParams.get("lid");
+  const planParam = searchParams.get("plan");
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [meetingType, setMeetingType] = useState<MeetingType>("demo");
@@ -247,6 +249,7 @@ function BookPageInner() {
           type: meetingType,
           duration: MEETING_TYPES[meetingType].duration,
           timezone: userTimezone,
+          plan: planParam || undefined,
           turnstileToken,
         }),
       });
@@ -402,6 +405,19 @@ function BookPageInner() {
                   <p className="text-base max-w-md mx-auto" style={{ color: "var(--text-secondary, #b0aeaa)" }}>
                     See how Prospecting OS finds 500+ qualified leads every month — in a 20-minute walkthrough.
                   </p>
+                  {planParam && PLANS[planParam as PlanKey] && (
+                    <div className="inline-flex items-center gap-3 mt-4 px-5 py-3 rounded-xl" style={{ background: "rgba(232,66,10,0.06)", border: "1px solid rgba(232,66,10,0.15)" }}>
+                      <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                        {PLANS[planParam as PlanKey].name}
+                      </span>
+                      <span className="text-sm font-bold" style={{ color: "var(--accent)" }}>
+                        {PLANS[planParam as PlanKey].displaySetup}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                        {PLANS[planParam as PlanKey].displayMonthly}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* ══════════════════════ STEP 1 — Meeting Type ════════════ */}

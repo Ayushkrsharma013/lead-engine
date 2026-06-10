@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Flame } from "lucide-react";
+import { Flame, ExternalLink } from "lucide-react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
-interface LeadRow { id: string; name: string; title: string; company: string; industry: string; score: number; status?: string; email: string; location?: string }
+interface LeadRow {
+  id: string; name: string; title: string; company: string;
+  linkedin_url: string; score: number; icp_match_reason?: string;
+}
 
 function scoreColor(score: number) {
   if (score >= 80) return { bg: "rgba(107,203,119,0.10)", text: "var(--positive)", border: "rgba(107,203,119,0.18)" };
@@ -14,12 +17,23 @@ function scoreColor(score: number) {
   return { bg: "rgba(224,96,96,0.08)", text: "var(--negative)", border: "rgba(224,96,96,0.18)" };
 }
 
-// Defends against CSV/formula injection (=, +, -, @, tab, CR) and escapes quotes.
-function csvEscape(value: unknown): string {
-  const s = value === null || value === undefined ? "" : String(value);
-  const needsPrefix = /^[=+\-@\t\r]/.test(s);
-  const safe = (needsPrefix ? "'" + s : s).replace(/"/g, '""');
-  return `"${safe}"`;
+/** Watermark overlay — semi-transparent repeating text */
+function Watermark({ email }: { email: string }) {
+  if (!email) return null;
+  const lines: string[] = [];
+  for (let row = 0; row < 20; row++) {
+    for (let col = 0; col < 6; col++) {
+      lines.push(
+        `<span style="position:absolute;top:${row * 80 + (col % 3) * 25}px;left:${col * 280 + (row % 4) * 40}px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.03);white-space:nowrap;pointer-events:none;transform:rotate(-15deg);font-family:monospace;">${email} · CONFIDENTIAL</span>`
+      );
+    }
+  }
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}
+      dangerouslySetInnerHTML={{ __html: lines.join("") }}
+    />
+  );
 }
 
 export default function ClientLeadsPage() {
@@ -31,7 +45,7 @@ export default function ClientLeadsPage() {
   const [view, setView] = useState<"all" | "hot">("all");
   const [hotCount, setHotCount] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const limit = 50;
+  const limit = 25;
 
   const effectiveScoreMin = view === "hot" ? 80 : scoreMin;
 
@@ -42,6 +56,7 @@ export default function ClientLeadsPage() {
         const d = await meRes.json();
         setProfile(d.profile);
       }
+      // Hot count
       const hotRes = await fetch("/prospecting-os/api/client-portal/leads?limit=1&score_min=80");
       if (hotRes.ok) {
         const d = await hotRes.json();
@@ -69,46 +84,15 @@ export default function ClientLeadsPage() {
 
   const totalPages = Math.ceil(count / limit);
 
-  const handleExportCSV = async () => {
-    const params = new URLSearchParams({ limit: "1000" });
-    if (effectiveScoreMin > 0) params.set("score_min", String(effectiveScoreMin));
-    const res = await fetch(`/prospecting-os/api/client-portal/leads?${params}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    const rows: string[] = ["Name,Title,Company,Industry,Score,Status,Email"];
-    for (const l of data.leads) {
-      rows.push(
-        [
-          csvEscape(l.name),
-          csvEscape(l.title),
-          csvEscape(l.company),
-          csvEscape(l.industry),
-          csvEscape(l.score),
-          csvEscape(l.status || "new"),
-          csvEscape(l.email),
-        ].join(",")
-      );
-    }
-    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = view === "hot" ? "hot-leads.csv" : "my-leads.csv"; a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <PlanGate module="leads-view" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="pilot">
-      <div className="max-w-5xl space-y-4 animate-fade-in">
+      <Watermark email={profile?.email || ""} />
+      <div className="max-w-5xl space-y-4 animate-fade-in" style={{ position: "relative", zIndex: 1 }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>My Leads</h1>
             <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>{count.toLocaleString()} leads in your workspace</p>
           </div>
-          <button onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all"
-            style={{ background: "var(--accent)", color: "#000" }}>
-            <Download size={13} /> Export CSV
-          </button>
         </div>
 
         {/* View tabs */}
@@ -140,7 +124,7 @@ export default function ClientLeadsPage() {
           </button>
         </div>
 
-        {/* Score filter (only shown in All view) */}
+        {/* Score filter */}
         {view === "all" && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium" style={{ color: "var(--ink-4)" }}>Min Score:</span>
@@ -170,7 +154,7 @@ export default function ClientLeadsPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--line)" }}>
-                  {["Name", "Title", "Company", "Industry", "Score", "Status"].map(h => (
+                  {["Name", "Title", "Company", "LinkedIn", "Score"].map(h => (
                     <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: "var(--ink-4)" }}>{h}</th>
                   ))}
                 </tr>
@@ -185,14 +169,21 @@ export default function ClientLeadsPage() {
                       <td className="px-4 py-2.5 text-[12px] font-medium" style={{ color: "var(--ink)" }}>{l.name || "—"}</td>
                       <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>{l.title || "—"}</td>
                       <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>{l.company || "—"}</td>
-                      <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>{l.industry || "—"}</td>
+                      <td className="px-4 py-2.5">
+                        {l.linkedin_url ? (
+                          <a href={l.linkedin_url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[12px] font-medium transition-opacity hover:opacity-80 no-underline"
+                            style={{ color: "var(--accent-blue)" }}>
+                            View Profile <ExternalLink size={10} />
+                          </a>
+                        ) : <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>—</span>}
+                      </td>
                       <td className="px-4 py-2.5">
                         <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold"
                           style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
                           {l.score}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-[11px] capitalize" style={{ color: "var(--ink-3)" }}>{l.status || "new"}</td>
                     </tr>
                   );
                 })}

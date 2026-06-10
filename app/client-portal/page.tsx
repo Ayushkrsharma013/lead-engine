@@ -316,15 +316,8 @@ export default function ClientPortalOverview() {
         ))}
       </div>
 
-      {/* Actions row — all plans */}
+      {/* Actions row — all plans (export removed for security) */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all"
-          style={{ background: "var(--accent)", color: "#000" }}
-        >
-          <Download size={13} /> Export CSV
-        </button>
         <Link href="/book" className="text-[12px] font-medium transition-opacity hover:opacity-80" style={{ color: "var(--ink-3)" }}>
           Need help? Book a call →
         </Link>
