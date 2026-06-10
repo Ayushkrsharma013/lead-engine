@@ -2,105 +2,213 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Users, Search, Loader2, AlertTriangle, Ban, CheckCircle, Trash2,
-  ExternalLink, ChevronLeft, ChevronRight, DollarSign, BarChart3,
-  UserCheck, Filter,
+  Users, Search, Loader2, ChevronLeft, ChevronRight,
+  DollarSign, BarChart3, UserCheck, RotateCcw, X,
 } from "lucide-react";
+import CustomDropdown from "@/components/ui/CustomDropdown";
+import type { DropdownOption } from "@/components/ui/CustomDropdown";
+import MetricsCard from "@/components/ui/MetricsCard";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
+import ClientTable from "@/components/admin/ClientTable";
+import type { ClientRow } from "@/components/admin/ClientTable";
 
-interface ClientRow {
-  id: string; email: string; name: string; plan: string;
-  subscription_status: string; is_active: boolean; created_at: string;
-  workspace_id: string | null; leads_count: number;
-  leads_generation_status: string; icp_locked: boolean;
-}
+/* ─── Types ────────────────────────────────────────────────────────────────── */
 
 interface Metrics {
-  totalClients: number; activeSubscriptions: number;
-  mrr: number; totalLeadsManaged: number;
+  totalClients: number;
+  activeSubscriptions: number;
+  mrr: number;
+  totalLeadsManaged: number;
 }
 
-const PLAN_COLORS: Record<string, { bg: string; text: string }> = {
-  micro: { bg: "rgba(107,203,119,0.08)", text: "#6BCB77" },
-  pilot: { bg: "rgba(232,168,64,0.08)", text: "#E8A840" },
-  growth: { bg: "rgba(0,180,255,0.08)", text: "#00b4ff" },
-  scale: { bg: "rgba(168,85,247,0.08)", text: "#a855f7" },
-};
+interface SuspensionTarget {
+  client: ClientRow;
+  action: "suspend" | "activate";
+}
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  active: { bg: "rgba(34,197,94,0.08)", text: "#22c55e" },
-  trial: { bg: "rgba(0,180,255,0.08)", text: "#00b4ff" },
-  past_due: { bg: "rgba(239,68,68,0.08)", text: "#ef4444" },
-  suspended: { bg: "rgba(234,179,8,0.08)", text: "#eab308" },
-  canceled: { bg: "rgba(128,128,128,0.08)", text: "#808080" },
-  inactive: { bg: "rgba(128,128,128,0.08)", text: "#808080" },
-  pending_payment: { bg: "rgba(232,168,64,0.08)", text: "#E8A840" },
-};
+/* ─── Dropdown option builders ─────────────────────────────────────────────── */
+
+const PLAN_OPTIONS: DropdownOption[] = [
+  { value: "", label: "All Plans" },
+  { value: "micro", label: "Micro-Offer" },
+  { value: "pilot", label: "Founder's Pilot" },
+  { value: "growth", label: "Growth" },
+  { value: "scale", label: "Scale" },
+];
+
+const STATUS_OPTIONS: DropdownOption[] = [
+  { value: "", label: "All Status" },
+  { value: "active", label: "Active" },
+  { value: "trial", label: "Trial" },
+  { value: "past_due", label: "Past Due" },
+  { value: "suspended", label: "Suspended" },
+  { value: "canceled", label: "Canceled" },
+];
+
+const PAGE_SIZE_OPTIONS: DropdownOption[] = [
+  { value: "10", label: "10 / page" },
+  { value: "25", label: "25 / page" },
+  { value: "50", label: "50 / page" },
+];
+
+/* ─── Skeleton loader ──────────────────────────────────────────────────────── */
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-4 px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+      <div className="flex-1 space-y-1.5">
+        <div className="h-3.5 w-32 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+        <div className="h-3 w-48 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+      </div>
+      <div className="h-5 w-14 rounded-full animate-pulse" style={{ background: "var(--surface-2)" }} />
+      <div className="h-5 w-16 rounded-full animate-pulse" style={{ background: "var(--surface-2)" }} />
+      <div className="h-4 w-10 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+      <div className="h-4 w-20 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+      <div className="h-7 w-20 rounded animate-pulse" style={{ background: "var(--surface-2)" }} />
+    </div>
+  );
+}
+
+/* ─── Component ────────────────────────────────────────────────────────────── */
 
 export default function AdminClientsPage() {
+  /* State */
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState<ClientRow | null>(null);
+  const [error, setError] = useState("");
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
-  const limit = 10;
+
+  /* Modals */
+  const [confirmDelete, setConfirmDelete] = useState<ClientRow | null>(null);
+  const [confirmSuspend, setConfirmSuspend] = useState<SuspensionTarget | null>(null);
+
+  /* ── Data fetching ──────────────────────────────────────────────────────── */
 
   const fetchData = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
     if (search) params.set("search", search);
     if (planFilter) params.set("plan", planFilter);
     if (statusFilter) params.set("status", statusFilter);
 
     setLoading(true);
-    const [metricsRes, clientsRes] = await Promise.all([
-      fetch("/prospecting-os/api/admin/clients/metrics"),
-      fetch(`/prospecting-os/api/admin/clients?${params}`),
-    ]);
+    setError("");
 
-    if (metricsRes.ok) setMetrics(await metricsRes.json());
-    if (clientsRes.ok) {
+    try {
+      const [metricsRes, clientsRes] = await Promise.all([
+        fetch("/prospecting-os/api/admin/clients/metrics"),
+        fetch(`/prospecting-os/api/admin/clients?${params}`),
+      ]);
+
+      if (!metricsRes.ok) throw new Error("Failed to load metrics");
+      if (!clientsRes.ok) throw new Error("Failed to load clients");
+
+      setMetrics(await metricsRes.json());
       const d = await clientsRes.json();
       setClients(d.clients || []);
       setTotalCount(d.count || 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load data");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [page, search, planFilter, statusFilter]);
+  }, [page, limit, search, planFilter, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* ── Search (debounced) ─────────────────────────────────────────────────── */
 
   const handleSearch = (val: string) => {
     setSearch(val);
     clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => { setPage(1); fetchData(); }, 400);
+    searchTimer.current = setTimeout(() => { setPage(1); }, 300);
   };
 
-  const handleFilterChange = () => {
+  /* ── Filters ────────────────────────────────────────────────────────────── */
+
+  const handleFilterChange = useCallback(() => {
     setPage(1);
-    setTimeout(() => fetchData(), 50);
+  }, []);
+
+  useEffect(() => {
+    if (page === 1) fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planFilter, statusFilter, limit]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setPlanFilter("");
+    setStatusFilter("");
+    setPage(1);
   };
+
+  const hasFilters = search || planFilter || statusFilter;
+
+  /* ── Actions ────────────────────────────────────────────────────────────── */
 
   const handleAction = async (id: string, action: string) => {
     setActionLoading(id);
-    const res = await fetch("/prospecting-os/api/admin/clients", {
-      method: action === "delete" ? "DELETE" : "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(action === "delete" ? {} : { id, action }),
-    });
-    setActionLoading(null);
-    if (res.ok) {
-      setToast(`${action === "suspend" ? "Suspended" : action === "activate" ? "Activated" : "Deleted"} successfully`);
-      setTimeout(() => setToast(""), 2500);
-      await fetchData();
+    try {
+      const res = await fetch("/prospecting-os/api/admin/clients", {
+        method: action === "delete" ? "DELETE" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action === "delete" ? {} : { id, action }),
+      });
+      if (res.ok) {
+        const labels: Record<string, string> = {
+          suspend: "Suspended",
+          activate: "Activated",
+          delete: "Deleted",
+        };
+        setToast(`${labels[action] || action} successfully`);
+        setTimeout(() => setToast(""), 2500);
+        await fetchData();
+      } else {
+        setToast("Action failed. Try again.");
+        setTimeout(() => setToast(""), 2500);
+      }
+    } finally {
+      setActionLoading(null);
     }
   };
 
+  /* ── View Portal (impersonate → magic link) ──────────────────────────────── */
+
+  const handleViewPortal = async (client: ClientRow) => {
+    try {
+      const res = await fetch(`/prospecting-os/api/admin/users/${client.id}/impersonate`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url) window.open(url, "_blank", "noopener,noreferrer");
+        else setToast("Could not generate login link");
+      } else {
+        setToast("Failed to generate portal access. Try again.");
+      }
+      setTimeout(() => setToast(""), 2500);
+    } catch {
+      setToast("Network error. Try again.");
+      setTimeout(() => setToast(""), 2500);
+    }
+  };
+
+  /* ── Derived ────────────────────────────────────────────────────────────── */
+
   const totalPages = Math.ceil(totalCount / limit);
+
+  /* ── Render ─────────────────────────────────────────────────────────────── */
 
   return (
     <div className="max-w-6xl space-y-5 animate-fade-in">
@@ -117,220 +225,225 @@ export default function AdminClientsPage() {
       {/* Metrics Cards */}
       {metrics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { icon: Users, label: "Total Clients", value: metrics.totalClients.toLocaleString(), color: "#00b4ff" },
-            { icon: UserCheck, label: "Active Subscriptions", value: metrics.activeSubscriptions.toLocaleString(), color: "#22c55e" },
-            { icon: DollarSign, label: "MRR", value: `$${metrics.mrr.toLocaleString()}`, color: "#E8A840" },
-            { icon: BarChart3, label: "Leads Managed", value: metrics.totalLeadsManaged.toLocaleString(), color: "#a855f7" },
-          ].map(c => (
-            <div key={c.label} className="rounded-xl p-5"
-              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-              <div className="flex items-center gap-2.5 mb-2">
-                <c.icon size={16} style={{ color: c.color }} />
-                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>{c.label}</span>
-              </div>
-              <p className="text-[24px] font-bold" style={{ color: "var(--ink)" }}>{c.value}</p>
-            </div>
+          <MetricsCard icon={Users} label="Total Clients" value={metrics.totalClients.toLocaleString()} color="#00b4ff" />
+          <MetricsCard icon={UserCheck} label="Active Subscriptions" value={metrics.activeSubscriptions.toLocaleString()} color="#22c55e" />
+          <MetricsCard icon={DollarSign} label="MRR" value={`$${metrics.mrr.toLocaleString()}`} color="#E8A840" />
+          <MetricsCard icon={BarChart3} label="Leads Managed" value={metrics.totalLeadsManaged.toLocaleString()} color="#a855f7" />
+        </div>
+      )}
+      {loading && !metrics && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="rounded-xl p-5 animate-pulse" style={{ background: "var(--surface)", border: "1px solid var(--line)", height: 100 }} />
           ))}
         </div>
       )}
 
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px] rounded-xl px-3 h-10"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        {/* Search */}
+        <div
+          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-xl px-3 h-10"
+          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+        >
           <Search size={14} style={{ color: "var(--ink-4)" }} />
           <input
-            type="text" placeholder="Search clients..."
-            value={search} onChange={e => handleSearch(e.target.value)}
+            type="text"
+            placeholder="Search clients by name or email..."
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
             className="flex-1 bg-transparent border-none outline-none text-[13px]"
             style={{ color: "var(--ink)" }}
           />
         </div>
 
-        <select value={planFilter} onChange={e => { setPlanFilter(e.target.value); handleFilterChange(); }}
-          className="h-10 rounded-xl px-3 text-[12px] font-medium"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", outline: "none" }}>
-          <option value="">All Plans</option>
-          <option value="micro">Micro-Offer</option>
-          <option value="pilot">Founder's Pilot</option>
-          <option value="growth">Growth</option>
-          <option value="scale">Scale</option>
-        </select>
+        {/* Plan filter */}
+        <CustomDropdown
+          options={PLAN_OPTIONS}
+          value={planFilter}
+          onChange={v => { setPlanFilter(v); handleFilterChange(); }}
+          placeholder="All Plans"
+          clearable
+          width={170}
+        />
 
-        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); handleFilterChange(); }}
-          className="h-10 rounded-xl px-3 text-[12px] font-medium"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", outline: "none" }}>
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="trial">Trial</option>
-          <option value="past_due">Past Due</option>
-          <option value="suspended">Suspended</option>
-          <option value="canceled">Canceled</option>
-        </select>
+        {/* Status filter */}
+        <CustomDropdown
+          options={STATUS_OPTIONS}
+          value={statusFilter}
+          onChange={v => { setStatusFilter(v); handleFilterChange(); }}
+          placeholder="All Status"
+          clearable
+          width={160}
+        />
+
+        {/* Clear filters */}
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 h-10 px-3 rounded-xl text-[12px] font-medium transition-colors"
+            style={{ background: "transparent", border: "1px solid var(--line)", color: "var(--ink-3)", cursor: "pointer" }}
+          >
+            <RotateCcw size={12} /> Clear
+          </button>
+        )}
       </div>
 
-      {/* Table */}
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}>
+          <X size={16} style={{ color: "#ef4444" }} />
+          <span className="text-[13px] font-medium" style={{ color: "#ef4444" }}>{error}</span>
+          <button
+            onClick={() => fetchData()}
+            className="ml-auto text-[12px] font-semibold px-3 py-1 rounded-full"
+            style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "none", cursor: "pointer" }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Table / Loading / Empty */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 size={24} className="animate-spin" style={{ color: "var(--accent)" }} />
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+          <div className="flex px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+            {["Client", "Plan", "Status", "Leads", "Joined", "Actions"].map(h => (
+              <div key={h} className="flex-1 text-left text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: "var(--ink-4)" }}>{h}</div>
+            ))}
+          </div>
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       ) : clients.length === 0 ? (
-        <div className="rounded-xl p-10 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <Users size={40} style={{ color: "var(--ink-4)", margin: "0 auto 12px" }} />
-          <p className="text-[14px] font-semibold" style={{ color: "var(--ink-2)" }}>No clients found</p>
-          <p className="text-[12px] mt-1" style={{ color: "var(--ink-4)" }}>Try adjusting your filters</p>
+        /* Empty state */
+        <div className="rounded-xl p-12 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+          <Users size={48} style={{ color: "var(--ink-4)", opacity: 0.3, margin: "0 auto 16px" }} />
+          <p className="text-[15px] font-semibold" style={{ color: "var(--ink-2)" }}>
+            {hasFilters ? "No clients match your filters" : "No clients yet"}
+          </p>
+          <p className="text-[12px] mt-1.5 mb-4" style={{ color: "var(--ink-4)" }}>
+            {hasFilters ? "Try adjusting your search or filters above." : "Create your first client account to get started."}
+          </p>
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)", cursor: "pointer" }}
+            >
+              <RotateCcw size={12} /> Clear All Filters
+            </button>
+          )}
         </div>
       ) : (
         <>
-          <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-            <table className="w-full">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--line)" }}>
-                  {["Client", "Plan", "Status", "Leads", "Joined", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.10em]" style={{ color: "var(--ink-4)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map(c => {
-                  const pc = PLAN_COLORS[c.plan] || PLAN_COLORS.pilot;
-                  const sc = STATUS_COLORS[c.subscription_status || "inactive"];
-                  return (
-                    <tr key={c.id} className="transition-colors duration-150" style={{ borderBottom: "1px solid var(--line)" }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.01)")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                      <td className="px-4 py-3">
-                        <div>
-                          <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{c.name}</p>
-                          <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{c.email}</p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                          style={{ background: pc.bg, color: pc.text, border: `1px solid ${pc.text}20` }}>
-                          {c.plan === "pilot" ? "Pilot" : c.plan === "growth" ? "Growth" : c.plan === "scale" ? "Scale" : "Micro"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize"
-                          style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.text}20` }}>
-                          {(c.subscription_status || "inactive").replace("_", " ")}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-[13px] font-semibold" style={{ color: "var(--ink)" }}>
-                        {c.leads_count.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-[12px]" style={{ color: "var(--ink-4)" }}>
-                        {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {/* View Portal */}
-                          <a href={`/prospecting-os/client-portal/login`} target="_blank" rel="noreferrer"
-                            className="p-1.5 rounded-lg transition-colors" title="View Portal"
-                            style={{ color: "var(--ink-3)" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,180,255,0.08)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                            <ExternalLink size={14} />
-                          </a>
-
-                          {/* Suspend / Activate */}
-                          {c.subscription_status === "active" || c.subscription_status === "trial" ? (
-                            <button onClick={() => handleAction(c.id, "suspend")} disabled={actionLoading === c.id}
-                              className="p-1.5 rounded-lg transition-colors" title="Suspend"
-                              style={{ color: "#eab308", background: "transparent", border: "none", cursor: "pointer" }}
-                              onMouseEnter={e => (e.currentTarget.style.background = "rgba(234,179,8,0.08)")}
-                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                              {actionLoading === c.id ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
-                            </button>
-                          ) : (
-                            <button onClick={() => handleAction(c.id, "activate")} disabled={actionLoading === c.id}
-                              className="p-1.5 rounded-lg transition-colors" title="Activate"
-                              style={{ color: "#22c55e", background: "transparent", border: "none", cursor: "pointer" }}
-                              onMouseEnter={e => (e.currentTarget.style.background = "rgba(34,197,94,0.08)")}
-                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                              {actionLoading === c.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                            </button>
-                          )}
-
-                          {/* Delete */}
-                          <button onClick={() => setConfirmDelete(c)}
-                            className="p-1.5 rounded-lg transition-colors" title="Delete"
-                            style={{ color: "#ef4444", background: "transparent", border: "none", cursor: "pointer" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ClientTable
+            clients={clients}
+            actionLoading={actionLoading}
+            onAction={handleAction}
+            onDelete={setConfirmDelete}
+            onViewPortal={handleViewPortal}
+            onSuspendClick={c => setConfirmSuspend({ client: c, action: "suspend" })}
+            onActivateClick={c => setConfirmSuspend({ client: c, action: "activate" })}
+          />
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CustomDropdown
+                options={PAGE_SIZE_OPTIONS}
+                value={String(limit)}
+                onChange={v => setLimit(Number(v))}
+                width={120}
+              />
               <span className="text-[12px]" style={{ color: "var(--ink-4)" }}>
-                Page {page} of {totalPages} · {totalCount} clients
+                {totalCount.toLocaleString()} clients total
               </span>
-              <div className="flex gap-1">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{ color: page <= 1 ? "var(--ink-4)" : "var(--ink)", opacity: page <= 1 ? 0.4 : 1, background: "transparent", border: "none", cursor: page <= 1 ? "default" : "pointer" }}>
-                  <ChevronLeft size={14} />
-                </button>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{ color: page >= totalPages ? "var(--ink-4)" : "var(--ink)", opacity: page >= totalPages ? 0.4 : 1, background: "transparent", border: "none", cursor: page >= totalPages ? "default" : "pointer" }}>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
             </div>
-          )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[12px]" style={{ color: "var(--ink-4)" }}>
+                  Page {page} of {totalPages}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{
+                      color: page <= 1 ? "var(--ink-4)" : "var(--ink)",
+                      opacity: page <= 1 ? 0.4 : 1,
+                      background: "transparent",
+                      border: "none",
+                      cursor: page <= 1 ? "default" : "pointer",
+                    }}
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{
+                      color: page >= totalPages ? "var(--ink-4)" : "var(--ink)",
+                      opacity: page >= totalPages ? 0.4 : 1,
+                      background: "transparent",
+                      border: "none",
+                      cursor: page >= totalPages ? "default" : "pointer",
+                    }}
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
-          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", boxShadow: "var(--shadow-lg)" }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(239,68,68,0.1)" }}>
-                <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-              </div>
-              <div>
-                <h2 className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>Delete Client?</h2>
-                <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>{confirmDelete.name} · {confirmDelete.email}</p>
-              </div>
-            </div>
-            <p className="text-[12px] mb-5" style={{ color: "var(--ink-4)" }}>
-              This will cancel the subscription and deactivate the account. Leads and workspace data will be preserved.
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(null)}
-                className="flex-1 h-10 rounded-full text-[13px] font-semibold"
-                style={{ background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--ink)", cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={() => { handleAction(confirmDelete.id, "delete"); setConfirmDelete(null); }}
-                className="flex-1 h-10 rounded-full text-[13px] font-semibold"
-                style={{ background: "#ef4444", color: "#fff", border: "none", cursor: "pointer" }}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Delete Confirmation Modal ─────────────────────────────────────── */}
+      <ConfirmationModal
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={() => {
+          if (confirmDelete) { handleAction(confirmDelete.id, "delete"); setConfirmDelete(null); }
+        }}
+        title="Delete Client?"
+        subtitle={`${confirmDelete?.name || ""} · ${confirmDelete?.email || ""}`}
+        description="This will permanently cancel the subscription and deactivate the account. Lead data and workspace records will be preserved for 30 days before permanent deletion."
+        confirmLabel="Delete Client"
+        confirmColor="#ef4444"
+      />
 
-      {/* Toast */}
+      {/* ── Suspend / Activate Confirmation ────────────────────────────────── */}
+      <ConfirmationModal
+        open={!!confirmSuspend}
+        onClose={() => setConfirmSuspend(null)}
+        onConfirm={() => {
+          if (confirmSuspend) { handleAction(confirmSuspend.client.id, confirmSuspend.action); setConfirmSuspend(null); }
+        }}
+        title={confirmSuspend?.action === "suspend" ? "Suspend Client?" : "Activate Client?"}
+        subtitle={`${confirmSuspend?.client.name || ""} · ${confirmSuspend?.client.email || ""}`}
+        description={
+          confirmSuspend?.action === "suspend"
+            ? "The client will lose access to their portal immediately. All data remains intact — this action is reversible."
+            : "The client will regain full access to their portal. All subscriptions and leads will resume as before."
+        }
+        confirmLabel={confirmSuspend?.action === "suspend" ? "Suspend" : "Activate"}
+        confirmColor={confirmSuspend?.action === "suspend" ? "#eab308" : "#22c55e"}
+      />
+
+      {/* ── Toast ──────────────────────────────────────────────────────────── */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium"
-          style={{ background: "var(--surface-elev)", border: "1px solid var(--line)", color: "var(--ink)", boxShadow: "var(--shadow-md)" }}>
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium animate-fade-in"
+          style={{
+            background: "var(--surface-elev)",
+            border: "1px solid var(--line)",
+            color: "var(--ink)",
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
           {toast}
         </div>
       )}
