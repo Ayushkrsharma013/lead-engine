@@ -1,0 +1,101 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { User, Mail, Shield, Calendar, Loader2, LogOut, Settings, CreditCard } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { PlanKey } from "@/lib/types";
+import { PLAN_MODULES } from "@/lib/plan-modules";
+import type { PlanTier } from "@/lib/plan-modules";
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [workspace, setWorkspace] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    fetch("/prospecting-os/api/client-portal/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setProfile(d.profile); setWorkspace(d.workspace); } setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/client-portal/login");
+  };
+
+  if (loading) return <div className="flex justify-center py-20"><Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} /></div>;
+  if (!profile) return <div className="text-center py-20"><p style={{ color: "var(--ink-3)" }}>Failed to load profile</p></div>;
+
+  const plan = (profile.plan || "pilot") as PlanTier;
+  const modules = PLAN_MODULES[plan] || PLAN_MODULES.pilot;
+
+  return (
+    <div className="max-w-2xl space-y-4 animate-fade-in">
+      <div>
+        <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Profile</h1>
+        <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Your account details and plan information</p>
+      </div>
+
+      {/* Avatar + Name */}
+      <div className="rounded-xl p-6 text-center" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-[20px] font-bold"
+          style={{ background: "linear-gradient(135deg, rgba(232,66,10,0.20), rgba(232,66,10,0.08))", color: "var(--accent)", border: "2px solid rgba(232,66,10,0.25)" }}>
+          {(profile.display_name as string || profile.email as string || "U").charAt(0).toUpperCase()}
+        </div>
+        <h2 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>{profile.display_name as string || "User"}</h2>
+        <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>{profile.email as string}</p>
+      </div>
+
+      {/* Details */}
+      <div className="rounded-xl divide-y" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        {[
+          { icon: User, label: "Role", value: (profile.role === "super_admin" ? "Super Admin" : profile.role === "client" ? "Client" : profile.role as string) || "User" },
+          { icon: Shield, label: "Plan", value: plan === "micro" ? "Micro-Offer" : plan === "pilot" ? "Founder's Pilot" : plan === "growth" ? "Growth" : "Scale" },
+          { icon: Calendar, label: "Member since", value: new Date((profile.created_at as string) || Date.now()).toLocaleDateString("en-US", { month: "long", year: "numeric" }) },
+        ].map(row => (
+          <div key={row.label} className="flex items-center gap-3 px-5 py-3">
+            <row.icon size={15} style={{ color: "var(--ink-4)" }} />
+            <span className="text-[12px] font-medium" style={{ color: "var(--ink-3)", width: 100 }}>{row.label}</span>
+            <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Plan Modules */}
+      <div className="rounded-xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+        <h3 className="text-[13px] font-semibold mb-3" style={{ color: "var(--ink)" }}>Your Plan Includes</h3>
+        <div className="flex flex-wrap gap-2">
+          {modules.map(m => (
+            <span key={m} className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+              style={{ background: "rgba(34,197,94,0.06)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.12)" }}>
+              {m}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button onClick={() => router.push("/client-portal/settings")}
+          className="flex-1 flex items-center justify-center gap-2 h-11 rounded-full text-[13px] font-semibold"
+          style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", cursor: "pointer" }}>
+          <Settings size={14} /> Settings
+        </button>
+        <button onClick={() => router.push("/client-portal/billing")}
+          className="flex-1 flex items-center justify-center gap-2 h-11 rounded-full text-[13px] font-semibold"
+          style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--ink)", cursor: "pointer" }}>
+          <CreditCard size={14} /> Billing
+        </button>
+      </div>
+      <button onClick={handleLogout}
+        className="w-full flex items-center justify-center gap-2 h-11 rounded-full text-[13px] font-semibold"
+        style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444", cursor: "pointer" }}>
+        <LogOut size={14} /> Sign Out
+      </button>
+    </div>
+  );
+}
