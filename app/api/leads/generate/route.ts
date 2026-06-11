@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120; // Allow up to 120s for lead generation
 
 const APIFY_BASE = "https://api.apify.com/v2";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 // Plan-based lead limits
 const PLAN_LEAD_LIMITS: Record<string, number> = {
@@ -164,40 +163,6 @@ function scoreLead(lead: {
   };
 }
 
-// Generate 1 icebreaker per lead via Gemini
-async function generateIcebreaker(
-  lead: { name: string; title: string; company: string; industry: string },
-  apiKey: string
-): Promise<string> {
-  const prompt = `You are an expert B2B outreach specialist. Write ONE short, personalized icebreaker opening line for a LinkedIn DM (1-2 sentences max). Reference something specific about the prospect's role or company. No generic flattery.
-
-PROSPECT:
-- Name: ${lead.name}
-- Title: ${lead.title || "Not specified"}
-- Company: ${lead.company || "Not specified"}
-- Industry: ${lead.industry || "Not specified"}
-
-Return ONLY the icebreaker text. No numbering, no introduction, no explanation.`;
-
-  try {
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 200, temperature: 0.9, topP: 0.95 },
-      }),
-    });
-
-    const data = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    return text.trim() || `Hi ${lead.name.split(" ")[0]}, I came across your profile and would love to connect.`;
-  } catch (err) {
-    console.warn(`[generate] Icebreaker failed for ${lead.name}:`, err);
-    return `Hi ${lead.name.split(" ")[0]}, I came across your profile and would love to connect.`;
-  }
-}
-
 // Fetch Apify dataset items
 async function fetchApifyResults(datasetId: string, apiKey: string): Promise<Array<Record<string, unknown>>> {
   const res = await fetch(
@@ -231,8 +196,7 @@ export async function POST(req: NextRequest) {
   }
 
   const apifyKey = process.env.APIFY_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!apifyKey || !geminiKey) {
+  if (!apifyKey) {
     return NextResponse.json({ error: "Lead generation not configured" }, { status: 500 });
   }
 
@@ -407,7 +371,8 @@ export async function POST(req: NextRequest) {
     if (insertError) throw new Error(`Lead insert failed: ${insertError.message}`);
     if (!inserted || inserted.length === 0) throw new Error("No leads inserted");
 
-    // Generate icebreakers (1 per lead) — process in batches to avoid rate limits
+    // Generate icebreakers (1 per lead) — uses multi-model fallback
+    const { generateOneIcebreaker } = await import("@/lib/icebreaker-llm");
     const icebreakerRows: Array<{ lead_id: string; text: string }> = [];
     const batchSize = 5;
 
@@ -417,15 +382,12 @@ export async function POST(req: NextRequest) {
 
       const results = await Promise.all(
         batch.map((lead, idx) =>
-          generateIcebreaker(
-            {
-              name: lead.name,
-              title: batchLeads[idx]?.title || "",
-              company: lead.company || "",
-              industry: batchLeads[idx]?.industry || "",
-            },
-            geminiKey
-          ).then(text => ({ lead_id: lead.id, text }))
+          generateOneIcebreaker({
+            name: lead.name,
+            title: batchLeads[idx]?.title || "",
+            company: lead.company || "",
+            industry: batchLeads[idx]?.industry || "",
+          }).then(r => ({ lead_id: lead.id, text: r.text }))
         )
       );
 

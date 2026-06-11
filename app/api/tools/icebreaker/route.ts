@@ -30,11 +30,6 @@ export async function POST(req: NextRequest) {
     created_at: new Date().toISOString(),
   });
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
-  if (!anthropicKey) {
-    return NextResponse.json({ error: 'AI service not configured.' }, { status: 503 })
-  }
-
   const toneGuide = tone === 'professional'
     ? 'Professional and polished — respectful, formal, concise'
     : tone === 'direct'
@@ -68,33 +63,14 @@ RULES:
 
 Write the icebreaker:`
 
-  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
+  // Use multi-model fallback: Gemini → DeepSeek → Claude → template
+  const { generateIcebreaker } = await import('@/lib/icebreaker-llm');
+  const result = await generateIcebreaker(prompt, {
+    name: prospectName,
+    title: prospectTitle,
+    company,
+    industry: industry || '',
+  });
 
-  if (!claudeRes.ok) {
-    console.error('Claude API error:', await claudeRes.text())
-    return NextResponse.json({ error: 'AI generation failed. Try again.' }, { status: 500 })
-  }
-
-  const claudeData = await claudeRes.json() as {
-    content?: Array<{ type: string; text: string }>
-  }
-  const icebreaker = claudeData.content?.[0]?.text?.trim()
-
-  if (!icebreaker) {
-    return NextResponse.json({ error: 'No output from AI. Try again.' }, { status: 500 })
-  }
-
-  return NextResponse.json({ icebreaker })
+  return NextResponse.json({ icebreaker: result.text, model: result.model })
 }

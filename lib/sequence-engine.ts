@@ -397,59 +397,23 @@ export interface IcebreakerResult {
 
 /**
  * Generate 5 icebreakers per lead for the top N leads.
- * Uses Gemini directly — no rate limit. For founder's own outreach use.
+ * Uses the multi-model fallback chain: Gemini → DeepSeek → Claude → template.
  */
 export async function generateBatchIcebreakers(
   leads: Array<{ id: string; name: string; title: string; company: string; industry: string }>,
   count: number = 5
 ): Promise<IcebreakerResult[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("[batch-icebreaker] No GEMINI_API_KEY configured");
-    return [];
-  }
-
+  // Dynamic import to avoid issues with server-only module
+  const { generateMultipleIcebreakers } = await import("./icebreaker-llm");
   const results: IcebreakerResult[] = [];
 
   for (const lead of leads) {
-    const prompt = `You are an expert B2B outreach specialist. Write ${count} short, personalized icebreaker opening lines for a LinkedIn DM. Each line must be 1-2 sentences, reference something specific about the prospect, and avoid generic flattery.
-
-PROSPECT:
-- Name: ${lead.name}
-- Title: ${lead.title}
-- Company: ${lead.company}
-- Industry: ${lead.industry || "Not specified"}
-
-Return exactly ${count} icebreakers, one per line, numbered 1-${count}. No introductions, no explanations.`;
-
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 500, temperature: 0.9, topP: 0.95 },
-          }),
-        }
+      const r = await generateMultipleIcebreakers(
+        { id: lead.id, name: lead.name, title: lead.title, company: lead.company, industry: lead.industry },
+        count
       );
-
-      const data = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      // Parse numbered lines
-      const lines = text
-        .split("\n")
-        .map((l) => l.replace(/^\d+[.)]\s*/, "").trim())
-        .filter((l) => l.length > 10);
-
-      results.push({
-        leadId: lead.id,
-        leadName: lead.name,
-        company: lead.company,
-        icebreakers: lines.slice(0, count),
-      });
+      results.push(r);
     } catch (err) {
       console.warn(`[batch-icebreaker] Failed for ${lead.name}:`, err);
       results.push({
