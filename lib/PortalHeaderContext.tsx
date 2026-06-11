@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 
 export interface PortalHeaderConfig {
   title: string;
@@ -31,6 +31,17 @@ export function PortalHeaderProvider({ children }: { children: ReactNode }) {
 
 export function usePortalHeader(config?: PortalHeaderConfig) {
   const ctx = useContext(PortalHeaderCtx);
-  if (config) ctx.setConfig(config);
+  const prevRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!config) return;
+    // Only update if title/description/actions actually changed
+    const key = JSON.stringify({ title: config.title, description: config.description, hasActions: !!config.actions });
+    if (key !== prevRef.current) {
+      prevRef.current = key;
+      ctx.setConfig(config);
+    }
+  }, [config?.title, config?.description, config?.actions]);
+
   return ctx;
 }
