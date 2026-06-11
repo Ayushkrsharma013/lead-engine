@@ -15,6 +15,7 @@ import { PLAN_MODULES, MODULE_LABELS, MODULE_ROUTES, MODULE_ICONS } from "@/lib/
 import type { ModuleKey, PlanTier } from "@/lib/plan-modules";
 import type { UserProfile } from "@/lib/types";
 import TopBar from "@/components/layout/TopBar";
+import { PortalHeaderProvider, usePortalHeader } from "@/lib/PortalHeaderContext";
 
 const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   LayoutDashboard, Users, MessageSquare, BarChart2, GitBranch,
@@ -23,6 +24,33 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
 
 const COLLAPSED_W = 64;
 const EXPANDED_W = 220;
+
+function TopBarWithContext({ profile }: { profile: UserProfile | null }) {
+  const { config } = usePortalHeader();
+  const planBadge = profile?.plan && (
+    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
+      style={{ background: "rgba(232,74,10,0.10)", color: "#E84A0A", border: "1px solid rgba(232,74,10,0.20)" }}>
+      {profile.plan === "pilot" ? "Founder's Pilot"
+        : profile.plan === "growth" ? "Growth"
+        : profile.plan === "scale" ? "Scale"
+        : profile.plan === "micro" ? "Micro-Offer"
+        : profile.plan}
+    </span>
+  );
+
+  return (
+    <TopBar
+      title={config.title}
+      subtitle={config.description || profile?.email}
+      actions={
+        <div className="flex items-center gap-2">
+          {config.actions}
+          {planBadge}
+        </div>
+      }
+    />
+  );
+}
 
 export default function ClientPortalLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -129,7 +157,6 @@ export default function ClientPortalLayout({ children }: { children: React.React
         </AnimatePresence>
       </Link>
 
-      {/* Plan badge */}
       <AnimatePresence>
         {!collapsed && profile?.plan && (
           <motion.div
@@ -151,7 +178,6 @@ export default function ClientPortalLayout({ children }: { children: React.React
         )}
       </AnimatePresence>
 
-      {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {visibleNav.map((item, i) => {
           const active = item.href === "/client-portal" ? pathname === "/client-portal" : pathname.startsWith(item.href);
@@ -174,14 +200,8 @@ export default function ClientPortalLayout({ children }: { children: React.React
                 <Icon size={16} style={{ color: active ? "#E84A0A" : undefined, flexShrink: 0 }} />
                 <AnimatePresence>
                   {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="text-[13px] font-medium whitespace-nowrap"
-                    >
-                      {item.label}
-                    </motion.span>
+                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="text-[13px] font-medium whitespace-nowrap">{item.label}</motion.span>
                   )}
                 </AnimatePresence>
               </Link>
@@ -190,9 +210,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
         })}
       </nav>
 
-      {/* Footer */}
       <div className="shrink-0" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        {/* Profile */}
         <Link href="/client-portal/profile"
           className="flex items-center rounded-lg transition-colors duration-200 no-underline mx-2 mt-1.5"
           style={{
@@ -208,19 +226,12 @@ export default function ClientPortalLayout({ children }: { children: React.React
           </div>
           <AnimatePresence>
             {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-[12px] font-medium whitespace-nowrap truncate"
-              >
-                {profile?.display_name || "Profile"}
-              </motion.span>
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-[12px] font-medium whitespace-nowrap truncate">{profile?.display_name || "Profile"}</motion.span>
             )}
           </AnimatePresence>
         </Link>
 
-        {/* Collapse toggle */}
         <button onClick={() => setCollapsed(c => !c)}
           className="flex items-center rounded-lg transition-colors hover:bg-white/[0.04] mx-2 my-1.5"
           style={{
@@ -232,19 +243,12 @@ export default function ClientPortalLayout({ children }: { children: React.React
           {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           <AnimatePresence>
             {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-[12px] font-medium whitespace-nowrap"
-              >
-                Collapse
-              </motion.span>
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-[12px] font-medium whitespace-nowrap">Collapse</motion.span>
             )}
           </AnimatePresence>
         </button>
 
-        {/* Logout */}
         <button onClick={handleLogout}
           className="flex items-center rounded-lg transition-colors hover:bg-white/[0.04] mx-2 mb-3"
           style={{
@@ -256,14 +260,8 @@ export default function ClientPortalLayout({ children }: { children: React.React
           <LogOut size={15} style={{ flexShrink: 0 }} />
           <AnimatePresence>
             {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-[12px] font-medium whitespace-nowrap"
-              >
-                Sign Out
-              </motion.span>
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="text-[12px] font-medium whitespace-nowrap">Sign Out</motion.span>
             )}
           </AnimatePresence>
         </button>
@@ -272,86 +270,60 @@ export default function ClientPortalLayout({ children }: { children: React.React
   );
 
   return (
-    <div
-      className="flex min-h-screen portal-secure"
-      style={{ background: "var(--bg)", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {/* Mobile hamburger */}
-      <button
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg"
-        style={{ background: "var(--sidebar-bg)", border: "1px solid var(--sidebar-border)", color: "var(--ink)" }}
-        onClick={() => setMobileOpen(o => !o)}
-        aria-label="Toggle menu"
+    <PortalHeaderProvider>
+      <div
+        className="flex min-h-screen portal-secure"
+        style={{ background: "var(--bg)", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-      </button>
+        {/* Mobile hamburger */}
+        <button
+          className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg"
+          style={{ background: "var(--sidebar-bg)", border: "1px solid var(--sidebar-border)", color: "var(--ink)" }}
+          onClick={() => setMobileOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
 
-      {/* Mobile overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-40"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 z-40"
+              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={() => setMobileOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Sidebar — desktop */}
-      <aside className="hidden lg:flex shrink-0 flex-col relative" style={{
-        width: sidebarW, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)",
-        transition: "width 200ms cubic-bezier(0.4, 0, 0.2, 1)", overflow: "hidden",
-      }}>
-        {sidebarContent}
-      </aside>
+        <aside className="hidden lg:flex shrink-0 flex-col relative" style={{
+          width: sidebarW, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)",
+          transition: "width 200ms cubic-bezier(0.4, 0, 0.2, 1)", overflow: "hidden",
+        }}>
+          {sidebarContent}
+        </aside>
 
-      {/* Sidebar — mobile */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.aside
-            initial={{ x: -260 }}
-            animate={{ x: 0 }}
-            exit={{ x: -260 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="lg:hidden fixed top-0 left-0 z-50 h-full flex flex-col shadow-xl"
-            style={{ width: 260, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)" }}
-          >
-            {sidebarContent}
-          </motion.aside>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.aside
+              initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="lg:hidden fixed top-0 left-0 z-50 h-full flex flex-col shadow-xl"
+              style={{ width: 260, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)" }}
+            >
+              {sidebarContent}
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* TopBar — same as admin dashboard */}
-        <TopBar
-          title={profile?.display_name || profile?.email || "Client Portal"}
-          subtitle={profile?.email}
-          actions={
-            profile?.plan ? (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
-                style={{ background: "rgba(232,74,10,0.10)", color: "#E84A0A", border: "1px solid rgba(232,74,10,0.20)" }}>
-                {profile.plan === "pilot" ? "Founder's Pilot"
-                  : profile.plan === "growth" ? "Growth"
-                  : profile.plan === "scale" ? "Scale"
-                  : profile.plan === "micro" ? "Micro-Offer"
-                  : profile.plan}
-              </span>
-            ) : undefined
-          }
-        />
-
-        {/* Page content */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8">
-          <div className="max-w-[1400px]">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <TopBarWithContext profile={profile} />
+          <div className="flex-1 overflow-auto">
             {children}
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </PortalHeaderProvider>
   );
 }
