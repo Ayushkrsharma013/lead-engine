@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { PlanGate } from "@/components/client-portal/PlanGate";
 import { usePortalHeader } from "@/lib/PortalHeaderContext";
 import { ExternalLink, Calendar, Building2, Cloud, Zap, Code2 } from "lucide-react";
@@ -26,16 +27,23 @@ export default function IntegrationsPage() {
     <PlanGate module="integrations" plan={profile?.plan || null} role={profile?.role}>
       <div className="p-4 lg:p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {INTEGRATIONS.map((integ, i) => (
-            <motion.a
+          {INTEGRATIONS.map((integ, i) => {
+          const Wrapper = integ.available
+            ? ({ children }: { children: React.ReactNode }) => (
+                <Link href={integ.href} className="no-underline block">{children}</Link>
+              )
+            : ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
+          return (
+            <motion.div
               key={integ.name}
-              href={integ.available ? integ.href : undefined}
-              onClick={e => { if (!integ.available) e.preventDefault(); }}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               whileHover={integ.available ? { scale: 1.02 } : {}}
-              className="rounded-xl p-4 no-underline flex items-start gap-3"
+            >
+            <Wrapper>
+            <div
+              className="rounded-xl p-4 flex items-start gap-3"
               style={{
                 background: "var(--surface)", border: "1px solid var(--line)",
                 opacity: integ.available ? 1 : 0.5, cursor: integ.available ? "pointer" : "default",
@@ -66,8 +74,11 @@ export default function IntegrationsPage() {
                 <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>{integ.desc}</p>
               </div>
               {integ.available && <ExternalLink size={12} style={{ color: "var(--ink-4)" }} />}
-            </motion.a>
-          ))}
+            </div>
+            </Wrapper>
+            </motion.div>
+          );
+        })}
         </div>
       </div>
     </PlanGate>

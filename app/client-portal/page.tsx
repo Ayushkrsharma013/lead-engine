@@ -63,10 +63,16 @@ export default function ClientPortalDashboard() {
       {plan === "micro" && <UpgradeBanner currentPlan={plan} message="Upgrade to Founder's Pilot for sequences, integrations & more" targetPlan="pilot" />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Leads Generated" value={core.total} subtext={core.total > 0 ? `Avg score ${core.avgScore}` : "No leads yet"} trend={core.total > 0 ? 12 : undefined} icon={Users} />
-        <StatCard label="Hot Leads (Score ≥80)" value={core.hot} subtext={core.hot > 0 ? "Ready to reach out" : "Waiting"} icon={Flame} />
-        <StatCard label="Icebreakers Ready" value={icebreakers.length} subtext={icebreakers.length > 0 ? "Personalized messages" : "Generated for hot leads"} icon={MessageSquare} />
-        <StatCard label="Meetings Booked" value={core.meetings || 0} subtext={core.meetings > 0 ? "This month" : "Book your first"} icon={Calendar} />
+        {[
+          { label: "Total Leads Generated", value: core.total, subtext: core.total > 0 ? `Avg score ${core.avgScore}` : "No leads yet", trend: core.total > 0 ? 12 : undefined, icon: Users },
+          { label: "Hot Leads (Score ≥8.0)", value: core.hot, subtext: core.hot > 0 ? "Ready to reach out" : "Waiting", icon: Flame },
+          { label: "Icebreakers Ready", value: icebreakers.length, subtext: icebreakers.length > 0 ? "Personalized messages" : "Generated for hot leads", icon: MessageSquare },
+          { label: "Meetings Booked", value: core.meetings || 0, subtext: core.meetings > 0 ? "This month" : "Book your first", icon: Calendar },
+        ].map((card, i) => (
+          <motion.div key={card.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07, duration: 0.3 }}>
+            <StatCard {...card} />
+          </motion.div>
+        ))}
       </div>
 
       <div>
@@ -79,7 +85,7 @@ export default function ClientPortalDashboard() {
             <div className="p-10 text-center"><Users size={36} style={{ color: "var(--ink-4)", opacity: 0.3, margin: "0 auto 12px" }} /><p className="text-[13px] font-medium" style={{ color: "var(--ink-3)" }}>No leads generated yet</p></div>
           ) : (
             <table className="min-w-full"><thead style={{ borderBottom: "1px solid var(--line)" }}><tr>{["Name","Title / Company","Score","Icebreaker"].map(h=><th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.10em]" style={{color:"var(--ink-4)"}}>{h}</th>)}</tr></thead>
-              <tbody>{recentLeads.slice(0,5).map(lead=>{const ib=ibMap.get(lead.name)||"";return(<motion.tr key={lead.id} initial={{opacity:0}} animate={{opacity:1}} style={{borderBottom:"1px solid var(--line)"}} onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="rgba(237,234,226,0.02)"} onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="transparent"}><td className="px-5 py-3 text-[13px] font-medium" style={{color:"var(--ink)"}}>{lead.name||"—"}</td><td className="px-5 py-3 text-[12px]" style={{color:"var(--ink-3)"}}>{lead.title||"—"}{lead.company?`, ${lead.company}`:""}</td><td className="px-5 py-3"><span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{background:lead.score>=80?"rgba(34,197,94,0.10)":lead.score>=60?"rgba(232,168,64,0.10)":"rgba(100,100,120,0.08)",color:lead.score>=80?"var(--positive)":lead.score>=60?"var(--accent)":"var(--ink-4)"}}>{lead.score}</span></td><td className="px-5 py-3 text-[12px] max-w-[280px] truncate" style={{color:"var(--ink-3)"}}>{ib?`"${ib.slice(0,100)}${ib.length>100?"...":""}"`:"—"}</td></motion.tr>)})}</tbody></table>
+              <tbody>{recentLeads.slice(0,5).map(lead=>{const ib=ibMap.get(lead.name)||"";return(<motion.tr key={lead.id} initial={{opacity:0}} animate={{opacity:1}} style={{borderBottom:"1px solid var(--line)"}} onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="rgba(237,234,226,0.02)"} onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="transparent"}><td className="px-5 py-3 text-[13px] font-medium" style={{color:"var(--ink)"}}>{lead.name||"—"}</td><td className="px-5 py-3 text-[12px]" style={{color:"var(--ink-3)"}}>{lead.title||"—"}{lead.company?`, ${lead.company}`:""}</td><td className="px-5 py-3"><span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{background:lead.score>=8?"rgba(34,197,94,0.10)":lead.score>=6?"rgba(232,168,64,0.10)":"rgba(100,100,120,0.08)",color:lead.score>=8?"var(--positive)":lead.score>=6?"var(--accent)":"var(--ink-4)"}}>{lead.score}</span></td><td className="px-5 py-3 text-[12px] max-w-[280px] truncate" style={{color:"var(--ink-3)"}}>{ib?`"${ib.slice(0,100)}${ib.length>100?"...":""}"`:"—"}</td></motion.tr>)})}</tbody></table>
           )}
         </div>
       </div>

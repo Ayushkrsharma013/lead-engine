@@ -1,59 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requirePortalAuth } from "@/app/api/client-portal/_auth";
 
 export const dynamic = "force-dynamic";
 
-function getUserId(req: NextRequest): string | null {
-  return req.headers.get("x-user-id") || null;
-}
-
-async function getWorkspace(userId: string) {
-  const { data } = await supabaseAdmin
-    .from("client_workspaces")
-    .select("id")
-    .eq("client_user_id", userId)
-    .maybeSingle();
-  return data as { id: string } | null;
-}
-
 export async function GET(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const workspace = await getWorkspace(userId);
-  if (!workspace) return NextResponse.json({ members: [] });
+  const auth = await requirePortalAuth(req, "team-access");
+  if (auth instanceof NextResponse) return auth;
 
   const { data, error } = await supabaseAdmin
     .from("team_members")
     .select("id, user_id, role, invited_at, accepted_at")
-    .eq("workspace_id", workspace.id)
+    .eq("workspace_id", auth.workspaceId)
     .order("invited_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Fetch emails for team members from auth.users
-  const members = [];
-  for (const m of data || []) {
-    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(m.user_id);
-    members.push({
+  const memberIds = (data || []).map(m => m.user_id);
+
+  // Batch-fetch emails from profiles instead of N+1 auth.admin calls
+  const { data: profiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id, email, display_name")
+    .in("id", memberIds.length > 0 ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+  const members = (data || []).map(m => {
+    const p = profileMap.get(m.user_id);
+    return {
       id: m.id,
       user_id: m.user_id,
-      email: authUser?.user?.email || m.user_id,
+      email: p?.email || m.user_id,
+      display_name: p?.display_name || null,
       role: m.role,
       invited_at: m.invited_at,
       accepted_at: m.accepted_at,
-    });
-  }
+    };
+  });
 
   return NextResponse.json({ members });
 }
 
 export async function POST(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const workspace = await getWorkspace(userId);
-  if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+  const auth = await requirePortalAuth(req, "team-access");
+  if (auth instanceof NextResponse) return auth;
 
   let body: { email?: string; role?: string };
   try { body = await req.json(); } catch {
@@ -62,7 +53,6 @@ export async function POST(req: NextRequest) {
 
   if (!body.email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
-  // Find user by email
   const { data: profiles } = await supabaseAdmin
     .from("profiles")
     .select("id, email")
@@ -75,11 +65,10 @@ export async function POST(req: NextRequest) {
 
   const memberId = profiles[0].id;
 
-  // Check not already a member
   const { data: existing } = await supabaseAdmin
     .from("team_members")
     .select("id")
-    .eq("workspace_id", workspace.id)
+    .eq("workspace_id", auth.workspaceId)
     .eq("user_id", memberId)
     .maybeSingle();
 
@@ -90,7 +79,7 @@ export async function POST(req: NextRequest) {
   const { data: member, error } = await supabaseAdmin
     .from("team_members")
     .insert({
-      workspace_id: workspace.id,
+      workspace_id: auth.workspaceId,
       user_id: memberId,
       role: body.role || "member",
       invited_at: new Date().toISOString(),
@@ -104,20 +93,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requirePortalAuth(req, "team-access");
+  if (auth instanceof NextResponse) return auth;
 
   const memberId = req.nextUrl.searchParams.get("id");
   if (!memberId) return NextResponse.json({ error: "Missing id param" }, { status: 400 });
-
-  const workspace = await getWorkspace(userId);
-  if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
   const { error } = await supabaseAdmin
     .from("team_members")
     .delete()
     .eq("id", memberId)
-    .eq("workspace_id", workspace.id);
+    .eq("workspace_id", auth.workspaceId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

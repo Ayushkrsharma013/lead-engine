@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin } from '@/lib/supabase'
-import { PLAN_MODULES } from '@/lib/types'
+import { PLAN_MODULES } from '@/lib/plan-modules'
 import type { PlanKey } from '@/lib/types'
 
 export async function GET(req: NextRequest) {
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle()
 
   const allowedModules = (profile.role === 'qa_agent' || profile.role === 'super_admin')
-    ? Object.values(PLAN_MODULES).flat()
+    ? PLAN_MODULES.scale
     : PLAN_MODULES[(profile.plan as PlanKey) || 'pilot'] ?? []
 
   return NextResponse.json({ profile, workspace, allowedModules })

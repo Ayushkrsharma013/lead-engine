@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
   const { data: recent, error: signupErr } = await supabaseAdmin
     .from("profiles")
     .select(
-      "id, email, full_name, plan, subscription_status, subscription_activated_at, created_at"
+      "id, email, display_name, plan, subscription_status, subscription_activated_at, created_at"
     )
     .eq("role", "client")
     .order("created_at", { ascending: false })

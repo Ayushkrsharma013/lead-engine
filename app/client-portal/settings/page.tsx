@@ -13,10 +13,10 @@ export default function ClientSettingsPage() {
   const [saving,setSaving]=useState(false);const [toast,setToast]=useState("");const [icpLocked,setIcpLocked]=useState(false);
   const [industries,setIndustries]=useState<string[]>([]);const [locations,setLocations]=useState("");const [minScore,setMinScore]=useState(50);
 
-  useEffect(()=>{ (async()=>{ const r=await fetch("/prospecting-os/api/client-portal/me"); if(r.ok){ const d=await r.json(); setProfile(d.profile); setIcpLocked(!!d.workspace?.icp_locked); const icp=(d.workspace?.icp_config||{})as Record<string,unknown>; setIndustries((icp.industries as string[])||[]); setLocations((icp.locations as string)||""); setMinScore((icp.minScore as number)||50); } setLoading(false); })(); },[]);
+  useEffect(()=>{ (async()=>{ const [meRes,stRes]=await Promise.all([fetch("/prospecting-os/api/client-portal/me"),fetch("/prospecting-os/api/client-portal/settings")]); if(meRes.ok) setProfile((await meRes.json()).profile); if(stRes.ok){ const d=await stRes.json(); setIcpLocked(!!d.icp_locked); const icp=(d.icp_config||{})as Record<string,unknown>; setIndustries((icp.industries as string[])||[]); setLocations((icp.locations as string)||""); setMinScore((icp.minScore as number)||50); } setLoading(false); })(); },[]);
 
   const toggle=(ind:string)=>{if(icpLocked)return; setIndustries(p=>p.includes(ind)?p.filter(i=>i!==ind):[...p,ind]);};
-  const save=async()=>{if(icpLocked){setToast("ICP locked — contact support");setTimeout(()=>setToast(""),3000);return;} setSaving(true); const r=await fetch("/prospecting-os/api/onboarding/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({icp:{industries,locations,minScore}})}); setSaving(false); setToast(r.ok?"Saved":"Failed"); setTimeout(()=>setToast(""),2500);};
+  const save=async()=>{if(icpLocked){setToast("ICP locked — contact support");setTimeout(()=>setToast(""),3000);return;} setSaving(true); const r=await fetch("/prospecting-os/api/client-portal/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({industries,locations,minScore})}); setSaving(false); const d=await r.json().catch(()=>({})); setToast(r.ok?"Saved":(d as {error?:string}).error||"Failed"); setTimeout(()=>setToast(""),2500);};
 
   usePortalHeader({ title:"Settings", description:icpLocked?"ICP locked — contact support to make changes":"Configure your ICP preferences" });
 

@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requirePortalAuth } from "@/app/api/client-portal/_auth";
 
 export const dynamic = "force-dynamic";
 
-function getUserId(req: NextRequest): string | null {
-  return req.headers.get("x-user-id") || null;
-}
-
 export async function GET(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requirePortalAuth(req, "connector-marketplace");
+  if (auth instanceof NextResponse) return auth;
 
   const { data: workspace } = await supabaseAdmin
     .from("client_workspaces")
     .select("id, plan, connector_config")
-    .eq("client_user_id", userId)
+    .eq("id", auth.workspaceId)
     .maybeSingle();
 
   if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
@@ -24,8 +21,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requirePortalAuth(req, "connector-marketplace");
+  if (auth instanceof NextResponse) return auth;
 
   let body: { type?: string; config?: Record<string, string> };
   try { body = await req.json(); } catch {
@@ -35,7 +32,6 @@ export async function POST(req: NextRequest) {
   const { type, config } = body;
   if (!type || !config) return NextResponse.json({ error: "Missing type or config" }, { status: 400 });
 
-  // Validate connector type
   const validTypes = ["slack", "telegram", "discord", "webhook"];
   if (!validTypes.includes(type)) {
     return NextResponse.json({ error: `Invalid type. Must be: ${validTypes.join(", ")}` }, { status: 400 });
@@ -44,7 +40,7 @@ export async function POST(req: NextRequest) {
   const { data: workspace } = await supabaseAdmin
     .from("client_workspaces")
     .select("id, plan, connector_config")
-    .eq("client_user_id", userId)
+    .eq("id", auth.workspaceId)
     .maybeSingle();
 
   if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
@@ -74,8 +70,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const userId = getUserId(req);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requirePortalAuth(req, "connector-marketplace");
+  if (auth instanceof NextResponse) return auth;
 
   const type = req.nextUrl.searchParams.get("type");
   if (!type) return NextResponse.json({ error: "Missing type param" }, { status: 400 });
@@ -83,7 +79,7 @@ export async function DELETE(req: NextRequest) {
   const { data: workspace } = await supabaseAdmin
     .from("client_workspaces")
     .select("id, connector_config")
-    .eq("client_user_id", userId)
+    .eq("id", auth.workspaceId)
     .maybeSingle();
 
   if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });

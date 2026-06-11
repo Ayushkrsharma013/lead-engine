@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Check } from "lucide-react";
 import { PlanGate } from "@/components/client-portal/PlanGate";
-import { createClient } from "@/lib/supabase/client";
-import { useApp } from "@/lib/AppContext";
 import type { UserProfile, PlanKey } from "@/lib/types";
 
 export default function ClientSlackPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { dispatch } = useApp();
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     async function init() {
@@ -27,31 +27,30 @@ export default function ClientSlackPage() {
     init();
   }, []);
 
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+
   const handleSave = async () => {
     if (!profile?.id) return;
     const trimmed = webhookUrl.trim();
     if (!trimmed) return;
     if (!trimmed.startsWith("https://hooks.slack.com/services/")) {
-      dispatch({
-        type: "SET_TOAST",
-        payload: {
-          msg: "Webhook URL must start with https://hooks.slack.com/services/",
-          type: "error",
-        },
-      });
+      showToast("URL must start with https://hooks.slack.com/services/");
       return;
     }
-    const client = createClient();
-    const { error } = await client
-      .from("client_workspaces")
-      .update({ slack_webhook: trimmed })
-      .eq("client_user_id", profile.id);
-    if (error) {
-      dispatch({ type: "SET_TOAST", payload: { msg: "Failed to save webhook", type: "error" } });
-    } else {
+    setSaving(true);
+    const res = await fetch("/prospecting-os/api/client-portal/slack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slack_webhook: trimmed }),
+    });
+    setSaving(false);
+    if (res.ok) {
       setSaved(true);
-      dispatch({ type: "SET_TOAST", payload: { msg: "Webhook saved", type: "success" } });
+      showToast("Webhook saved");
       setTimeout(() => setSaved(false), 3000);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showToast((d as { error?: string }).error || "Failed to save webhook");
     }
   };
 
@@ -65,7 +64,7 @@ export default function ClientSlackPage() {
 
   return (
     <PlanGate module="integrations" plan={profile?.plan as PlanKey || null} role={profile?.role} requiredPlan="growth">
-      <div className="max-w-lg space-y-4 animate-fade-in">
+      <div className="p-4 lg:p-6 max-w-lg space-y-4">
         <div>
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Slack Digest</h1>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Get daily hot lead summaries delivered to your Slack workspace</p>
@@ -90,10 +89,10 @@ export default function ClientSlackPage() {
               style={{ background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink)" }} />
           </div>
 
-          <button onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all"
-            style={{ background: saved ? "var(--positive)" : "var(--accent)", color: "#000" }}>
-            {saved ? <><Check size={14} /> Saved</> : "Save Webhook"}
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold transition-all disabled:opacity-40"
+            style={{ background: saved ? "var(--positive)" : "var(--accent)", color: "#000", border: "none", cursor: "pointer" }}>
+            {saved ? <><Check size={14} /> Saved</> : saving ? "Saving…" : "Save Webhook"}
           </button>
 
           <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>
@@ -101,6 +100,7 @@ export default function ClientSlackPage() {
           </p>
         </div>
       </div>
+      <AnimatePresence>{toast&&<motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0,y:20}} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-full text-[13px] font-medium" style={{background:"var(--surface-elev)",border:"1px solid var(--line)",color:"var(--ink)",boxShadow:"var(--shadow-md)"}}>{toast}</motion.div>}</AnimatePresence>
     </PlanGate>
   );
 }

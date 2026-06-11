@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { supabaseAdmin } from '@/lib/supabase'
-import { PLAN_MODULES } from '@/lib/types'
+import { PLAN_MODULES } from '@/lib/plan-modules'
 import type { PlanKey } from '@/lib/types'
 
 export async function GET(req: NextRequest) {
@@ -48,7 +48,18 @@ export async function GET(req: NextRequest) {
     .select('*')
     .eq('client_user_id', userId)
     .maybeSingle()
-  const allowedModules = ((profileData.role === 'qa_agent' || profileData.role === 'super_admin') || profileData.role === 'super_admin')
+
+  if (!workspace) {
+    return NextResponse.json({
+      profile: profileData, workspace: null, allowedModules: [], plan,
+      core: { total: 0, hot: 0, contacted: 0, avgScore: 0, meetings: 0 },
+      recentLeads: [], industryBreakdown: [], statusBreakdown: [],
+      icebreakers: [], slackConfigured: false,
+      weeklyFlow: [], activeSequences: 0, conversionFunnel: [],
+    })
+  }
+
+  const allowedModules = (profileData.role === 'qa_agent' || profileData.role === 'super_admin')
     ? Object.values(PLAN_MODULES).flat()
     : PLAN_MODULES[plan] ?? []
 
