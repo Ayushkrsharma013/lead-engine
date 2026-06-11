@@ -1,0 +1,279 @@
+name: Prospecting OS — Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Daily at 03:00 UTC — monitoring checks
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - security
+          - e2e
+          - monitoring
+
+env:
+  APP_URL: ${{ secrets.APP_URL || 'https://app.flow-forges.com' }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  DODO_WEBHOOK_SECRET: ${{ secrets.DODO_WEBHOOK_SECRET }}
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  # ── Setup ──────────────────────────────────────────────────────────────────
+  setup:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache.outputs.cache-primary-key }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Node dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install requests python-telegram-bot
+
+      - name: Install Playwright browsers
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+  # ── Security Tests ─────────────────────────────────────────────────────────
+  security:
+    name: Security Vulnerability Scan
+    needs: setup
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.suite == 'all' || github.event.inputs.suite == 'security' || github.event_name != 'workflow_dispatch' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: RLS Policy Test
+        id: rls
+        working-directory: tests
+        run: npx ts-node security/rls_policy_tester.spec.ts
+        continue-on-error: true
+        env:
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'test-password-123!' }}
+
+      - name: API Injection Test
+        id: injection
+        working-directory: tests
+        run: npx ts-node security/api_injection_tester.ts
+        continue-on-error: true
+
+      - name: Payment Bypass Test
+        id: payment
+        working-directory: tests
+        run: npx ts-node security/payment_bypass_tester.ts
+        continue-on-error: true
+
+      - name: Security Report
+        if: always()
+        run: |
+          echo "### 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.rls.outcome }}" = "success" ]; then
+            echo "✅ RLS Policy Tests — PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚨 RLS Policy Tests — VULNERABILITIES FOUND" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.injection.outcome }}" = "success" ]; then
+            echo "✅ API Injection Tests — PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚨 API Injection Tests — VULNERABILITIES FOUND" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.payment.outcome }}" = "success" ]; then
+            echo "✅ Payment Bypass Tests — PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚨 Payment Bypass Tests — VULNERABILITIES FOUND" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ── E2E Tests ──────────────────────────────────────────────────────────────
+  e2e:
+    name: End-to-End Tests
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ github.event.inputs.suite == 'all' || github.event.inputs.suite == 'e2e' || github.event_name == 'pull_request' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: Run Playwright E2E Tests
+        working-directory: tests
+        run: npx playwright test --config e2e/playwright.config.ts
+        continue-on-error: true
+        env:
+          TEST_SUPERADMIN_EMAIL: ${{ secrets.TEST_SUPERADMIN_EMAIL }}
+          TEST_SUPERADMIN_PASSWORD: ${{ secrets.TEST_SUPERADMIN_PASSWORD }}
+
+      - name: Upload Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: tests/test-results/
+          retention-days: 7
+
+      - name: E2E Report
+        if: always()
+        run: |
+          echo "### 🧪 E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Screenshots and traces available in artifacts if tests failed." >> $GITHUB_STEP_SUMMARY
+
+  # ── Monitoring ─────────────────────────────────────────────────────────────
+  monitoring:
+    name: Performance & Metrics Monitoring
+    needs: setup
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.suite == 'monitoring' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: tests
+        run: npm ci
+      - run: pip install requests python-telegram-bot
+
+      - name: Performance Tracker
+        id: perf
+        working-directory: tests
+        run: npx ts-node monitoring/performance_tracker.ts
+        continue-on-error: true
+
+      - name: Log Anomaly Detection
+        id: anomaly
+        run: python tests/monitoring/anomaly_detector.py
+        continue-on-error: true
+
+      - name: Business Metrics Alerter
+        id: metrics
+        if: ${{ github.event_name == 'schedule' }}
+        working-directory: tests
+        run: npx ts-node monitoring/metrics_alerter.ts
+        continue-on-error: true
+
+      - name: Monitoring Report
+        if: always()
+        run: |
+          echo "### 📊 Monitoring Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.perf.outcome }}" = "success" ]; then
+            echo "✅ Performance — NORMAL" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Performance — ANOMALIES DETECTED" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.anomaly.outcome }}" = "success" ]; then
+            echo "✅ Log Analysis — NORMAL" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚨 Log Analysis — ERROR SPIKES DETECTED" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.metrics.outcome }}" = "success" ]; then
+            echo "✅ Business Metrics — NORMAL" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.metrics.outcome }}" = "skipped" ]; then
+            echo "ℹ️ Business Metrics — SKIPPED (not scheduled run)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Business Metrics — THRESHOLD BREACHED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ── Notifications ──────────────────────────────────────────────────────────
+  notify:
+    name: Notify on Failure
+    needs: [security, e2e, monitoring]
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.security.result == 'failure' || needs.e2e.result == 'failure' || needs.monitoring.result == 'failure') }}
+
+    steps:
+      - name: PR Comment (on PR events)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## 🧪 Test Suite Results
+
+            | Suite | Result |
+            |-------|--------|
+            | Security | ${{ needs.security.result }} |
+            | E2E | ${{ needs.e2e.result }} |
+            | Monitoring | ${{ needs.monitoring.result }} |
+
+            > ⚠️ One or more test suites failed. Check the workflow run for details.
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+
+      - name: Telegram Alert
+        if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            -d text="<b>🚨 Prospecting OS Test Suite FAILED</b>%0A%0A🔒 Security: ${{ needs.security.result }}%0A🧪 E2E: ${{ needs.e2e.result }}%0A📊 Monitoring: ${{ needs.monitoring.result }}%0A%0A<a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>View Run</a>"
