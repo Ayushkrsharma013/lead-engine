@@ -76,16 +76,36 @@ function verifyDodoSignature(
 }
 
 export async function POST(req: NextRequest) {
+  let rawBody: string;
   try {
-    const rawBody = await req.text();
-    const body = JSON.parse(rawBody || "{}");
+    rawBody = await req.text();
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any;
+  try {
+    body = JSON.parse(rawBody || "{}");
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  try {
     // ── Dodo webhook path ──────────────────────────────────────────────────
     const dodoSignature = req.headers.get("dodo-signature")
       || req.headers.get("x-dodo-signature");
     const dodoSecret = process.env.DODO_WEBHOOK_SECRET;
 
-    if (dodoSignature && dodoSecret) {
+    // Require signature for all Dodo-format requests when secret is configured.
+    // Dodo format is identified by the presence of an "event" field (e.g., "payment.succeeded").
+    // Without this check, unsigned Dodo-format requests fall through to the legacy path and return 200.
+    const isDodoEvent = typeof body.event === "string";
+    if (dodoSecret && (isDodoEvent || dodoSignature)) {
+      if (!dodoSignature) {
+        console.warn("[payment-webhook] Missing Dodo signature");
+        return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+      }
       if (!verifyDodoSignature(rawBody, dodoSignature, dodoSecret)) {
         console.warn("[payment-webhook] Invalid Dodo signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 401 });

@@ -163,6 +163,12 @@ async function sendRequest(
   }
 }
 
+// Returns true only when a 500 body contains evidence of an actual injection/leak
+// (SQL error details, stack traces, command output). A generic {"error":"..."} is not a finding.
+function looksVulnerable(body: string): boolean {
+  return /sql\s+syntax|syntax error.*sql|pg_query|postgresql.*error|mysql.*error|sqlite.*error|at\s+\S+\.(ts|js):\d+|TypeError:|ReferenceError:|Unclosed quotation|SQLSTATE|ORA-\d|uid=\d|\/bin\/|root:/i.test(body);
+}
+
 // ─── Test runner ──────────────────────────────────────────────────────────────
 
 async function runInjectionTests() {
@@ -196,7 +202,7 @@ async function runInjectionTests() {
         headers
       );
 
-      if (qsStatus === 500) {
+      if (qsStatus === 500 && looksVulnerable(qsBody)) {
         recordFinding({
           route: qsPath,
           method: route.method,
@@ -235,7 +241,7 @@ async function runInjectionTests() {
           headers
         );
 
-        if (bodyStatus === 500) {
+        if (bodyStatus === 500 && looksVulnerable(bodyResp)) {
           recordFinding({
             route: route.path,
             method: route.method,
@@ -267,7 +273,7 @@ async function runInjectionTests() {
         headers
       );
 
-      if (status === 500) {
+      if (status === 500 && looksVulnerable(body)) {
         recordFinding({
           route: route.path,
           method: route.method,
@@ -293,7 +299,7 @@ async function runInjectionTests() {
         headers
       );
 
-      if (status === 500) {
+      if (status === 500 && looksVulnerable(body)) {
         recordFinding({
           route: pollutedPath,
           method: route.method,
