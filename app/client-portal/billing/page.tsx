@@ -78,6 +78,14 @@ export default function ClientBillingPage() {
     );
   }
 
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-sm" style={{ color: "var(--ink-3)" }}>Could not load billing info. Please refresh the page.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-6 space-y-4 max-w-5xl">
       {/* Row 1 — Current Plan + Usage Meter */}
