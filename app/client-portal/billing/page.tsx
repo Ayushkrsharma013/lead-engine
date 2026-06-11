@@ -67,7 +67,8 @@ export default function ClientBillingPage() {
 
   const ck = (data?.profile.plan as PlanKey) || null;
   const cr = rank(ck);
-  const up = PLAN_ORDER.filter(k => rank(k) > cr);
+  const isMaxTier = cr >= PLAN_ORDER.length - 1;
+  const up = isMaxTier ? [] : PLAN_ORDER.filter(k => rank(k) > cr);
 
   if (loading) {
     return (

@@ -21,16 +21,18 @@ const BACKDROP_VARIANTS = {
 };
 
 const PANEL_VARIANTS = {
-  hidden: { x: "110%", opacity: 0 },
+  hidden: { scale: 0.92, y: 24, opacity: 0 },
   visible: {
-    x: 0,
+    scale: 1,
+    y: 0,
     opacity: 1,
-    transition: { type: "spring" as const, stiffness: 380, damping: 36, mass: 0.8 },
+    transition: { type: "spring" as const, stiffness: 420, damping: 32, mass: 0.7 },
   },
   exit: {
-    x: "110%",
+    scale: 0.94,
+    y: 12,
     opacity: 0,
-    transition: { type: "spring" as const, stiffness: 400, damping: 34, mass: 0.6 },
+    transition: { duration: 0.18, ease: "easeIn" as const },
   },
 };
 
@@ -110,17 +112,17 @@ export default function ProfileModal({ open, onClose }: ProfileModalProps) {
             }}
           />
 
-          {/* Panel */}
+          {/* Panel — centered popup */}
           <motion.div
             key="profile-panel"
             variants={PANEL_VARIANTS}
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed top-0 right-0 h-full w-full max-w-[420px] z-[101] flex flex-col shadow-2xl"
+            className="fixed inset-0 m-auto w-[420px] max-w-[94vw] max-h-[85vh] z-[101] flex flex-col shadow-2xl rounded-2xl overflow-hidden"
             style={{
               background: "var(--bg)",
-              borderLeft: "1px solid var(--line)",
+              border: "1px solid var(--line)",
             }}
           >
             {/* Header */}
