@@ -149,27 +149,63 @@ jobs:
         working-directory: tests
         run: npm ci
 
+      - name: Install Playwright browsers
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Create reports directory
+        run: mkdir -p tests/reports
+
       - name: Run Playwright E2E Tests
         working-directory: tests
         run: npx playwright test --config e2e/playwright.config.ts
         continue-on-error: true
         env:
+          CI: "true"
           TEST_SUPERADMIN_EMAIL: ${{ secrets.TEST_SUPERADMIN_EMAIL }}
           TEST_SUPERADMIN_PASSWORD: ${{ secrets.TEST_SUPERADMIN_PASSWORD }}
 
-      - name: Upload Screenshots
-        if: failure()
+      - name: Upload HTML Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-screenshots
-          path: tests/test-results/
+          name: e2e-report-html
+          path: tests/reports/html/
+          retention-days: 14
+
+      - name: Upload JSON + JUnit Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-data
+          path: |
+            tests/reports/results.json
+            tests/reports/junit.xml
+          retention-days: 14
+
+      - name: Upload Traces + Videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces
+          path: tests/reports/playwright-output/
           retention-days: 7
 
       - name: E2E Report
         if: always()
         run: |
           echo "### 🧪 E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "Screenshots and traces available in artifacts if tests failed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts uploaded:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`e2e-report-html\` — Interactive HTML report (14 days)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`e2e-report-data\` — results.json + junit.xml (14 days)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`e2e-traces\` — Screenshots, videos, traces (7 days)" >> $GITHUB_STEP_SUMMARY
+          if [ -f tests/reports/results.json ]; then
+            PASSED=$(cat tests/reports/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('stats',{}).get('expected',0))" 2>/dev/null || echo "?")
+            FAILED=$(cat tests/reports/results.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('stats',{}).get('unexpected',0))" 2>/dev/null || echo "?")
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Results: $PASSED passed, $FAILED failed**" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # ── Monitoring ─────────────────────────────────────────────────────────────
   monitoring:

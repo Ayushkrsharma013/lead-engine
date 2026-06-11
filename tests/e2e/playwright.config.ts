@@ -1,30 +1,25 @@
-/**
- * Playwright Configuration for E2E Tests
- *
- * Configured for Prospecting OS at app.flow-forges.com/prospecting-os.
- * Uses Chromium in headless mode with 5-minute test timeout.
- */
-
 import { defineConfig } from "@playwright/test";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const BASE_PATH = "/prospecting-os";
+const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: "../e2e/steps",
-  timeout: 5 * 60 * 1000, // 5 minutes per test
+  timeout: 5 * 60 * 1000,
   expect: {
-    timeout: 30 * 1000, // 30 seconds for assertions
+    timeout: 30 * 1000,
   },
   use: {
     baseURL: `${APP_URL}${BASE_PATH}`,
     browserName: "chromium",
-    headless: true,
+    headless: isCI,
+    slowMo: isCI ? 0 : 300,
     viewport: { width: 1440, height: 900 },
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-    trace: "retain-on-failure",
-    actionTimeout: 15 * 1000, // 15 seconds for actions
+    screenshot: "on",
+    video: "on-first-retry",
+    trace: "on-first-retry",
+    actionTimeout: 15 * 1000,
   },
   projects: [
     {
@@ -41,11 +36,12 @@ export default defineConfig({
       },
     },
   ],
-  retries: process.env.CI ? 2 : 0,
+  retries: isCI ? 2 : 0,
   reporter: [
     ["list"],
-    ["html", { open: "never" }],
-    ["json", { outputFile: "test-results/results.json" }],
+    ["html", { open: "never", outputFolder: "../reports/html" }],
+    ["json", { outputFile: "../reports/results.json" }],
+    ["junit", { outputFile: "../reports/junit.xml" }],
   ],
-  outputDir: "test-results/",
+  outputDir: "../reports/playwright-output/",
 });
