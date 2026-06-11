@@ -16,6 +16,7 @@ import type { ModuleKey, PlanTier } from "@/lib/plan-modules";
 import type { UserProfile } from "@/lib/types";
 import TopBar from "@/components/layout/TopBar";
 import { PortalHeaderProvider, usePortalHeader } from "@/lib/PortalHeaderContext";
+import ProfileModal from "@/components/client-portal/ProfileModal";
 
 const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   LayoutDashboard, Users, MessageSquare, BarChart2, GitBranch,
@@ -24,6 +25,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
 
 const COLLAPSED_W = 64;
 const EXPANDED_W = 220;
+const LinkMotion = motion(Link);
 
 function TopBarWithContext({ profile }: { profile: UserProfile | null }) {
   const { config } = usePortalHeader();
@@ -58,6 +60,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -157,27 +160,6 @@ export default function ClientPortalLayout({ children }: { children: React.React
         </AnimatePresence>
       </Link>
 
-      <AnimatePresence>
-        {!collapsed && profile?.plan && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-2 overflow-hidden"
-            style={{ borderBottom: "1px solid var(--sidebar-border)" }}
-          >
-            <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase"
-              style={{ background: "rgba(232,74,10,0.10)", color: "#E84A0A", border: "1px solid rgba(232,74,10,0.20)" }}>
-              {profile.plan === "pilot" ? "Founder's Pilot"
-                : profile.plan === "growth" ? "Growth"
-                : profile.plan === "scale" ? "Scale"
-                : profile.plan === "micro" ? "Micro-Offer"
-                : profile.plan}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {visibleNav.map((item, i) => {
           const active = item.href === "/client-portal" ? pathname === "/client-portal" : pathname.startsWith(item.href);
@@ -189,34 +171,47 @@ export default function ClientPortalLayout({ children }: { children: React.React
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.2 }}
             >
-              <Link href={item.href} title={collapsed ? item.label : undefined}
-                className="flex items-center rounded-lg transition-colors duration-200 no-underline"
+              <LinkMotion href={item.href} title={collapsed ? item.label : undefined}
+                whileHover={{
+                  x: 3,
+                  background: "rgba(255,255,255,0.04)",
+                  transition: { type: "spring" as const, stiffness: 500, damping: 30 },
+                }}
+                whileTap={{ scale: 0.96, x: 0 }}
+                className="flex items-center rounded-lg no-underline cursor-pointer"
                 style={{
                   height: 36, paddingLeft: collapsed ? 0 : 12, paddingRight: collapsed ? 0 : 12,
                   justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 0 : 12,
                   color: active ? "#fff" : "var(--ink-3)",
                   background: active ? "linear-gradient(90deg, rgba(232,74,10,0.15), rgba(232,74,10,0.25))" : "transparent",
                 }}>
-                <Icon size={16} style={{ color: active ? "#E84A0A" : undefined, flexShrink: 0 }} />
+                <motion.span
+                  whileHover={{ rotate: active ? 0 : -8, scale: 1.15 }}
+                  transition={{ type: "spring" as const, stiffness: 400, damping: 20 }}
+                  style={{ display: "inline-flex", flexShrink: 0 }}
+                >
+                  <Icon size={16} style={{ color: active ? "#E84A0A" : undefined }} />
+                </motion.span>
                 <AnimatePresence>
                   {!collapsed && (
                     <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       className="text-[13px] font-medium whitespace-nowrap">{item.label}</motion.span>
                   )}
                 </AnimatePresence>
-              </Link>
+              </LinkMotion>
             </motion.div>
           );
         })}
       </nav>
 
       <div className="shrink-0" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        <Link href="/client-portal/profile"
-          className="flex items-center rounded-lg transition-colors duration-200 no-underline mx-2 mt-1.5"
+        <button
+          onClick={() => setProfileModalOpen(true)}
+          className="flex items-center rounded-lg transition-colors duration-200 no-underline mx-2 mt-1.5 border-none cursor-pointer"
           style={{
-            height: 36, paddingLeft: collapsed ? 0 : 12,
+            height: 36, paddingLeft: collapsed ? 0 : 12, width: collapsed ? 36 : "calc(100% - 16px)",
             justifyContent: collapsed ? "center" : "flex-start", gap: collapsed ? 0 : 10,
-            color: pathname === "/client-portal/profile" ? "#E84A0A" : "var(--ink-3)",
+            color: "var(--ink-3)", background: "transparent",
           }}>
           <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
             style={{ background: "linear-gradient(135deg, rgba(232,74,10,0.20), rgba(232,74,10,0.08))", border: "1px solid rgba(232,74,10,0.25)" }}>
@@ -230,7 +225,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
                 className="text-[12px] font-medium whitespace-nowrap truncate">{profile?.display_name || "Profile"}</motion.span>
             )}
           </AnimatePresence>
-        </Link>
+        </button>
 
         <button onClick={() => setCollapsed(c => !c)}
           className="flex items-center rounded-lg transition-colors hover:bg-white/[0.04] mx-2 my-1.5"
@@ -298,7 +293,11 @@ export default function ClientPortalLayout({ children }: { children: React.React
         </AnimatePresence>
 
         <aside className="hidden lg:flex shrink-0 flex-col relative" style={{
-          width: sidebarW, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)",
+          width: sidebarW,
+          background: "rgba(255,255,255,0.03)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
           transition: "width 200ms cubic-bezier(0.4, 0, 0.2, 1)", overflow: "hidden",
         }}>
           {sidebarContent}
@@ -310,7 +309,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
               initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="lg:hidden fixed top-0 left-0 z-50 h-full flex flex-col shadow-xl"
-              style={{ width: 260, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)" }}
+              style={{ width: 260, background: "rgba(15,15,15,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
             >
               {sidebarContent}
             </motion.aside>
@@ -324,6 +323,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
           </div>
         </main>
       </div>
+      <ProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </PortalHeaderProvider>
   );
 }
