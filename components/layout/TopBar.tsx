@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
@@ -11,6 +12,13 @@ interface TopBarProps {
 }
 
 export default function TopBar({ title = "Lead Intelligence", subtitle, actions }: TopBarProps) {
+  const router = useRouter();
+
+  const handleSearch = () => {
+    // Navigate to leads page with search focus
+    router.push("/client-portal/leads");
+  };
+
   return (
     <header
       className="h-14 shrink-0 flex items-center justify-between px-5 gap-4 relative"
@@ -41,21 +49,19 @@ export default function TopBar({ title = "Lead Intelligence", subtitle, actions 
 
       {/* Right controls */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Cmd+K hint */}
+        {/* Search — navigates to leads page */}
         <button
-          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer max-w-[280px] hover:border-[var(--line-strong)]"
+          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer hover:border-[var(--line-strong)]"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--line)",
             color: "var(--ink-3)",
           }}
-          onClick={() => {
-            const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
-            document.dispatchEvent(ev);
-          }}
+          onClick={handleSearch}
+          title="Search leads"
         >
           <Search size={11} />
-          <span>Search</span>
+          <span>Search leads</span>
           <span
             className="px-1 py-0.5 rounded text-[9px] font-mono"
             style={{ background: "var(--surface-2)", color: "var(--ink-3)", border: "1px solid var(--line)" }}
