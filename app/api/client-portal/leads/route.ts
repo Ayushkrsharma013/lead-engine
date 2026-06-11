@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseAdmin
     .from("client_leads")
-    .select("id, name, title, company, linkedin_url, score, icp_match_reason, created_at", { count: "exact" })
+    .select("id, name, title, company, linkedin, score, icp_match_reason, created_at", { count: "exact" })
     .eq("workspace_id", auth.workspaceId)
     .order(sort === "score" ? "score" : "created_at", { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
