@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PLAN_MODULES, MODULE_LABELS, MODULE_ROUTES, MODULE_ICONS } from "@/lib/plan-modules";
 import type { ModuleKey, PlanTier } from "@/lib/plan-modules";
 import type { UserProfile } from "@/lib/types";
+import TopBar from "@/components/layout/TopBar";
 
 const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   LayoutDashboard, Users, MessageSquare, BarChart2, GitBranch,
@@ -325,32 +326,30 @@ export default function ClientPortalLayout({ children }: { children: React.React
       </AnimatePresence>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto p-4 lg:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="mb-6 flex items-center justify-between max-w-[1400px]"
-        >
-          <div>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ink)" }}>
-              {profile?.display_name || profile?.email || "Client"}
-            </p>
-            <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>{profile?.email}</p>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* TopBar — same as admin dashboard */}
+        <TopBar
+          title={profile?.display_name || profile?.email || "Client Portal"}
+          subtitle={profile?.email}
+          actions={
+            profile?.plan ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase"
+                style={{ background: "rgba(232,74,10,0.10)", color: "#E84A0A", border: "1px solid rgba(232,74,10,0.20)" }}>
+                {profile.plan === "pilot" ? "Founder's Pilot"
+                  : profile.plan === "growth" ? "Growth"
+                  : profile.plan === "scale" ? "Scale"
+                  : profile.plan === "micro" ? "Micro-Offer"
+                  : profile.plan}
+              </span>
+            ) : undefined
+          }
+        />
+
+        {/* Page content */}
+        <div className="flex-1 overflow-auto p-4 lg:p-8">
+          <div className="max-w-[1400px]">
+            {children}
           </div>
-          {profile?.plan && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase"
-              style={{ background: "rgba(232,74,10,0.10)", color: "#E84A0A", border: "1px solid rgba(232,74,10,0.20)" }}>
-              {profile.plan === "pilot" ? "Founder's Pilot"
-                : profile.plan === "growth" ? "Growth"
-                : profile.plan === "scale" ? "Scale"
-                : profile.plan === "micro" ? "Micro-Offer"
-                : profile.plan}
-            </span>
-          )}
-        </motion.div>
-        <div className="max-w-[1400px]">
-          {children}
         </div>
       </main>
     </div>
