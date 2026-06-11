@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Sparkles, Users, MessageSquare, ArrowRight, Clock, Plug } from "lucide-react";
 import { StatusBadge } from "@/components/client-portal/StatusBadge";
 import { ProgressBar } from "@/components/client-portal/ProgressBar";
 import { UpgradeBanner } from "@/components/client-portal/UpgradeBanner";
-import { CardSkeleton } from "@/components/client-portal/LoadingSkeleton";
+import { AnimatedCard } from "@/components/ui/AnimatedCard";
+import { PageTransition } from "@/components/ui/PageTransition";
+import { StatCard } from "@/components/ui/StatCard";
+import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
 import type { PlanKey } from "@/lib/types";
 
 interface LeadStatus {
@@ -65,11 +69,11 @@ export default function ClientPortalDashboard() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl space-y-4 animate-fade-in">
+      <PageTransition className="max-w-4xl space-y-4">
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
-      </div>
+      </PageTransition>
     );
   }
 
@@ -77,25 +81,35 @@ export default function ClientPortalDashboard() {
   const connectorCount = workspace?.connector_config ? Object.keys(workspace.connector_config).length : 0;
 
   return (
-    <div className="max-w-4xl space-y-4 animate-fade-in">
-      <div>
-        <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>
+    <PageTransition className="max-w-4xl space-y-5">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.3 }}
+      >
+        <h1 className="text-[18px] font-bold" style={{ color: "var(--ink)" }}>
           Welcome{profile?.display_name ? `, ${profile.display_name.split(" ")[0]}` : ""}
         </h1>
         <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
           {plan === "micro" ? "Micro-Offer" : plan === "pilot" ? "Founder's Pilot" : plan === "growth" ? "Growth" : "Scale"} plan
         </p>
-      </div>
+      </motion.div>
 
       {plan === "micro" && (
-        <UpgradeBanner currentPlan={plan} message="Upgrade to Founder's Pilot for sequences, integrations & more" targetPlan="pilot" />
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <UpgradeBanner currentPlan={plan} message="Upgrade to Founder's Pilot for sequences, integrations & more" targetPlan="pilot" />
+        </motion.div>
       )}
 
       {/* Lead Pipeline Card */}
-      <div className="rounded-xl p-5 transition-shadow hover:shadow-md" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <AnimatedCard delay={0.15} className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[14px] font-semibold flex items-center gap-2" style={{ color: "var(--ink)" }}>
-            <Users size={16} style={{ color: "var(--accent)" }} />
+            <Users size={16} style={{ color: "#E84A0A" }} />
             Lead Pipeline
           </h2>
           {leadStatus && <StatusBadge status={leadStatus.status} />}
@@ -103,25 +117,14 @@ export default function ClientPortalDashboard() {
 
         {leadStatus ? (
           <>
-            <ProgressBar value={leadStatus.leadsCount} max={leadStatus.planLimit} label="Leads Generated" className="mb-4" />
+            <ProgressBar value={leadStatus.leadsCount} max={leadStatus.planLimit} label="Leads Generated" className="mb-5" />
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>{leadStatus.leadsCount}</p>
-                <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Leads</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>{leadStatus.icebreakersCount}</p>
-                <p className="text-[10px] uppercase tracking-wide flex items-center justify-center gap-1" style={{ color: "var(--ink-4)" }}>
-                  <MessageSquare size={10} /> Icebreakers
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>{leadStatus.planLimit}</p>
-                <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Plan Limit</p>
-              </div>
+              <StatCard label="Leads" value={leadStatus.leadsCount} accent="#E84A0A" />
+              <StatCard label="Icebreakers" value={leadStatus.icebreakersCount} icon={MessageSquare} accent="#E84A0A" />
+              <StatCard label="Plan Limit" value={leadStatus.planLimit} accent="var(--ink-2)" />
             </div>
             {leadStatus.generatedAt && (
-              <div className="flex items-center gap-1.5 mt-4 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
+              <div className="flex items-center gap-1.5 mt-5 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
                 <Clock size={12} style={{ color: "var(--ink-4)" }} />
                 <span className="text-[11px]" style={{ color: "var(--ink-4)" }}>
                   Last generated: {new Date(leadStatus.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -135,30 +138,53 @@ export default function ClientPortalDashboard() {
             <p className="text-[11px] mt-1" style={{ color: "var(--ink-4)" }}>Complete onboarding or contact support to get started.</p>
           </div>
         )}
-      </div>
+      </AnimatedCard>
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Link href="/client-portal/leads" className="rounded-xl p-4 no-underline transition-shadow hover:shadow-md flex items-center gap-3"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <Users size={16} style={{ color: "var(--accent)" }} />
-          <div><p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>My Leads</p><p className="text-[11px]" style={{ color: "var(--ink-4)" }}>View pipeline</p></div>
-          <ArrowRight size={14} className="ml-auto" style={{ color: "var(--ink-4)" }} />
-        </Link>
-        <Link href="/client-portal/icebreakers" className="rounded-xl p-4 no-underline transition-shadow hover:shadow-md flex items-center gap-3"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          <MessageSquare size={16} style={{ color: "var(--accent)" }} />
-          <div><p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>Icebreakers</p><p className="text-[11px]" style={{ color: "var(--ink-4)" }}>Outreach ready</p></div>
-          <ArrowRight size={14} className="ml-auto" style={{ color: "var(--ink-4)" }} />
-        </Link>
-        <Link href={connectorCount > 0 ? "/client-portal/connectors" : "/client-portal/billing"} className="rounded-xl p-4 no-underline transition-shadow hover:shadow-md flex items-center gap-3"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-          {connectorCount > 0 ? <Plug size={16} style={{ color: "#22c55e" }} /> : <Sparkles size={16} style={{ color: "var(--accent)" }} />}
-          <div><p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{connectorCount > 0 ? "Connectors" : "Upgrade Plan"}</p>
-            <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{connectorCount > 0 ? `${connectorCount} active` : "Unlock more"}</p></div>
-          <ArrowRight size={14} className="ml-auto" style={{ color: "var(--ink-4)" }} />
-        </Link>
+        {[
+          { href: "/client-portal/leads", icon: Users, title: "My Leads", desc: "View pipeline" },
+          { href: "/client-portal/icebreakers", icon: MessageSquare, title: "Icebreakers", desc: "Outreach ready" },
+          {
+            href: connectorCount > 0 ? "/client-portal/connectors" : "/client-portal/billing",
+            icon: connectorCount > 0 ? Plug : Sparkles,
+            title: connectorCount > 0 ? "Connectors" : "Upgrade Plan",
+            desc: connectorCount > 0 ? `${connectorCount} active` : "Unlock more",
+            accent: connectorCount > 0 ? "#22c55e" : undefined,
+          },
+        ].map((link, i) => (
+          <motion.div
+            key={link.href}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.08, duration: 0.3 }}
+          >
+            <Link
+              href={link.href}
+              className="rounded-xl p-4 no-underline flex items-center gap-3"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+            >
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <link.icon size={16} style={{ color: link.accent || "#E84A0A" }} />
+              </motion.div>
+              <div>
+                <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{link.title}</p>
+                <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{link.desc}</p>
+              </div>
+              <motion.div
+                className="ml-auto"
+                whileHover={{ x: 3 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ArrowRight size={14} style={{ color: "var(--ink-4)" }} />
+              </motion.div>
+            </Link>
+          </motion.div>
+        ))}
       </div>
-    </div>
+    </PageTransition>
   );
 }

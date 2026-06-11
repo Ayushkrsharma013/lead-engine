@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { PlanGate } from "@/components/client-portal/PlanGate";
+import { PageTransition } from "@/components/ui/PageTransition";
+import { AnimatedCard } from "@/components/ui/AnimatedCard";
+import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Plug, ExternalLink, Loader2 } from "lucide-react";
 import type { PlanKey } from "@/lib/types";
 
@@ -25,27 +29,50 @@ export default function IntegrationsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex justify-center py-20"><Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} /></div>;
+  if (loading) {
+    return (
+      <PageTransition className="max-w-3xl space-y-4">
+        <CardSkeleton />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardSkeleton /><CardSkeleton /><CardSkeleton /><CardSkeleton />
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PlanGate module="integrations" plan={profile?.plan || null} role={profile?.role}>
-      <div className="max-w-3xl space-y-4 animate-fade-in">
-        <div>
+      <PageTransition className="max-w-3xl space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.3 }}
+        >
           <h1 className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>Integrations</h1>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>Connect Prospecting OS with your existing tools</p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {INTEGRATIONS.map(integ => (
-            <a key={integ.name} href={integ.available ? integ.href : undefined}
+          {INTEGRATIONS.map((integ, i) => (
+            <motion.a
+              key={integ.name}
+              href={integ.available ? integ.href : undefined}
               onClick={e => { if (!integ.available) e.preventDefault(); }}
-              className="rounded-xl p-4 no-underline transition-shadow hover:shadow-md flex items-start gap-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
+              whileHover={integ.available ? { scale: 1.02 } : {}}
+              className="rounded-xl p-4 no-underline flex items-start gap-3"
               style={{
                 background: "var(--surface)", border: "1px solid var(--line)",
                 opacity: integ.available ? 1 : 0.5, cursor: integ.available ? "pointer" : "default",
-              }}>
+              }}
+            >
               <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: integ.available ? "rgba(232,168,64,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${integ.available ? "rgba(232,168,64,0.15)" : "rgba(255,255,255,0.06)"}` }}>
+                style={{
+                  background: integ.available ? "rgba(232,74,10,0.08)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${integ.available ? "rgba(232,74,10,0.15)" : "rgba(255,255,255,0.06)"}`,
+                }}>
                 {integ.icon ? <img src={integ.icon} alt="" className="w-5 h-5" /> : <Plug size={18} style={{ color: "var(--ink-4)" }} />}
               </div>
               <div className="flex-1 min-w-0">
@@ -60,10 +87,10 @@ export default function IntegrationsPage() {
                 <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>{integ.desc}</p>
               </div>
               {integ.available && <ExternalLink size={12} style={{ color: "var(--ink-4)" }} />}
-            </a>
+            </motion.a>
           ))}
         </div>
-      </div>
+      </PageTransition>
     </PlanGate>
   );
 }
