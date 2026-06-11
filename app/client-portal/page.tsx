@@ -1,64 +1,132 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Users, MessageSquare, ArrowRight, Clock, Plug } from "lucide-react";
-import { StatusBadge } from "@/components/client-portal/StatusBadge";
-import { ProgressBar } from "@/components/client-portal/ProgressBar";
+import {
+  Users, Flame, MessageSquare, Calendar,
+  TrendingUp, TrendingDown, ArrowRight,
+} from "lucide-react";
+import Link from "next/link";
 import { UpgradeBanner } from "@/components/client-portal/UpgradeBanner";
-import { AnimatedCard } from "@/components/ui/AnimatedCard";
-import { PageTransition } from "@/components/ui/PageTransition";
-import { StatCard } from "@/components/ui/StatCard";
-import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
 import type { PlanKey } from "@/lib/types";
 
-interface LeadStatus {
-  status: "pending" | "processing" | "ready" | "failed";
-  leadsCount: number;
-  planLimit: number;
-  icebreakersCount: number;
-  generatedAt: string | null;
-  icpLocked: boolean;
+/* ─── Types ─────────────────────────────────────────────────────────── */
+
+interface CoreStats {
+  total: number;
+  hot: number;
+  contacted: number;
+  avgScore: number;
+  meetings: number;
 }
 
-interface WorkspaceData {
-  plan: PlanKey;
-  connector_config?: Record<string, unknown> | null;
-  leads_generation_status?: string;
-  leads_count?: number;
-  leads_generated_at?: string | null;
-  icp_locked?: boolean;
+interface RecentLead {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  industry: string;
+  score: number;
+  status: string;
 }
+
+interface Icebreaker {
+  leadName: string;
+  company: string;
+  body: string;
+}
+
+/* ─── StatCard ──────────────────────────────────────────────────────── */
+
+function StatCard({
+  label, value, subtext, trend, icon: Icon,
+}: {
+  label: string; value: number | string;
+  subtext?: string; trend?: number; icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+      className="rounded-2xl p-5 hover:shadow-md transition-shadow"
+      style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.12em] font-bold" style={{ color: "var(--ink-4)" }}>
+            {label}
+          </p>
+          <p className="text-[28px] font-bold mt-1 tracking-tight" style={{ color: "var(--ink)" }}>
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </p>
+          {subtext && (
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--ink-4)" }}>{subtext}</p>
+          )}
+        </div>
+        <div className="p-2.5 rounded-xl" style={{ background: "rgba(232,74,10,0.08)", border: "1px solid rgba(232,74,10,0.12)" }}>
+          <Icon className="w-[18px] h-[18px]" />
+        </div>
+      </div>
+      {trend !== undefined && (
+        <div className="flex items-center gap-1 mt-3 text-[11px]">
+          {trend > 0 ? (
+            <TrendingUp size={12} style={{ color: "var(--positive)" }} />
+          ) : trend < 0 ? (
+            <TrendingDown size={12} style={{ color: "var(--negative)" }} />
+          ) : null}
+          <span style={{ color: trend > 0 ? "var(--positive)" : trend < 0 ? "var(--negative)" : "var(--ink-3)" }}>
+            {Math.abs(trend)}%
+          </span>
+          <span style={{ color: "var(--ink-4)" }}>vs last week</span>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─── Skeleton ──────────────────────────────────────────────────────── */
+
+function CardSkeleton() {
+  return (
+    <div className="rounded-2xl p-5" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <div className="flex justify-between">
+        <div className="space-y-3 flex-1">
+          <div className="h-3 w-24 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div className="h-8 w-16 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div className="h-3 w-32 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} />
+        </div>
+        <div className="h-10 w-10 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Page ──────────────────────────────────────────────────────────── */
 
 export default function ClientPortalDashboard() {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ plan?: PlanKey; email?: string; display_name?: string; role?: string } | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
-  const [leadStatus, setLeadStatus] = useState<LeadStatus | null>(null);
+  const [profile, setProfile] = useState<{ plan?: PlanKey; email?: string; display_name?: string } | null>(null);
+  const [core, setCore] = useState<CoreStats>({ total: 0, hot: 0, contacted: 0, avgScore: 0, meetings: 0 });
+  const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
+  const [icebreakers, setIcebreakers] = useState<Icebreaker[]>([]);
 
   useEffect(() => {
     async function init() {
-      const meRes = await fetch("/prospecting-os/api/client-portal/me");
-      if (!meRes.ok) { setLoading(false); return; }
-      const me = await meRes.json();
-      setProfile(me.profile);
-      setWorkspace(me.workspace);
-
       try {
-        const statusRes = await fetch("/prospecting-os/api/leads/status");
-        if (statusRes.ok) {
-          const s = await statusRes.json();
-          const plan = (me.profile?.plan || "pilot") as PlanKey;
-          const limits: Record<string, number> = { micro: 50, pilot: 100, growth: 200, scale: 500 };
-          setLeadStatus({
-            status: s.status || "pending",
-            leadsCount: s.leadsCount || 0,
-            planLimit: limits[plan] || 50,
-            icebreakersCount: s.icebreakersCount || 0,
-            generatedAt: s.generatedAt || null,
-            icpLocked: s.icpLocked || false,
-          });
+        const [meRes, dashRes] = await Promise.all([
+          fetch("/prospecting-os/api/client-portal/me"),
+          fetch("/prospecting-os/api/client-portal/dashboard"),
+        ]);
+
+        if (meRes.ok) {
+          const me = await meRes.json();
+          setProfile(me.profile);
+        }
+
+        if (dashRes.ok) {
+          const dash = await dashRes.json();
+          setCore(dash.core || { total: 0, hot: 0, contacted: 0, avgScore: 0, meetings: 0 });
+          setRecentLeads(dash.recentLeads || []);
+          setIcebreakers(dash.icebreakers || []);
         }
       } catch {}
 
@@ -69,122 +137,176 @@ export default function ClientPortalDashboard() {
 
   if (loading) {
     return (
-      <PageTransition className="max-w-4xl space-y-4">
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
-      </PageTransition>
+      <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
+        <div>
+          <div className="h-7 w-48 rounded-lg animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div className="h-4 w-72 rounded-lg mt-2 animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <CardSkeleton /><CardSkeleton /><CardSkeleton /><CardSkeleton />
+        </div>
+      </div>
     );
   }
 
   const plan = profile?.plan || "pilot";
-  const connectorCount = workspace?.connector_config ? Object.keys(workspace.connector_config).length : 0;
+  const firstName = profile?.display_name?.split(" ")[0] || "there";
+
+  // Merge icebreaker text into leads
+  const ibMap = new Map(icebreakers.map(i => [i.leadName, i.body]));
 
   return (
-    <PageTransition className="max-w-4xl space-y-5">
+    <div className="p-6 md:p-10 max-w-7xl mx-auto">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05, duration: 0.3 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8"
       >
-        <h1 className="text-[18px] font-bold" style={{ color: "var(--ink)" }}>
-          Welcome{profile?.display_name ? `, ${profile.display_name.split(" ")[0]}` : ""}
-        </h1>
-        <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-3)" }}>
-          {plan === "micro" ? "Micro-Offer" : plan === "pilot" ? "Founder's Pilot" : plan === "growth" ? "Growth" : "Scale"} plan
-        </p>
+        <div>
+          <h1 className="text-[20px] font-bold tracking-tight" style={{ color: "var(--ink)" }}>
+            Welcome back{firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="text-[13px] mt-1" style={{ color: "var(--ink-3)" }}>
+            Your prospecting engine is live — here&apos;s what&apos;s cooking.
+          </p>
+        </div>
       </motion.div>
 
+      {/* Upgrade banner for micro */}
       {plan === "micro" && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
+          transition={{ delay: 0.05, duration: 0.3 }}
+          className="mb-8"
         >
           <UpgradeBanner currentPlan={plan} message="Upgrade to Founder's Pilot for sequences, integrations & more" targetPlan="pilot" />
         </motion.div>
       )}
 
-      {/* Lead Pipeline Card */}
-      <AnimatedCard delay={0.15} className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[14px] font-semibold flex items-center gap-2" style={{ color: "var(--ink)" }}>
-            <Users size={16} style={{ color: "#E84A0A" }} />
-            Lead Pipeline
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, duration: 0.3 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10"
+      >
+        <StatCard
+          label="Total Leads Generated"
+          value={core.total}
+          subtext={core.total > 0 ? `Avg score ${core.avgScore}` : "No leads yet"}
+          trend={core.total > 0 ? 12 : undefined}
+          icon={Users}
+        />
+        <StatCard
+          label="Hot Leads (Score ≥80)"
+          value={core.hot}
+          subtext={core.hot > 0 ? "Ready to reach out" : "Waiting for scores ≥80"}
+          icon={Flame}
+        />
+        <StatCard
+          label="Icebreakers Ready"
+          value={icebreakers.length}
+          subtext={icebreakers.length > 0 ? "Personalized messages" : "Generated for hot leads"}
+          icon={MessageSquare}
+        />
+        <StatCard
+          label="Meetings Booked"
+          value={core.meetings || 0}
+          subtext={core.meetings > 0 ? "This month" : "Book your first meeting"}
+          icon={Calendar}
+        />
+      </motion.div>
+
+      {/* Recent Leads Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-[15px] font-semibold flex items-center gap-2" style={{ color: "var(--ink)" }}>
+            <Flame size={15} style={{ color: "#E84A0A" }} />
+            Recent high-score leads
           </h2>
-          {leadStatus && <StatusBadge status={leadStatus.status} />}
+          <Link
+            href="/client-portal/leads"
+            className="text-[12px] font-medium flex items-center gap-1 no-underline transition-opacity hover:opacity-80"
+            style={{ color: "#E84A0A" }}
+          >
+            View all leads <ArrowRight size={12} />
+          </Link>
         </div>
 
-        {leadStatus ? (
-          <>
-            <ProgressBar value={leadStatus.leadsCount} max={leadStatus.planLimit} label="Leads Generated" className="mb-5" />
-            <div className="grid grid-cols-3 gap-4">
-              <StatCard label="Leads" value={leadStatus.leadsCount} accent="#E84A0A" />
-              <StatCard label="Icebreakers" value={leadStatus.icebreakersCount} icon={MessageSquare} accent="#E84A0A" />
-              <StatCard label="Plan Limit" value={leadStatus.planLimit} accent="var(--ink-2)" />
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+          {recentLeads.length === 0 ? (
+            <div className="p-12 text-center">
+              <Users size={40} style={{ color: "var(--ink-4)", opacity: 0.3, margin: "0 auto 12px" }} />
+              <p className="text-[13px] font-medium" style={{ color: "var(--ink-3)" }}>No leads generated yet</p>
+              <p className="text-[11px] mt-1" style={{ color: "var(--ink-4)" }}>
+                Complete your onboarding or contact support to get started.
+              </p>
             </div>
-            {leadStatus.generatedAt && (
-              <div className="flex items-center gap-1.5 mt-5 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
-                <Clock size={12} style={{ color: "var(--ink-4)" }} />
-                <span className="text-[11px]" style={{ color: "var(--ink-4)" }}>
-                  Last generated: {new Date(leadStatus.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </span>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>No leads generated yet</p>
-            <p className="text-[11px] mt-1" style={{ color: "var(--ink-4)" }}>Complete onboarding or contact support to get started.</p>
-          </div>
-        )}
-      </AnimatedCard>
-
-      {/* Quick Links */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { href: "/client-portal/leads", icon: Users, title: "My Leads", desc: "View pipeline" },
-          { href: "/client-portal/icebreakers", icon: MessageSquare, title: "Icebreakers", desc: "Outreach ready" },
-          {
-            href: connectorCount > 0 ? "/client-portal/connectors" : "/client-portal/billing",
-            icon: connectorCount > 0 ? Plug : Sparkles,
-            title: connectorCount > 0 ? "Connectors" : "Upgrade Plan",
-            desc: connectorCount > 0 ? `${connectorCount} active` : "Unlock more",
-            accent: connectorCount > 0 ? "#22c55e" : undefined,
-          },
-        ].map((link, i) => (
-          <motion.div
-            key={link.href}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + i * 0.08, duration: 0.3 }}
-          >
-            <Link
-              href={link.href}
-              className="rounded-xl p-4 no-underline flex items-center gap-3"
-              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <link.icon size={16} style={{ color: link.accent || "#E84A0A" }} />
-              </motion.div>
-              <div>
-                <p className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{link.title}</p>
-                <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{link.desc}</p>
-              </div>
-              <motion.div
-                className="ml-auto"
-                whileHover={{ x: 3 }}
-                transition={{ duration: 0.15 }}
-              >
-                <ArrowRight size={14} style={{ color: "var(--ink-4)" }} />
-              </motion.div>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
-    </PageTransition>
+          ) : (
+            <table className="min-w-full">
+              <thead style={{ borderBottom: "1px solid var(--line)" }}>
+                <tr>
+                  {["Name", "Title / Company", "Score", "Icebreaker (preview)"].map(h => (
+                    <th key={h} className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-[0.10em]"
+                      style={{ color: "var(--ink-4)" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentLeads.slice(0, 5).map(lead => {
+                  const ibText = ibMap.get(lead.name) || "";
+                  return (
+                    <motion.tr
+                      key={lead.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      style={{ borderBottom: "1px solid var(--line)" }}
+                      className="transition-colors"
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(237,234,226,0.02)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                    >
+                      <td className="px-6 py-3.5 text-[13px] font-medium" style={{ color: "var(--ink)" }}>
+                        {lead.name || "—"}
+                      </td>
+                      <td className="px-6 py-3.5 text-[12px]" style={{ color: "var(--ink-3)" }}>
+                        {lead.title || "—"}
+                        {lead.company ? `, ${lead.company}` : ""}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded-full"
+                          style={{
+                            background: lead.score >= 80
+                              ? "rgba(34,197,94,0.10)"
+                              : lead.score >= 60
+                                ? "rgba(232,168,64,0.10)"
+                                : "rgba(100,100,120,0.08)",
+                            color: lead.score >= 80 ? "var(--positive)" : lead.score >= 60 ? "var(--accent)" : "var(--ink-4)",
+                          }}
+                        >
+                          {lead.score}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-[12px] max-w-[320px] truncate" style={{ color: "var(--ink-3)" }}>
+                        {ibText ? `"${ibText.slice(0, 120)}${ibText.length > 120 ? '...' : ''}"` : "—"}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 }
