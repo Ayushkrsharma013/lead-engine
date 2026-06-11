@@ -398,6 +398,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Legacy path: Easebuzz, Skydo, Stripe webhook formats ────────────
+    // ⚠️ DEPRECATED: Legacy payment providers have no signature verification.
+    // All new clients should use Dodo Payments (path above) which has proper HMAC-SHA256 validation.
+    // TODO: Remove legacy path once all existing subscriptions are migrated to Dodo.
     const txnid =
       body.txnid || body.client_reference_id || body.metadata?.txnid;
     const status = body.status || body.payment_status;

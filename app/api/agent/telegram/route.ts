@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveAgentAction } from "@/lib/agents/resolver";
 
@@ -232,9 +233,35 @@ async function handleCallback(chatId: number, data: string) {
 
 // ─── POST handler ──────────────────────────────────────────────────────────
 
+// Verify Telegram webhook origin using the bot token as the HMAC secret.
+// Telegram sends the SHA-256 HMAC of the bot token in X-Telegram-Bot-Api-Secret-Token.
+// We compute HMAC-SHA256(token, "") and compare.
+function verifyTelegramWebhook(req: Request): boolean {
+  const secretHeader = req.headers.get("x-telegram-bot-api-secret-token");
+  if (!secretHeader || !TELEGRAM_BOT_TOKEN) return false;
+  try {
+    // Telegram sends the raw SHA-256 hash of the bot token as the secret token header.
+    // Verify by computing HASH(token) and comparing.
+    // The secret token header is a SHA-256 hex digest of the bot token.
+    const expected = createHmac("sha256", "WebAppData")
+      .update(TELEGRAM_BOT_TOKEN)
+      .digest("hex");
+    const actual = secretHeader.trim();
+    if (actual.length !== expected.length) return false;
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: Request) {
   if (!TELEGRAM_BOT_TOKEN) {
     return NextResponse.json({ error: "TELEGRAM_BOT_TOKEN not configured" }, { status: 500 });
+  }
+
+  // Verify webhook origin — reject unauthenticated requests
+  if (!verifyTelegramWebhook(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

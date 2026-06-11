@@ -39,6 +39,12 @@ const PLAN_URLS: Record<string, { easebuzz?: string; skydo?: string; stripe?: st
 
 export async function POST(req: NextRequest) {
   try {
+    // Require authenticated user session
+    const cookieHeader = req.headers.get("cookie") || "";
+    if (!cookieHeader) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const { plan, userId, email } = body;
 

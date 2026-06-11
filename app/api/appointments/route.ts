@@ -308,7 +308,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status, date, time, type, timezone } = body;
+    const { id, status, date, time, type, timezone, token } = body;
 
     if (!id || !status) {
       return NextResponse.json({ error: "Missing required fields (id, status)" }, { status: 400 });
@@ -316,6 +316,75 @@ export async function PATCH(req: Request) {
 
     if (status !== "cancelled" && status !== "rescheduled" && status !== "won" && status !== "completed") {
       return NextResponse.json({ error: "Status must be 'cancelled', 'rescheduled', 'won', or 'completed'" }, { status: 400 });
+    }
+
+    // ── Auth: require valid session or matching onboarding_token ──────────
+    let isAuthenticated = false;
+    let isAdmin = false;
+
+    // Session-based auth via Supabase SSR cookie
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/rest\/v1\/?$/, "");
+    try {
+      // Read cookies manually for SSR auth check
+      const cookieHeader = req.headers.get("cookie") || "";
+      // Attempt token-based lookup first (for onboarding flow)
+      if (token) {
+        const { data: tokenAppt } = await supabase
+          .from("appointments")
+          .select("id, onboarding_token")
+          .eq("id", id)
+          .eq("onboarding_token", token)
+          .maybeSingle();
+        if (tokenAppt) isAuthenticated = true;
+      }
+
+      // Session-based auth — parse cookies and verify with Supabase
+      if (!isAuthenticated && cookieHeader) {
+        // Parse supabase auth token from cookies
+        const cookies = cookieHeader.split(";").reduce((acc, c) => {
+          const [k, v] = c.trim().split("=");
+          if (k && v) acc[k.trim()] = v.trim();
+          return acc;
+        }, {} as Record<string, string>);
+
+        // Look for Supabase auth cookie (sb-*-auth-token pattern)
+        const authCookieKey = Object.keys(cookies).find(k =>
+          k.includes("-auth-token") && k.startsWith("sb-")
+        );
+        if (authCookieKey) {
+          const tokenParts = cookies[authCookieKey];
+          if (tokenParts) {
+            try {
+              const parsed = JSON.parse(decodeURIComponent(tokenParts));
+              const accessToken = parsed?.access_token;
+              if (accessToken) {
+                const { data: { user }, error: authErr } = await supabase.auth.getUser(accessToken);
+                if (user && !authErr) {
+                  isAuthenticated = true;
+                  const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", user.id)
+                    .maybeSingle();
+                  if (profile?.role === "super_admin" || profile?.role === "qa_agent") {
+                    isAdmin = true;
+                  }
+                }
+              }
+            } catch { /* cookie parse failed, fall through */ }
+          }
+        }
+      }
+    } catch { /* auth check failed, fall through */ }
+
+    // "won" and "completed" require admin authentication
+    if ((status === "won" || status === "completed") && !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized — admin access required for this action" }, { status: 401 });
+    }
+
+    // All other status changes require at least token or session auth
+    if (!isAuthenticated && !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized — valid session or token required" }, { status: 401 });
     }
 
     // Fetch existing appointment

@@ -22,8 +22,11 @@ async function sendTelegram(text: string) {
 
 // GET — called by local runner to fetch pending queue items
 export async function GET(req: Request) {
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET;
+  if (!runnerSecret) {
+    return NextResponse.json({ error: "GMAPS_RUNNER_SECRET not configured" }, { status: 500 });
+  }
   const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
   if (secret !== runnerSecret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -62,8 +65,11 @@ export async function GET(req: Request) {
 
 // PATCH — called by local runner to report execution results
 export async function PATCH(req: Request) {
+  const runnerSecret = process.env.GMAPS_RUNNER_SECRET;
+  if (!runnerSecret) {
+    return NextResponse.json({ error: "GMAPS_RUNNER_SECRET not configured" }, { status: 500 });
+  }
   const secret = req.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const runnerSecret = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
   if (secret !== runnerSecret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

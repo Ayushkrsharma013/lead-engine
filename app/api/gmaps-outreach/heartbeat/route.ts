@@ -6,9 +6,12 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-const RUNNER_SECRET = process.env.GMAPS_RUNNER_SECRET || "gmaps-runner-v1";
-
 export async function POST(req: Request) {
+  const RUNNER_SECRET = process.env.GMAPS_RUNNER_SECRET;
+  if (!RUNNER_SECRET) {
+    return NextResponse.json({ error: "GMAPS_RUNNER_SECRET not configured" }, { status: 500 });
+  }
+
   const auth = req.headers.get("authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 

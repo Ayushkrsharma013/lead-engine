@@ -82,21 +82,16 @@ function verifyWebhookSignature(body: string, headers: Headers, secret: string):
 
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
-  let body: ResendWebhookBody;
-
-  if (webhookSecret) {
-    const rawBody = await req.text();
-    if (!verifyWebhookSignature(rawBody, req.headers, webhookSecret)) {
-      return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
-    }
-    body = JSON.parse(rawBody) as ResendWebhookBody;
-  } else {
-    try {
-      body = await req.json() as ResendWebhookBody;
-    } catch {
-      return NextResponse.json({ ok: false, error: "Cannot parse body" }, { status: 400 });
-    }
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "RESEND_WEBHOOK_SECRET not configured" }, { status: 500 });
   }
+
+  let body: ResendWebhookBody;
+  const rawBody = await req.text();
+  if (!verifyWebhookSignature(rawBody, req.headers, webhookSecret)) {
+    return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
+  }
+  body = JSON.parse(rawBody) as ResendWebhookBody;
 
   // Route by event type
   const eventType = (body as ResendEngagementBody).type;
