@@ -995,24 +995,7 @@ export default function Home() {
               onClick={() => setNewScrapeOpen(true)}
               disabled={running}
               title="Trigger a new Apify scrape with custom search params"
-              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: "rgba(0,212,255,0.08)",
-                color: "var(--accent-blue)",
-                border: "1px solid rgba(0,212,255,0.25)",
-              }}
-              onMouseEnter={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.16)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.4)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(0,212,255,0.08)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.25)";
-                }
-              }}
+              className={`flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed bg-[rgba(0,212,255,0.08)] text-[var(--accent-blue)] border border-[rgba(0,212,255,0.25)] ${!running ? 'hover:bg-[rgba(0,212,255,0.16)] hover:border-[rgba(0,212,255,0.4)]' : ''}`}
             >
               <Play size={12} fill="currentColor" />
               New Scrape
@@ -1023,25 +1006,7 @@ export default function Home() {
               onClick={() => setImportModalOpen(true)}
               disabled={running}
               title="Browse and import leads from past Apify runs"
-              className="flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--info-soft)",
-                color: "var(--info)",
-                border: "1px solid rgba(124,58,237,0.35)",
-                boxShadow: "0 0 14px rgba(124,58,237,0.18)",
-              }}
-              onMouseEnter={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.22)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 22px rgba(124,58,237,0.3)";
-                }
-              }}
-              onMouseLeave={e => {
-                if (!running) {
-                  (e.currentTarget as HTMLElement).style.background = "var(--info-soft)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 14px rgba(124,58,237,0.18)";
-                }
-              }}
+              className={`flex items-center gap-2 h-9 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--info-soft)] text-[var(--info)] border border-[rgba(124,58,237,0.35)] shadow-[0_0_14px_rgba(124,58,237,0.18)] ${!running ? 'hover:bg-[rgba(124,58,237,0.22)] hover:shadow-[0_0_22px_rgba(124,58,237,0.3)]' : ''}`}
             >
               <CloudDownload size={13} />
               Import
@@ -1051,22 +1016,7 @@ export default function Home() {
             {tab === "latest" && selected.length > 0 && (
               <button
                 onClick={() => handleMoveToHot(selected)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-all shrink-0"
-                title="Mark selected leads as Hot"
-                style={{
-                  background: "rgba(255,107,53,0.15)",
-                  color: "var(--accent-orange)",
-                  border: "1px solid rgba(255,107,53,0.35)",
-                  boxShadow: "0 0 12px rgba(255,107,53,0.12)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,107,53,0.25)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 18px rgba(255,107,53,0.22)";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,107,53,0.15)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 12px rgba(255,107,53,0.12)";
-                }}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition-all duration-150 shrink-0 bg-[rgba(255,107,53,0.15)] hover:bg-[rgba(255,107,53,0.25)] text-[var(--accent-orange)] border border-[rgba(255,107,53,0.35)] shadow-[0_0_12px_rgba(255,107,53,0.12)] hover:shadow-[0_0_18px_rgba(255,107,53,0.22)]"
               >
                 <Flame size={13} />
                 Hot ({selected.length})
@@ -1112,10 +1062,7 @@ export default function Home() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.03, duration: 0.15 }}
                           onClick={() => handleBulkStatus(s)}
-                          className="w-full text-left px-3 py-2 text-xs capitalize transition-colors"
-                          style={{ color: "var(--text)" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          className="w-full text-left px-3 py-2 text-xs capitalize transition-colors duration-150 text-[var(--text)] hover:bg-[var(--surface2)]"
                         >
                           {s}
                         </motion.button>
@@ -1167,10 +1114,8 @@ export default function Home() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.03, duration: 0.15 }}
                           onClick={() => handleBulkSequence(seq.id, seq.name)}
-                          className="w-full text-left px-3 py-2 text-xs truncate transition-colors"
-                          style={{ color: "var(--text)", maxWidth: 220 }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          className="w-full text-left px-3 py-2 text-xs truncate transition-colors duration-150 text-[var(--text)] hover:bg-[var(--surface2)]"
+                          style={{ maxWidth: 220 }}
                         >
                           {seq.name}
                         </motion.button>
@@ -1185,20 +1130,7 @@ export default function Home() {
             {sorted.length > 0 && (
               <button
                 onClick={() => handleExportCSV(selected.length ? selected : undefined)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--line)",
-                  color: "var(--ink-3)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--line)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--ink)";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
-                  (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                }}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all duration-150 shrink-0 bg-[var(--surface-2)] hover:bg-[var(--line)] border border-[var(--line)] text-[var(--ink-3)] hover:text-[var(--ink)]"
               >
                 <Download size={12} />
                 {selected.length ? `CSV (${selected.length})` : "CSV"}
@@ -1314,32 +1246,19 @@ export default function Home() {
                   whileHover={active ? {} : { scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.96 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className="flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium"
+                  className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-[12px] font-medium transition-all duration-150 ${
+                    active
+                      ? 'shadow-[0_0_10px_var(--tab-accent)/0.09] font-semibold'
+                      : 'bg-transparent hover:bg-[var(--surface-2)] text-[var(--ink-3)] hover:text-[var(--ink)] border border-transparent hover:border-[var(--line-strong)]'
+                  }`}
                   style={active ? {
+                    '--tab-accent': a,
                     background: `${a}18`,
                     border: `1px solid ${a}40`,
                     color: a,
                     boxShadow: `0 0 10px ${a}18`,
                     fontWeight: 600,
-                  } : {
-                    background: "transparent",
-                    border: "1px solid transparent",
-                    color: "var(--ink-3)",
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.background = "var(--surface-2)";
-                      (e.currentTarget as HTMLElement).style.color = "var(--ink)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "var(--line-strong)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.background = "transparent";
-                      (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-                    }
-                  }}
+                  } as React.CSSProperties : undefined}
                 >
                   {key === "hot" && <Flame size={11} />}
                   {key === "warm" && (
@@ -1383,22 +1302,11 @@ export default function Home() {
                   dispatch({ type: "SET_LEAD_SELECTION", payload: [] });
                   dispatch({ type: "SET_PAGINATION", payload: DEFAULT_PAGINATION });
                 }}
-                className="flex items-center gap-2 h-8 px-3 rounded-lg text-[12px] font-medium transition-all duration-150"
-                style={tab === key ? {
-                  background: "var(--surface-2)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "var(--ink)",
-                  boxShadow: "inset 0 1px 0 var(--surface-2)",
-                } : {
-                  border: "1px solid transparent",
-                  color: "var(--ink-3)",
-                }}
-                onMouseEnter={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink)";
-                }}
-                onMouseLeave={e => {
-                  if (tab !== key) (e.currentTarget as HTMLElement).style.color = "var(--ink-3)";
-                }}
+                className={`flex items-center gap-2 h-8 px-3 rounded-lg text-[12px] font-medium transition-all duration-150 ${
+                  tab === key
+                    ? 'bg-[var(--surface-2)] border border-[rgba(255,255,255,0.1)] text-[var(--ink)] shadow-[inset_0_1px_0_var(--surface-2)]'
+                    : 'border border-transparent text-[var(--ink-3)] hover:text-[var(--ink)]'
+                }`}
               >
                 <Icon size={11} />
                 {label}

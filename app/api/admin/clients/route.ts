@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,12 @@ export async function GET(req: NextRequest) {
   const userRole = req.headers.get("x-user-role");
   if (userRole !== "super_admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("admin-clients", rateLimitId, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -79,6 +86,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("admin-clients", rateLimitId, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   let body: { id?: string; action?: string };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
@@ -112,6 +125,12 @@ export async function DELETE(req: NextRequest) {
   const userRole = req.headers.get("x-user-role");
   if (userRole !== "super_admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("admin-clients", rateLimitId, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
   }
 
   // id may come from query param or request body

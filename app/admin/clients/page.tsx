@@ -275,19 +275,9 @@ export default function AdminClientsPage() {
           ].map(({ label, value, sub, prefix }) => (
             <div
               key={label}
-              className="rounded-xl p-4 flex flex-col gap-1 transition-all duration-300 hover:-translate-y-0.5"
+              className="rounded-xl p-4 flex flex-col gap-1 transition-all duration-300 hover:-translate-y-0.5 border border-[rgba(201,168,124,0.07)] hover:border-[rgba(201,168,124,0.16)] shadow-[0_1px_3px_rgba(0,0,0,0.25)] hover:shadow-[0_4px_16px_rgba(201,168,124,0.06)]"
               style={{
                 background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)",
-                border: "1px solid rgba(201,168,124,0.07)",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.16)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(201,168,124,0.06)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,168,124,0.07)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
               }}
             >
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] select-none" style={{ color: "var(--ink-4)", opacity: 0.50 }}>
@@ -352,10 +342,7 @@ export default function AdminClientsPage() {
         {hasFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-medium transition-colors"
-            style={{ background: "transparent", border: "1px solid var(--line)", color: "var(--ink-3)", cursor: "pointer" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.color = "var(--ink-2)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--ink-3)"; }}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-medium transition-colors duration-150 bg-transparent border border-[var(--line)] hover:border-[var(--line-strong)] text-[var(--ink-3)] hover:text-[var(--ink-2)] cursor-pointer"
           >
             <RotateCcw size={11} /> Clear
           </button>
@@ -456,32 +443,14 @@ export default function AdminClientsPage() {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="p-2 rounded-lg transition-all duration-150"
-                    style={{
-                      color: "var(--ink-3)",
-                      opacity: page <= 1 ? 0.35 : 1,
-                      background: "var(--surface)",
-                      border: "1px solid var(--line)",
-                      cursor: page <= 1 ? "default" : "pointer",
-                    }}
-                    onMouseEnter={e => { if (page > 1) e.currentTarget.style.borderColor = "var(--line-strong)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; }}
+                    className={`p-2 rounded-lg transition-all duration-150 text-[var(--ink-3)] bg-[var(--surface)] border border-[var(--line)] ${page <= 1 ? "opacity-35 cursor-default" : "cursor-pointer hover:border-[var(--line-strong)]"}`}
                   >
                     <ChevronLeft size={13} />
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="p-2 rounded-lg transition-all duration-150"
-                    style={{
-                      color: "var(--ink-3)",
-                      opacity: page >= totalPages ? 0.35 : 1,
-                      background: "var(--surface)",
-                      border: "1px solid var(--line)",
-                      cursor: page >= totalPages ? "default" : "pointer",
-                    }}
-                    onMouseEnter={e => { if (page < totalPages) e.currentTarget.style.borderColor = "var(--line-strong)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; }}
+                    className={`p-2 rounded-lg transition-all duration-150 text-[var(--ink-3)] bg-[var(--surface)] border border-[var(--line)] ${page >= totalPages ? "opacity-35 cursor-default" : "cursor-pointer hover:border-[var(--line-strong)]"}`}
                   >
                     <ChevronRight size={13} />
                   </button>

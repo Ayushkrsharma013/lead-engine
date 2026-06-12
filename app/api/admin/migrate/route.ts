@@ -3,11 +3,18 @@
 // Uses the server-side supabaseAdmin (production keys).
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const secret = req.headers.get("x-migrate-secret") || "";
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateLimitId = req.headers.get("x-forwarded-for") || "migrate";
+  const rl = checkMinuteLimit("admin-migrate", rateLimitId, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
   }
 
   const results: string[] = [];

@@ -4,6 +4,7 @@ import { checkMinuteLimit } from "@/lib/rate-limit";
 import { readKnowledge, writeKnowledge } from "@/lib/agents/knowledge";
 import { mergeLeadsInDB, logActivity } from "@/lib/db";
 import { sanitizeLead } from "@/lib/storage";
+import { APIFY_ACTOR_ID, APIFY_BASE } from "@/lib/apify-config";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
 
   // Start actor run
   const startRes = await fetch(
-    `https://api.apify.com/v2/acts/x_guru~Leads-Scraper-apollo-zoominfo/runs?token=${apifyKey}`,
+    `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs?token=${apifyKey}`,
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(actorInput) }
   );
   if (!startRes.ok) {
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
   for (let i = 0; i < 48 && status === "RUNNING"; i++) {
     await new Promise(r => setTimeout(r, 5000));
     const pollRes = await fetch(
-      `https://api.apify.com/v2/acts/x_guru~Leads-Scraper-apollo-zoominfo/runs/${runId}?token=${apifyKey}`
+      `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs/${runId}?token=${apifyKey}`
     );
     const pollData = await pollRes.json() as { data: { status: string } };
     status = pollData.data.status;
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest) {
 
   // Fetch results
   const itemsRes = await fetch(
-    `https://api.apify.com/v2/acts/x_guru~Leads-Scraper-apollo-zoominfo/runs/${runId}/dataset/items?token=${apifyKey}&clean=true`
+    `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs/${runId}/dataset/items?token=${apifyKey}&clean=true`
   );
   if (!itemsRes.ok) {
     return NextResponse.json({ error: "Failed to fetch run items" }, { status: 500 });

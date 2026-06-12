@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/resend'
 import { PLANS } from '@/lib/stripe'
 import { generatePaymentRef } from '@/lib/xflow'
 import type { PlanKey } from '@/lib/types'
+import { checkMinuteLimit } from '@/lib/rate-limit'
 
 type ProfileRow = {
   id: string
@@ -26,6 +27,12 @@ export async function GET(req: NextRequest) {
   const role = h.get('x-user-role')
   if (role !== 'super_admin' && role !== 'qa_agent') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const rateLimitId = h.get('x-user-id') || h.get('x-forwarded-for') || 'anonymous';
+  const rl = checkMinuteLimit('admin-users', rateLimitId, 60);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again shortly.' }, { status: 429 });
   }
 
   const { searchParams } = new URL(req.url)
@@ -82,6 +89,12 @@ export async function POST(req: NextRequest) {
   const adminUserId = h.get('x-user-id')
   if (role !== 'super_admin') {
     return NextResponse.json({ error: 'Forbidden — super_admin only' }, { status: 403 })
+  }
+
+  const rateLimitId = adminUserId || h.get('x-forwarded-for') || 'anonymous';
+  const rl = checkMinuteLimit('admin-users', rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again shortly.' }, { status: 429 });
   }
 
   const { email, display_name, role: newRole, plan, notes, send_invite, subscription_status } = await req.json()

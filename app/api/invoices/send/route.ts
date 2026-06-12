@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/resend';
 import { notifyInvoiceEvent } from '@/lib/notify';
 import { captureError } from '@/lib/error-tracking';
 import { Invoice } from '@/lib/types';
+import { checkMinuteLimit } from '@/lib/rate-limit';
 
 function formatIDR(n: number): string {
   return new Intl.NumberFormat('id-ID').format(n);
@@ -50,6 +51,11 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const userId = session.user.id;
+
+  const rl = checkMinuteLimit('invoice-send', userId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again shortly.' }, { status: 429 });
+  }
 
   try {
     const { invoiceId } = await req.json();

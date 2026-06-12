@@ -2,22 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { checkMinuteLimit } from "@/lib/rate-limit";
 import type { PlanKey } from "@/lib/types";
+import { APIFY_BASE, PLAN_LEAD_LIMITS } from "@/lib/apify-config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120; // Allow up to 120s for lead generation
 
-const APIFY_BASE = "https://api.apify.com/v2";
-
-// Plan-based lead limits
-const PLAN_LEAD_LIMITS: Record<string, number> = {
-  micro: 50,
-  pilot: 100,
-  growth: 200,
-  scale: 500,
-};
-
 // Map ICP seniority selections to LinkedIn/Apify seniority filters
-const SENIORITY_MAP: Record<string, string[]> = {
+const ICP_SENIORITY_MAP: Record<string, string[]> = {
   "C-Suite (CEO, CTO, CFO)": ["ceo", "cto", "cfo", "chief", "president", "managing director"],
   "VP / Director": ["vp", "vice president", "director", "head of"],
   "Head of Department": ["head of", "lead", "principal"],
@@ -50,7 +41,7 @@ function buildSearchKeywords(icp: Record<string, string[]>): string[] {
     keywords.push(shortIndustry);
     // Industry + C-suite/founder combo for high-value targets
     if (seniority.length > 0) {
-      const titles = seniority.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+      const titles = seniority.flatMap(s => ICP_SENIORITY_MAP[s] || [s.toLowerCase()]);
       for (const title of titles.slice(0, 3)) {
         keywords.push(`${shortIndustry} ${title}`);
       }
@@ -59,7 +50,7 @@ function buildSearchKeywords(icp: Record<string, string[]>): string[] {
 
   // If no industry selected, use seniority as fallback
   if (keywords.length === 0 && seniority.length > 0) {
-    keywords.push(...seniority.flatMap(s => SENIORITY_MAP[s] || [s]));
+    keywords.push(...seniority.flatMap(s => ICP_SENIORITY_MAP[s] || [s]));
   }
 
   return keywords.length > 0 ? keywords.slice(0, 30) : ["saas founder", "technology ceo"];
@@ -92,7 +83,7 @@ function buildApifyInput(
 
   // Seniority filter — use first 3 mapped values
   if (seniority.length > 0) {
-    const filters = seniority.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+    const filters = seniority.flatMap(s => ICP_SENIORITY_MAP[s] || [s.toLowerCase()]);
     input.seniority = [...new Set(filters)].slice(0, 10);
   }
 
@@ -123,7 +114,7 @@ function scoreLead(lead: {
   const senioritySelections = icp.seniority || [];
   const title = (lead.title || "").toLowerCase();
   if (senioritySelections.length > 0 && title) {
-    const matchWords = senioritySelections.flatMap(s => SENIORITY_MAP[s] || [s.toLowerCase()]);
+    const matchWords = senioritySelections.flatMap(s => ICP_SENIORITY_MAP[s] || [s.toLowerCase()]);
     const matched = matchWords.some(kw => title.includes(kw));
     if (matched) { score += 3.0; reasons.push("Seniority match"); }
   }

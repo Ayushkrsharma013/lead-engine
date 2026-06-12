@@ -7,6 +7,7 @@ import { PLANS } from "@/lib/stripe";
 import type { PlanKey } from "@/lib/types";
 import type { MeetingType, AppointmentInput, Appointment } from "@/lib/types";
 import { MEETING_TYPES, APPOINTMENT_BUFFER_MINUTES, MAX_BOOKINGS_PER_DAY, BUSINESS_HOURS_START, BUSINESS_HOURS_END, WEEKEND_DAYS } from "@/lib/types";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -29,6 +30,12 @@ function formatEndTime(startTime: string, durationMinutes: number): string {
 }
 
 export async function GET(req: Request) {
+  const rateLimitId = req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("appointments", rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -96,6 +103,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const rateLimitId = req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("appointments", rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   try {
     const body: AppointmentInput = await req.json();
     const { date, time, name, email, phone, company, notes, type, timezone, plan } = body;
@@ -306,6 +319,12 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const rateLimitId = req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("appointments", rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { id, status, date, time, type, timezone, token } = body;

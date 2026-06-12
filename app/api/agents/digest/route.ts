@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail } from "@/lib/resend";
 import { generateApproveToken } from "@/lib/agents/tokens";
 import type { AgentRunRow, AgentActionRow } from "@/lib/agents/types";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +13,12 @@ export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+
+  const rateLimitId = req.headers.get("x-forwarded-for") || "digest-cron";
+  const rl = checkMinuteLimit("agents-digest", rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
   }
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${cronSecret}`) {

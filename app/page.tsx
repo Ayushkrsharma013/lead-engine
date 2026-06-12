@@ -1373,10 +1373,9 @@ export default function LandingPage() {
                     display: "flex", flexDirection: "column", alignItems: "flex-start",
                     background: "var(--bg-secondary)", border: "1px solid var(--border)",
                     borderRadius: 12, padding: "16px 20px", textDecoration: "none",
-                    flex: "1 1 220px", maxWidth: 260, transition: "border-color 0.15s",
+                    flex: "1 1 220px", maxWidth: 260,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.4)")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                  className="transition-colors duration-150 hover:border-[rgba(232,66,10,0.4)]"
                 >
                   <span style={{ fontSize: "0.68rem", fontFamily: "var(--font-mono)", color: "var(--accent)", letterSpacing: "0.1em", marginBottom: 6 }}>LM-04</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Free Pipeline Audit</span>
@@ -1388,10 +1387,9 @@ export default function LandingPage() {
                     display: "flex", flexDirection: "column", alignItems: "flex-start",
                     background: "var(--bg-secondary)", border: "1px solid var(--border)",
                     borderRadius: 12, padding: "16px 20px", textDecoration: "none",
-                    flex: "1 1 220px", maxWidth: 260, transition: "border-color 0.15s",
+                    flex: "1 1 220px", maxWidth: 260,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.4)")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                  className="transition-colors duration-150 hover:border-[rgba(232,66,10,0.4)]"
                 >
                   <span style={{ fontSize: "0.68rem", fontFamily: "var(--font-mono)", color: "var(--accent)", letterSpacing: "0.1em", marginBottom: 6 }}>LM-03</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>AI Icebreaker Generator</span>

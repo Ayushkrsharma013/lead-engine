@@ -4,12 +4,9 @@ import { mergeLeadsInDB } from "@/lib/db";
 import { stableLeadId } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Lead } from "@/lib/types";
+import { APIFY_ACTOR_ID, APIFY_BASE, apifyHeaders } from "@/lib/apify-config";
 
 export const maxDuration = 300;
-
-const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
-const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
-const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 type ApifyEmailObj = { address?: string; [k: string]: unknown };
 
@@ -64,14 +61,14 @@ export async function GET(req: NextRequest) {
   const session = await requireApiSession(req);
   if (!("userId" in session)) return session;
 
-  if (!APIFY_TOKEN) {
+  if (!process.env.APIFY_API_KEY) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
 
   try {
     const runsRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
-      { headers: APIFY_HEADERS },
+      `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs?status=SUCCEEDED&limit=50`,
+      { headers: apifyHeaders() },
     );
     if (!runsRes.ok) {
       throw new Error(`Apify list-runs failed: HTTP ${runsRes.status}`);
@@ -91,8 +88,8 @@ export async function GET(req: NextRequest) {
       runs.map(async (run) => {
         try {
           const countRes = await fetch(
-            `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?limit=100`,
-            { headers: APIFY_HEADERS },
+            `${APIFY_BASE}/datasets/${run.defaultDatasetId}/items?limit=100`,
+            { headers: apifyHeaders() },
           );
           if (!countRes.ok) return null;
           const items = await countRes.json() as Record<string, unknown>[];
@@ -138,8 +135,8 @@ async function fetchAllDatasetItems(datasetId: string): Promise<Record<string, u
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const res = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${PAGE_SIZE}&offset=${offset}`,
-      { headers: APIFY_HEADERS },
+      `${APIFY_BASE}/datasets/${datasetId}/items?limit=${PAGE_SIZE}&offset=${offset}`,
+      { headers: apifyHeaders() },
     );
     if (!res.ok) {
       console.error(`fetchAllDatasetItems: page ${page} failed HTTP ${res.status} for dataset ${datasetId}`);
@@ -163,7 +160,7 @@ export async function POST(req: NextRequest) {
   const session = await requireApiSession(req);
   if (!("userId" in session)) return session;
 
-  if (!APIFY_TOKEN) {
+  if (!process.env.APIFY_API_KEY) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
 
@@ -199,8 +196,8 @@ export async function POST(req: NextRequest) {
 
     // 1. Find the target run(s) from the run history
     const runsRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?status=SUCCEEDED&limit=50`,
-      { headers: APIFY_HEADERS },
+      `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs?status=SUCCEEDED&limit=50`,
+      { headers: apifyHeaders() },
     );
     if (!runsRes.ok) {
       throw new Error(`Apify list-runs failed: HTTP ${runsRes.status}`);

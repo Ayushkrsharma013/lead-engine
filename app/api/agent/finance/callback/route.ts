@@ -3,12 +3,19 @@ import { jobActivateProfile } from "@/lib/finance-agent";
 import { tgAnswerCallback, tgEdit } from "@/lib/telegram-bot";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail } from "@/lib/resend";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 
 const supabase = supabaseAdmin;
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const rateLimitId = req.headers.get("x-forwarded-for") || "telegram-callback";
+  const rl = checkMinuteLimit("finance-callback", rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   const body = (await req.json()) as Record<string, unknown>;
   const callbackQuery = body.callback_query as Record<string, unknown> | undefined;
   if (!callbackQuery) return NextResponse.json({ ok: true });

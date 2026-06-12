@@ -1,5 +1,6 @@
 import type { Lead } from "./types";
 import { stableLeadId } from "./storage";
+import { APIFY_BASE } from "./apify-config";
 
 export interface ApifyRun {
   id: string;
@@ -41,8 +42,6 @@ export interface ApifyItem {
   job_company_website?: string;
   [key: string]: unknown;
 }
-
-const APIFY_BASE = "https://api.apify.com/v2";
 
 export async function getActorRuns(actorId: string, apiKey: string): Promise<ApifyRun[]> {
   const res = await fetch(

@@ -471,35 +471,13 @@ export default function AdminBookPage() {
                                       }
                                     } catch {}
                                   }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                                  style={{
-                                    background: "rgba(34,197,94,0.1)",
-                                    color: "#22c55e",
-                                    border: "1px solid rgba(34,197,94,0.2)",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "rgba(34,197,94,0.2)";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "rgba(34,197,94,0.1)";
-                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 bg-[rgba(34,197,94,0.1)] hover:bg-[rgba(34,197,94,0.2)] text-[#22c55e] border border-[rgba(34,197,94,0.2)]"
                                 >
                                   Mark Won
                                 </button>
                                 <button
                                   onClick={() => setCancelTarget(a)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                                  style={{
-                                    background: "rgba(239,68,68,0.1)",
-                                    color: "#ef4444",
-                                    border: "1px solid rgba(239,68,68,0.2)",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "rgba(239,68,68,0.2)";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 bg-[rgba(239,68,68,0.1)] hover:bg-[rgba(239,68,68,0.2)] text-[#ef4444] border border-[rgba(239,68,68,0.2)]"
                                 >
                                   <X size={12} />
                                   Cancel
@@ -568,32 +546,14 @@ export default function AdminBookPage() {
               <button
                 onClick={() => setCancelTarget(null)}
                 disabled={cancelling}
-                className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  color: "var(--text-primary, #f5f4f1)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                }}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-50 bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[var(--text-primary,#f5f4f1)] border border-[var(--border,rgba(255,255,255,0.08))]"
               >
                 Keep Booking
               </button>
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
-                className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: "#ef4444", color: "#fff" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#dc2626";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#ef4444";
-                }}
+                className="flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-50 flex items-center justify-center gap-2 bg-[#ef4444] hover:bg-[#dc2626] text-white"
               >
                 {cancelling ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

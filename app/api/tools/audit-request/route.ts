@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendEmail } from '@/lib/resend'
 import { notifyTelegram } from '@/lib/notify'
+import { checkMinuteLimit } from '@/lib/rate-limit'
 
 async function isCapReached(): Promise<boolean> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -13,6 +14,12 @@ async function isCapReached(): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitId = req.headers.get('x-forwarded-for') || 'anonymous';
+  const rl = checkMinuteLimit('audit-request', rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again shortly.' }, { status: 429 });
+  }
+
   const formData = await req.formData()
 
   const name = formData.get('name') as string

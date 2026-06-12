@@ -5,11 +5,10 @@ import { mergeLeadsInDB, logActivity, insertApifySyncLog, updateApifySyncLog } f
 import { getActorRuns, getDatasetItems, mapApifyItemToLead } from "@/lib/apify";
 import { captureApiError } from "@/lib/error-tracking";
 import type { Lead } from "@/lib/types";
+import { APIFY_ACTOR_ID } from "@/lib/apify-config";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-const ACTOR_ID = "x_guru~Leads-Scraper-apollo-zoominfo";
 
 export async function POST(req: NextRequest) {
   const authCheck = await requireRoleApi(req, "super_admin");
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
   let leadsSkipped = 0;
 
   try {
-    const runs = await getActorRuns(ACTOR_ID, apiKey);
+    const runs = await getActorRuns(APIFY_ACTOR_ID, apiKey);
     const succeededRuns = runs.filter(r => r.status === "SUCCEEDED");
 
     for (const run of succeededRuns) {

@@ -3,12 +3,9 @@ import { requireApiSession } from "@/lib/api-auth";
 import { checkLeadScrapeLimit, setRateLimitHeaders } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fireWebhook } from "@/lib/webhook";
+import { APIFY_ACTOR_ID, APIFY_BASE, apifyHeaders, SENIORITY_MAP, FUNCTION_MAP } from "@/lib/apify-config";
 
 export const maxDuration = 300;
-
-const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
-const ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
-const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}`, "Content-Type": "application/json" };
 
 function apifyError(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
@@ -79,7 +76,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!APIFY_TOKEN) {
+  if (!process.env.APIFY_API_KEY) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
 
@@ -111,27 +108,6 @@ export async function POST(req: NextRequest) {
       const companyDomains = typeof f.companyDomains === "string" ? f.companyDomains : "";
       const titles      = typeof f.keyword === "string" && f.keyword ? f.keyword : "";
       const maxResults  = parseInt(fields?.limit || String(f.leadLimit || "100"));
-
-      // ─── Seniority mapping ──────────────────────────────────────────────────
-      const SENIORITY_MAP: Record<string, string> = {
-        "Owner / Founder": "owner",
-        "C-Suite":         "cxo",
-        "VP":              "vp",
-        "Director":        "director",
-        "Manager":         "manager",
-        "Senior / Head":   "senior",
-      };
-      // ─── Job function mapping ───────────────────────────────────────────────
-      const FUNCTION_MAP: Record<string, string> = {
-        "Sales":        "sales",
-        "Marketing":    "marketing",
-        "Engineering":  "engineering",
-        "Product":      "product",
-        "Operations":   "operations",
-        "Finance":      "finance",
-        "HR / People":  "human_resources",
-        "Business Dev": "business_development",
-      };
 
       // Over-fetch 3× target so dedup against existing DB still yields new leads
       input = {
@@ -213,8 +189,8 @@ export async function POST(req: NextRequest) {
     }
 
     const startRes = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR}/runs?waitForFinish=0`,
-      { method: "POST", headers: APIFY_HEADERS, body: JSON.stringify(input) }
+      `${APIFY_BASE}/acts/${APIFY_ACTOR_ID}/runs?waitForFinish=0`,
+      { method: "POST", headers: apifyHeaders(), body: JSON.stringify(input) }
     );
     const startText = await startRes.text();
     let startData: any = {};
@@ -246,7 +222,7 @@ export async function GET(req: NextRequest) {
   const session = await requireApiSession(req);
   if (!("userId" in session)) return session;
 
-  if (!APIFY_TOKEN) {
+  if (!process.env.APIFY_API_KEY) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
   }
 
@@ -257,8 +233,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const statusRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}`,
-      { headers: APIFY_HEADERS }
+      `${APIFY_BASE}/actor-runs/${runId}`,
+      { headers: apifyHeaders() }
     );
     const statusText = await statusRes.text();
     let statusData: any = {};
@@ -280,8 +256,8 @@ export async function GET(req: NextRequest) {
       }
 
       const dataRes = await fetch(
-        `https://api.apify.com/v2/datasets/${datasetId}/items?limit=500`,
-        { headers: APIFY_HEADERS }
+        `${APIFY_BASE}/datasets/${datasetId}/items?limit=500`,
+        { headers: apifyHeaders() }
       );
       const dataText = await dataRes.text();
       let rawLeads: any[] = [];

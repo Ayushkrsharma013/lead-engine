@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendEmail } from '@/lib/resend'
+import { checkMinuteLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
+  const rateLimitId = req.headers.get('x-forwarded-for') || 'anonymous';
+  const rl = checkMinuteLimit('email-capture', rateLimitId, 20);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded. Try again shortly.' }, { status: 429 });
+  }
+
   const { email, industry } = await req.json()
 
   if (!email || !email.includes('@')) {
