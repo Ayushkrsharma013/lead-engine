@@ -138,16 +138,15 @@ export async function middleware(req: NextRequest) {
     const isAdminPath = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
 
     // ── Admin routes: super_admin only, bypass ALL further checks ──
-    if (isAdminPath) {
+    // QA agents get full access including admin — must check BEFORE super_admin gate
+    if (effectiveRole === "qa_agent") {
+      // Full access — no redirects. QA agent can visit any route.
+    } else if (isAdminPath) {
       if (effectiveRole !== "super_admin") {
         return NextResponse.redirect(new URL(BASE_PATH + "/login", req.url));
       }
       // Super admin on admin routes — allow immediately, skip subscription + all other checks
       return res;
-    }
-
-    if (effectiveRole === "qa_agent") {
-      // Full access — no redirects. QA agent can visit any route.
     }
   }
 

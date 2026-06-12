@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 import { mergeLeadsInDB } from "@/lib/db";
 import { sanitizeLead, stableLeadId } from "@/lib/storage";
 import type { Lead } from "@/lib/types";
@@ -196,6 +197,13 @@ function buildLead(raw: Record<string, unknown>, overlay?: ReturnType<typeof dev
 
 // ─── POST ─────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // Rate limit: 5/min per user
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("leads-blitzapi", rateLimitId, 5);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   if (!APIFY_TOKEN) return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
 
   const userId = req.headers.get("x-user-id");

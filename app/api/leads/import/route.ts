@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiAuth } from "@/lib/api-auth";
+import { requireApiSession } from "@/lib/api-auth";
 import { mergeLeadsInDB } from "@/lib/db";
 import { stableLeadId } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -61,8 +61,8 @@ function apifyItemToLead(item: Record<string, unknown>): Lead {
 // ─── GET — List past Apify runs with lead counts ──────────────────────────────
 
 export async function GET(req: NextRequest) {
-  const authError = validateApiAuth(req);
-  if (authError) return authError;
+  const session = await requireApiSession(req);
+  if (!("userId" in session)) return session;
 
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
@@ -160,8 +160,8 @@ async function fetchAllDatasetItems(datasetId: string): Promise<Record<string, u
 // ─── POST — Import leads from selected Apify run ──────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authError = validateApiAuth(req);
-  if (authError) return authError;
+  const session = await requireApiSession(req);
+  if (!("userId" in session)) return session;
 
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });

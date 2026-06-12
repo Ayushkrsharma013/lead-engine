@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 import type { PlanKey } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -176,6 +177,13 @@ async function fetchApifyResults(datasetId: string, apiKey: string): Promise<Arr
 // POST /api/leads/generate — trigger lead generation
 // Auth: x-user-id header (client portal), OR Authorization: Bearer <CRON_SECRET> + ?workspace_id= (webhook/cron)
 export async function POST(req: NextRequest) {
+  // Rate limit: 10/min per user
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("leads-generate", rateLimitId, 10);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
   const isInternal = cronSecret && authHeader === `Bearer ${cronSecret}`;
@@ -440,6 +448,13 @@ export async function POST(req: NextRequest) {
 // GET /api/leads/generate — check generation status
 // Auth: x-user-id header (client portal), OR Authorization: Bearer <CRON_SECRET> + ?workspace_id= (webhook/cron)
 export async function GET(req: NextRequest) {
+  // Rate limit: 10/min per user
+  const rateLimitId = req.headers.get("x-user-id") || req.headers.get("x-forwarded-for") || "anonymous";
+  const rl = checkMinuteLimit("leads-generate", rateLimitId, 10);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
+  }
+
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
   const isInternal = cronSecret && authHeader === `Bearer ${cronSecret}`;

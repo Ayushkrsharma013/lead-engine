@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase";
 import { notifyTelegram } from "@/lib/notify";
 import { triggerMicroDelivery } from "@/lib/micro-delivery";
+import { fireWebhook } from "@/lib/webhook";
 
 export const dynamic = "force-dynamic";
 
@@ -110,12 +111,8 @@ export async function POST(req: NextRequest) {
     ).catch(() => {});
   }
 
-  // ── Fire-and-forget: notify n8n welcome sequence ─────────────────────
-  fetch("https://automate.flow-forges.com/webhook/welcome-sequence", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(profile),
-  }).catch(() => {});
+  // ── Notify n8n welcome sequence (non-blocking, with retry) ──────────
+  void fireWebhook("https://automate.flow-forges.com/webhook/welcome-sequence", profile as Record<string, unknown>, { label: "welcome-sequence" });
 
   return NextResponse.json({ ok: true });
 }

@@ -103,34 +103,6 @@ const initialState: AppState = {
   notifications: [],
 };
 
-function initFromStorage(): AppState {
-  if (typeof window === "undefined") return initialState;
-  try {
-    const theme = localStorage.getItem("leados_theme");
-    const sidebar = localStorage.getItem("leados_sidebar");
-    const sourcesRaw = localStorage.getItem("leados_sources");
-    let enabledSources = DEFAULT_ENABLED_SOURCES;
-    if (sourcesRaw) {
-      try { enabledSources = { ...DEFAULT_ENABLED_SOURCES, ...JSON.parse(sourcesRaw) }; } catch { /* ignore */ }
-    }
-    const anthropicKey = localStorage.getItem("proos_anthropic_key") || "";
-    const geminiKey = localStorage.getItem("proos_gemini_key") || "";
-    const openaiKey = localStorage.getItem("proos_openai_key") || "";
-    const apiKey = anthropicKey || geminiKey || openaiKey || ""; // use first available as default
-    const agent = localStorage.getItem("leados_agent");
-    return {
-      ...initialState,
-      theme: theme === "light" ? "light" : "dark",
-      sidebarCollapsed: sidebar === "closed",
-      enabledSources,
-      apiKey,
-      agentCollapsed: agent !== "open",
-    };
-  } catch {
-    return initialState;
-  }
-}
-
 // ─── Actions ────────────────────────────────────────────────────────────────────
 
 export type AppAction =

@@ -3,6 +3,7 @@ import "./globals.css";
 import "./landing.css";
 import { AppProvider } from "@/lib/AppContext";
 import { Shell } from "@/components/Shell";
+import { ContextProviders } from "@/lib/context/Providers";
 import JsonLd from "@/components/seo/JsonLd";
 import { organizationSchema, websiteSchema } from "@/lib/seo/schema";
 import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
@@ -89,9 +90,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased bg-bg text-ink font-geist">
         <JsonLd id="schema-organization" data={organizationSchema()} />
         <JsonLd id="schema-website" data={websiteSchema()} />
-        <AppProvider>
-          <Shell>{children}</Shell>
-        </AppProvider>
+        <ContextProviders>
+          <AppProvider>
+            <Shell>{children}</Shell>
+          </AppProvider>
+        </ContextProviders>
         <AnalyticsProvider />
         <CookieConsent />
       </body>

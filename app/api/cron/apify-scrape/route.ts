@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { checkMinuteLimit } from "@/lib/rate-limit";
 import { readKnowledge, writeKnowledge } from "@/lib/agents/knowledge";
 import { mergeLeadsInDB, logActivity } from "@/lib/db";
 import { sanitizeLead } from "@/lib/storage";
@@ -20,6 +21,13 @@ interface ApifyLead {
 }
 
 export async function GET(req: NextRequest) {
+  // Rate limit: 3/min by IP (cron endpoint)
+  const ip = req.headers.get("x-forwarded-for") || "cron";
+  const rl = checkMinuteLimit("cron-apify-scrape", ip, 3);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded." }, { status: 429 });
+  }
+
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });

@@ -36,7 +36,9 @@ export async function GET(req: NextRequest) {
       }).eq('id', inv.id);
       await notifyInvoiceEvent('reminder', inv);
       reminded++;
-    } catch {}
+    } catch (err) {
+      console.error("[cron/invoice-agent] reminder failed for invoice", inv.id, err);
+    }
   }
 
   return NextResponse.json({ overdueMarked: overdueCount, remindersSent: reminded });

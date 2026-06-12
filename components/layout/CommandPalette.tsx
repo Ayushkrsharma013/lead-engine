@@ -106,6 +106,9 @@ export default function CommandPalette() {
       <div className="absolute inset-0 animate-fade-in" style={{ background: "rgba(0,0,0,0.7)" }} />
 
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         className="relative w-[560px] max-w-[95vw] overflow-hidden animate-scale-in"
         style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", boxShadow: "var(--shadow-lg)" }}
         onClick={e => e.stopPropagation()}

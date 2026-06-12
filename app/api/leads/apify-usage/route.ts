@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiAuth } from "@/lib/api-auth";
+import { requireApiSession } from "@/lib/api-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
 const APIFY_HEADERS = { Authorization: `Bearer ${APIFY_TOKEN}` };
 
 export async function GET(req: NextRequest) {
-  const authError = validateApiAuth(req);
-  if (authError) return authError;
+  const session = await requireApiSession(req);
+  if (!("userId" in session)) return session;
 
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });

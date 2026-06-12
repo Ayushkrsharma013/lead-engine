@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
       plan: selected.name,
       amount: selected.setupAmount,
       vban: {
-        bank: "JPMorgan Chase Bank, N.A",
-        accountNumber: "20000045886271",
-        routingNumber: "028000024",
+        bank: process.env.BANK_NAME || "",
+        accountNumber: process.env.BANK_ACCOUNT_NUMBER || "",
+        routingNumber: process.env.BANK_ROUTING_NUMBER || "",
         accountType: "Business",
       },
     });

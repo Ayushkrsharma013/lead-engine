@@ -26,7 +26,6 @@ import { Progress } from "@/components/ui/progress";
 
 const API_HEADERS = {
   "Content-Type": "application/json",
-  Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
 };
 
 const ACCENT: Record<Source, string> = {
@@ -220,9 +219,8 @@ export default function Home() {
   const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
-    fetch("/prospecting-os/api/leads/apify-usage", {
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}` },
-    }).then(r => r.json()).then(d => setLastScrapeLog(d.lastLog)).catch(() => {});
+    fetch("/prospecting-os/api/leads/apify-usage")
+      .then(r => r.json()).then(d => setLastScrapeLog(d.lastLog)).catch(() => {});
 
     // Load quota + budget from user settings
     fetch("/prospecting-os/api/user/settings")

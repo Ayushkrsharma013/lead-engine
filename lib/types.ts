@@ -285,46 +285,6 @@ export type UserRole = 'super_admin' | 'client' | 'user' | 'qa_agent'
 
 export type PlanKey = 'pilot' | 'growth' | 'scale' | 'micro'
 
-export const PLAN_MODULES: Record<PlanKey, string[]> = {
-  pilot: [
-    'overview',
-    'leads-view',
-    'billing',
-  ],
-  growth: [
-    'overview',
-    'leads-view',
-    'leads-full',
-    'icebreakers',
-    'analytics',
-    'slack-digest',
-    'billing',
-    'settings',
-  ],
-  scale: [
-    'overview',
-    'leads-view',
-    'leads-full',
-    'icebreakers',
-    'analytics',
-    'analytics-ab',
-    'slack-digest',
-    'crm-sync',
-    'sequences',
-    'weekly-report',
-    'billing',
-    'settings',
-  ],
-  micro: [
-    'overview',
-    'leads-view',
-    'icebreakers',
-    'analytics',
-    'billing',
-    'settings',
-  ],
-}
-
 export interface UserProfile {
   id: string
   email: string

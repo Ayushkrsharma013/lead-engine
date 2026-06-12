@@ -23,7 +23,6 @@ type Phase = "loading" | "ready" | "importing" | "error";
 
 const API_HEADERS = {
   "Content-Type": "application/json",
-  Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
 };
 
 async function fetchRuns(): Promise<{ runs: ApifyRun[]; importedRunIds: string[] }> {

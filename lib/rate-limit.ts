@@ -2,6 +2,63 @@ import { supabaseAdmin } from "./supabase";
 
 const supabase = supabaseAdmin;
 
+// ─── In-memory per-minute rate limiter ──────────────────────────────────
+// Sliding-window tracking for API routes. Resets on server restart (cold start).
+// For production, replace with Redis or a DB-backed counter.
+
+interface WindowEntry {
+  timestamps: number[];
+}
+
+const windows = new Map<string, WindowEntry>();
+
+function getWindowKey(scope: string, identifier: string): string {
+  return `${scope}:${identifier}`;
+}
+
+/**
+ * Check a per-minute rate limit using in-memory sliding window.
+ * Returns true if the request is allowed, false if rate limited.
+ */
+export function checkMinuteLimit(
+  scope: string,
+  identifier: string,
+  maxPerMinute: number
+): { allowed: boolean; used: number; remaining: number } {
+  const now = Date.now();
+  const key = getWindowKey(scope, identifier);
+  let entry = windows.get(key);
+
+  if (!entry) {
+    entry = { timestamps: [] };
+    windows.set(key, entry);
+  }
+
+  // Purge entries older than 60 seconds
+  const cutoff = now - 60_000;
+  entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
+
+  const used = entry.timestamps.length;
+  const allowed = used < maxPerMinute;
+
+  if (allowed) {
+    entry.timestamps.push(now);
+  }
+
+  return { allowed, used, remaining: Math.max(0, maxPerMinute - used - (allowed ? 1 : 0)) };
+}
+
+// Periodic cleanup of stale windows (every 5 minutes)
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const cutoff = Date.now() - 60_000;
+    for (const [key, entry] of windows) {
+      entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
+      if (entry.timestamps.length === 0) windows.delete(key);
+    }
+  }, 300_000);
+}
+
 // Default limits
 const DEFAULT_DAILY_SCRAPE_LIMIT = 500;
 const DEFAULT_DAILY_EMAIL_LIMIT = 200;

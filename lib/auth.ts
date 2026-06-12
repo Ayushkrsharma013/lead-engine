@@ -1,8 +1,8 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import type { UserRole, PlanKey } from "./types";
-import { PLAN_MODULES } from "./types";
+import type { UserRole } from "./types";
+import { PLAN_MODULES, type PlanTier, type ModuleKey } from "./plan-modules";
 import { NextRequest, NextResponse } from "next/server";
 
 export type Role = UserRole;
@@ -134,9 +134,9 @@ export function isRole(headers: Headers, ...roles: UserRole[]): boolean {
   return role !== null && roles.includes(role)
 }
 
-export function canAccessModule(plan: PlanKey | null, module: string): boolean {
+export function canAccessModule(plan: PlanTier | null, module: string): boolean {
   if (!plan) return false
-  return PLAN_MODULES[plan]?.includes(module) ?? false
+  return PLAN_MODULES[plan]?.includes(module as ModuleKey) ?? false
 }
 
 export async function requireRoleApi(

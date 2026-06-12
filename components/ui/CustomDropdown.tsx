@@ -127,10 +127,8 @@ export default function CustomDropdown({
             role="button"
             tabIndex={-1}
             onClick={e => { e.stopPropagation(); onChange(""); setSearchQuery(""); }}
-            className="p-0.5 rounded transition-colors shrink-0"
+            className="p-0.5 rounded transition-colors shrink-0 hover:bg-white/[0.05]"
             style={{ color: "var(--ink-4)" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           >
             <X size={12} />
           </span>

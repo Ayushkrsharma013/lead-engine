@@ -347,6 +347,8 @@ export default function ProSidebar() {
 
   return (
     <aside
+      role="navigation"
+      aria-label="Main sidebar"
       className="h-screen shrink-0 flex flex-col relative z-20"
       style={{
         width: collapsed ? COLLAPSED_W : EXPANDED_W,
@@ -465,6 +467,7 @@ export default function ProSidebar() {
           label="Agent"
           onClick={() => dispatch({ type: "TOGGLE_AGENT" })}
         />
+        <div role="button" aria-expanded={!collapsed} aria-controls="sidebar-content" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
         <SidebarBottomButton
           collapsed={collapsed}
           active={false}
@@ -472,6 +475,7 @@ export default function ProSidebar() {
           label="Collapse"
           onClick={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
         />
+        </div>
 
         {/* Profile Section with Dropup Drawer */}
         <div ref={profileRef} style={{ position: "relative" }}>

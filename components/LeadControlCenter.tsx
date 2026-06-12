@@ -74,9 +74,7 @@ export default function LeadControlCenter({
 
   const fetchUsage = useCallback(async () => {
     try {
-      const res = await fetch("/prospecting-os/api/leads/apify-usage", {
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}` },
-      });
+      const res = await fetch("/prospecting-os/api/leads/apify-usage");
       if (res.ok) {
         const data = await res.json();
         setUsage(data);

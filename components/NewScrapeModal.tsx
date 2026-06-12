@@ -48,7 +48,6 @@ export default function NewScrapeModal({ onClose, onSuccess }: NewScrapeModalPro
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
         },
         body: JSON.stringify({ source: "linkedin", fields }),
       });
@@ -64,8 +63,7 @@ export default function NewScrapeModal({ onClose, onSuccess }: NewScrapeModalPro
       for (let attempt = 0; attempt < 60 && status === "RUNNING"; attempt++) {
         await new Promise(r => setTimeout(r, 5000));
         const pollRes = await fetch(
-          `/prospecting-os/api/leads?runId=${encodeURIComponent(runId)}`,
-          { headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}` } },
+          `/prospecting-os/api/leads?runId=${encodeURIComponent(runId)}`
         );
         const pollData = await pollRes.json() as { status: string; leads?: unknown[] };
         status = pollData.status;

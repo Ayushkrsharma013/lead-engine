@@ -135,7 +135,7 @@ Be concise and smart. Infer context. Never ask for fields you can calculate your
       try {
         const parsed = JSON.parse(line.trim());
         if (parsed.action === 'update' && parsed.patch) patch = parsed.patch;
-      } catch {}
+      } catch { /* JSON parse of non-JSON line — expected */ }
       foundJson = true;
     } else if (foundJson) {
       replyLines.push(line);

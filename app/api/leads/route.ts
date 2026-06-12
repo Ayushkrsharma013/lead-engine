@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiAuth } from "@/lib/api-auth";
+import { requireApiSession } from "@/lib/api-auth";
 import { checkLeadScrapeLimit, setRateLimitHeaders } from "@/lib/rate-limit";
-import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase";
+import { fireWebhook } from "@/lib/webhook";
 
 export const maxDuration = 300;
 
@@ -65,20 +65,9 @@ function validateFields(body: Record<string, unknown>): string | null {
 // ─── POST — start actor and return runId immediately ───────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authError = validateApiAuth(req);
-  if (authError) return authError;
-
-  // Rate limit: get user from session
-  let userId = "anonymous";
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll: () => req.cookies.getAll(), setAll: () => {} } }
-    );
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) userId = user.id;
-  } catch { /* anonymous */ }
+  const session = await requireApiSession(req);
+  if (!("userId" in session)) return session;
+  const userId = session.userId;
 
   const rateLimit = await checkLeadScrapeLimit(userId);
   const headers = new Headers();
@@ -254,8 +243,8 @@ export async function POST(req: NextRequest) {
 // ─── GET — poll actor run status and return results when complete ──────────────
 
 export async function GET(req: NextRequest) {
-  const authError = validateApiAuth(req);
-  if (authError) return authError;
+  const session = await requireApiSession(req);
+  if (!("userId" in session)) return session;
 
   if (!APIFY_TOKEN) {
     return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
@@ -382,19 +371,15 @@ export async function GET(req: NextRequest) {
           .eq("status", "started");
       } catch { /* log failure non-critical */ }
 
-      // Fire-and-forget: notify n8n lead delivery alert
+      // Notify n8n lead delivery alert (non-blocking, with retry)
       if (matched > 0) {
-        fetch("https://automate.flow-forges.com/webhook/lead-delivery", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            client_id: "scrape",
-            client_name: "Manual Scrape",
-            lead_count: matched,
-            hot_count: matchedLeads.filter((l: any) => (l.score || l._score || 0) >= 80).length,
-            avg_score: matchedLeads.reduce((s: number, l: any) => s + (l.score || l._score || 0), 0) / Math.max(matched, 1),
-          }),
-        }).catch(() => {});
+        void fireWebhook("https://automate.flow-forges.com/webhook/lead-delivery", {
+          client_id: "scrape",
+          client_name: "Manual Scrape",
+          lead_count: matched,
+          hot_count: matchedLeads.filter((l: any) => (l.score || l._score || 0) >= 80).length,
+          avg_score: matchedLeads.reduce((s: number, l: any) => s + (l.score || l._score || 0), 0) / Math.max(matched, 1),
+        }, { label: "lead-delivery" });
       }
 
       return NextResponse.json({
