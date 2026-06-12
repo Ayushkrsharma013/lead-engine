@@ -1142,20 +1142,7 @@ export default function Home() {
               <button
                 onClick={() => setGdrive(true)}
                 title="Export to Google Drive"
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all shrink-0"
-                style={{
-                  background: "var(--accent-soft)",
-                  border: "1px solid rgba(0,212,255,0.2)",
-                  color: "var(--accent)",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)/50";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)";
-                }}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-medium transition-all duration-150 shrink-0 bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)] border border-[rgba(0,212,255,0.2)] hover:border-[var(--accent)]/50 text-[var(--accent)]"
               >
                 <HardDrive size={12} />
                 Drive

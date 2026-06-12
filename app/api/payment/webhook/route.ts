@@ -71,7 +71,7 @@ function verifyDodoSignature(
       Buffer.from(expected),
       Buffer.from(signature)
     );
-  } catch {
+  } catch (err) { console.error("[payment/webhook] Signature verification failed:", err);
     return false;
   }
 }
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   let rawBody: string;
   try {
     rawBody = await req.text();
-  } catch {
+  } catch (err) { console.error("[payment/webhook] Request body read failed:", err);
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
   let body: any;
   try {
     body = JSON.parse(rawBody || "{}");
-  } catch {
+  } catch (err) { console.error("[payment/webhook] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

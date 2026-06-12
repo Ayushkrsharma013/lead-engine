@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   let body: { name?: string; steps?: unknown[]; schedule?: Record<string, unknown> };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/sequences] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "Missing id param" }, { status: 400 });
 
   let body: { name?: string; steps?: unknown[]; schedule?: Record<string, unknown>; status?: string };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/sequences] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

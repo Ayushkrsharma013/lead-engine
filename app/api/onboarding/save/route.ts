@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   };
   try {
     body = await req.json();
-  } catch {
+  } catch (err) { console.error("[onboarding/save] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

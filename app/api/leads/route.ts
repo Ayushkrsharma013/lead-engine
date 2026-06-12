@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
     );
     const startText = await startRes.text();
     let startData: any = {};
-    try { startData = JSON.parse(startText); } catch {
+    try { startData = JSON.parse(startText); } catch (err) { console.error("[leads] Apify start response parse failed:", err);
       throw new Error(`Apify returned non-JSON (HTTP ${startRes.status}): ${startText.slice(0, 120)}`);
     }
 
@@ -238,7 +238,7 @@ export async function GET(req: NextRequest) {
     );
     const statusText = await statusRes.text();
     let statusData: any = {};
-    try { statusData = JSON.parse(statusText); } catch {
+    try { statusData = JSON.parse(statusText); } catch (err) { console.error("[leads] Apify status response parse failed:", err);
       throw new Error(`Apify returned non-JSON response (HTTP ${statusRes.status}): ${statusText.slice(0, 120)}`);
     }
 

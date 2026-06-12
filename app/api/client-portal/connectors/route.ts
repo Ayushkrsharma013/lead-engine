@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   let body: { type?: string; config?: Record<string, string> };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/connectors] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

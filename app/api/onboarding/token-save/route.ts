@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   let body: { token?: string; icp?: Record<string, string[]>; plan?: string };
   try {
     body = await req.json();
-  } catch {
+  } catch (err) { console.error("[onboarding/token-save] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

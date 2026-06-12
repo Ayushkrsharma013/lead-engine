@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
   let body: { actionId?: string; decision?: string };
   try {
     body = await req.json();
-  } catch {
+  } catch (err) {
+    console.error("[agents/resolve] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
             datasetId: run.defaultDatasetId,
             hasMore: count >= 100,
           };
-        } catch {
+        } catch (err) { console.error("[leads/import] Run count fetch failed:", err);
           return null;
         }
       })

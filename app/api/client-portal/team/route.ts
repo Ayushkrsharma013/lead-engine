@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   let body: { email?: string; role?: string };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/team] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

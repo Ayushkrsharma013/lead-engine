@@ -51,7 +51,7 @@ async function requireAdmin(): Promise<NextResponse | null> {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     return null;
-  } catch {
+  } catch (err) { console.error("[outreach/gmaps-config] Auth error:", err);
     return NextResponse.json({ error: "Auth error" }, { status: 500 });
   }
 }

@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   let body: { id?: string; action?: string };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[admin/clients] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

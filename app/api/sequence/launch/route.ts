@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   let body: { sequenceId?: string };
   try {
     body = await req.json();
-  } catch {
+  } catch (err) { console.error("[sequence/launch] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

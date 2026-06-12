@@ -4,38 +4,19 @@ import { checkMinuteLimit } from "@/lib/rate-limit";
 import { mergeLeadsInDB } from "@/lib/db";
 import { sanitizeLead, stableLeadId } from "@/lib/storage";
 import type { Lead } from "@/lib/types";
+import { APIFY_ACTOR_ID as SEARCH_ACTOR, APIFY_BASE, apifyHeaders, SENIORITY_MAP, FUNCTION_MAP } from "@/lib/apify-config";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-const APIFY_TOKEN = process.env.APIFY_API_KEY || "";
-
-// Stage 1: filter-based discovery (search by industry, country, seniority, etc.)
-const SEARCH_ACTOR = "x_guru~Leads-Scraper-apollo-zoominfo";
-const SEARCH_COST  = 0.001; // $0.001 per result
+const SEARCH_COST = 0.001; // $0.001 per result
 
 // Stage 2: deep enrichment (takes LinkedIn URLs → verified email, phone, full history)
 const ENRICH_ACTOR = "dev_fusion~Linkedin-Profile-Scraper";
 const ENRICH_COST  = 0.01;  // $0.01 per profile
 
-const APIFY_HEADERS = {
-  Authorization: `Bearer ${APIFY_TOKEN}`,
-  "Content-Type": "application/json",
-};
-
 const MAX_POLL_ATTEMPTS = 70;  // 70 × 4s = 280s (under 300s maxDuration)
 const POLL_INTERVAL_MS  = 4000;
-
-// ─── Seniority + function maps ────────────────────────────────────────────────
-const SENIORITY_MAP: Record<string, string> = {
-  "Owner / Founder": "owner", "C-Suite": "cxo", "VP": "vp",
-  "Director": "director", "Manager": "manager", "Senior / Head": "senior",
-};
-const FUNCTION_MAP: Record<string, string> = {
-  "Sales": "sales", "Marketing": "marketing", "Engineering": "engineering",
-  "Product": "product", "Operations": "operations", "Finance": "finance",
-  "HR / People": "human_resources", "Business Dev": "business_development",
-};
 
 // ─── Fetch feedback keywords ──────────────────────────────────────────────────
 async function getFeedbackKeywords(userId: string): Promise<{ include: string[]; exclude: string[] }> {
@@ -60,7 +41,7 @@ async function pollRun(runId: string): Promise<{ status: string; datasetId?: str
   for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
     try {
-      const res = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, { headers: APIFY_HEADERS });
+      const res = await fetch(`${APIFY_BASE}/actor-runs/${runId}`, { headers: apifyHeaders() });
       if (!res.ok) continue;
       const json = await res.json();
       const status = json?.data?.status as string;
@@ -75,8 +56,8 @@ async function pollRun(runId: string): Promise<{ status: string; datasetId?: str
 async function fetchDataset(datasetId: string, limit: number): Promise<Record<string, unknown>[]> {
   try {
     const res = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?limit=${limit}`,
-      { headers: APIFY_HEADERS }
+      `${APIFY_BASE}/datasets/${datasetId}/items?limit=${limit}`,
+      { headers: apifyHeaders() }
     );
     if (!res.ok) return [];
     const json = await res.json();
@@ -87,12 +68,12 @@ async function fetchDataset(datasetId: string, limit: number): Promise<Record<st
 // ─── Start an actor run ───────────────────────────────────────────────────────
 async function startRun(actor: string, input: Record<string, unknown>): Promise<string | null> {
   const res = await fetch(
-    `https://api.apify.com/v2/acts/${actor}/runs?waitForFinish=0`,
-    { method: "POST", headers: APIFY_HEADERS, body: JSON.stringify(input) }
+    `${APIFY_BASE}/acts/${actor}/runs?waitForFinish=0`,
+    { method: "POST", headers: apifyHeaders(), body: JSON.stringify(input) }
   );
   if (!res.ok) return null;
   let data: Record<string, unknown> = {};
-  try { data = await res.json(); } catch { return null; }
+  try { data = await res.json(); } catch (err) { console.error("[leads/blitzapi] Run start response parse failed:", err); return null; }
   return ((data?.data as Record<string, unknown>)?.id as string) || null;
 }
 
@@ -204,7 +185,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Rate limit exceeded. Try again shortly." }, { status: 429 });
   }
 
-  if (!APIFY_TOKEN) return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
+  if (!process.env.APIFY_API_KEY) return NextResponse.json({ error: "APIFY_API_KEY not configured" }, { status: 500 });
 
   const userId = req.headers.get("x-user-id");
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

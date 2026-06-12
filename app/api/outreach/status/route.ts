@@ -12,7 +12,7 @@ export async function GET() {
     // Django admin login page returns 200; redirect means server is up
     const running = res.ok || res.status === 302 || res.status === 301;
     return NextResponse.json({ running, url: OO_URL });
-  } catch {
+  } catch (err) { console.error("[outreach/status] Health check failed:", err);
     return NextResponse.json({ running: false, url: OO_URL });
   }
 }

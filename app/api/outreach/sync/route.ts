@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   let body: OOSyncPayload;
   try {
     body = await req.json() as OOSyncPayload;
-  } catch {
+  } catch (err) { console.error("[outreach/sync] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 

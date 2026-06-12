@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   let body: { industries?: string[]; locations?: string; minScore?: number };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/settings] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 

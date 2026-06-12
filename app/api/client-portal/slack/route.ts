@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: { slack_webhook?: string };
-  try { body = await req.json(); } catch {
+  try { body = await req.json(); } catch (err) { console.error("[client-portal/slack] JSON parse failed:", err);
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
