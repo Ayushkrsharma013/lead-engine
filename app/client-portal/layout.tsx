@@ -292,16 +292,20 @@ export default function ClientPortalLayout({ children }: { children: React.React
           )}
         </AnimatePresence>
 
-        <aside className="hidden lg:flex shrink-0 flex-col relative" style={{
-          width: sidebarW,
-          background: "rgba(255,255,255,0.03)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-          transition: "width 200ms cubic-bezier(0.4, 0, 0.2, 1)", overflow: "hidden",
-        }}>
+        <motion.aside
+          animate={{ width: sidebarW }}
+          transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
+          className="hidden lg:flex shrink-0 flex-col relative"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+            overflow: "hidden",
+          }}
+        >
           {sidebarContent}
-        </aside>
+        </motion.aside>
 
         <AnimatePresence>
           {mobileOpen && (
@@ -316,12 +320,12 @@ export default function ClientPortalLayout({ children }: { children: React.React
           )}
         </AnimatePresence>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <motion.main layout transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }} className="flex-1 flex flex-col overflow-hidden">
           <TopBarWithContext profile={profile} />
           <div className="flex-1 overflow-auto">
             {children}
           </div>
-        </main>
+        </motion.main>
       </div>
       <ProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </PortalHeaderProvider>
