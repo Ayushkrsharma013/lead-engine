@@ -78,7 +78,8 @@ async function fetchDetails(placeId: string): Promise<{ phone: string; website: 
       phone: data.result?.formatted_phone_number || "",
       website: data.result?.website || "",
     };
-  } catch {
+  } catch (err) {
+    console.error("[gmaps-search] Enrichment failed:", err);
     return { phone: "", website: "" };
   }
 }

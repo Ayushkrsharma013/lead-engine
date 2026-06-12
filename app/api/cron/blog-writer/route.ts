@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
             parse_mode: 'HTML',
           }),
         }
-      ).catch(() => {});
+      ).catch(err => console.error("[cron/blog-writer] Telegram notify failed:", err));
     }
 
     return NextResponse.json({

@@ -26,7 +26,8 @@ export async function GET() {
       .single();
 
     return NextResponse.json(profile || { email: user.email, role: user.user_metadata?.role || "user" });
-  } catch {
+  } catch (err) {
+    console.error("[admin/me] Profile fetch failed:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

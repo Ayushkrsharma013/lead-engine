@@ -75,7 +75,8 @@ function verifyWebhookSignature(body: string, headers: Headers, secret: string):
       }
     }
     return false;
-  } catch {
+  } catch (err) {
+    console.error("[inbound-email] Webhook verification failed:", err);
     return false;
   }
 }

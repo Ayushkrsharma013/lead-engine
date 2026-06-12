@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "I'm having trouble thinking right now. Try again?";
 
     return NextResponse.json({ text: text.trim() });
-  } catch {
+  } catch (err) {
+    console.error("[chat/bot] LLM call failed:", err);
     return NextResponse.json({ text: "I'm having trouble connecting. Try again in a moment." });
   }
 }

@@ -11,7 +11,10 @@ async function getUserId(req: NextRequest): Promise<string | null> {
     );
     const { data: { user } } = await supabase.auth.getUser();
     return user?.id || null;
-  } catch { return null; }
+  } catch (err) {
+    console.error("[filters] Auth check failed:", err);
+    return null;
+  }
 }
 
 export async function GET(req: NextRequest) {

@@ -249,7 +249,8 @@ function verifyTelegramWebhook(req: Request): boolean {
     const actual = secretHeader.trim();
     if (actual.length !== expected.length) return false;
     return timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
-  } catch {
+  } catch (err) {
+    console.error("[agent/telegram] HMAC comparison failed:", err);
     return false;
   }
 }

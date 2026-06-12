@@ -291,6 +291,18 @@ function reducer(state: AppState, action: AppAction): AppState {
 
 const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction> } | null>(null);
 
+/**
+ * Primary app state hook — backward-compatible monolithic accessor.
+ *
+ * Migration path: Components can gradually switch to the split context hooks
+ * (useUI, useFilters, useAgents) to reduce re-renders. The split contexts
+ * are already wired in layout.tsx via ContextProviders.
+ *
+ * New components should prefer:
+ *   import { useUI } from '@/lib/context/UIContext'
+ *   import { useFilters } from '@/lib/context/FiltersContext'
+ *   import { useAgents } from '@/lib/context/AgentContext'
+ */
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp must be used within AppProvider");

@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail } from "@/lib/resend";
 import { sendClientCredentialsEmail, notifyTelegram } from "@/lib/notify";
+import { fireWebhook } from "@/lib/webhook";
 import { PLANS } from "@/lib/stripe";
 import type { PlanKey } from "@/lib/types";
 
@@ -375,23 +376,19 @@ export async function POST(req: NextRequest) {
           : "Auto-activated.";
       await notifyTelegram(
         `NEW CLIENT — ${maskEmail(email)} paid $${amount} for ${planName}. ${deliveryNote}`
-      ).catch(() => undefined);
+      ).catch(err => console.error("[payment-webhook] Telegram notify failed:", err));
 
-      // n8n welcome-sequence webhook
-      fetch(N8N_WELCOME_HOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "payment_activated",
-          source: "dodo",
-          userId,
-          email,
-          plan,
-          amount,
-          paymentId,
-          activated_at: new Date().toISOString(),
-        }),
-      }).catch(() => undefined);
+      // n8n welcome-sequence webhook (non-blocking, with retry)
+      void fireWebhook(N8N_WELCOME_HOOK, {
+        event: "payment_activated",
+        source: "dodo",
+        userId,
+        email,
+        plan,
+        amount,
+        paymentId,
+        activated_at: new Date().toISOString(),
+      }, { label: "payment-activated" });
 
       console.log("[payment-webhook] Dodo activated:", maskEmail(email), "plan:", plan);
       return NextResponse.json({ received: true, activated: true });
@@ -675,23 +672,19 @@ export async function POST(req: NextRequest) {
         : "Auto-activated.";
     await notifyTelegram(
       `NEW CLIENT — ${existing.email || "[no-email]"} paid $${planAmount} for ${planName}. ${deliveryNote}`,
-    ).catch(() => undefined);
+    ).catch(err => console.error("[payment-webhook] Telegram notify failed:", err));
 
-    // n8n welcome-sequence webhook
-    fetch(N8N_WELCOME_HOOK, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "payment_activated",
-        userId,
-        email: existing.email,
-        full_name: existing.full_name,
-        plan,
-        amount: planAmount,
-        txnid,
-        activated_at: new Date().toISOString(),
-      }),
-    }).catch(() => undefined);
+    // n8n welcome-sequence webhook (non-blocking, with retry)
+    void fireWebhook(N8N_WELCOME_HOOK, {
+      event: "payment_activated",
+      userId,
+      email: existing.email,
+      full_name: existing.full_name,
+      plan,
+      amount: planAmount,
+      txnid,
+      activated_at: new Date().toISOString(),
+    }, { label: "payment-activated-legacy" });
 
     // Clean up pending transaction
     await supabaseAdmin

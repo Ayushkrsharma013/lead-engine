@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       `Email: ${email}\n` +
       `Plan: Micro-Offer ($997)\n` +
       `ICP Config:\n${icpSummary || "Not provided"}`
-    ).catch(() => {});
+    ).catch(err => console.error("[onboarding/save] Telegram notify failed:", err));
   }
 
   // ── Notify n8n welcome sequence (non-blocking, with retry) ──────────

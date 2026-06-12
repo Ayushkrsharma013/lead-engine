@@ -42,7 +42,8 @@ export async function GET() {
 
     const runnerLive = Date.now() - new Date(lastBeat).getTime() < 10 * 60 * 1000;
     return NextResponse.json({ runnerLive, lastBeat, activeHours });
-  } catch {
+  } catch (err) {
+    console.error("[gmaps-outreach/health] Health check failed:", err);
     return NextResponse.json({ runnerLive: false, lastBeat: null, activeHours: false });
   }
 }

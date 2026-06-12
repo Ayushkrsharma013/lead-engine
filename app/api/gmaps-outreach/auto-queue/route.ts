@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     if (role !== "super_admin" && role !== "qa_agent") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-  } catch {
+  } catch (err) {
+    console.error("[gmaps-outreach/auto-queue] Auth check failed:", err);
     return NextResponse.json({ error: "Auth error" }, { status: 500 });
   }
 

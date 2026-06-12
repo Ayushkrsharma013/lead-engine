@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: tgChat, text: tgText }),
-      }).catch(() => undefined);
+      }).catch(err => console.error("[agents/digest] Telegram send failed:", err));
     }
   }
 

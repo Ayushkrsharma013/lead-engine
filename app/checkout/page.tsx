@@ -331,15 +331,15 @@ function CheckoutContent() {
                 <div className="mt-3 p-4 rounded-xl space-y-2" style={{ background: "var(--bg, #000)", border: "1px solid var(--line)" }}>
                   <div className="flex justify-between text-[11px]">
                     <span style={{ color: "var(--ink-4)" }}>Bank</span>
-                    <span style={{ color: "var(--ink-2)" }}>JPMorgan Chase Bank, N.A</span>
+                    <span style={{ color: "var(--ink-2)" }}>{process.env.NEXT_PUBLIC_BANK_NAME || "JPMorgan Chase Bank, N.A"}</span>
                   </div>
                   <div className="flex justify-between text-[11px]">
                     <span style={{ color: "var(--ink-4)" }}>Account</span>
-                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>20000045886271</code>
+                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>{process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "20000045886271"}</code>
                   </div>
                   <div className="flex justify-between text-[11px]">
                     <span style={{ color: "var(--ink-4)" }}>Routing (ACH)</span>
-                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>028000024</code>
+                    <code className="text-[11px]" style={{ color: "var(--ink-2)" }}>{process.env.NEXT_PUBLIC_BANK_ROUTING_NUMBER || "028000024"}</code>
                   </div>
                   <div className="flex justify-between text-[11px]">
                     <span style={{ color: "var(--ink-4)" }}>Reference</span>

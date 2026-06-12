@@ -498,7 +498,7 @@ export async function PATCH(req: Request) {
       // Telegram alert to founder
       void notifyTelegram(
         `MEETING WON — ${appointment.name} (${appointment.email}) for ${planName}\nOnboarding link sent. Token: ${onboardingToken.slice(0, 8)}...`
-      ).catch(() => {});
+      ).catch(err => console.error("[appointments] Telegram notify failed:", err));
 
       return NextResponse.json({ ok: true, status: "won", onboardingToken });
     }

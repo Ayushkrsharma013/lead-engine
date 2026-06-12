@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         `Name: ${appointment.name}\n` +
         `Plan: Micro-Offer ($997)\n` +
         `ICP Config:\n${icpSummary}`
-    ).catch(() => {});
+    ).catch(err => console.error("[onboarding/token-save] Telegram notify failed:", err));
   }
 
   return NextResponse.json({ ok: true });
