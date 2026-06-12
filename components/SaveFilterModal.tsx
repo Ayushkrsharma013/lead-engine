@@ -44,9 +44,7 @@ export default function SaveFilterModal({ open, onClose, onSave }: Props) {
                 <Save size={15} style={{ color: "var(--accent-blue)" }} />
                 <h3 className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>Save Filter</h3>
               </div>
-              <button onClick={onClose} className="p-1 rounded-md transition-colors" style={{ color: "var(--ink-3)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-3)")}>
+              <button onClick={onClose} className="p-1 rounded-md transition-colors text-[var(--ink-3)] hover:text-[var(--ink)]">
                 <X size={15} />
               </button>
             </div>
@@ -63,10 +61,7 @@ export default function SaveFilterModal({ open, onClose, onSave }: Props) {
               />
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t" style={{ borderColor: "var(--border)" }}>
-              <button onClick={onClose} className="h-9 px-4 rounded-lg text-[12px] font-medium transition-colors"
-                style={{ color: "var(--ink-3)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-3)")}>
+              <button onClick={onClose} className="h-9 px-4 rounded-lg text-[12px] font-medium transition-colors text-[var(--ink-3)] hover:text-[var(--ink)]">
                 Cancel
               </button>
               <button onClick={handleSubmit} disabled={saving || !name.trim()}

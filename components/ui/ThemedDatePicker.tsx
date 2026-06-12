@@ -91,10 +91,7 @@ export default function ThemedDatePicker({ value, onChange, placeholder = "mm/dd
             {value && (
               <button
                 onClick={() => { onChange(undefined); setOpen(false); }}
-                className="w-full mt-1 h-7 rounded-md text-[11px] font-medium flex items-center justify-center gap-1 transition-colors"
-                style={{ color: "var(--ink-3)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-3)")}
+                className="w-full mt-1 h-7 rounded-md text-[11px] font-medium flex items-center justify-center gap-1 transition-colors text-[var(--ink-3)] hover:text-[var(--ink)]"
               >
                 <X size={11} /> Clear date
               </button>

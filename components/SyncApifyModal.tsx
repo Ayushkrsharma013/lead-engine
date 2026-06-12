@@ -65,10 +65,7 @@ export default function SyncApifyModal({ onClose, onSuccess }: SyncApifyModalPro
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-          onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
+          className="absolute top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[var(--muted)] hover:text-[var(--text)]"
         >
           <X size={14} />
         </button>
@@ -111,10 +108,7 @@ export default function SyncApifyModal({ onClose, onSuccess }: SyncApifyModalPro
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 h-9 rounded-lg text-[13px] font-medium transition-colors"
-                style={{ color: "var(--muted)", border: "1px solid var(--border)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}
+                className="flex-1 h-9 rounded-lg text-[13px] font-medium transition-colors text-[var(--muted)] border border-[var(--border)] hover:text-[var(--text)]"
               >
                 Cancel
               </button>

@@ -302,10 +302,7 @@ export default function AdminClientsPage() {
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}
         <div
-          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-lg px-3 h-9 transition-all duration-150"
-          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-          onFocusCapture={e => (e.currentTarget.style.borderColor = "rgba(232,66,10,0.35)")}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = "var(--line)")}
+          className="flex items-center gap-2 flex-1 min-w-[200px] rounded-lg px-3 h-9 transition-all duration-150 bg-[var(--surface)] border border-[var(--line)] focus-within:border-[rgba(232,66,10,0.35)]"
         >
           <Search size={13} style={{ color: "var(--ink-4)", flexShrink: 0 }} />
           <input

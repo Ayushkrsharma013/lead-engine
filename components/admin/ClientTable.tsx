@@ -85,10 +85,8 @@ export default function ClientTable({
             return (
               <tr
                 key={c.id}
-                className="transition-colors duration-150 group"
+                className="transition-colors duration-150 group hover:bg-[rgba(255,255,255,0.025)]"
                 style={{ borderBottom: isLast ? "none" : "1px solid var(--line)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.025)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 {/* Client */}
                 <td className="px-4 py-3">
@@ -149,11 +147,8 @@ export default function ClientTable({
                   <div className="flex items-center gap-0.5">
                     <button
                       onClick={() => onViewPortal(c)}
-                      className="p-1.5 rounded-lg transition-all duration-150"
+                      className="p-1.5 rounded-lg transition-colors duration-150 text-[var(--ink-3)] hover:text-[#00b4ff] hover:bg-[rgba(0,180,255,0.1)] cursor-pointer"
                       title="View portal as client"
-                      style={{ color: "var(--ink-3)", background: "transparent", border: "none", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,180,255,0.1)"; e.currentTarget.style.color = "#00b4ff"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-3)"; }}
                     >
                       <ExternalLink size={14} />
                     </button>
@@ -162,11 +157,8 @@ export default function ClientTable({
                       <button
                         onClick={() => onSuspendClick(c)}
                         disabled={actionLoading === c.id}
-                        className="p-1.5 rounded-lg transition-all duration-150"
+                        className="p-1.5 rounded-lg transition-colors duration-150 text-[var(--ink-3)] hover:text-[#eab308] hover:bg-[rgba(234,179,8,0.1)] cursor-pointer disabled:cursor-default"
                         title="Suspend client"
-                        style={{ color: "var(--ink-3)", background: "transparent", border: "none", cursor: actionLoading === c.id ? "default" : "pointer" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(234,179,8,0.1)"; e.currentTarget.style.color = "#eab308"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-3)"; }}
                       >
                         {actionLoading === c.id ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
                       </button>
@@ -174,11 +166,8 @@ export default function ClientTable({
                       <button
                         onClick={() => onActivateClick(c)}
                         disabled={actionLoading === c.id}
-                        className="p-1.5 rounded-lg transition-all duration-150"
+                        className="p-1.5 rounded-lg transition-colors duration-150 text-[var(--ink-3)] hover:text-[#22c55e] hover:bg-[rgba(34,197,94,0.1)] cursor-pointer disabled:cursor-default"
                         title="Activate client"
-                        style={{ color: "var(--ink-3)", background: "transparent", border: "none", cursor: actionLoading === c.id ? "default" : "pointer" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,197,94,0.1)"; e.currentTarget.style.color = "#22c55e"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-3)"; }}
                       >
                         {actionLoading === c.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                       </button>
@@ -186,11 +175,8 @@ export default function ClientTable({
 
                     <button
                       onClick={() => onDelete(c)}
-                      className="p-1.5 rounded-lg transition-all duration-150"
+                      className="p-1.5 rounded-lg transition-colors duration-150 text-[var(--ink-3)] hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.1)] cursor-pointer"
                       title="Delete client"
-                      style={{ color: "var(--ink-3)", background: "transparent", border: "none", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#ef4444"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-3)"; }}
                     >
                       <Trash2 size={14} />
                     </button>

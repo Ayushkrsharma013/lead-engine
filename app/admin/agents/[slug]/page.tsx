@@ -152,13 +152,7 @@ export default function AgentDetailPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <button
           onClick={() => router.push("/admin/agents")}
-          style={{
-            display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-            color: "var(--ink-3)", fontSize: 12, fontWeight: 600, cursor: "pointer",
-            padding: "6px 0", transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+          className="flex items-center gap-1.5 bg-transparent border-none text-[var(--ink-3)] text-[12px] font-semibold cursor-pointer py-1.5 px-0 transition-colors duration-150 hover:text-[var(--accent)]"
         >
           <ArrowLeft size={14} /> Back to Command Center
         </button>

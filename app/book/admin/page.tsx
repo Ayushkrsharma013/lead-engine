@@ -271,21 +271,7 @@ export default function AdminBookPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name or email..."
-                  className="w-full h-9 rounded-xl pl-9 pr-3 text-sm outline-none transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                    color: "var(--text-primary, #f5f4f1)",
-                    fontFamily: "inherit",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--accent)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
+                  className="w-full h-9 rounded-xl pl-9 pr-3 text-sm outline-none transition-all bg-[rgba(255,255,255,0.04)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary,#f5f4f1)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                 />
                 {search && (
                   <button
@@ -307,22 +293,7 @@ export default function AdminBookPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-9 rounded-xl pl-9 pr-8 text-sm outline-none appearance-none cursor-pointer transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                    color: "var(--text-primary, #f5f4f1)",
-                    fontFamily: "inherit",
-                    minWidth: 130,
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--accent)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
+                  className="h-9 rounded-xl pl-9 pr-8 text-sm outline-none appearance-none cursor-pointer transition-all bg-[rgba(255,255,255,0.04)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary,#f5f4f1)] font-[inherit] min-w-[130px] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                 >
                   <option value="all" style={{ background: "#1a1917", color: "#f5f4f1" }}>All Status</option>
                   {STATUS_OPTIONS.filter((s) => s !== "all").map((s) => (
@@ -347,22 +318,7 @@ export default function AdminBookPage() {
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="h-9 rounded-xl pl-9 pr-8 text-sm outline-none appearance-none cursor-pointer transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid var(--border, rgba(255,255,255,0.08))",
-                    color: "var(--text-primary, #f5f4f1)",
-                    fontFamily: "inherit",
-                    minWidth: 130,
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--accent)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
+                  className="h-9 rounded-xl pl-9 pr-8 text-sm outline-none appearance-none cursor-pointer transition-all bg-[rgba(255,255,255,0.04)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary,#f5f4f1)] font-[inherit] min-w-[130px] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                 >
                   <option value="all" style={{ background: "#1a1917", color: "#f5f4f1" }}>All Types</option>
                   {TYPE_OPTIONS.filter((t) => t !== "all").map((t) => (

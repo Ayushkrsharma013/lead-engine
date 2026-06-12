@@ -604,10 +604,7 @@ export default function FilterPanel({ filters, onChange, accent, collapsed, onTo
                     </button>
                     <button
                       onClick={() => onDeleteFilter?.(name)}
-                      className="shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors"
-                      style={{ color: "var(--ink-4)" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "var(--negative)")}
-                      onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-4)")}
+                      className="shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors text-[var(--ink-4)] hover:text-[var(--negative)]"
                     >
                       <X size={10} />
                     </button>

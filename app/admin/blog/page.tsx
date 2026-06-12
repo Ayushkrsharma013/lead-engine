@@ -331,14 +331,10 @@ export default function AdminBlogPage() {
               </thead>
               <tbody>
                 {posts.map(post => (
-                  <tr key={post.id} className="border-b transition-colors cursor-pointer"
-                    style={{
-                      borderColor: "var(--border)",
-                      background: selectedPost?.id === post.id ? "rgba(232,168,64,0.04)" : "transparent",
-                    }}
-                    onClick={() => openPreview(post)}
-                    onMouseEnter={e => { if (selectedPost?.id !== post.id) (e.currentTarget.style.background = "rgba(237,234,226,0.02)"); }}
-                    onMouseLeave={e => { if (selectedPost?.id !== post.id) (e.currentTarget.style.background = "transparent"); }}>
+                  <tr key={post.id}
+                    className={`border-b transition-colors cursor-pointer ${selectedPost?.id === post.id ? 'bg-[rgba(232,168,64,0.04)]' : 'bg-transparent hover:bg-[rgba(237,234,226,0.02)]'}`}
+                    style={{ borderColor: "var(--border)" }}
+                    onClick={() => openPreview(post)}>
                     <td className="py-2.5 pr-4 text-[12px] font-medium truncate max-w-[300px]" style={{ color: "var(--text)" }}>{post.title}</td>
                     <td className="py-2.5 pr-4">
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--accent)", background: "rgba(232,168,64,0.08)", border: "1px solid rgba(232,168,64,0.12)" }}>
@@ -360,17 +356,11 @@ export default function AdminBlogPage() {
                     <td className="py-2.5" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <Link href={`/blog/${post.slug}`} target="_blank"
-                          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
-                          style={{ color: "var(--muted)" }}
-                          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
-                          onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}>
+                          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors text-[var(--muted)] hover:text-[var(--accent)]">
                           <Eye size={12} />
                         </Link>
                         <button onClick={() => handleDelete(post.slug)}
-                          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
-                          style={{ color: "var(--muted)" }}
-                          onMouseEnter={e => (e.currentTarget.style.color = "#ff4444")}
-                          onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}>
+                          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors text-[var(--muted)] hover:text-[#ff4444]">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -412,10 +402,7 @@ export default function AdminBlogPage() {
                     {saving ? "Saving..." : "Save"}
                   </button>
                   <button onClick={() => setSelectedPost(null)}
-                    className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
-                    style={{ color: "var(--muted)" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "var(--text)")}
-                    onMouseLeave={e => (e.currentTarget.style.color = "var(--muted)")}>
+                    className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-[var(--muted)] hover:text-[var(--text)]">
                     <X size={14} />
                   </button>
                 </div>

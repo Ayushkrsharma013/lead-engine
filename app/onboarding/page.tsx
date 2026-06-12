@@ -320,13 +320,6 @@ function OnboardingContent() {
     badgeText: "#ff8a5c",
   };
 
-  const inputStyle = {
-    width: "100%", height: 44, padding: "0 16px", borderRadius: 12,
-    border: `1px solid ${styles.border}`, background: styles.input,
-    color: styles.text, fontSize: "0.875rem", fontFamily: "inherit", outline: "none",
-    boxSizing: "border-box" as const,
-  };
-
   // ─── Token loading state ──────────────────────────────────────────────
   if (token && tokenLoading) {
     return (
@@ -472,9 +465,8 @@ function OnboardingContent() {
                   </span>
                 </div>
               ) : (
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" style={inputStyle}
-                  onFocus={e => { e.currentTarget.style.borderColor = styles.accent; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = styles.border; e.currentTarget.style.boxShadow = "none"; }}
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name"
+                  className="w-full h-[44px] px-4 rounded-xl text-sm outline-none bg-[#1a1a1a] border border-[rgba(255,255,255,0.08)] text-[#f5f4f1] font-[inherit] box-border transition-all focus:border-[#e8420a] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                 />
               )}
             </div>

@@ -667,10 +667,7 @@ function BookPageInner() {
                           value={name}
                           onChange={e => setName(e.target.value)}
                           placeholder="John Doe"
-                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all bg-[var(--bg-input,#1a1a1a)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                         />
                       </div>
                       {/* Email */}
@@ -683,10 +680,7 @@ function BookPageInner() {
                           value={email}
                           onChange={e => setEmail(e.target.value)}
                           placeholder="you@company.com"
-                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all bg-[var(--bg-input,#1a1a1a)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                         />
                       </div>
                       {/* Phone */}
@@ -699,10 +693,7 @@ function BookPageInner() {
                           value={phone}
                           onChange={e => setPhone(e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all bg-[var(--bg-input,#1a1a1a)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                         />
                       </div>
                       {/* Company */}
@@ -715,10 +706,7 @@ function BookPageInner() {
                           value={company}
                           onChange={e => setCompany(e.target.value)}
                           placeholder="Acme Inc."
-                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all"
-                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                          className="w-full h-11 rounded-xl px-4 text-sm outline-none transition-all bg-[var(--bg-input,#1a1a1a)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                         />
                       </div>
                       {/* Notes */}
@@ -731,10 +719,7 @@ function BookPageInner() {
                           onChange={e => setNotes(e.target.value)}
                           placeholder="Anything we should know before the call?"
                           rows={3}
-                          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none"
-                          style={{ background: "var(--bg-input, #1a1a1a)", border: "1px solid var(--border, rgba(255,255,255,0.08))", color: "var(--text-primary)", fontFamily: "inherit" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(232,66,10,0.08)"; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
+                          className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none bg-[var(--bg-input,#1a1a1a)] border border-[var(--border,rgba(255,255,255,0.08))] text-[var(--text-primary)] font-[inherit] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(232,66,10,0.08)]"
                         />
                       </div>
 

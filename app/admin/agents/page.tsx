@@ -417,22 +417,10 @@ export default function AgentCommandCenter() {
               <div
                 key={agent.id}
                 onClick={() => router.push(`/admin/agents/${agent.name}`)}
-                className="rounded-xl p-5 flex flex-col transition-all duration-250 cursor-pointer group"
+                className="rounded-xl p-5 flex flex-col transition-all duration-250 cursor-pointer group border border-[rgba(201,168,124,0.07)] shadow-[0_1px_3px_rgba(0,0,0,0.25)] hover:border-[rgba(201,168,124,0.16)] hover:shadow-[0_4px_16px_rgba(201,168,124,0.06)] hover:-translate-y-px"
                 style={{
                   background: "linear-gradient(180deg, var(--surface) 0%, rgba(12,13,11,0.6) 100%)",
-                  border: `1px solid ${cardBorder}`,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
                   opacity: agent.enabled ? 1 : 0.45,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = cardBorderHover;
-                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(201,168,124,0.06)";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = cardBorder;
-                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
-                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 {/* Header row */}

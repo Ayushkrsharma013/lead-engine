@@ -116,10 +116,7 @@ export default function AddClientModal({ open, onClose, onSuccess }: AddClientMo
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: "var(--ink-4)", background: "transparent", border: "none", cursor: "pointer" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            className="p-1.5 rounded-lg transition-colors text-[var(--ink-4)] hover:bg-[rgba(255,255,255,0.05)] cursor-pointer"
           >
             <X size={16} />
           </button>

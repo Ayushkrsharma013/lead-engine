@@ -123,10 +123,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date…" }: 
               <button
                 type="button"
                 onClick={goPrev}
-                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-                style={{ color: "var(--muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[var(--muted)] hover:bg-[var(--surface2)]"
               >
                 <ChevronLeft size={13} />
               </button>
@@ -136,10 +133,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date…" }: 
               <button
                 type="button"
                 onClick={goNext}
-                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
-                style={{ color: "var(--muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors text-[var(--muted)] hover:bg-[var(--surface2)]"
               >
                 <ChevronRight size={13} />
               </button>

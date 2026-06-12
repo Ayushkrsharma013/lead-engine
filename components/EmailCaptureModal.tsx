@@ -217,15 +217,10 @@ export default function EmailCaptureModal() {
                         value={email}
                         onChange={e => { setEmail(e.target.value); setErrorMsg(""); }}
                         placeholder="you@company.com"
-                        className="w-full h-11 rounded-full pl-10 pr-4 text-sm outline-none transition-all"
+                        className="w-full h-11 rounded-full pl-10 pr-4 text-sm outline-none transition-all bg-[var(--bg-input,#1a1a1a)] text-[var(--text-primary,#f5f4f1)] focus:border-[var(--accent,#e8420a)]"
                         style={{
-                          background: "var(--bg-input, #1a1a1a)",
                           border: `1.5px solid ${errorMsg ? "var(--accent, #e8420a)" : "var(--border, rgba(255,255,255,0.08))"}`,
-                          color: "var(--text-primary, #f5f4f1)",
-                          fontFamily: "'Cabinet Grotesk', 'Geist', sans-serif",
                         }}
-                        onFocus={e => (e.currentTarget.style.borderColor = "var(--accent, #e8420a)")}
-                        onBlur={e => (e.currentTarget.style.borderColor = errorMsg ? "var(--accent, #e8420a)" : "var(--border, rgba(255,255,255,0.08))")}
                       />
                     </div>
                     <motion.button

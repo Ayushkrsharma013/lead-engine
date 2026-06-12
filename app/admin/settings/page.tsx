@@ -293,10 +293,8 @@ function ApiKeyCard({ provider }: { provider: typeof AI_PROVIDERS[number] }) {
             value={show ? key : (key ? masked : "")}
             onChange={e => { setKey(e.target.value); setSaved(false); }}
             placeholder={`Paste your ${provider.label} key…`}
-            className="w-full h-9 rounded-lg px-3 pr-8 text-[12px] font-mono outline-none transition-colors"
-            style={{ background: "var(--surface-2)", border: `1px solid ${key ? provider.color + "30" : "var(--line)"}`, color: key ? provider.color : "var(--ink-3)" }}
-            onFocus={e => (e.currentTarget.style.borderColor = provider.color)}
-            onBlur={e => (e.currentTarget.style.borderColor = key ? provider.color + "30" : "var(--line)")}
+            className="w-full h-9 rounded-lg px-3 pr-8 text-[12px] font-mono outline-none transition-colors bg-[var(--surface-2)] text-[var(--ink-3)] focus:border-[var(--pv-color)]"
+            style={{ "--pv-color": provider.color, border: `1px solid ${key ? provider.color + "30" : "var(--line)"}`, color: key ? provider.color : undefined } as React.CSSProperties}
           />
           {key && (
             <button onClick={() => setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded"
@@ -390,10 +388,7 @@ function AgentTab() {
         <div>
           <label className="text-[10px] font-bold uppercase tracking-[0.10em] block mb-1.5" style={{ color: "var(--ink-4)" }}>Name</label>
           <input type="text" value={agentName} onChange={e => setAgentName(e.target.value)}
-            className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all"
-            style={{ color: "var(--ink)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
-            onFocus={e => (e.currentTarget.style.borderColor = "var(--accent)")}
-            onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")} />
+            className="w-full h-9 rounded-lg px-3 text-[13px] outline-none transition-all text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--line)] focus:border-[var(--accent)]" />
         </div>
       </SectionCard>
 
@@ -403,10 +398,8 @@ function AgentTab() {
             <label className="text-[10px] font-bold uppercase tracking-[0.10em] block mb-1.5" style={{ color: "var(--ink-4)" }}>Bot Token</label>
             <input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)}
               placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-              className="w-full h-9 rounded-lg px-3 text-[12px] font-mono outline-none transition-all"
-              style={{ color: telegramToken ? "#3b82f6" : "var(--ink-3)", background: "var(--surface-2)", border: "1px solid var(--line)" }}
-              onFocus={e => (e.currentTarget.style.borderColor = "#3b82f6")}
-              onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")} />
+              className="w-full h-9 rounded-lg px-3 text-[12px] font-mono outline-none transition-all bg-[var(--surface-2)] border border-[var(--line)] focus:border-[#3b82f6]"
+              style={{ color: telegramToken ? "#3b82f6" : "var(--ink-3)" }} />
             <p className="text-[10px] mt-1" style={{ color: "var(--ink-4)" }}>
               Create a bot with <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: "#3b82f6" }}>@BotFather</a> on Telegram
             </p>
@@ -701,11 +694,7 @@ export default function SettingsPage() {
               const active = activeTab === tab.id;
               return (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-all"
-                  style={active ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid rgba(232,168,64,0.20)" }
-                    : { color: "var(--ink-3)", border: "1px solid transparent" }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget.style.color = "var(--ink)") }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget.style.color = "var(--ink-3)") }}>
+                  className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium transition-colors duration-150 ${active ? 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[rgba(232,168,64,0.20)]' : 'text-[var(--ink-3)] border border-transparent hover:text-[var(--ink)]'}`}>
                   <TabIcon size={12} />{tab.label}
                 </button>
               );

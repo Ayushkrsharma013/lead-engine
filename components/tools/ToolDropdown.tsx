@@ -97,35 +97,11 @@ export function ToolDropdown({
                     onChange(opt);
                     setOpen(false);
                   }}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontFamily: "Cabinet Grotesk, Geist, sans-serif",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    border: "none",
-                    background: isSelected
-                      ? "rgba(232,66,10,0.10)"
-                      : "transparent",
-                    color: isSelected
-                      ? "var(--accent)"
-                      : "var(--text-secondary)",
-                    transition: "all 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                      e.currentTarget.style.color = "var(--text-primary)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = "var(--text-secondary)";
-                    }
-                  }}
+                  className={`w-full py-[9px] px-3 rounded-lg text-[13px] text-left cursor-pointer border-none transition-colors duration-150 ${
+                    isSelected
+                      ? 'bg-[rgba(232,66,10,0.10)] text-[var(--accent)]'
+                      : 'bg-transparent text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]'
+                  }`}
                 >
                   {opt}
                   {isSelected && (
