@@ -41,25 +41,6 @@ export default function AboutPage() {
         }}
       >
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 14px",
-              borderRadius: 9999,
-              background: "rgba(232,66,10,0.08)",
-              border: "1px solid rgba(232,66,10,0.2)",
-              fontSize: "0.72rem",
-              fontFamily: "var(--font-mono)",
-              color: "var(--accent)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginBottom: 16,
-            }}
-          >
-            DRAFT — pending founder review
-          </div>
           <h1
             style={{
               fontFamily: "var(--font-heading)",
@@ -100,9 +81,8 @@ export default function AboutPage() {
             letterSpacing: "-0.01em",
           }}
         >
-          Why I&apos;m building Prospecting OS
+          Why I built Prospecting OS
         </h2>
-        {/* TODO(founder): replace with real story */}
         <div
           style={{
             display: "flex",
@@ -114,26 +94,13 @@ export default function AboutPage() {
           }}
         >
           <p>
-            Every B2B founder I talked to was burning the same hours each week:
-            scrolling LinkedIn, copy-pasting names into a sheet, drafting one-off
-            emails that never got opened. The market kept selling them more
-            tools — Apollo, Clay, Uplead — but tools alone don&apos;t solve the
-            problem. The leads they pull are unscored, the icebreakers are
-            templated, and a human still has to sit in the middle deciding
-            who&apos;s worth a reply.
+            I&apos;m an Electrical &amp; Electronics Engineer who transitioned into AI Automation &amp; Systems Engineering. Before Prospecting OS, I built WA-GENIE — a WhatsApp-based AI automation system for industrial reporting. Field teams submitted reports via WhatsApp, AI processed the inputs, and management received structured summaries and downloadable reports. It cut manual reporting effort significantly and proved that AI could replace repetitive operational workflows.
           </p>
           <p>
-            The shift in 2025 was that AI got cheap and reliable enough to do
-            the part humans were the bottleneck on — qualifying a lead and
-            writing the first sentence. Once you put Apify scrapers on the
-            front and Anthropic Claude on the scoring layer, the pipeline runs
-            itself. The founder just shows up at 8 AM to a Slack channel of
-            scored, enriched, ready-to-send leads.
+            That experience shaped how I think about Prospecting OS. The same pattern — automated data ingestion, AI-powered processing, structured delivery — applies to B2B lead generation. Every founder I spoke to was burning hours on manual prospecting that a well-built pipeline could replace. The tools existed (Apify, Claude AI, Supabase), but nobody had wired them together into a productized system.
           </p>
           <p>
-            That&apos;s the system Prospecting OS encodes. It&apos;s the
-            workflow I wish I&apos;d had two years earlier — and the one I now
-            run for every Flow-Forges client.
+            Prospecting OS is that system: a 5-step AI pipeline that sources, filters, scores, enriches, and delivers qualified B2B leads — running daily so founders wake up to pipeline, not to-do lists.
           </p>
         </div>
       </section>
@@ -158,7 +125,6 @@ export default function AboutPage() {
         >
           Who I am
         </h2>
-        {/* TODO(founder): replace with real bio */}
         <div
           style={{
             display: "flex",
@@ -173,16 +139,14 @@ export default function AboutPage() {
             <strong style={{ color: "var(--text-primary)" }}>
               Ayush Kumar Sharma
             </strong>{" "}
-            — founder of Flow-Forges. I build AI systems for B2B teams that
-            want pipeline without hiring an SDR bench. Before Flow-Forges, I
-            spent years on the operator side, watching small teams lose six
-            figures a year to manual prospecting that an evening script could
-            replace.
+            is an Electrical &amp; Electronics Engineer turned AI Automation &amp; Systems Engineer. He is the Founder and Proprietor of{" "}
+            <strong style={{ color: "var(--text-primary)" }}>AKS Forge Lab</strong>, an India-registered sole proprietorship operating through the Flow-Forges brand. He builds AI automation, SaaS-ready systems, API integrations, backend workflows, and cloud/serverless systems for global clients.
           </p>
           <p>
-            Prospecting OS is the second product out of the Flow-Forges studio.
-            Every line of the pipeline runs in production for live clients
-            today — it isn&apos;t a deck.
+            He previously built WA-GENIE, a WhatsApp-based AI automation system for industrial reporting that reduced manual reporting effort for field teams. Prospecting OS is the next productized system from Flow-Forges: an AI-powered B2B prospecting workspace for sourcing, scoring, enriching, organizing, and messaging leads.
+          </p>
+          <p>
+            Every line of the Prospecting OS pipeline runs in production for live clients today — it isn&apos;t a deck.
           </p>
         </div>
       </section>

@@ -1,5 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 const FEATURES = [
   { label: 'Pricing', pros: '$1,499+$499 / $2,499+$999/mo', sdr: '$4,000–6,000/mo salary', apollo: '$99–$149/mo', clay: '$149–$800/mo', uplead: '$99–$299/mo' },
@@ -96,19 +97,20 @@ export function ComparisonTable() {
       </table>
 
       <div style={{ textAlign: 'center', marginTop: 40 }}>
-        <motion.a
-          href="/book"
-          whileHover={{ scale: 1.02, boxShadow: '0 0 32px rgba(232,66,10,0.4)' }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          style={{
-            display: 'inline-block', background: 'var(--accent)', color: 'white',
-            padding: '16px 36px', borderRadius: 9999, fontSize: 15, fontWeight: 600,
-            textDecoration: 'none', boxShadow: '0 0 24px var(--accent-glow)',
-          }}
-        >
-          Book a Demo — Start Outperforming Apollo in Week 1 →
-        </motion.a>
+        <Link href="/book" legacyBehavior passHref>
+          <motion.a
+            whileHover={{ scale: 1.02, boxShadow: '0 0 32px rgba(232,66,10,0.4)' }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            style={{
+              display: 'inline-block', background: 'var(--accent)', color: 'white',
+              padding: '16px 36px', borderRadius: 9999, fontSize: 15, fontWeight: 600,
+              textDecoration: 'none', boxShadow: '0 0 24px var(--accent-glow)',
+            }}
+          >
+            Book a Demo — Start Outperforming Apollo in Week 1 →
+          </motion.a>
+        </Link>
       </div>
     </motion.div>
   )

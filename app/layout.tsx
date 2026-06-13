@@ -12,9 +12,9 @@ import CookieConsent from "@/components/analytics/CookieConsent";
 const basePath = "/prospecting-os";
 
 export const metadata: Metadata = {
-  title: "Prospecting OS — AI-Powered B2B Lead Generation System | 500+ Scored Leads/Month",
+  title: "Prospecting OS — AI-Powered B2B Lead Generation System | 100-500 Scored Leads/Month",
   description:
-    "Prospecting OS automates B2B lead generation using Apify scrapers + Anthropic Claude AI. Get 500+ scored, enriched leads per month delivered to Slack or Telegram. Used by agencies, SaaS founders, and consultants worldwide.",
+    "Prospecting OS automates B2B lead generation using Apify scrapers + Anthropic Claude AI. Get 100-500 scored, enriched leads per month delivered to Slack or Telegram. Used by agencies, SaaS founders, and consultants worldwide.",
   keywords: [
     "AI lead generation",
     "B2B prospecting automation",
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     "replace SDR with AI",
   ],
   openGraph: {
-    title: "Prospecting OS — AI B2B Lead Generation. 500+ Scored Leads/Month.",
+    title: "Prospecting OS — AI B2B Lead Generation. 100-500 Scored Leads/Month.",
     description:
-      "Stop doing manual prospecting. Let AI find, score, and deliver your ideal clients every morning. Built on Apify + Anthropic Claude AI + Supabase.",
+      "Stop doing manual prospecting. Let AI find, score, and deliver your ideal clients every month. Built on Apify + Anthropic Claude AI + Supabase.",
     url: "https://app.flow-forges.com/prospecting-os",
     siteName: "Prospecting OS by Flow-Forges",
     images: [
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Prospecting OS — AI B2B Lead Generation System",
     description:
-      "500+ scored B2B leads/month. Zero manual research. Powered by Apify lead scraping and Anthropic Claude AI. Built for agencies, SaaS & consultants.",
+      "100-500 scored B2B leads/month. Zero manual research. Powered by Apify lead scraping and Anthropic Claude AI. Built for agencies, SaaS & consultants.",
     images: ["https://app.flow-forges.com/prospecting-os/assets/og-image.png"],
   },
   alternates: {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Globe, Filter, FileText, PenLine, Bell, ArrowRight,
   ArrowDown, Menu, X, Send, Sparkles, Calendar, CheckCircle2,
@@ -25,9 +26,9 @@ import {
    Prospecting OS — Landing Page
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const FULL_TEXT = "AI-Powered B2B Lead Generation. 500+ Scored Leads. Delivered Every Morning.";
+const FULL_TEXT = "AI-Powered B2B Lead Generation. 100-500 Scored Leads. Delivered Every Morning.";
 const HERO_PREFIX = "AI-Powered B2B Lead Generation. ";
-const HERO_HIGHLIGHT = "500+ Scored Leads. Delivered Every Morning.";
+const HERO_HIGHLIGHT = "100-500 Scored Leads. Delivered Every Morning.";
 const HERO_SPLIT_AT = HERO_PREFIX.length;
 const ASCII_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789+-*/=<>{}[]()&|!?@#$%^&*;:,.~`".split("");
 
@@ -64,7 +65,7 @@ const FAQ_ITEMS: { q: string; a: string; cat: "setup" | "results" }[] = [
   },
   {
     q: "What is an AI SDR and how is it different from hiring a human SDR?",
-    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 500+ scored, enriched leads on the Growth plan at $999/month — running 24/7, with no sick days, no training ramp, and no turnover.",
+    a: "An AI SDR (Sales Development Representative) automates the research, scoring, enrichment, and outreach tasks traditionally performed by a human SDR. A human SDR costs $4,000–$6,000/month and typically delivers 40–60 leads. Prospecting OS delivers 200+ scored, enriched leads on the Growth plan (500+ on Scale) at a fraction of the cost — running 24/7, with no sick days, no training ramp, and no turnover.",
     cat: "results",
   },
   {
@@ -117,6 +118,7 @@ function formatMessage(text: string): string {
 
 export default function LandingPage() {
   /* ─── Theme ────────────────────────────────────────────────────────────── */
+  const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
@@ -768,7 +770,7 @@ export default function LandingPage() {
               <span className="typewriter-cursor">|</span>
             </h1>
             <p className="hero-subtitle">
-              Apify lead scraping + Anthropic Claude AI — find, score, enrich, and deliver 500+ qualified B2B leads to your Slack or Telegram every morning. No manual research. Built by{" "}
+              Apify lead scraping + Anthropic Claude AI — find, score, enrich, and deliver 100-500 ICP-verified B2B leads to your Slack or Telegram every month. No manual research. Built by{" "}
               <a href="https://flow-forges.com" aria-label="Flow-Forges" style={{ color: "var(--accent)", fontWeight: 500 }}>Flow-Forges</a>.
             </p>
             <div className="hero-ctas">
@@ -776,7 +778,7 @@ export default function LandingPage() {
               <a href="#pricing" className="btn-secondary" onClick={e => smoothScroll(e, "#pricing")} aria-label="View Prospecting OS pricing — from $2,500 one-time to fully managed AI SDR">See Pricing Plans <ArrowDown size={16} style={{ display: "inline" }} /></a>
             </div>
             <div className="hero-stats">
-              <div><span>500+</span> scored leads/month</div>
+              <div><span>100-500</span> scored leads/month</div>
               <div><span>97%</span> less manual work</div>
               <div><span>4h</span> to go live</div>
             </div>
@@ -909,7 +911,7 @@ export default function LandingPage() {
             <div className="section-eyebrow">// Pricing</div>
             <h2 className="section-title">Your AI SDR. A fraction of the cost.</h2>
             <p className="section-subtext" style={{ fontFamily: "var(--font-serif-italic)", fontStyle: "italic" }}>
-              An in-house SDR costs $4,000–6,000/month and delivers 50 leads. We deliver 500+ scored leads — already enriched and ready to send.
+              An in-house SDR costs $4,000–6,000/month and delivers 50 leads. We deliver 100-500 scored leads — already enriched and ready to send.
             </p>
           </div>
 
@@ -1045,7 +1047,7 @@ export default function LandingPage() {
           {/* Live metrics bar */}
           <div className="metrics-bar">
             {[
-              { num: "500+", label: "leads scored per active client/month" },
+              { num: "100-500", label: "leads scored per active client/month" },
               { num: "8.5", label: "average ICP match score (out of 10)" },
               { num: "~4hrs", label: "average time to go live" },
               { num: "97%", label: "reduction in manual prospecting time" },
@@ -1057,45 +1059,54 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Early pilot feedback */}
+          {/* Typical Results */}
           <div className="beta-feedback-section">
-            <div className="beta-feedback-label reveal">EARLY PILOT FEEDBACK</div>
+            <div className="beta-feedback-label reveal">TYPICAL RESULTS BY PLAN</div>
             <div className="testimonials-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginTop: 24 }}>
               <div className="testimonial-card reveal" style={{ transitionDelay: "0.05s" }}>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 9999, background: "rgba(232,66,10,0.1)", color: "var(--accent)", fontSize: "0.68rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Pilot / Micro</span>
+                </div>
                 <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
-                  &ldquo;The pipeline was live in under 4 hours. First hot lead showed up in Slack the next morning — exactly what we needed.&rdquo;
+                  A B2B SaaS founder on the Pilot plan receives 100 ICP-verified leads/month with AI scoring and personalized icebreakers. Pipeline goes live in ~4 hours. Leads arrive every morning in Slack — no manual research, no spreadsheet.
                 </p>
                 <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--accent) 0%, #ff8c00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>J</div>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--accent) 0%, #ff8c00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>1</div>
                   <div>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>James R.</p>
-                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Founder, B2B SaaS Agency · US</p>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>SaaS Founder</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Pilot plan &middot; 100 leads/month &middot; ~4h setup</p>
                   </div>
                 </div>
               </div>
 
               <div className="testimonial-card reveal" style={{ transitionDelay: "0.15s" }}>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 9999, background: "rgba(124,58,237,0.1)", color: "#a78bfa", fontSize: "0.68rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Growth</span>
+                </div>
                 <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
-                  &ldquo;We were spending 15 hours a week on manual prospecting. Prospecting OS cut that to zero.&rdquo;
+                  A digital agency owner on the Growth plan gets 200+ scored leads/month with multi-channel sequences (Email + LinkedIn), A/B tested variants, and bi-weekly strategy calls. No SDR hire. No ramp time. Pipeline runs 24/7.
                 </p>
                 <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>S</div>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>2</div>
                   <div>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Sarah K.</p>
-                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Head of Growth, MarTech Startup · UK</p>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Agency Owner</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Growth plan &middot; 200+ leads/month &middot; multi-channel</p>
                   </div>
                 </div>
               </div>
 
               <div className="testimonial-card reveal" style={{ transitionDelay: "0.25s" }}>
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 9999, background: "rgba(0,212,255,0.1)", color: "#00d4ff", fontSize: "0.68rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Scale</span>
+                </div>
                 <p className="quote" style={{ fontSize: "0.95rem", lineHeight: 1.7, fontStyle: "italic", color: "var(--text-primary)" }}>
-                  &ldquo;The Claude AI icebreakers are genuinely better than what our SDR wrote. We&apos;re seeing 3x reply rates.&rdquo;
+                  A consultancy founder on the Scale plan receives 500+ scored, enriched leads/month across Email, LinkedIn, and GMap channels. Full CRM sync (HubSpot/Salesforce), weekly strategy calls, priority support within 4 hours.
                 </p>
                 <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #00d4ff 0%, #0096e0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>M</div>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #00d4ff 0%, #0096e0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>3</div>
                   <div>
-                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Marcus T.</p>
-                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>CEO, Digital Consultancy · AU</p>
+                    <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Consultancy Founder</p>
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-tertiary)", margin: 0 }}>Scale plan &middot; 500+ leads/month &middot; full CRM sync</p>
                   </div>
                 </div>
               </div>
@@ -1225,7 +1236,7 @@ export default function LandingPage() {
 
               <div className="roi-output-row">
                 <span className="roi-output-label">AI-scored leads delivered</span>
-                <span className="roi-output-value" style={{ color: "var(--accent)" }}>500+ / month</span>
+                <span className="roi-output-value" style={{ color: "var(--accent)" }}>100-500 / month</span>
                 <span className="roi-output-sub">all 7+ ICP score, enriched, icebreaker included</span>
               </div>
 
@@ -1234,7 +1245,7 @@ export default function LandingPage() {
                 <span key={roiRevenue} className="roi-output-value roi-value-animated" style={{ color: "var(--success)" }}>
                   ${roiRevenue.toLocaleString()} / month
                 </span>
-                <span className="roi-output-sub">at 3% close rate on 500 scored leads</span>
+                <span className="roi-output-sub">at 3% close rate on 500 scored leads (Scale plan)</span>
               </div>
 
               <div className="roi-output-multiple">
@@ -1324,7 +1335,7 @@ export default function LandingPage() {
 
             {/* Body copy */}
             <p className="cta-body">
-              Your ideal clients are on LinkedIn right now — 500+ of them, every week. Our AI finds them, scores them against your ICP, writes their icebreaker, and drops them in your Slack before your morning coffee.
+              Your ideal clients are on LinkedIn right now. Our AI finds 100-500 of them per month, scores them against your ICP, writes their icebreaker, and drops them in your Slack before your morning coffee.
             </p>
 
             {/* CTA buttons */}
@@ -1440,7 +1451,7 @@ export default function LandingPage() {
                       <button
                         key={j}
                         className="chat-bubble-reply-btn"
-                        onClick={() => { if (qr === "Book a Free Strategy Call") { window.location.href = "/prospecting-os/book"; } else { handleUserMessage(qr); } }}
+                        onClick={() => { if (qr === "Book a Free Strategy Call") { router.push("/book"); } else { handleUserMessage(qr); } }}
                       >
                         {qr === "Book a Free Strategy Call" && <Calendar size={11} />}
                         {qr === "How does the AI scoring work?" && <Sparkles size={11} />}

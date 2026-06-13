@@ -101,16 +101,16 @@ export default function ContactPage() {
             <MapPin size={16} style={{ color: "var(--accent)", marginTop: 3, flexShrink: 0 }} />
             <div className="leading-relaxed" style={{ fontSize: 15, color: "var(--ink-2)" }}>
               <p style={{ margin: 0, marginBottom: 8 }}>
-                <strong style={{ color: "var(--ink)" }}>Founder:</strong> Ayush Kumar Sharma
+                <strong style={{ color: "var(--ink)" }}>Business:</strong> AKS Forge Lab — India-registered sole proprietorship
               </p>
               <p style={{ margin: 0, marginBottom: 8 }}>
-                <strong style={{ color: "var(--ink)" }}>Business:</strong> Flow-Forges (sole proprietorship — India)
+                <strong style={{ color: "var(--ink)" }}>Operating brand:</strong> Flow-Forges
+              </p>
+              <p style={{ margin: 0, marginBottom: 8 }}>
+                <strong style={{ color: "var(--ink)" }}>Founder &amp; Proprietor:</strong> Ayush Kumar Sharma
               </p>
               <p style={{ margin: 0, marginBottom: 8 }}>
                 <strong style={{ color: "var(--ink)" }}>Registered in:</strong> India
-              </p>
-              <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)" }}>
-                Formal entity registration is in progress. Updated business name, registration number, and registered address will be published here once finalized.
               </p>
             </div>
           </div>
