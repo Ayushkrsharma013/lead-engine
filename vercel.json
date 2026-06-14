@@ -17,16 +17,16 @@
       "destination": "https://mailflow-swart.vercel.app/mailflow/:path*"
     },
     {
-      "source": "/rello",
-      "destination": "http://89.167.122.91:3000/rello"
+      "source": "/qualifai",
+      "destination": "http://89.167.122.91:3000/qualifai"
     },
     {
-      "source": "/rello/",
-      "destination": "http://89.167.122.91:3000/rello/"
+      "source": "/qualifai/",
+      "destination": "http://89.167.122.91:3000/qualifai/"
     },
     {
-      "source": "/rello/:path*",
-      "destination": "http://89.167.122.91:3000/rello/:path*"
+      "source": "/qualifai/:path*",
+      "destination": "http://89.167.122.91:3000/qualifai/:path*"
     }
   ],
   "crons": [
