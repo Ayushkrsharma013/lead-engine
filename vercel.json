@@ -15,6 +15,18 @@
     {
       "source": "/mailflow/:path*",
       "destination": "https://mailflow-swart.vercel.app/mailflow/:path*"
+    },
+    {
+      "source": "/rello",
+      "destination": "http://89.167.122.91:3000/rello"
+    },
+    {
+      "source": "/rello/",
+      "destination": "http://89.167.122.91:3000/rello/"
+    },
+    {
+      "source": "/rello/:path*",
+      "destination": "http://89.167.122.91:3000/rello/:path*"
     }
   ],
   "crons": [
